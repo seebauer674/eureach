@@ -313,14 +313,51 @@ function ldTogglePanel(type) {
       <div class="ld-panel-title">✉ Send Email</div>
       <div class="ld-panel-row"><label>To</label><input class="ld-panel-input" id="ldp-to" type="email" value="${esc(ldCurrentLead.email || '')}" placeholder="recipient@email.com"></div>
       <div class="ld-panel-row"><label>Subject</label><input class="ld-panel-input" id="ldp-subj" placeholder="Email subject…"></div>
-      <div class="ld-panel-row"><label>Body</label><textarea class="ld-panel-ta" id="ldp-body" placeholder="Write your message…"></textarea></div>
+      <div class="ld-panel-row">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <label>Body</label>
+          <button class="ld-tpl-btn" id="ldp-tpl-btn" type="button">📋 Insert Template</button>
+        </div>
+        <div class="ld-tpl-dropdown" id="ldp-tpl-dropdown" style="display:none"></div>
+        <textarea class="ld-panel-ta" id="ldp-body" placeholder="Write your message…"></textarea>
+      </div>
       <div class="ld-panel-err" id="ldp-err"></div>
       <div class="ld-panel-footer">
         <button class="crm-panel-cancel" onclick="ldTogglePanel('email')">Cancel</button>
         <button class="crm-panel-save" id="ldp-send">✉ Send</button>
       </div>
     </div>`;
-    document.getElementById('ldp-send').onclick = async () => {
+    // Template picker
+    document.getElementById('ldp-tpl-btn').onclick = async () => {
+      const dd = document.getElementById('ldp-tpl-dropdown');
+      if (dd.style.display !== 'none') { dd.style.display = 'none'; return; }
+      dd.innerHTML = '<div class="ld-tpl-loading">Loading…</div>';
+      dd.style.display = 'block';
+      try {
+        const res = await fetch('/api/templates/list');
+        const data = await res.json();
+        const tpls = (data.templates || []).filter(t => t.subject && t.body);
+        if (!tpls.length) {
+          dd.innerHTML = '<div class="ld-tpl-empty">No templates yet. <a href="templates.html">Create one →</a></div>';
+          return;
+        }
+        dd.innerHTML = tpls.map(t => `<div class="ld-tpl-item" data-id="${t.id}">
+          <div class="ld-tpl-name">${esc(t.name)}</div>
+          <div class="ld-tpl-meta">${esc(t.templateType || '')} ${t.purpose ? '· ' + esc(t.purpose) : ''}</div>
+        </div>`).join('');
+        dd.querySelectorAll('.ld-tpl-item').forEach(el => {
+          el.onclick = () => {
+            const tpl = tpls.find(t => t.id === el.dataset.id);
+            if (!tpl) return;
+            document.getElementById('ldp-subj').value = tpl.subject;
+            document.getElementById('ldp-body').value = tpl.body;
+            dd.style.display = 'none';
+          };
+        });
+      } catch { dd.innerHTML = '<div class="ld-tpl-empty">Failed to load templates.</div>'; }
+    };
+
+        document.getElementById('ldp-send').onclick = async () => {
       const to   = document.getElementById('ldp-to').value.trim();
       const subj = document.getElementById('ldp-subj').value.trim();
       const body = document.getElementById('ldp-body').value.trim();
