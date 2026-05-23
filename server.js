@@ -805,6 +805,7 @@ async function handleCrmUpdate(req, res, id) {
   }
   if (body.notes    !== undefined) crm[idx].notes    = body.notes;
   if (body.leadName !== undefined) crm[idx].leadName = body.leadName.trim();
+  if (body.reminder !== undefined) crm[idx].reminder = body.reminder; // {date,note} or null
   crm[idx].updatedAt = new Date().toISOString();
 
   writeJSON(CRM_FILE, crm);
@@ -823,6 +824,28 @@ function handleCrmDelete(req, res, id) {
   crm.splice(idx, 1);
   writeJSON(CRM_FILE, crm);
   json(res, 200, { ok: true });
+}
+
+async function handleCrmLogCall(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const body    = await readBody(req);
+  const outcome = sanitizeString(body.outcome || "", 30);
+  const notes   = sanitizeString(body.notes   || "", 500);
+  const validOutcomes = ["answered", "no_answer", "voicemail", "callback"];
+  if (!validOutcomes.includes(outcome)) return json(res, 400, { error: "Invalid outcome." });
+
+  const crm = readJSON(CRM_FILE);
+  const idx = crm.findIndex(e => e.id === id && e.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: "Entry not found." });
+
+  const callEntry = { id: generateId(), outcome, notes, at: new Date().toISOString() };
+  crm[idx].callLog   = [...(crm[idx].callLog || []), callEntry];
+  crm[idx].updatedAt = new Date().toISOString();
+  writeJSON(CRM_FILE, crm);
+  json(res, 201, { call: callEntry, callLog: crm[idx].callLog });
 }
 
 // ── Lead scoring ─────────────────────────────────────────────────────────────
@@ -2283,6 +2306,7 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/crm"                       && method === "POST")   return handleCrmCreate(req, res);
   if (urlPath.startsWith("/api/crm/")              && method === "PATCH")  return handleCrmUpdate(req, res, urlPath.slice(9));
   if (urlPath.startsWith("/api/crm/")              && method === "DELETE") return handleCrmDelete(req, res, urlPath.slice(9));
+  if (urlPath.endsWith("/call") && urlPath.startsWith("/api/crm/") && method === "POST")   return handleCrmLogCall(req, res, urlPath.split("/")[3]);
 
   // Pipeline API routes
   if (urlPath === "/api/pipeline"                              && method === "GET")    return handlePipelineList(req, res);

@@ -805,3 +805,174 @@
 .or-send-success {
   padding: 10px 0; font-size: 0.85rem; color: #4ade80; font-weight: 600;
 }
+
+
+/* ── Card action bar ─────────────────────────────────── */
+.crm-action-bar {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.crm-action-btn {
+  flex: 1;
+  padding: 7px 6px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--glass);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  text-align: center;
+  white-space: nowrap;
+}
+.crm-action-btn:hover       { background: rgba(255,255,255,0.07); color: var(--text); border-color: rgba(255,255,255,0.15); }
+.crm-action-btn.active      { border-color: var(--blue2); color: var(--blue2); background: rgba(37,99,235,0.1); }
+.crm-action-btn.crm-outreach-btn { color: #a78bfa; border-color: rgba(167,139,250,0.25); }
+.crm-action-btn.crm-outreach-btn:hover { background: rgba(167,139,250,0.1); color: #c4b5fd; }
+
+/* ── Badges row ──────────────────────────────────────── */
+.crm-badges-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 8px 0 0;
+}
+
+.crm-call-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(148,163,184,0.1);
+  border: 1px solid rgba(148,163,184,0.2);
+  color: var(--muted);
+  cursor: default;
+}
+
+.crm-reminder-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  cursor: default;
+}
+.crm-reminder-badge.upcoming { background: rgba(37,99,235,0.12);  border: 1px solid rgba(37,99,235,0.25);   color: #60a5fa; }
+.crm-reminder-badge.today    { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3);  color: #fbbf24; }
+.crm-reminder-badge.overdue  { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3);   color: #f87171; }
+
+/* ── Inline panels (call / reminder) ─────────────────── */
+.crm-call-panel,
+.crm-reminder-panel {
+  margin-top: 10px;
+  padding: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.crm-panel-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+
+.crm-outcome-btns {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.crm-outcome-btn {
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--glass);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.crm-outcome-btn:hover    { border-color: rgba(255,255,255,0.2); color: var(--text); }
+.crm-outcome-btn.selected { border-color: #4ade80; color: #4ade80; background: rgba(74,222,128,0.1); }
+
+.crm-panel-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.crm-panel-input,
+.crm-panel-date {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--glass);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-family: inherit;
+}
+.crm-panel-input::placeholder { color: var(--muted); }
+.crm-panel-input:focus,
+.crm-panel-date:focus          { outline: none; border-color: var(--blue2); }
+.crm-panel-date                { color-scheme: dark; min-width: 0; }
+
+.crm-panel-footer {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.crm-panel-save {
+  padding: 7px 14px;
+  border-radius: 7px;
+  border: none;
+  background: var(--blue);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.crm-panel-save:disabled { opacity: 0.45; cursor: default; }
+.crm-panel-save:hover:not(:disabled) { opacity: 0.85; }
+
+.crm-panel-cancel,
+.crm-panel-clear {
+  padding: 7px 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.crm-panel-cancel:hover { color: var(--text); }
+.crm-panel-clear        { color: #f87171; border-color: rgba(239,68,68,0.3); }
+.crm-panel-clear:hover  { background: rgba(239,68,68,0.1); }
+
+.crm-panel-err {
+  font-size: 0.78rem;
+  color: #f87171;
+  margin-top: 4px;
+  min-height: 16px;
+}

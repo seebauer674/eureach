@@ -135,10 +135,40 @@ function render() {
   document.getElementById("stat-closed").textContent    = entries.filter(e => e.status === "closed").length;
 }
 
+function reminderBadgeHTML(reminder) {
+  if (!reminder || !reminder.date) return "";
+  const today    = new Date().toISOString().slice(0, 10);
+  const isToday  = reminder.date === today;
+  const isOverdue = reminder.date < today;
+  const cls  = isOverdue ? "crm-reminder-badge overdue" : isToday ? "crm-reminder-badge today" : "crm-reminder-badge upcoming";
+  const label = isOverdue ? "⚠ Overdue" : isToday ? "🔔 Today" : "🔔 " + reminder.date;
+  const tip  = reminder.note ? esc(reminder.note) : "";
+  return `<span class="${cls}" title="${tip}">${label}</span>`;
+}
+
+function lastCallBadgeHTML(callLog) {
+  if (!callLog || !callLog.length) return "";
+  const last    = callLog[callLog.length - 1];
+  const icons   = { answered: "✅", no_answer: "📵", voicemail: "📱", callback: "🔁" };
+  const labels  = { answered: "Answered", no_answer: "No answer", voicemail: "Voicemail", callback: "Callback" };
+  const icon    = icons[last.outcome]  || "📞";
+  const label   = labels[last.outcome] || last.outcome;
+  const dt      = new Date(last.at);
+  const diffMs  = Date.now() - dt;
+  const diffH   = Math.floor(diffMs / 3600000);
+  const timeStr = diffH < 1 ? "just now" : diffH < 24 ? diffH + "h ago" : Math.floor(diffH / 24) + "d ago";
+  return `<span class="crm-call-badge" title="${esc(last.notes || "")}">${icon} ${label} · ${timeStr}</span>`;
+}
+
 function cardHTML(e) {
   const s = crmScoreMap[crmScoreKey(e.leadName, e.city)];
   const scoreBadge = s
     ? `<div class="crm-score-badge tier-${s.tier}" title="${esc(s.reasoning || "")}">${crmTierIcon(s.tier)} ${s.score}</div>`
+    : "";
+  const reminderBadge = reminderBadgeHTML(e.reminder);
+  const callBadge     = lastCallBadgeHTML(e.callLog);
+  const badgesRow     = (reminderBadge || callBadge)
+    ? `<div class="crm-badges-row">${callBadge}${reminderBadge}</div>`
     : "";
   return `
   <div class="crm-card" data-id="${e.id}">
@@ -153,6 +183,7 @@ function cardHTML(e) {
       ${e.website      ? `<div class="crm-card-row"><span>🌐</span><a href="https://${esc(e.website)}" target="_blank">${esc(e.website)}</a></div>` : ""}
     </div>
     <textarea class="crm-card-notes" data-id="${e.id}" placeholder="Add notes…">${esc(e.notes || "")}</textarea>
+    ${badgesRow}
     <div class="crm-card-footer">
       <select class="crm-status-select" data-id="${e.id}">
         <option value="found"     ${e.status === "found"     ? "selected" : ""}>🔵 Found</option>
@@ -162,7 +193,11 @@ function cardHTML(e) {
       </select>
       <button class="crm-delete-btn" data-id="${e.id}" title="Remove">✕</button>
     </div>
-    <button class="crm-outreach-btn" data-id="${e.id}">✨ Generate Outreach</button>
+    <div class="crm-action-bar">
+      <button class="crm-action-btn crm-call-btn"     data-id="${e.id}">📞 Log Call</button>
+      <button class="crm-action-btn crm-reminder-btn" data-id="${e.id}">⏰ Remind me</button>
+      <button class="crm-action-btn crm-outreach-btn" data-id="${e.id}">✨ Outreach</button>
+    </div>
   </div>`;
 }
 
@@ -186,6 +221,20 @@ function bindColEvents(col) {
     btn.addEventListener("click", () => {
       const lead = entries.find(e => e.id === btn.dataset.id);
       if (lead) openOutreachModal(lead);
+    });
+  });
+
+  col.querySelectorAll(".crm-call-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const lead = entries.find(e => e.id === btn.dataset.id);
+      if (lead) toggleCallPanel(btn, lead);
+    });
+  });
+
+  col.querySelectorAll(".crm-reminder-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const lead = entries.find(e => e.id === btn.dataset.id);
+      if (lead) toggleReminderPanel(btn, lead);
     });
   });
 }
@@ -648,6 +697,146 @@ function openEmailSendForm(btn, msg) {
       confirmBtn.disabled = false; confirmBtn.textContent = "✉ Send now";
     }
   });
+}
+
+/* ── Call log panel ─────────────────────────────────────── */
+function toggleCallPanel(btn, lead) {
+  const card = btn.closest(".crm-card");
+  const existing = card.querySelector(".crm-call-panel");
+  if (existing) { existing.remove(); btn.classList.remove("active"); return; }
+  closeAllPanels(card);
+  btn.classList.add("active");
+
+  const panel = document.createElement("div");
+  panel.className = "crm-call-panel";
+  panel.innerHTML = `
+    <div class="crm-panel-label">What happened?</div>
+    <div class="crm-outcome-btns">
+      <button class="crm-outcome-btn" data-outcome="answered">✅ Answered</button>
+      <button class="crm-outcome-btn" data-outcome="no_answer">📵 No Answer</button>
+      <button class="crm-outcome-btn" data-outcome="voicemail">📱 Voicemail</button>
+      <button class="crm-outcome-btn" data-outcome="callback">🔁 Callback</button>
+    </div>
+    <input type="text" class="crm-panel-input" placeholder="Notes (optional)" maxlength="300">
+    <div class="crm-panel-footer">
+      <button class="crm-panel-save" disabled>Save</button>
+      <button class="crm-panel-cancel">Cancel</button>
+    </div>
+    <div class="crm-panel-err"></div>`;
+
+  card.appendChild(panel);
+
+  let selectedOutcome = null;
+  const saveBtn = panel.querySelector(".crm-panel-save");
+
+  panel.querySelectorAll(".crm-outcome-btn").forEach(ob => {
+    ob.addEventListener("click", () => {
+      panel.querySelectorAll(".crm-outcome-btn").forEach(x => x.classList.remove("selected"));
+      ob.classList.add("selected");
+      selectedOutcome = ob.dataset.outcome;
+      saveBtn.disabled = false;
+    });
+  });
+
+  panel.querySelector(".crm-panel-cancel").addEventListener("click", () => {
+    panel.remove(); btn.classList.remove("active");
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    if (!selectedOutcome) return;
+    const notes = panel.querySelector(".crm-panel-input").value.trim();
+    saveBtn.disabled = true; saveBtn.textContent = "Saving…";
+    try {
+      const res  = await fetch(`/api/crm/${lead.id}/call`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ outcome: selectedOutcome, notes }),
+      });
+      const data = await res.json();
+      if (!res.ok) { panel.querySelector(".crm-panel-err").textContent = data.error || "Failed."; saveBtn.disabled = false; saveBtn.textContent = "Save"; return; }
+      // Update local entry
+      const idx = entries.findIndex(e => e.id === lead.id);
+      if (idx !== -1) entries[idx].callLog = data.callLog;
+      panel.remove(); btn.classList.remove("active");
+      render();
+      showToast("Call logged ✓");
+    } catch { panel.querySelector(".crm-panel-err").textContent = "Network error."; saveBtn.disabled = false; saveBtn.textContent = "Save"; }
+  });
+}
+
+/* ── Reminder panel ──────────────────────────────────────── */
+function toggleReminderPanel(btn, lead) {
+  const card = btn.closest(".crm-card");
+  const existing = card.querySelector(".crm-reminder-panel");
+  if (existing) { existing.remove(); btn.classList.remove("active"); return; }
+  closeAllPanels(card);
+  btn.classList.add("active");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const existing_date = lead.reminder?.date || "";
+  const existing_note = lead.reminder?.note || "";
+
+  const panel = document.createElement("div");
+  panel.className = "crm-reminder-panel";
+  panel.innerHTML = `
+    <div class="crm-panel-label">Follow-up reminder</div>
+    <div class="crm-panel-row">
+      <input type="date" class="crm-panel-date" value="${esc(existing_date)}" min="${today}">
+      <input type="text" class="crm-panel-input" placeholder="Note (optional)" value="${esc(existing_note)}" maxlength="200">
+    </div>
+    <div class="crm-panel-footer">
+      <button class="crm-panel-save">Set Reminder</button>
+      <button class="crm-panel-cancel">Cancel</button>
+      ${existing_date ? '<button class="crm-panel-clear">Clear</button>' : ""}
+    </div>
+    <div class="crm-panel-err"></div>`;
+
+  card.appendChild(panel);
+
+  const dateInput = panel.querySelector(".crm-panel-date");
+  const noteInput = panel.querySelector(".crm-panel-input");
+  const saveBtn   = panel.querySelector(".crm-panel-save");
+  const errEl     = panel.querySelector(".crm-panel-err");
+
+  panel.querySelector(".crm-panel-cancel").addEventListener("click", () => {
+    panel.remove(); btn.classList.remove("active");
+  });
+
+  const clearBtn = panel.querySelector(".crm-panel-clear");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", async () => {
+      clearBtn.disabled = true; clearBtn.textContent = "Clearing…";
+      await saveReminder(lead, null, panel, btn);
+    });
+  }
+
+  saveBtn.addEventListener("click", async () => {
+    const date = dateInput.value;
+    if (!date) { errEl.textContent = "Pick a date."; return; }
+    saveBtn.disabled = true; saveBtn.textContent = "Saving…";
+    await saveReminder(lead, { date, note: noteInput.value.trim() }, panel, btn);
+  });
+}
+
+async function saveReminder(lead, reminder, panel, btn) {
+  const errEl = panel.querySelector(".crm-panel-err");
+  try {
+    const res  = await fetch(`/api/crm/${lead.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reminder }),
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error || "Failed."; return; }
+    const idx = entries.findIndex(e => e.id === lead.id);
+    if (idx !== -1) entries[idx].reminder = data.entry.reminder;
+    panel.remove(); btn.classList.remove("active");
+    render();
+    showToast(reminder ? "Reminder set ✓" : "Reminder cleared");
+  } catch { errEl.textContent = "Network error."; }
+}
+
+function closeAllPanels(card) {
+  card.querySelectorAll(".crm-call-panel, .crm-reminder-panel").forEach(p => p.remove());
+  card.querySelectorAll(".crm-call-btn, .crm-reminder-btn").forEach(b => b.classList.remove("active"));
 }
 
 /* ── Auth notice ─────────────────────────────────────── */
