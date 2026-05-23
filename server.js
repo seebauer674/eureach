@@ -453,10 +453,10 @@ async function handleUpdateProfile(req, res) {
 
   if (firstName  !== undefined) users[idx].firstName  = firstName.trim();
   if (lastName   !== undefined) users[idx].lastName   = lastName.trim();
-  if (body.replyEmail !== undefined) {
-    const re = sanitizeEmail(body.replyEmail || "");
-    users[idx].replyEmail = re || null;
-  }
+  if (body.replyEmail     !== undefined) users[idx].replyEmail     = sanitizeEmail(body.replyEmail || "") || null;
+  if (body.telegramHandle !== undefined) users[idx].telegramHandle = sanitizeString(body.telegramHandle || "", 100).replace(/^@/, "") || null;
+  if (body.whatsappPhone  !== undefined) users[idx].whatsappPhone  = sanitizeString(body.whatsappPhone  || "", 30).replace(/[^\d+\s\-()\.]/g, "") || null;
+  if (body.viberPhone     !== undefined) users[idx].viberPhone     = sanitizeString(body.viberPhone     || "", 30).replace(/[^\d+\s\-()\.]/g, "") || null;
 
   if (newPassword) {
     if (!currentPassword) return json(res, 400, { error: "Current password is required to set a new one." });

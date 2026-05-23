@@ -6,6 +6,112 @@
   <title>My Profile — eureach.eu</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/profile.css">
+  <style>
+/* ── Settings grid ─────────────────────────────────────── */
+.prf-settings-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 20px;
+}
+.prf-set-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.prf-set-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.prf-set-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.prf-set-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.prf-set-icon.email    { background: rgba(37,99,235,.15); }
+.prf-set-icon.personal { background: rgba(124,58,237,.15); }
+.prf-set-icon.telegram { background: rgba(3,169,244,.15); }
+.prf-set-icon.whatsapp { background: rgba(37,211,102,.15); }
+.prf-set-icon.viber    { background: rgba(130,80,255,.15); }
+.prf-set-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.prf-set-badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.prf-set-badge.set    { background: rgba(74,222,128,.12); color: #4ade80; border: 1px solid rgba(74,222,128,.25); }
+.prf-set-badge.notset { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.prf-set-desc {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+.prf-set-fields { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.prf-set-field  { display: flex; flex-direction: column; gap: 4px; }
+.prf-set-field label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+}
+.prf-set-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.88rem;
+  padding: 9px 12px;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.prf-set-input:focus { outline: none; border-color: var(--blue); }
+.prf-set-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+.prf-set-msg { font-size: 0.8rem; margin-right: auto; }
+.prf-set-save {
+  background: var(--blue);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 18px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity .15s;
+}
+.prf-set-save:hover    { opacity: .85; }
+.prf-set-save:disabled { opacity: .4; cursor: not-allowed; }
+</style>
 </head>
 <body class="profile-body">
 
@@ -72,16 +178,14 @@
     </div>
   </div>
 
-  <!-- Monthly usage progress bars -->
+  <!-- Monthly usage -->
   <div class="prf-section">
     <div class="prf-section-title">Monthly Usage</div>
-    <div class="prf-usage-grid" id="prf-usage-grid">
-      <!-- filled by JS -->
-    </div>
+    <div class="prf-usage-grid" id="prf-usage-grid"></div>
     <div class="prf-reset-note" id="prf-reset-note"></div>
   </div>
 
-  <!-- Credit transaction log -->
+  <!-- Credit history -->
   <div class="prf-section">
     <div class="prf-section-header">
       <div class="prf-section-title">Credit History</div>
@@ -89,197 +193,248 @@
     </div>
     <div class="prf-table-wrap">
       <table class="prf-table">
-        <thead>
-          <tr>
-            <th>Date & Time</th>
-            <th>Action</th>
-            <th>Amount</th>
-            <th>Balance After</th>
-          </tr>
-        </thead>
-        <tbody id="prf-log-tbody">
-          <tr><td colspan="4" class="prf-empty">Loading…</td></tr>
-        </tbody>
+        <thead><tr><th>Date & Time</th><th>Action</th><th>Amount</th><th>Balance After</th></tr></thead>
+        <tbody id="prf-log-tbody"><tr><td colspan="4" class="prf-empty">Loading…</td></tr></tbody>
       </table>
     </div>
   </div>
 
-</div>
+  <!-- ── Channel Settings ───────────────────────────────── -->
+  <div class="prf-section">
+    <div class="prf-settings-title">Channel Settings</div>
+    <div class="prf-set-grid">
 
-  <!-- Email Settings -->
-  <div class="prf-section" id="prf-email-section">
-    <div class="prf-section-title">📧 Email Settings</div>
-    <p class="prf-section-desc">Set the reply-to address that recipients see when they reply to your outreach emails.</p>
-    <div class="prf-field-row">
-      <label class="prf-field-label" for="prf-reply-email">Reply-To Email</label>
-      <input class="prf-field-input" id="prf-reply-email" type="email" placeholder="your@business.com">
-    </div>
-    <div class="prf-field-row">
-      <label class="prf-field-label" for="prf-first-name">First Name</label>
-      <input class="prf-field-input" id="prf-first-name" type="text" placeholder="First name">
-    </div>
-    <div class="prf-field-row">
-      <label class="prf-field-label" for="prf-last-name">Last Name</label>
-      <input class="prf-field-input" id="prf-last-name" type="text" placeholder="Last name">
-    </div>
-    <div class="prf-save-row">
-      <div class="prf-save-msg" id="prf-save-msg"></div>
-      <button class="btn btn-primary" id="prf-save-btn" style="font-size:0.85rem;padding:9px 22px">Save Changes</button>
-    </div>
+      <!-- Personal Info -->
+      <div class="prf-set-card">
+        <div class="prf-set-card-head">
+          <div class="prf-set-icon personal">👤</div>
+          <div class="prf-set-name">Personal Info</div>
+          <span class="prf-set-badge notset" id="badge-personal">Not set</span>
+        </div>
+        <div class="prf-set-desc">Your display name used in emails and the platform.</div>
+        <div class="prf-set-fields">
+          <div class="prf-set-field"><label>First Name</label><input class="prf-set-input" id="set-first" type="text" placeholder="First name"></div>
+          <div class="prf-set-field"><label>Last Name</label><input class="prf-set-input" id="set-last" type="text" placeholder="Last name"></div>
+        </div>
+        <div class="prf-set-footer">
+          <span class="prf-set-msg" id="msg-personal"></span>
+          <button class="prf-set-save" data-section="personal">Save</button>
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="prf-set-card">
+        <div class="prf-set-card-head">
+          <div class="prf-set-icon email">📧</div>
+          <div class="prf-set-name">Email</div>
+          <span class="prf-set-badge notset" id="badge-email">Not set</span>
+        </div>
+        <div class="prf-set-desc">Reply-to address shown to recipients. When they reply to your outreach, it lands here.</div>
+        <div class="prf-set-fields">
+          <div class="prf-set-field"><label>Reply-To Email</label><input class="prf-set-input" id="set-reply-email" type="email" placeholder="you@yourbusiness.com"></div>
+          <div class="prf-set-field"><label>Login Email (read-only)</label><input class="prf-set-input" id="set-login-email" type="email" disabled style="opacity:.5"></div>
+        </div>
+        <div class="prf-set-footer">
+          <span class="prf-set-msg" id="msg-email"></span>
+          <button class="prf-set-save" data-section="email">Save</button>
+        </div>
+      </div>
+
+      <!-- Telegram -->
+      <div class="prf-set-card">
+        <div class="prf-set-card-head">
+          <div class="prf-set-icon telegram">✈️</div>
+          <div class="prf-set-name">Telegram</div>
+          <span class="prf-set-badge notset" id="badge-telegram">Not set</span>
+        </div>
+        <div class="prf-set-desc">Your Telegram username. Used to open Telegram chats with leads directly from the CRM.</div>
+        <div class="prf-set-fields">
+          <div class="prf-set-field"><label>Username</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="color:var(--muted);font-size:.9rem;flex-shrink:0">@</span>
+              <input class="prf-set-input" id="set-telegram" type="text" placeholder="yourusername" style="flex:1">
+            </div>
+          </div>
+        </div>
+        <div class="prf-set-footer">
+          <span class="prf-set-msg" id="msg-telegram"></span>
+          <button class="prf-set-save" data-section="telegram">Save</button>
+        </div>
+      </div>
+
+      <!-- WhatsApp -->
+      <div class="prf-set-card">
+        <div class="prf-set-card-head">
+          <div class="prf-set-icon whatsapp">💬</div>
+          <div class="prf-set-name">WhatsApp</div>
+          <span class="prf-set-badge notset" id="badge-whatsapp">Not set</span>
+        </div>
+        <div class="prf-set-desc">Your WhatsApp phone number. CRM will open WhatsApp chats with leads using their number.</div>
+        <div class="prf-set-fields">
+          <div class="prf-set-field"><label>Phone Number</label><input class="prf-set-input" id="set-whatsapp" type="tel" placeholder="+30 697 000 0000"></div>
+        </div>
+        <div class="prf-set-footer">
+          <span class="prf-set-msg" id="msg-whatsapp"></span>
+          <button class="prf-set-save" data-section="whatsapp">Save</button>
+        </div>
+      </div>
+
+      <!-- Viber -->
+      <div class="prf-set-card">
+        <div class="prf-set-card-head">
+          <div class="prf-set-icon viber">💜</div>
+          <div class="prf-set-name">Viber</div>
+          <span class="prf-set-badge notset" id="badge-viber">Not set</span>
+        </div>
+        <div class="prf-set-desc">Your Viber number. CRM will open Viber chats with leads using their number.</div>
+        <div class="prf-set-fields">
+          <div class="prf-set-field"><label>Phone Number</label><input class="prf-set-input" id="set-viber" type="tel" placeholder="+30 697 000 0000"></div>
+        </div>
+        <div class="prf-set-footer">
+          <span class="prf-set-msg" id="msg-viber"></span>
+          <button class="prf-set-save" data-section="viber">Save</button>
+        </div>
+      </div>
+
+    </div><!-- /prf-set-grid -->
   </div>
+
+</div><!-- /prf-page -->
 
 <script>
 (async () => {
-  // Auth check
   const meRes = await fetch('/api/auth/me').then(r => r.json()).catch(() => ({}));
   if (!meRes.user) { window.location.href = '/signin.html'; return; }
   const me = meRes.user;
 
-  // Check if admin viewing another user's profile
-  const params = new URLSearchParams(window.location.search);
+  const params     = new URLSearchParams(window.location.search);
   const viewingUid = params.get('uid');
   const isAdminView = viewingUid && me.role === 'admin';
-
-  // Fill user header from /api/auth/me (own profile) or admin-fetched user
   let displayUser = me;
   if (isAdminView) {
     const adminData = await fetch('/api/admin/users').then(r => r.json()).catch(() => ({}));
     displayUser = (adminData.users || []).find(u => u.id === viewingUid) || me;
   }
 
-  // Avatar initials
   const initials = ((displayUser.firstName?.[0] || '') + (displayUser.lastName?.[0] || displayUser.email[0])).toUpperCase();
   document.getElementById('prf-avatar').textContent = initials;
   document.getElementById('prf-name').textContent   = [displayUser.firstName, displayUser.lastName].filter(Boolean).join(' ') || displayUser.email;
   document.getElementById('prf-email').textContent  = displayUser.email;
 
   const PLAN_LABELS = { free:'Free', free_solo:'Free Solo', pro_solo:'Pro Solo', starter:'Starter', pro:'Pro', agency:'Agency' };
-  const planEl = document.getElementById('prf-plan');
-  planEl.textContent = PLAN_LABELS[displayUser.plan] || displayUser.plan;
+  document.getElementById('prf-plan').textContent = PLAN_LABELS[displayUser.plan] || displayUser.plan;
+  if (displayUser.role === 'admin') document.getElementById('prf-role').style.display = 'inline-block';
 
-  if (displayUser.role === 'admin') {
-    document.getElementById('prf-role').style.display = 'inline-block';
-  }
+  const profileRes = await fetch('/api/profile').then(r => r.json()).catch(() => ({}));
+  let stats = profileRes.stats || {};
+  let month = profileRes.month || {};
+  let log   = profileRes.creditLog || [];
 
-  // Fetch profile data — if admin viewing, use a workaround via admin endpoint
-  let profileUrl = '/api/profile';
-  const profileRes = await fetch(profileUrl).then(r => r.json()).catch(() => ({}));
-
-  // If admin viewing another user, also fetch that user's stats from admin users list
-  let stats   = profileRes.stats   || {};
-  let month   = profileRes.month   || {};
-  let log     = profileRes.creditLog || [];
-
-  // If admin viewing another user's profile, override stats from user object
   if (isAdminView) {
     const u = displayUser;
-    stats = {
-      credits:      u.credits      ?? 0,
-      searchesDone: u.searchesDone ?? 0,
-      leadsFound:   u.leadsFound   ?? 0,
-      creditsUsed:  u.creditsUsed  ?? 0,
-    };
-    // Credit log will be empty for admin view of other user (no API for that yet)
+    stats = { credits: u.credits??0, searchesDone: u.searchesDone??0, leadsFound: u.leadsFound??0, creditsUsed: u.creditsUsed??0 };
     log = [];
   }
 
-  // Fill stat cards
   const credVal = stats.credits ?? 0;
   const credEl  = document.getElementById('st-credits');
   credEl.textContent = credVal;
   credEl.style.color = credVal === 0 ? '#ef4444' : credVal < 10 ? '#f59e0b' : '#4ade80';
+  document.getElementById('st-searches').textContent      = fmt(month.leads,    month.leadsMax);
+  document.getElementById('st-articles').textContent      = fmt(month.articles, month.articlesMax);
+  document.getElementById('st-audits').textContent        = fmt(month.audits,   month.auditsMax);
+  document.getElementById('st-leads-found').textContent   = (stats.leadsFound   || 0).toLocaleString();
+  document.getElementById('st-searches-done').textContent = (stats.searchesDone || 0).toLocaleString();
 
-  document.getElementById('st-searches').textContent     = formatUsage(month.leads,    month.leadsMax);
-  document.getElementById('st-articles').textContent     = formatUsage(month.articles, month.articlesMax);
-  document.getElementById('st-audits').textContent       = formatUsage(month.audits,   month.auditsMax);
-  document.getElementById('st-leads-found').textContent  = (stats.leadsFound   || 0).toLocaleString();
-  document.getElementById('st-searches-done').textContent= (stats.searchesDone || 0).toLocaleString();
-
-  // Monthly usage bars
   const usageItems = [
-    { label: 'Lead Searches', used: month.leads    || 0, max: month.leadsMax,    icon: '🔍', color: '#2563eb' },
-    { label: 'Articles',      used: month.articles || 0, max: month.articlesMax, icon: '✍️', color: '#7c3aed' },
-    { label: 'AI Audits',     used: month.audits   || 0, max: month.auditsMax,   icon: '🤖', color: '#0891b2' },
+    { label:'Lead Searches', used:month.leads||0,    max:month.leadsMax,    icon:'🔍', color:'#2563eb' },
+    { label:'Articles',      used:month.articles||0, max:month.articlesMax, icon:'✍️', color:'#7c3aed' },
+    { label:'AI Audits',     used:month.audits||0,   max:month.auditsMax,   icon:'🤖', color:'#0891b2' },
   ];
-  const grid = document.getElementById('prf-usage-grid');
-  grid.innerHTML = usageItems.map(item => {
-    const isUnlimited = item.max === -1;
-    const pct = isUnlimited ? 0 : (item.max === 0 ? 100 : Math.min(100, Math.round((item.used / item.max) * 100)));
+  document.getElementById('prf-usage-grid').innerHTML = usageItems.map(item => {
+    const unlimited = item.max === -1;
+    const pct = unlimited ? 0 : (item.max === 0 ? 100 : Math.min(100, Math.round(item.used / item.max * 100)));
     const barColor = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : item.color;
     return `<div class="prf-usage-item">
-      <div class="prf-usage-top">
-        <span>${item.icon} ${item.label}</span>
-        <span class="prf-usage-nums">${item.used}${isUnlimited ? '' : ' / ' + (item.max === 0 ? '0 (locked)' : item.max)}</span>
-      </div>
-      <div class="prf-bar-track">
-        <div class="prf-bar-fill" style="width:${isUnlimited ? 0 : pct}%;background:${barColor}"></div>
-      </div>
-      ${isUnlimited ? '<div class="prf-unlimited">Unlimited</div>' : ''}
+      <div class="prf-usage-top"><span>${item.icon} ${item.label}</span><span class="prf-usage-nums">${item.used}${unlimited ? '' : ' / ' + (item.max === 0 ? '0 (locked)' : item.max)}</span></div>
+      <div class="prf-bar-track"><div class="prf-bar-fill" style="width:${unlimited?0:pct}%;background:${barColor}"></div></div>
+      ${unlimited ? '<div class="prf-unlimited">Unlimited</div>' : ''}
     </div>`;
   }).join('');
+  if (month.resetDate) document.getElementById('prf-reset-note').textContent = `Usage resets on ${month.resetDate}`;
 
-  if (month.resetDate) {
-    document.getElementById('prf-reset-note').textContent = `Usage resets on ${month.resetDate}`;
-  }
-
-  // Credit log table
   const tbody = document.getElementById('prf-log-tbody');
   document.getElementById('prf-log-count').textContent = log.length ? `Last ${log.length} transactions` : '';
+  tbody.innerHTML = !log.length
+    ? '<tr><td colspan="4" class="prf-empty">No credit transactions yet.</td></tr>'
+    : log.map(e => {
+        const sign = e.delta < 0 ? '' : '+';
+        const color = e.delta < 0 ? '#f87171' : '#4ade80';
+        const dt = new Date(e.createdAt);
+        return `<tr>
+          <td><span class="prf-date">${dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})}</span> <span class="prf-time">${dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span></td>
+          <td>${e.reason || '—'}</td>
+          <td style="font-weight:700;color:${color}">${sign}${e.delta}</td>
+          <td class="prf-balance">${e.balance}</td>
+        </tr>`;
+      }).join('');
 
-  if (!log.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="prf-empty">No credit transactions yet.</td></tr>';
-  } else {
-    tbody.innerHTML = log.map(entry => {
-      const isCharge = entry.delta < 0;
-      const sign     = isCharge ? '' : '+';
-      const color    = isCharge ? '#f87171' : '#4ade80';
-      const dt       = new Date(entry.createdAt);
-      const dateStr  = dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
-      const timeStr  = dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
-      return `<tr>
-        <td><span class="prf-date">${dateStr}</span> <span class="prf-time">${timeStr}</span></td>
-        <td>${entry.reason || '—'}</td>
-        <td style="font-weight:700;color:${color}">${sign}${entry.delta}</td>
-        <td class="prf-balance">${entry.balance}</td>
-      </tr>`;
-    }).join('');
-  }
-
-  function formatUsage(used, max) {
+  function fmt(used, max) {
     if (max === -1) return (used || 0) + ' / ∞';
     if (max === 0)  return 'Locked';
-    return `${used || 0} / ${max}`;
+    return `${used||0} / ${max}`;
   }
 
-  // ── Email Settings section ──
-  document.getElementById('prf-reply-email').value = me.replyEmail || '';
-  document.getElementById('prf-first-name').value  = me.firstName  || '';
-  document.getElementById('prf-last-name').value   = me.lastName   || '';
+  // ── Channel Settings ──────────────────────────────────────────────────────
+  function setBadge(id, value) {
+    const el = document.getElementById('badge-' + id);
+    if (!el) return;
+    if (value) { el.textContent = '✓ Set'; el.className = 'prf-set-badge set'; }
+    else       { el.textContent = 'Not set'; el.className = 'prf-set-badge notset'; }
+  }
 
-  document.getElementById('prf-save-btn').addEventListener('click', async () => {
-    const btn  = document.getElementById('prf-save-btn');
-    const msg  = document.getElementById('prf-save-msg');
-    btn.disabled = true; btn.textContent = 'Saving…';
-    msg.textContent = '';
-    const res = await fetch('/api/auth/profile', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        replyEmail: document.getElementById('prf-reply-email').value.trim(),
-        firstName:  document.getElementById('prf-first-name').value.trim(),
-        lastName:   document.getElementById('prf-last-name').value.trim(),
-      }),
+  // Pre-fill fields
+  document.getElementById('set-first').value        = me.firstName       || '';
+  document.getElementById('set-last').value         = me.lastName        || '';
+  document.getElementById('set-reply-email').value  = me.replyEmail      || '';
+  document.getElementById('set-login-email').value  = me.email           || '';
+  document.getElementById('set-telegram').value     = me.telegramHandle  || '';
+  document.getElementById('set-whatsapp').value     = me.whatsappPhone   || '';
+  document.getElementById('set-viber').value        = me.viberPhone      || '';
+
+  setBadge('personal', me.firstName || me.lastName);
+  setBadge('email',    me.replyEmail);
+  setBadge('telegram', me.telegramHandle);
+  setBadge('whatsapp', me.whatsappPhone);
+  setBadge('viber',    me.viberPhone);
+
+  // Save handlers
+  const payloadMap = {
+    personal: () => ({ firstName: document.getElementById('set-first').value.trim(), lastName: document.getElementById('set-last').value.trim() }),
+    email:    () => ({ replyEmail: document.getElementById('set-reply-email').value.trim() }),
+    telegram: () => ({ telegramHandle: document.getElementById('set-telegram').value.trim() }),
+    whatsapp: () => ({ whatsappPhone:  document.getElementById('set-whatsapp').value.trim() }),
+    viber:    () => ({ viberPhone:     document.getElementById('set-viber').value.trim() }),
+  };
+
+  document.querySelectorAll('.prf-set-save').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const section = btn.dataset.section;
+      const msg = document.getElementById('msg-' + section);
+      btn.disabled = true; btn.textContent = 'Saving…';
+      msg.textContent = '';
+      const res  = await fetch('/api/auth/profile', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payloadMap[section]()) });
+      const data = await res.json();
+      btn.disabled = false; btn.textContent = 'Save';
+      if (res.ok) {
+        msg.style.color = '#4ade80'; msg.textContent = '✓ Saved';
+        const val = Object.values(payloadMap[section]()).find(Boolean);
+        setBadge(section, val);
+        setTimeout(() => msg.textContent = '', 3000);
+      } else {
+        msg.style.color = '#f87171'; msg.textContent = data.error || 'Save failed.';
+      }
     });
-    const data = await res.json();
-    btn.disabled = false; btn.textContent = 'Save Changes';
-    if (res.ok) {
-      msg.style.color = '#4ade80';
-      msg.textContent = '✓ Saved';
-      setTimeout(() => msg.textContent = '', 3000);
-    } else {
-      msg.style.color = '#f87171';
-      msg.textContent = data.error || 'Save failed.';
-    }
   });
 })();
 </script>
