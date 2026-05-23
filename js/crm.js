@@ -309,24 +309,47 @@ function ldTogglePanel(type) {
   document.getElementById(btnMap[type]).classList.add('active');
 
   if (type === 'email') {
-    panel.innerHTML = `<div class="ld-panel">
-      <div class="ld-panel-title">✉ Send Email</div>
-      <div class="ld-panel-row"><label>To</label><input class="ld-panel-input" id="ldp-to" type="email" value="${esc(ldCurrentLead.email || '')}" placeholder="recipient@email.com"></div>
-      <div class="ld-panel-row"><label>Subject</label><input class="ld-panel-input" id="ldp-subj" placeholder="Email subject…"></div>
-      <div class="ld-panel-row">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <label>Body</label>
-          <button class="ld-tpl-btn" id="ldp-tpl-btn" type="button">📋 Insert Template</button>
+    // Check email config first, then render panel
+    (async () => {
+      let emailCfg = { configured: false };
+      try { const r = await fetch('/api/email/status'); emailCfg = await r.json(); } catch {}
+
+      panel.innerHTML = `<div class="ld-panel">
+        <div class="ld-panel-title">✉ Send Email</div>
+        ${emailCfg.configured
+          ? `<div class="ld-email-from">Sending from: <strong>${esc(emailCfg.from)}</strong> via ${emailCfg.method === 'gmail' ? 'Gmail' : 'SMTP'}</div>`
+          : `<div class="ld-email-warn">⚠ No email configured. <a href="settings.html#email">Set up email →</a></div>`
+        }
+        <div class="ld-panel-row"><label>To</label><input class="ld-panel-input" id="ldp-to" type="email" value="${esc(ldCurrentLead.email || '')}" placeholder="recipient@email.com"></div>
+        <div class="ld-panel-row"><label>Subject</label><input class="ld-panel-input" id="ldp-subj" placeholder="Email subject…"></div>
+        <div class="ld-panel-row">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+            <label>Body</label>
+            <button class="ld-tpl-btn" id="ldp-tpl-btn" type="button">📋 Insert Template</button>
+          </div>
+          <div class="ld-tpl-dropdown" id="ldp-tpl-dropdown" style="display:none"></div>
+          <textarea class="ld-panel-ta" id="ldp-body" placeholder="Write your message…"></textarea>
         </div>
-        <div class="ld-tpl-dropdown" id="ldp-tpl-dropdown" style="display:none"></div>
-        <textarea class="ld-panel-ta" id="ldp-body" placeholder="Write your message…"></textarea>
-      </div>
-      <div class="ld-panel-err" id="ldp-err"></div>
-      <div class="ld-panel-footer">
-        <button class="crm-panel-cancel" onclick="ldTogglePanel('email')">Cancel</button>
-        <button class="crm-panel-save" id="ldp-send">✉ Send</button>
-      </div>
-    </div>`;
+        <div class="ld-panel-err" id="ldp-err"></div>
+        <div class="ld-panel-footer">
+          <button class="crm-panel-cancel" onclick="ldTogglePanel('email')">Cancel</button>
+          <button class="crm-panel-save" id="ldp-send" ${emailCfg.configured ? '' : 'disabled'}>✉ Send</button>
+        </div>
+      </div>`;
+
+      // Live validation — keep Send disabled until all fields filled
+      const sendBtn = document.getElementById('ldp-send');
+      function validateEmail() {
+        const ok = emailCfg.configured
+          && document.getElementById('ldp-to').value.trim().includes('@')
+          && document.getElementById('ldp-subj').value.trim().length > 0
+          && document.getElementById('ldp-body').value.trim().length > 0;
+        sendBtn.disabled = !ok;
+      }
+      ['ldp-to','ldp-subj','ldp-body'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', validateEmail);
+      });
+      validateEmail();
     // Template picker
     document.getElementById('ldp-tpl-btn').onclick = async () => {
       const dd = document.getElementById('ldp-tpl-dropdown');
@@ -381,6 +404,7 @@ function ldTogglePanel(type) {
         render();
       }
     };
+    })(); // end async IIFE
   }
 
   if (type === 'call') {

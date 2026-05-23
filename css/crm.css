@@ -1458,3 +1458,27 @@
   color: var(--muted);
   margin-top: 2px;
 }
+
+.ld-email-from {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: var(--bg);
+  border-radius: 7px;
+}
+.ld-email-from strong { color: var(--text); }
+.ld-email-warn {
+  font-size: 0.82rem;
+  color: #f87171;
+  background: rgba(248,113,113,.08);
+  border: 1px solid rgba(248,113,113,.25);
+  border-radius: 7px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+}
+.ld-email-warn a { color: #f87171; font-weight: 600; }
+.crm-panel-save:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

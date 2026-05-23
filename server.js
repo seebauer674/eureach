@@ -1816,6 +1816,17 @@ async function handleGmailStatus(req, res) {
 
 // ── Email / SMTP handlers ──────────────────────────────────────────────────────
 
+function handleEmailStatus(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const gmail = readJSON(GMAIL_FILE).find(c => c.userId === user.id);
+  const smtp  = readJSON(SMTP_FILE).find(c => c.userId === user.id);
+  if (gmail) return json(res, 200, { configured: true, method: "gmail", from: gmail.email || "" });
+  if (smtp)  return json(res, 200, { configured: true, method: "smtp",  from: smtp.from  || "" });
+  return json(res, 200, { configured: false });
+}
+
 async function handleSmtpStatus(req, res) {
   const cookies = parseCookies(req);
   const user = getSessionUser(cookies.session);
