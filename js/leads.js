@@ -834,7 +834,7 @@ function cardHTML(l, i) {
     <div class="lead-card-actions">
       <button class="lc-btn primary" data-action="save" data-id="${l.id}">💾 Save</button>
       <button class="lc-btn" data-action="crm" data-id="${l.id}">➕ CRM</button>
-      <button class="lc-btn lc-btn-pipeline" data-action="pipeline" data-id="${l.id}">🔁 Pipeline</button>
+
       ${l.website ? `<button class="lc-btn" data-action="open" data-url="${l.website}">↗</button>` : ""}
     </div>
   </div>`;
@@ -883,8 +883,6 @@ function bindCardActions() {
         addLeadToCrm(lead, btn, true);
       } else if (action === "crm") {
         addLeadToCrm(lead, btn, false);
-      } else if (action === "pipeline") {
-        addLeadToPipeline(lead, btn);
       } else if (action === "audit") {
         showToast("AI Audit — coming with Pro plan");
       } else if (action === "open" && url) {
@@ -936,41 +934,6 @@ async function addLeadToCrm(lead, btn, savedMode = false) {
   }
 }
 
-/* ── Add to Pipeline ────────────────────────────────── */
-async function addLeadToPipeline(lead, btn) {
-  const city = citySel.value;
-  const subLabel = subcatSel.options[subcatSel.selectedIndex]?.textContent?.replace(/^[^ ]+ /, "") || "";
-  btn.disabled = true;
-  btn.textContent = "…";
-  try {
-    const res = await fetch("/api/pipeline", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: lead.name, category: subLabel, city,
-        phone: lead.phone || "", website: lead.website || "",
-        email: lead.email || "", address: lead.address || "",
-        rating: lead.rating || 0, reviews: lead.reviews || 0,
-      }),
-    });
-    if (res.ok) {
-      btn.textContent = "✓ In Pipeline";
-      showToast(`${lead.name} added to Pipeline`);
-    } else if (res.status === 401) {
-      btn.disabled = false; btn.textContent = "🔁 Pipeline";
-      showToast("Sign in to use the Pipeline");
-    } else if (res.status === 409) {
-      btn.textContent = "✓ Already in";
-      showToast(`${lead.name} is already in your Pipeline`);
-    } else {
-      btn.disabled = false; btn.textContent = "🔁 Pipeline";
-      showToast("Failed to add to Pipeline");
-    }
-  } catch {
-    btn.disabled = false; btn.textContent = "🔁 Pipeline";
-    showToast("Failed to add to Pipeline");
-  }
-}
 
 /* ── View toggle ─────────────────────────────────────── */
 gridBtn.addEventListener("click", () => { viewMode = "grid"; gridBtn.classList.add("active"); listBtn.classList.remove("active"); if (results.length) renderResults(); });
