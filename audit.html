@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Visibility Audit — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/audit.css">
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html">Lead Finder</a>
+      <a href="articles.html">Articles</a>
+      <a href="crm.html">CRM</a>
+      <a href="competitors.html">Competitors</a>
+      <a href="audit.html" style="color:var(--white)">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── PAGE ─────────────────────────────────────────────── -->
+<div class="au-page">
+
+  <!-- ── Sidebar ─────────────────────────────────────── -->
+  <aside class="au-sidebar">
+    <div class="au-sidebar-title">AI Visibility Audit</div>
+
+    <!-- Limit banner (hidden by default) -->
+    <div class="au-limit-banner" id="au-limit-banner" style="display:none">
+      🔒 Free plan: 1 lifetime audit used.
+      <a href="membership.html">Upgrade for unlimited audits →</a>
+    </div>
+
+    <!-- Audit form -->
+    <form class="au-form" id="au-form" autocomplete="off">
+      <div class="au-field">
+        <label for="au-name">Business Name *</label>
+        <input class="au-input" type="text" id="au-name" name="businessName"
+          placeholder="e.g. Nikos Bakery Athens" required>
+      </div>
+      <div class="au-field">
+        <label for="au-url">Website URL <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <input class="au-input" type="text" id="au-url" name="businessUrl"
+          placeholder="e.g. nikosbakery.gr">
+      </div>
+      <div class="au-field">
+        <label for="au-industry">Industry <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+        <select class="au-input au-select" id="au-industry" name="industry">
+          <option value="">— Select industry —</option>
+          <option value="healthcare">Healthcare &amp; Medical</option>
+          <option value="hospitality">Hospitality &amp; Tourism</option>
+          <option value="legal">Legal Services</option>
+          <option value="real_estate">Real Estate</option>
+          <option value="professional_services">Professional Services</option>
+          <option value="retail">Retail &amp; E-commerce</option>
+          <option value="food_beverage">Food &amp; Beverage</option>
+          <option value="construction">Construction &amp; Trades</option>
+          <option value="education">Education &amp; Training</option>
+          <option value="fitness_wellness">Fitness &amp; Wellness</option>
+          <option value="technology">Technology</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="au-form-err" id="au-form-err"></div>
+      <button type="submit" class="au-run-btn" id="au-run-btn">Run Audit →</button>
+    </form>
+
+    <!-- History -->
+    <div class="au-history-title">Your Audits</div>
+    <div id="au-history-list"></div>
+  </aside>
+
+  <!-- ── Main ───────────────────────────────────────── -->
+  <main class="au-main" id="au-main">
+    <!-- populated by audit.js -->
+  </main>
+
+</div>
+
+<script src="js/audit.js"></script>
+<script src="/js/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Log — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/email.css">
+</head>
+<body>
+
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html">Lead Finder</a>
+      <a href="articles.html">Articles</a>
+      <a href="crm.html">CRM</a>
+      <a href="competitors.html">Competitors</a>
+      <a href="audit.html">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<div class="el-page">
+
+  <div class="el-header">
+    <div class="el-header-inner">
+      <div>
+        <div class="el-title">📬 Email Log</div>
+        <div class="el-subtitle">All outreach emails sent via eureach</div>
+      </div>
+      <a href="settings.html#email" class="btn btn-ghost" style="font-size:0.82rem;padding:8px 16px">⚙ SMTP Settings</a>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="el-stats" id="el-stats">
+    <div class="el-stat">
+      <span class="el-stat-val" id="stat-total">0</span>
+      <span class="el-stat-label">Total sent</span>
+    </div>
+    <div class="el-stat">
+      <span class="el-stat-val" id="stat-month">0</span>
+      <span class="el-stat-label">This month</span>
+    </div>
+    <div class="el-stat">
+      <span class="el-stat-val" id="stat-leads">0</span>
+      <span class="el-stat-label">Leads contacted</span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="el-filters">
+    <input class="el-search" id="el-search" type="text" placeholder="Search by subject or recipient…">
+    <select class="el-filter-select" id="el-step-filter">
+      <option value="">All steps</option>
+      <option value="1">Step 1 — Cold Intro</option>
+      <option value="2">Step 2 — Follow-up</option>
+      <option value="3">Step 3 — Final Touch</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="el-table-wrap" id="el-table-wrap">
+    <div class="el-loading">Loading email log…</div>
+  </div>
+
+</div>
+
+<script src="js/email.js"></script>
+<script src="/js/api.js"></script>
+</body>
+</html>

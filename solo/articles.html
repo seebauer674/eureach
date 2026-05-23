@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Άρθρα — eureach.eu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/solo.css">
+</head>
+<body>
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links"><a href="/solo" style="color:var(--muted);font-size:0.875rem">← Solo</a></div>
+    <div class="nav-cta" style="display:flex;gap:10px;align-items:center">
+      <div class="lang-toggle">
+        <button class="lang-btn" id="btn-el" onclick="setLang('el')">🇬🇷 ΕΛ</button>
+        <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="solo-layout">
+  <aside class="solo-sidebar">
+    <div class="solo-section-label">Solo</div>
+    <a href="/solo" class="solo-nav-item"><span class="solo-nav-icon">🏠</span><span data-el="Αρχική" data-en="Dashboard">Αρχική</span></a>
+    <a href="/solo/profile" class="solo-nav-item"><span class="solo-nav-icon">🏢</span><span data-el="Η Επιχείρησή μου" data-en="My Business">Η Επιχείρησή μου</span></a>
+    <a href="/solo/audit" class="solo-nav-item"><span class="solo-nav-icon">📊</span><span data-el="Έλεγχος Ορατότητας" data-en="Visibility Audit">Έλεγχος Ορατότητας</span></a>
+    <a href="/solo/checklist" class="solo-nav-item"><span class="solo-nav-icon">✅</span><span data-el="Μηνιαία Λίστα" data-en="Monthly Checklist">Μηνιαία Λίστα</span></a>
+    <a href="/solo/articles" class="solo-nav-item active"><span class="solo-nav-icon">✍️</span><span data-el="Άρθρα" data-en="Articles">Άρθρα</span></a>
+  </aside>
+
+  <main class="solo-main">
+    <h1 class="solo-page-title" data-el="Άρθρα Αυτοπροώθησης" data-en="Self-Promotion Articles">Άρθρα Αυτοπροώθησης</h1>
+    <p class="solo-page-sub" data-el="Δημιούργησε SEO άρθρα για την επιχείρησή σου — για να σε βρίσκουν οι πελάτες." data-en="Generate SEO articles about your business — so customers can find you.">Δημιούργησε SEO άρθρα για την επιχείρησή σου — για να σε βρίσκουν οι πελάτες.</p>
+
+    <!-- No profile -->
+    <div id="no-profile" style="display:none">
+      <div class="solo-card" style="text-align:center;padding:40px">
+        <p style="color:var(--muted);margin-bottom:16px" data-el="Συμπλήρωσε πρώτα το προφίλ σου." data-en="Fill in your profile first.">Συμπλήρωσε πρώτα το προφίλ σου.</p>
+        <a href="/solo/profile" class="btn btn-primary" data-el="Συμπλήρωσε το Προφίλ" data-en="Fill in Profile">Συμπλήρωσε το Προφίλ</a>
+      </div>
+    </div>
+
+    <div id="generator-wrap">
+      <!-- Article type selector -->
+      <div class="solo-card">
+        <h3 style="font-size:0.9rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px" data-el="Τύπος Άρθρου" data-en="Article Type">Τύπος Άρθρου</h3>
+        <div class="article-types" id="type-grid"></div>
+
+        <h3 style="font-size:0.9rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;margin-top:20px" data-el="Γλώσσα" data-en="Language">Γλώσσα</h3>
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem">
+            <input type="radio" name="lang-art" value="el" checked onchange="selectedLang='el'"> 🇬🇷 Ελληνικά
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.875rem">
+            <input type="radio" name="lang-art" value="en" onchange="selectedLang='en'"> 🇬🇧 English
+          </label>
+        </div>
+
+        <button class="btn btn-primary" id="gen-btn" onclick="generateArticle()" data-el="✍️ Δημιουργία Άρθρου" data-en="✍️ Generate Article">✍️ Δημιουργία Άρθρου</button>
+      </div>
+
+      <!-- Loading -->
+      <div id="gen-loading" style="display:none;text-align:center;padding:40px">
+        <div class="spinner" style="width:36px;height:36px;margin:0 auto 16px"></div>
+        <p style="color:var(--muted)" data-el="Γράφουμε το άρθρο σου..." data-en="Writing your article...">Γράφουμε το άρθρο σου...</p>
+      </div>
+
+      <!-- Article preview -->
+      <div id="article-result" style="display:none">
+        <div class="solo-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <h3 style="font-size:0.95rem;font-weight:700" data-el="Το Άρθρο σου" data-en="Your Article">Το Άρθρο σου</h3>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" onclick="copyArticle()" style="font-size:0.8rem;padding:6px 12px" data-el="📋 Αντιγραφή" data-en="📋 Copy">📋 Αντιγραφή</button>
+              <button class="btn btn-ghost" onclick="downloadArticle()" style="font-size:0.8rem;padding:6px 12px" data-el="⬇ Λήψη .txt" data-en="⬇ Download .txt">⬇ Λήψη .txt</button>
+            </div>
+          </div>
+          <div class="article-preview" id="article-text"></div>
+        </div>
+      </div>
+
+      <!-- Past articles -->
+      <div id="past-articles" style="display:none;margin-top:8px">
+        <h3 style="font-size:0.9rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px" data-el="Προηγούμενα Άρθρα" data-en="Past Articles">Προηγούμενα Άρθρα</h3>
+        <div class="history-list" id="past-list"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/js/api.js"></script>
+<script>
+let lang = localStorage.getItem("eureach_lang") || "el";
+let selectedType = null;
+let selectedLang = "el";
+let currentArticleText = "";
+let pastArticles = [];
+
+const articleTypes = [
+  { id: "why_hire_me",       emoji: "🤝", el: "Γιατί να με επιλέξετε",   en: "Why hire me",         descEl: "Χτίσε εμπιστοσύνη & τοπική αυθεντία", descEn: "Build trust & local authority" },
+  { id: "my_services",       emoji: "📋", el: "Οι Υπηρεσίες μου",        en: "My Services",          descEl: "Πλήρης οδηγός υπηρεσιών", descEn: "Complete services guide" },
+  { id: "emergency_available", emoji: "🚨", el: "24/7 Διαθέσιμος",      en: "24/7 Available",       descEl: "Για επείγουσες ανάγκες", descEn: "For emergency situations" },
+  { id: "local_expert",      emoji: "📍", el: "Τοπικός Εμπειρογνώμονας", en: "Local Expert",        descEl: "Τοπική γνώση που μετράει", descEn: "Local knowledge that matters" },
+  { id: "faq",               emoji: "❓", el: "Συχνές Ερωτήσεις",        en: "FAQ",                  descEl: "FAQ για ορατότητα σε AI", descEn: "FAQ for AI visibility" },
+];
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem("eureach_lang", l);
+  document.querySelectorAll("[data-el]").forEach(el => { el.textContent = el.getAttribute("data-" + l) || el.textContent; });
+  document.getElementById("btn-el").classList.toggle("active", l === "el");
+  document.getElementById("btn-en").classList.toggle("active", l === "en");
+  renderTypeGrid();
+  renderPastList();
+}
+
+function showToast(msg, type = "success") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => { t.className = "toast"; }, 3500);
+}
+
+function renderTypeGrid() {
+  document.getElementById("type-grid").innerHTML = articleTypes.map(at => `
+    <div class="article-type-card${selectedType === at.id ? " selected" : ""}" onclick="selectType('${at.id}')">
+      <div class="atc-emoji">${at.emoji}</div>
+      <div class="atc-name">${at[lang] || at.el}</div>
+      <div class="atc-desc">${lang === "el" ? at.descEl : at.descEn}</div>
+    </div>`).join("");
+}
+
+function selectType(id) {
+  selectedType = id;
+  renderTypeGrid();
+}
+
+function typeLabel(id) {
+  const t = articleTypes.find(a => a.id === id);
+  return t ? (t[lang] || t.el) : id;
+}
+
+function renderPastList() {
+  if (!pastArticles.length) return;
+  document.getElementById("past-articles").style.display = "block";
+  document.getElementById("past-list").innerHTML = pastArticles.map(a => `
+    <div class="history-item" onclick="loadPastArticle('${a.id}')">
+      <span style="font-size:1rem">${articleTypes.find(t=>t.id===a.articleType)?.emoji||"📄"}</span>
+      <div class="history-date">${typeLabel(a.articleType)} · ${a.language === "el" ? "ΕΛ" : "EN"} · ${a.wordCount} λέξεις</div>
+      <div style="font-size:0.75rem;color:var(--muted)">${new Date(a.createdAt).toLocaleDateString("el-GR")}</div>
+    </div>`).join("");
+}
+
+async function loadPastArticle(id) {
+  const r = await fetch(`/api/solo/articles/${id}`);
+  if (!r.ok) return;
+  const { data } = await r.json();
+  currentArticleText = data.text;
+  document.getElementById("article-text").textContent = data.text;
+  document.getElementById("article-result").style.display = "block";
+  document.getElementById("article-result").scrollIntoView({ behavior: "smooth" });
+}
+
+async function generateArticle() {
+  if (!selectedType) {
+    showToast(lang === "el" ? "Επίλεξε τύπο άρθρου πρώτα." : "Select an article type first.", "error");
+    return;
+  }
+  const btn = document.getElementById("gen-btn");
+  btn.disabled = true;
+  document.getElementById("gen-loading").style.display = "block";
+  document.getElementById("article-result").style.display = "none";
+
+  const r = await fetch("/api/solo/articles/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ articleType: selectedType, language: selectedLang })
+  });
+  btn.disabled = false;
+  document.getElementById("gen-loading").style.display = "none";
+
+  if (!r.ok) {
+    const { error } = await r.json().catch(() => ({}));
+    if (error === "limit_reached") showToast(lang === "el" ? "Έφτασες το μηνιαίο όριο άρθρων." : "Monthly article limit reached.", "error");
+    else showToast((lang === "el" ? "Σφάλμα: " : "Error: ") + (error || ""), "error");
+    return;
+  }
+
+  const { data } = await r.json();
+  currentArticleText = data.text;
+  document.getElementById("article-text").textContent = data.text;
+  document.getElementById("article-result").style.display = "block";
+  pastArticles.unshift({ id: data.id, articleType: data.articleType, language: data.language, wordCount: data.wordCount, createdAt: data.createdAt });
+  renderPastList();
+  showToast(lang === "el" ? "✓ Το άρθρο δημιουργήθηκε!" : "✓ Article generated!");
+}
+
+async function copyArticle() {
+  if (!currentArticleText) return;
+  await navigator.clipboard.writeText(currentArticleText).catch(() => {});
+  showToast(lang === "el" ? "✓ Αντιγράφηκε!" : "✓ Copied!");
+}
+
+function downloadArticle() {
+  if (!currentArticleText) return;
+  const blob = new Blob([currentArticleText], { type: "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `article-${Date.now()}.txt`;
+  a.click();
+}
+
+async function init() {
+  setLang(lang);
+  const pr = await fetch("/api/solo/profile");
+  if (pr.status === 401) { location.href = "/signin.html"; return; }
+  const { data: profile } = await pr.json();
+  if (!profile || !profile.businessName) {
+    document.getElementById("no-profile").style.display = "block";
+    document.getElementById("generator-wrap").style.display = "none";
+    return;
+  }
+  const ar = await fetch("/api/solo/articles");
+  const { data: articles } = await ar.json();
+  pastArticles = articles || [];
+  renderTypeGrid();
+  renderPastList();
+}
+
+init();
+</script>
+</body>
+</html>

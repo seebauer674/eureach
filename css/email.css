@@ -1,0 +1,89 @@
+/* ── Email Log Page ───────────────────────────────────── */
+.el-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 84px 24px 60px;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.el-header { margin-bottom: 24px; }
+.el-header-inner {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.el-title { font-size: 1.55rem; font-weight: 800; color: var(--white); }
+.el-subtitle { font-size: 0.88rem; color: var(--muted); margin-top: 4px; }
+
+/* ── Stats bar ───────────────────────────────────────── */
+.el-stats {
+  display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.el-stat {
+  flex: 1; min-width: 130px;
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.el-stat-val { font-size: 1.8rem; font-weight: 800; color: var(--white); }
+.el-stat-label { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── Filters ─────────────────────────────────────────── */
+.el-filters {
+  display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.el-search {
+  flex: 1; min-width: 220px;
+  background: var(--glass); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 9px 14px; font-size: 0.88rem; font-family: inherit;
+}
+.el-search::placeholder { color: var(--muted); }
+.el-search:focus { outline: none; border-color: var(--blue2); }
+.el-filter-select {
+  background: var(--glass); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 9px 12px; font-size: 0.85rem; font-family: inherit;
+  cursor: pointer;
+}
+.el-filter-select:focus { outline: none; border-color: var(--blue2); }
+
+/* ── Table ───────────────────────────────────────────── */
+.el-table-wrap {
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.el-table { width: 100%; border-collapse: collapse; }
+.el-th {
+  padding: 11px 16px; text-align: left; font-size: 0.73rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted);
+  border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);
+}
+.el-row { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+.el-row:last-child { border-bottom: none; }
+.el-row:hover { background: rgba(255,255,255,0.03); }
+.el-cell { padding: 13px 16px; font-size: 0.84rem; color: var(--text); vertical-align: middle; }
+.el-cell-to { color: var(--white); font-weight: 500; }
+.el-cell-subject { color: var(--muted); }
+.el-cell-date { white-space: nowrap; color: var(--muted); font-size: 0.78rem; }
+
+/* ── Badges ──────────────────────────────────────────── */
+.el-step-badge {
+  display: inline-block; padding: 3px 8px; border-radius: 5px;
+  font-size: 0.72rem; font-weight: 600;
+  background: rgba(37,99,235,0.12); color: var(--blue2); border: 1px solid rgba(37,99,235,0.2);
+}
+.el-step-none { background: var(--glass2); color: var(--muted); border-color: var(--border); }
+.el-status-badge { display: inline-block; padding: 3px 8px; border-radius: 5px; font-size: 0.72rem; font-weight: 600; }
+.el-sent { background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+
+/* ── Empty / loading states ──────────────────────────── */
+.el-loading { padding: 60px 24px; text-align: center; color: var(--muted); font-size: 0.9rem; }
+.el-empty { padding: 60px 24px; text-align: center; }
+.el-empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+.el-empty-title { font-size: 1rem; font-weight: 600; color: var(--white); margin-bottom: 8px; }
+.el-empty-sub { font-size: 0.85rem; color: var(--muted); max-width: 380px; margin: 0 auto; }
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 640px) {
+  .el-cell-subject { display: none; }
+  .el-th:nth-child(2) { display: none; }
+  .el-cell-date { font-size: 0.72rem; }
+}

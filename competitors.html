@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Competitor Tracker — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/competitors.css">
+</head>
+<body>
+
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html">Lead Finder</a>
+      <a href="articles.html">Articles</a>
+      <a href="crm.html">CRM</a>
+      <a href="competitors.html" style="color:var(--white)">Competitors</a>
+      <a href="audit.html">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<div class="ct-page">
+
+  <div class="ct-header">
+    <div class="ct-header-inner">
+      <div>
+        <div class="ct-title">🔍 Competitor Tracker</div>
+        <div class="ct-subtitle">Monitor competitor AI visibility scores and get alerted when they drop</div>
+      </div>
+      <button class="btn btn-primary" id="ct-add-btn" style="font-size:0.85rem;padding:9px 20px">+ Add Competitor</button>
+    </div>
+  </div>
+
+  <div class="ct-stats" id="ct-stats">
+    <div class="ct-stat">
+      <span class="ct-stat-val" id="stat-total">0</span>
+      <span class="ct-stat-label">Tracked</span>
+    </div>
+    <div class="ct-stat">
+      <span class="ct-stat-val" id="stat-avg">—</span>
+      <span class="ct-stat-label">Avg Score</span>
+    </div>
+    <div class="ct-stat ct-stat-alert">
+      <span class="ct-stat-val" id="stat-alerts">0</span>
+      <span class="ct-stat-label">Alerts</span>
+    </div>
+  </div>
+
+  <div class="ct-board" id="ct-board">
+    <div class="ct-empty" id="ct-empty">
+      <div class="ct-empty-icon">🔍</div>
+      <div class="ct-empty-title">No competitors tracked yet</div>
+      <div class="ct-empty-sub">Add a competitor to start monitoring their AI visibility score</div>
+      <button class="btn btn-primary" id="ct-empty-add-btn" style="margin-top:16px">+ Add Competitor</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Add Competitor Modal ──────────────────────────────── -->
+<div class="ct-overlay" id="ct-overlay"></div>
+<div class="ct-modal" id="ct-modal">
+  <div class="ct-modal-header">
+    <div class="ct-modal-title">Add Competitor</div>
+    <button class="ct-modal-close" id="ct-modal-close">✕</button>
+  </div>
+  <div class="ct-modal-body">
+    <div class="ct-field">
+      <label class="ct-label">Business Name *</label>
+      <input type="text" class="ct-input" id="m-name" placeholder="e.g. Acme GmbH">
+    </div>
+    <div class="ct-field">
+      <label class="ct-label">Website URL</label>
+      <input type="text" class="ct-input" id="m-url" placeholder="e.g. acme.de">
+    </div>
+    <div class="ct-field">
+      <label class="ct-label">Industry</label>
+      <select class="ct-input" id="m-industry">
+        <option value="">— Select industry —</option>
+        <option value="restaurant">Restaurant / Food</option>
+        <option value="hotel">Hotel / Hospitality</option>
+        <option value="retail">Retail / E-commerce</option>
+        <option value="healthcare">Healthcare / Medical</option>
+        <option value="legal">Legal / Law Firm</option>
+        <option value="real_estate">Real Estate</option>
+        <option value="finance">Finance / Accounting</option>
+        <option value="marketing">Marketing / Agency</option>
+        <option value="tech">Technology / Software</option>
+        <option value="construction">Construction / Trades</option>
+        <option value="beauty">Beauty / Wellness</option>
+        <option value="education">Education / Training</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="ct-modal-err" id="ct-modal-err"></div>
+    <div class="ct-modal-actions">
+      <button class="btn btn-ghost" id="ct-modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="ct-modal-save">Run Audit →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Report Modal ──────────────────────────────────────── -->
+<div class="ct-overlay" id="ct-report-overlay"></div>
+<div class="ct-modal ct-report-modal" id="ct-report-modal">
+  <div class="ct-modal-header">
+    <div class="ct-modal-title" id="ct-report-title">AI Visibility Report</div>
+    <button class="ct-modal-close" id="ct-report-close">✕</button>
+  </div>
+  <div id="ct-report-body"></div>
+  <div class="ct-modal-actions" style="padding:16px 24px 20px;border-top:1px solid var(--border)">
+    <button class="btn btn-ghost" id="ct-report-print">🖨 Print / Save PDF</button>
+    <button class="btn btn-primary" id="ct-report-done">Done</button>
+  </div>
+</div>
+
+<script src="js/competitors.js"></script>
+<script src="/js/api.js"></script>
+</body>
+</html>

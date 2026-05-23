@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Μηνιαία Λίστα — eureach.eu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/solo.css">
+</head>
+<body>
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links"><a href="/solo" style="color:var(--muted);font-size:0.875rem">← Solo</a></div>
+    <div class="nav-cta" style="display:flex;gap:10px;align-items:center">
+      <div class="lang-toggle">
+        <button class="lang-btn" id="btn-el" onclick="setLang('el')">🇬🇷 ΕΛ</button>
+        <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="solo-layout">
+  <aside class="solo-sidebar">
+    <div class="solo-section-label">Solo</div>
+    <a href="/solo" class="solo-nav-item"><span class="solo-nav-icon">🏠</span><span data-el="Αρχική" data-en="Dashboard">Αρχική</span></a>
+    <a href="/solo/profile" class="solo-nav-item"><span class="solo-nav-icon">🏢</span><span data-el="Η Επιχείρησή μου" data-en="My Business">Η Επιχείρησή μου</span></a>
+    <a href="/solo/audit" class="solo-nav-item"><span class="solo-nav-icon">📊</span><span data-el="Έλεγχος Ορατότητας" data-en="Visibility Audit">Έλεγχος Ορατότητας</span></a>
+    <a href="/solo/checklist" class="solo-nav-item active"><span class="solo-nav-icon">✅</span><span data-el="Μηνιαία Λίστα" data-en="Monthly Checklist">Μηνιαία Λίστα</span></a>
+    <a href="/solo/articles" class="solo-nav-item"><span class="solo-nav-icon">✍️</span><span data-el="Άρθρα" data-en="Articles">Άρθρα</span></a>
+  </aside>
+
+  <main class="solo-main">
+    <h1 class="solo-page-title" id="page-title">Μηνιαία Λίστα</h1>
+    <p class="solo-page-sub" data-el="6 ενέργειες για αυτόν τον μήνα — εύκολες, σύντομες, αποτελεσματικές." data-en="6 actions for this month — easy, quick, effective.">6 ενέργειες για αυτόν τον μήνα — εύκολες, σύντομες, αποτελεσματικές.</p>
+
+    <!-- Generating state -->
+    <div id="generating" style="display:none;text-align:center;padding:60px 0">
+      <div class="spinner" style="width:36px;height:36px;margin:0 auto 16px"></div>
+      <p style="color:var(--muted)" data-el="Δημιουργούμε τη λίστα σου..." data-en="Generating your checklist...">Δημιουργούμε τη λίστα σου...</p>
+    </div>
+
+    <!-- No profile -->
+    <div id="no-profile" style="display:none">
+      <div class="solo-card" style="text-align:center;padding:40px">
+        <p style="color:var(--muted);margin-bottom:16px" data-el="Συμπλήρωσε πρώτα το προφίλ σου." data-en="Fill in your profile first.">Συμπλήρωσε πρώτα το προφίλ σου.</p>
+        <a href="/solo/profile" class="btn btn-primary" data-el="Συμπλήρωσε το Προφίλ" data-en="Fill in Profile">Συμπλήρωσε το Προφίλ</a>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div id="checklist-wrap" style="display:none">
+      <div class="progress-wrap">
+        <div class="progress-label" id="progress-label"></div>
+        <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+      </div>
+      <div id="items-list"></div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/js/api.js"></script>
+<script>
+let lang = localStorage.getItem("eureach_lang") || "el";
+let checklistData = null;
+
+const monthNames = {
+  el: ["Ιανουάριος","Φεβρουάριος","Μάρτιος","Απρίλιος","Μάιος","Ιούνιος","Ιούλιος","Αύγουστος","Σεπτέμβριος","Οκτώβριος","Νοέμβριος","Δεκέμβριος"],
+  en: ["January","February","March","April","May","June","July","August","September","October","November","December"]
+};
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem("eureach_lang", l);
+  document.querySelectorAll("[data-el]").forEach(el => { el.textContent = el.getAttribute("data-" + l) || el.textContent; });
+  document.getElementById("btn-el").classList.toggle("active", l === "el");
+  document.getElementById("btn-en").classList.toggle("active", l === "en");
+  if (checklistData) renderChecklist(checklistData);
+}
+
+function showToast(msg, type = "success") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => { t.className = "toast"; }, 3000);
+}
+
+function catLabel(cat) {
+  const map = {
+    google:  { el: "Google", en: "Google" },
+    social:  { el: "Social Media", en: "Social Media" },
+    reviews: { el: "Αξιολογήσεις", en: "Reviews" },
+    content: { el: "Περιεχόμενο", en: "Content" },
+    local:   { el: "Τοπική Κοινότητα", en: "Local" },
+  };
+  return (map[cat] || { el: cat, en: cat })[lang];
+}
+
+function updateProgress(items) {
+  const done  = items.filter(i => i.done).length;
+  const total = items.length;
+  const pct   = total ? Math.round(done / total * 100) : 0;
+  document.getElementById("progress-fill").style.width = pct + "%";
+  document.getElementById("progress-label").textContent = lang === "el"
+    ? `${done} από ${total} ολοκληρώθηκαν`
+    : `${done} of ${total} completed`;
+}
+
+function renderChecklist(data) {
+  checklistData = data;
+  const d = new Date();
+  const mName = monthNames[lang][d.getMonth()];
+  document.getElementById("page-title").textContent = lang === "el"
+    ? `Τι να κάνεις — ${mName} ${d.getFullYear()}`
+    : `What to do — ${mName} ${d.getFullYear()}`;
+
+  document.getElementById("checklist-wrap").style.display = "block";
+  updateProgress(data.items);
+
+  document.getElementById("items-list").innerHTML = data.items.map(item => `
+    <div class="checklist-item${item.done ? " done" : ""}" id="item-${item.id}">
+      <div class="checklist-cb${item.done ? " checked" : ""}" onclick="toggleItem('${item.id}')" role="checkbox">
+        ${item.done ? "✓" : ""}
+      </div>
+      <div style="flex:1">
+        <div class="ci-task">${item.task}</div>
+        <div class="ci-meta">
+          <span class="cat-badge cat-${item.category}">${catLabel(item.category)}</span>
+          <span class="ci-time">~${item.estimatedMinutes} ${lang === "el" ? "λεπτά" : "min"}</span>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+async function toggleItem(itemId) {
+  const item = checklistData.items.find(i => i.id === itemId);
+  if (!item || item.done) return;
+  const r = await fetch("/api/solo/checklist/complete", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itemId })
+  });
+  if (r.ok) {
+    const { data } = await r.json();
+    renderChecklist(data);
+    showToast(lang === "el" ? "✓ Ολοκληρώθηκε!" : "✓ Done!");
+  }
+}
+
+async function loadChecklist() {
+  document.getElementById("generating").style.display = "block";
+  const r = await fetch("/api/solo/checklist");
+  if (r.status === 401) { location.href = "/signin.html"; return; }
+  
+  if (r.status === 400) {
+    document.getElementById("generating").style.display = "none";
+    document.getElementById("no-profile").style.display = "block";
+    return;
+  }
+
+  if (!r.ok) {
+    // Retry after 3s (generation in progress)
+    setTimeout(loadChecklist, 3000);
+    return;
+  }
+
+  const { data } = await r.json();
+  document.getElementById("generating").style.display = "none";
+  if (data) renderChecklist(data);
+}
+
+function init() {
+  setLang(lang);
+  loadChecklist();
+}
+init();
+</script>
+</body>
+</html>

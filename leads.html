@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lead Finder — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/leads.css?v=20260519">
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html" style="color:var(--white)">Lead Finder</a>
+      <a href="pipeline.html">Pipeline</a>
+      <a href="articles.html">Articles</a>
+      <a href="crm.html">CRM</a>
+      <a href="competitors.html">Competitors</a>
+      <a href="audit.html">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <div class="lf-credits">
+        Searches left: <strong id="nav-searches-left">—</strong>
+      </div>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── PAGE ─────────────────────────────────────────────── -->
+<div class="lf-page">
+
+  <!-- Header -->
+  <div class="lf-header">
+    <div class="lf-header-inner">
+      <div>
+        <div class="lf-title">🔍 Lead Finder</div>
+        <div class="lf-subtitle">Search local businesses across Greece, Germany & the EU · Powered by Google Maps + AI</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="lf-body">
+
+    <!-- ── Search Panel ──────────────────────────────── -->
+    <aside class="lf-panel">
+      <div class="lf-panel-title" id="lf-panel-title">Search Options</div>
+
+      <!-- 1. Country -->
+      <div class="lf-field">
+        <label class="lf-label" id="lf-label-country">Country</label>
+        <div class="lf-select-wrap">
+          <select class="lf-select" id="lf-country">
+            <option value="">— Select country —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 2. City -->
+      <div class="lf-field">
+        <label class="lf-label" id="lf-label-city">City</label>
+        <div class="lf-select-wrap">
+          <select class="lf-select" id="lf-city" disabled>
+            <option value="">— Select city —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="lf-divider"></div>
+
+      <!-- 3. Main Category -->
+      <div class="lf-field">
+        <label class="lf-label" id="lf-label-cat">Category</label>
+        <div class="lf-select-wrap">
+          <select class="lf-select" id="lf-main-cat" disabled>
+            <option value="">— Select category —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 4. Subcategory -->
+      <div class="lf-field lf-subcat" id="lf-subcat-wrap">
+        <label class="lf-label" id="lf-label-subcat">Industry / Service</label>
+        <div class="lf-select-wrap">
+          <select class="lf-select" id="lf-subcat">
+            <option value="">— Select service —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="lf-divider"></div>
+
+      <!-- 5. Radius -->
+      <div class="lf-field">
+        <label class="lf-label" id="lf-label-radius">Search Radius</label>
+        <input type="range" class="lf-slider" id="lf-radius" min="1" max="50" value="5">
+        <div class="lf-radius-val" id="lf-radius-val">5 km</div>
+      </div>
+
+      <div class="lf-divider"></div>
+
+      <button class="lf-search-btn" id="lf-search-btn">🔍 Search Leads</button>
+      <div class="lf-credit-cost" id="lf-credit-cost">
+        <span class="lf-credit-icon">⚡</span>
+        <span id="lf-credits-remaining">— remaining</span>
+      </div>
+      <button class="lf-clear-btn" id="lf-clear-btn">Clear</button>
+    </aside>
+
+    <!-- ── Results ───────────────────────────────────── -->
+    <main class="lf-results">
+
+      <!-- Filter wrapper — yellow outline expands when checkbox checked -->
+      <div class="lf-filter-wrapper" id="lf-filter-wrapper">
+        <div class="lf-email-filter-bar" id="lf-email-filter-bar">
+          <label class="lf-email-filter-label" title="Show only leads where an email was found">
+            <input type="checkbox" id="lf-email-only"> With email only
+          </label>
+        </div>
+        <div class="lf-results-bar" id="lf-results-bar" style="display:none">
+          <div class="lf-results-count" id="lf-count"></div>
+          <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
+            <button class="lf-action-btn" id="lf-export-btn">⬇ Export CSV</button>
+            <div class="lf-view-toggle">
+              <button class="lf-view-btn active" id="lf-grid-btn" title="Grid view">⊞</button>
+              <button class="lf-view-btn" id="lf-list-btn" title="List view">☰</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results content -->
+      <div id="lf-results-area"></div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── No-credits gate ─────────────────────────────────── -->
+<div class="lf-gate-overlay" id="lf-gate-overlay"></div>
+<div class="lf-gate-modal" id="lf-gate-modal">
+  <div class="lf-gate-icon">⚡</div>
+  <h2 class="lf-gate-title">You're out of searches</h2>
+  <p class="lf-gate-sub">You've used all your search credits for this month. Upgrade to keep finding leads.</p>
+  <div class="lf-gate-plans">
+    <a href="membership.html?highlight=starter" class="lf-gate-plan">
+      <div class="lf-gate-plan-name">Starter</div>
+      <div class="lf-gate-plan-price">€29<span>/mo</span></div>
+      <div class="lf-gate-plan-val">50 searches / mo</div>
+    </a>
+    <a href="membership.html?highlight=pro" class="lf-gate-plan featured">
+      <div class="lf-gate-badge">Most popular</div>
+      <div class="lf-gate-plan-name">Pro</div>
+      <div class="lf-gate-plan-price">€79<span>/mo</span></div>
+      <div class="lf-gate-plan-val">300 searches / mo</div>
+    </a>
+    <a href="membership.html?highlight=agency" class="lf-gate-plan">
+      <div class="lf-gate-plan-name">Agency</div>
+      <div class="lf-gate-plan-price">€199<span>/mo</span></div>
+      <div class="lf-gate-plan-val">Unlimited searches</div>
+    </a>
+  </div>
+  <button class="lf-gate-close" onclick="closeGate()">Maybe later</button>
+</div>
+
+<script src="js/leads.js?v=20260519"></script>
+<script src="/js/api.js"></script>
+</body>
+</html>

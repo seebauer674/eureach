@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solo Dashboard — eureach.eu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/solo.css">
+</head>
+<body>
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="/solo" style="color:var(--white)">Για Επαγγελματίες</a>
+    </div>
+    <div class="nav-cta" style="display:flex;gap:10px;align-items:center">
+      <div class="lang-toggle">
+        <button class="lang-btn" id="btn-el" onclick="setLang('el')">🇬🇷 ΕΛ</button>
+        <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+      </div>
+      <a href="/api/auth/signout" id="signout-btn" class="btn btn-ghost" style="font-size:0.8rem;padding:7px 14px" onclick="return signOut(event)">Έξοδος</a>
+    </div>
+  </div>
+</nav>
+
+<div class="solo-layout">
+  <aside class="solo-sidebar">
+    <div class="solo-section-label" data-el="solo" data-en="Solo">Solo</div>
+    <a href="/solo" class="solo-nav-item active">
+      <span class="solo-nav-icon">🏠</span>
+      <span data-el="Αρχική" data-en="Dashboard">Αρχική</span>
+    </a>
+    <a href="/solo/profile" class="solo-nav-item">
+      <span class="solo-nav-icon">🏢</span>
+      <span data-el="Η Επιχείρησή μου" data-en="My Business">Η Επιχείρησή μου</span>
+    </a>
+    <a href="/solo/audit" class="solo-nav-item">
+      <span class="solo-nav-icon">📊</span>
+      <span data-el="Έλεγχος Ορατότητας" data-en="Visibility Audit">Έλεγχος Ορατότητας</span>
+    </a>
+    <a href="/solo/checklist" class="solo-nav-item">
+      <span class="solo-nav-icon">✅</span>
+      <span data-el="Μηνιαία Λίστα" data-en="Monthly Checklist">Μηνιαία Λίστα</span>
+    </a>
+    <a href="/solo/articles" class="solo-nav-item">
+      <span class="solo-nav-icon">✍️</span>
+      <span data-el="Άρθρα" data-en="Articles">Άρθρα</span>
+    </a>
+  </aside>
+
+  <main class="solo-main">
+    <div id="loading" style="color:var(--muted);padding:40px 0">Φόρτωση...</div>
+
+    <!-- Onboarding (no profile) -->
+    <div id="onboard" style="display:none">
+      <div class="onboard-card">
+        <div style="font-size:2.5rem;margin-bottom:16px">👋</div>
+        <h2 data-el="Καλώς ήρθες!" data-en="Welcome!">Καλώς ήρθες!</h2>
+        <p data-el="Ξεκίνα συμπληρώνοντας το προφίλ της επιχείρησής σου για να αξιοποιήσεις όλα τα εργαλεία." data-en="Start by filling in your business profile to unlock all tools.">Ξεκίνα συμπληρώνοντας το προφίλ της επιχείρησής σου για να αξιοποιήσεις όλα τα εργαλεία.</p>
+        <a href="/solo/profile" class="btn btn-primary btn-lg" data-el="Συμπλήρωσε το Προφίλ →" data-en="Set Up Profile →">Συμπλήρωσε το Προφίλ →</a>
+      </div>
+    </div>
+
+    <!-- Dashboard (has profile) -->
+    <div id="dashboard" style="display:none">
+      <h1 class="solo-page-title" id="dash-title">Καλώς ήρθες!</h1>
+      <p class="solo-page-sub" data-el="Η επισκόπηση της επιχείρησής σου" data-en="Your business overview">Η επισκόπηση της επιχείρησής σου</p>
+
+      <div class="metric-grid" id="metrics"></div>
+
+      <div class="solo-card">
+        <h3 style="font-size:1rem;margin-bottom:16px" data-el="Γρήγορες ενέργειες" data-en="Quick actions">Γρήγορες ενέργειες</h3>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a href="/solo/audit" class="btn btn-primary" data-el="▶ Νέος Έλεγχος" data-en="▶ Run Audit">▶ Νέος Έλεγχος</a>
+          <a href="/solo/checklist" class="btn btn-ghost" data-el="📋 Μηνιαία Λίστα" data-en="📋 Monthly Checklist">📋 Μηνιαία Λίστα</a>
+          <a href="/solo/articles" class="btn btn-ghost" data-el="✍️ Γράψε Άρθρο" data-en="✍️ Write Article">✍️ Γράψε Άρθρο</a>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/js/api.js"></script>
+<script>
+const i18n = {
+  el: { loading: "Φόρτωση...", signout: "Έξοδος", lastAudit: "Τελευταίος Έλεγχος", articles: "Άρθρα (μήνας)", checklist: "Λίστα", daysSince: "Ημέρες από τελ. έλεγχο", noAudit: "—" },
+  en: { loading: "Loading...", signout: "Sign out", lastAudit: "Last Audit Score", articles: "Articles (month)", checklist: "Checklist", daysSince: "Days since last audit", noAudit: "—" }
+};
+let lang = localStorage.getItem("eureach_lang") || "el";
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem("eureach_lang", l);
+  document.querySelectorAll("[data-el]").forEach(el => { el.textContent = el.getAttribute("data-" + l) || el.textContent; });
+  document.getElementById("btn-el").classList.toggle("active", l === "el");
+  document.getElementById("btn-en").classList.toggle("active", l === "en");
+}
+
+async function signOut(e) {
+  e.preventDefault();
+  await fetch("/api/auth/signout", { method: "POST" });
+  location.href = "/signin.html";
+}
+
+async function init() {
+  setLang(lang);
+  const r = await fetch("/api/solo/profile");
+  if (r.status === 401) { location.href = "/signin.html"; return; }
+  const { data: profile } = await r.json();
+
+  document.getElementById("loading").style.display = "none";
+
+  if (!profile || !profile.businessName) {
+    document.getElementById("onboard").style.display = "block";
+    return;
+  }
+
+  document.getElementById("dashboard").style.display = "block";
+  document.getElementById("dash-title").textContent = lang === "el" ? `Γεια σου, ${profile.businessName}!` : `Hello, ${profile.businessName}!`;
+
+  // Load metrics
+  const [auditsR, articlesR] = await Promise.all([
+    fetch("/api/solo/audits"),
+    fetch("/api/solo/articles"),
+  ]);
+  const { data: audits }   = await auditsR.json();
+  const { data: articles } = await articlesR.json();
+
+  const lastScore = audits && audits.length ? audits[0].score : null;
+  const artCount  = articles ? articles.length : 0;
+  let daysSince   = null;
+  if (audits && audits.length) {
+    daysSince = Math.floor((Date.now() - new Date(audits[0].createdAt)) / 86400000);
+  }
+
+  const t = i18n[lang];
+  const scoreColor = lastScore === null ? "var(--muted)" : lastScore >= 70 ? "#4ade80" : lastScore >= 40 ? "#fbbf24" : "#f87171";
+  document.getElementById("metrics").innerHTML = `
+    <div class="metric-card">
+      <div class="metric-val" style="color:${scoreColor}">${lastScore !== null ? lastScore : t.noAudit}</div>
+      <div class="metric-label">${t.lastAudit}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:var(--blue2)">${artCount}</div>
+      <div class="metric-label">${t.articles}</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-val" style="color:${daysSince !== null && daysSince > 30 ? '#f87171' : 'var(--white)'}">${daysSince !== null ? daysSince : t.noAudit}</div>
+      <div class="metric-label">${t.daysSince}</div>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>

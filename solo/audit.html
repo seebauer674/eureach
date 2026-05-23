@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Έλεγχος Ορατότητας — eureach.eu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/solo.css">
+</head>
+<body>
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links"><a href="/solo" style="color:var(--muted);font-size:0.875rem">← Solo</a></div>
+    <div class="nav-cta" style="display:flex;gap:10px;align-items:center">
+      <div class="lang-toggle">
+        <button class="lang-btn" id="btn-el" onclick="setLang('el')">🇬🇷 ΕΛ</button>
+        <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="solo-layout">
+  <aside class="solo-sidebar">
+    <div class="solo-section-label">Solo</div>
+    <a href="/solo" class="solo-nav-item"><span class="solo-nav-icon">🏠</span><span data-el="Αρχική" data-en="Dashboard">Αρχική</span></a>
+    <a href="/solo/profile" class="solo-nav-item"><span class="solo-nav-icon">🏢</span><span data-el="Η Επιχείρησή μου" data-en="My Business">Η Επιχείρησή μου</span></a>
+    <a href="/solo/audit" class="solo-nav-item active"><span class="solo-nav-icon">📊</span><span data-el="Έλεγχος Ορατότητας" data-en="Visibility Audit">Έλεγχος Ορατότητας</span></a>
+    <a href="/solo/checklist" class="solo-nav-item"><span class="solo-nav-icon">✅</span><span data-el="Μηνιαία Λίστα" data-en="Monthly Checklist">Μηνιαία Λίστα</span></a>
+    <a href="/solo/articles" class="solo-nav-item"><span class="solo-nav-icon">✍️</span><span data-el="Άρθρα" data-en="Articles">Άρθρα</span></a>
+  </aside>
+
+  <main class="solo-main">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:8px">
+      <div>
+        <h1 class="solo-page-title" data-el="Έλεγχος Ορατότητας" data-en="Visibility Audit">Έλεγχος Ορατότητας</h1>
+        <p class="solo-page-sub" data-el="Πόσο εμφανής είσαι στο ChatGPT, Google και άλλες AI μηχανές;" data-en="How visible are you on ChatGPT, Google and other AI engines?">Πόσο εμφανής είσαι στο ChatGPT, Google και άλλες AI μηχανές;</p>
+      </div>
+      <button class="btn btn-primary" id="run-btn" onclick="runAudit()" data-el="▶ Νέος Έλεγχος" data-en="▶ Run New Audit">▶ Νέος Έλεγχος</button>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading-state" style="display:none;text-align:center;padding:60px 0">
+      <div class="spinner" style="width:36px;height:36px;margin:0 auto 16px"></div>
+      <p style="color:var(--muted)" data-el="Ο AI αναλύει την επιχείρησή σου..." data-en="AI is analyzing your business...">Ο AI αναλύει την επιχείρησή σου...</p>
+    </div>
+
+    <!-- No profile -->
+    <div id="no-profile" style="display:none">
+      <div class="solo-card" style="text-align:center;padding:40px">
+        <p style="color:var(--muted);margin-bottom:16px" data-el="Πρέπει πρώτα να συμπληρώσεις το προφίλ σου." data-en="You need to fill in your profile first.">Πρέπει πρώτα να συμπληρώσεις το προφίλ σου.</p>
+        <a href="/solo/profile" class="btn btn-primary" data-el="Συμπλήρωσε το Προφίλ" data-en="Fill in Profile">Συμπλήρωσε το Προφίλ</a>
+      </div>
+    </div>
+
+    <!-- Current audit result -->
+    <div id="audit-result" style="display:none">
+      <div class="solo-card">
+        <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+          <div class="score-badge" id="score-badge">
+            <span class="score-num" id="score-num">—</span>
+            <span class="score-label" data-el="Βαθμολογία" data-en="Score">Βαθμολογία</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px" id="audit-date"></div>
+            <p id="audit-summary" style="font-size:0.9rem;line-height:1.6;color:var(--text)"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="solo-card">
+        <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:16px" data-el="Ευρήματα" data-en="Findings">Ευρήματα</h3>
+        <div id="findings"></div>
+      </div>
+
+      <div class="solo-card">
+        <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:14px" data-el="Ενέργειες Προτεραιότητας" data-en="Priority Actions">Ενέργειες Προτεραιότητας</h3>
+        <div id="actions"></div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="history-section" style="display:none;margin-top:8px">
+      <h3 style="font-size:0.9rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px" data-el="Ιστορικό Ελέγχων" data-en="Audit History">Ιστορικό Ελέγχων</h3>
+      <div class="history-list" id="history-list"></div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/js/api.js"></script>
+<script>
+let lang = localStorage.getItem("eureach_lang") || "el";
+let allAudits = [];
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem("eureach_lang", l);
+  document.querySelectorAll("[data-el]").forEach(el => { el.textContent = el.getAttribute("data-" + l) || el.textContent; });
+  document.getElementById("btn-el").classList.toggle("active", l === "el");
+  document.getElementById("btn-en").classList.toggle("active", l === "en");
+}
+
+function showToast(msg, type = "success") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => { t.className = "toast"; }, 3500);
+}
+
+function scoreClass(s) { return s >= 70 ? "score-green" : s >= 40 ? "score-amber" : "score-red"; }
+
+function renderAudit(audit) {
+  document.getElementById("audit-result").style.display = "block";
+  const badge = document.getElementById("score-badge");
+  badge.className = "score-badge " + scoreClass(audit.score);
+  document.getElementById("score-num").textContent = audit.score;
+  document.getElementById("audit-date").textContent = new Date(audit.createdAt).toLocaleDateString("el-GR");
+  document.getElementById("audit-summary").textContent = audit.summary || "";
+
+  const statusIcon = { good: "✓", warning: "⚠", critical: "✗" };
+  const statusCls  = { good: "status-good", warning: "status-warning", critical: "status-critical" };
+  document.getElementById("findings").innerHTML = (audit.findings || []).map(f => `
+    <div class="finding-row">
+      <div class="finding-status ${statusCls[f.status] || 'status-warning'}">${statusIcon[f.status] || "?"}</div>
+      <div>
+        <div class="finding-area">${f.area || ""}</div>
+        <div class="finding-detail">${f.detail || ""}</div>
+      </div>
+    </div>`).join("");
+
+  const effortLbl = { low: lang === "el" ? "Εύκολο" : "Easy", medium: lang === "el" ? "Μέτριο" : "Medium", high: lang === "el" ? "Δύσκολο" : "Hard" };
+  const impactLbl = { low: lang === "el" ? "Χαμ. Αντίκτυπος" : "Low Impact", medium: lang === "el" ? "Μέτρ. Αντίκτυπος" : "Med Impact", high: lang === "el" ? "Υψ. Αντίκτυπος" : "High Impact" };
+  document.getElementById("actions").innerHTML = (audit.actions || []).map(a => `
+    <div class="action-row">
+      <div class="action-num">${a.priority}</div>
+      <div>
+        <div class="action-text">${a.action}</div>
+        <div class="badge-row">
+          <span class="badge badge-effort-${a.effort || 'med'}">${effortLbl[a.effort] || a.effort}</span>
+          <span class="badge badge-impact-${a.impact || 'med'}">${impactLbl[a.impact] || a.impact}</span>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+function renderHistory(audits) {
+  if (audits.length < 2) return;
+  document.getElementById("history-section").style.display = "block";
+  document.getElementById("history-list").innerHTML = audits.slice(1).map(a => `
+    <div class="history-item" onclick="renderAudit(${JSON.stringify(a).replace(/"/g,'&quot;')})">
+      <div class="score-badge ${scoreClass(a.score)}" style="width:38px;height:38px;font-size:0.9rem"><span>${a.score}</span></div>
+      <div class="history-date">${new Date(a.createdAt).toLocaleDateString("el-GR")}</div>
+    </div>`).join("");
+}
+
+async function runAudit() {
+  const btn = document.getElementById("run-btn");
+  btn.disabled = true;
+  document.getElementById("loading-state").style.display = "block";
+  document.getElementById("audit-result").style.display = "none";
+
+  const r = await fetch("/api/solo/audit/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  document.getElementById("loading-state").style.display = "none";
+  btn.disabled = false;
+
+  if (!r.ok) {
+    const { error } = await r.json().catch(() => ({}));
+    if (error === "limit_reached") showToast(lang === "el" ? "Έφτασες το όριο ελέγχων αυτόν τον μήνα." : "Monthly audit limit reached.", "error");
+    else showToast((lang === "el" ? "Σφάλμα: " : "Error: ") + (error || ""), "error");
+    return;
+  }
+
+  const { data: audit } = await r.json();
+  allAudits.unshift(audit);
+  renderAudit(audit);
+  renderHistory(allAudits);
+  showToast(lang === "el" ? "✓ Ο έλεγχος ολοκληρώθηκε!" : "✓ Audit complete!");
+}
+
+async function init() {
+  setLang(lang);
+  const r = await fetch("/api/solo/audits");
+  if (r.status === 401) { location.href = "/signin.html"; return; }
+  const { data: audits } = await r.json();
+
+  // Check profile
+  const pr = await fetch("/api/solo/profile");
+  const { data: profile } = await pr.json();
+  if (!profile || !profile.businessName) {
+    document.getElementById("no-profile").style.display = "block";
+    return;
+  }
+
+  allAudits = audits || [];
+  if (allAudits.length) {
+    renderAudit(allAudits[0]);
+    renderHistory(allAudits);
+  }
+}
+
+init();
+</script>
+</body>
+</html>

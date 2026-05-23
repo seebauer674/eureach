@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/settings.css">
+</head>
+<body>
+
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html">Lead Finder</a>
+      <a href="articles.html">Articles</a>
+      <a href="crm.html">CRM</a>
+      <a href="competitors.html">Competitors</a>
+      <a href="audit.html">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" aria-current="page">⚙ Settings</a>
+      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<div class="st-page">
+
+  <div class="st-sidebar">
+    <nav class="st-nav">
+      <a class="st-nav-item active" href="#sites">My Sites</a>
+      <a class="st-nav-item" href="#plan">Plan & Credits</a>
+      <a class="st-nav-item" href="#profile">Profile</a>
+      <a class="st-nav-item" href="#wordpress">WordPress</a>
+      <a class="st-nav-item" href="#email">Email / SMTP</a>
+      <a class="st-nav-item" href="#notifications">Notifications</a>
+    </nav>
+  </div>
+
+  <div class="st-main">
+
+    <!-- ── My Sites ──────────────────────────────────── -->
+    <section class="st-section" id="sites">
+      <div class="st-section-hdr">
+        <div>
+          <h2 class="st-section-title">My Sites</h2>
+          <p class="st-section-sub">Register up to 3 websites. The Article Generator uses site metadata to tailor content, language, and tone automatically.</p>
+        </div>
+        <button class="st-add-btn" id="st-add-btn" onclick="openModal()">+ Add Site</button>
+      </div>
+
+      <div class="st-sites-grid" id="st-sites-grid">
+        <!-- populated by JS -->
+      </div>
+
+      <div class="st-plan-note">
+        <span class="st-plan-badge">Pro</span>
+        Up to 3 sites · <a href="membership.html">Upgrade to Agency</a> for unlimited sites
+      </div>
+    </section>
+
+    <!-- ── Plan & Credits ────────────────────────────── -->
+    <section class="st-section" id="plan">
+      <h2 class="st-section-title">Plan & Credits</h2>
+      <div class="st-plan-card">
+        <div class="st-plan-name">Pro Plan</div>
+        <div class="st-plan-meta">€79 / month · renews Jun 11, 2026</div>
+        <div class="st-plan-stats">
+          <div class="st-stat"><div class="st-stat-val">12</div><div class="st-stat-lbl">Credits left</div></div>
+          <div class="st-stat"><div class="st-stat-val">38</div><div class="st-stat-lbl">Used this month</div></div>
+          <div class="st-stat"><div class="st-stat-val">3</div><div class="st-stat-lbl">Sites registered</div></div>
+        </div>
+        <button class="st-upgrade-btn" onclick="location.href='membership.html'">⚡ Upgrade to Agency — €199/mo</button>
+      </div>
+    </section>
+
+    <!-- ── Profile ───────────────────────────────────── -->
+    <section class="st-section" id="profile">
+      <div class="st-section-hdr">
+        <div>
+          <h2 class="st-section-title">Profile</h2>
+          <p class="st-section-sub">Your account details and activity summary.</p>
+        </div>
+      </div>
+
+      <!-- Activity stats -->
+      <div class="st-activity-grid">
+        <div class="st-activity-card" style="--ac:#2563eb">
+          <div class="st-activity-icon">✍️</div>
+          <div class="st-activity-val" id="stat-articles">0</div>
+          <div class="st-activity-lbl">Articles created</div>
+        </div>
+        <div class="st-activity-card" style="--ac:#7c3aed">
+          <div class="st-activity-icon">⚡</div>
+          <div class="st-activity-val" id="stat-credits">0</div>
+          <div class="st-activity-lbl">Credits used</div>
+        </div>
+        <div class="st-activity-card" style="--ac:#0891b2">
+          <div class="st-activity-icon">🔍</div>
+          <div class="st-activity-val" id="stat-searches">0</div>
+          <div class="st-activity-lbl">Searches done</div>
+        </div>
+        <div class="st-activity-card" style="--ac:#059669">
+          <div class="st-activity-icon">🎯</div>
+          <div class="st-activity-val" id="stat-leads">0</div>
+          <div class="st-activity-lbl">Leads found</div>
+        </div>
+      </div>
+
+      <!-- Profile form -->
+      <form class="st-profile-form" id="profile-form" onsubmit="saveProfile(event)">
+        <div class="st-form-row">
+          <div class="st-field">
+            <label>First name</label>
+            <input type="text" id="pf-first" placeholder="First name" autocomplete="given-name">
+          </div>
+          <div class="st-field">
+            <label>Last name</label>
+            <input type="text" id="pf-last" placeholder="Last name" autocomplete="family-name">
+          </div>
+        </div>
+        <div class="st-form-row">
+          <div class="st-field st-field-full">
+            <label>Email address</label>
+            <input type="email" id="pf-email" placeholder="you@example.com" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="st-profile-divider">Change password <span>(leave blank to keep current)</span></div>
+
+        <div class="st-form-row">
+          <div class="st-field st-field-full">
+            <label>Current password</label>
+            <input type="password" id="pf-current-pw" placeholder="••••••••" autocomplete="current-password">
+          </div>
+        </div>
+        <div class="st-form-row">
+          <div class="st-field">
+            <label>New password</label>
+            <input type="password" id="pf-new-pw" placeholder="At least 8 characters" autocomplete="new-password">
+          </div>
+          <div class="st-field">
+            <label>Confirm new password</label>
+            <input type="password" id="pf-confirm-pw" placeholder="Repeat new password" autocomplete="new-password">
+          </div>
+        </div>
+
+        <div class="st-profile-error" id="pf-error"></div>
+
+        <div class="st-profile-actions">
+          <button type="submit" class="st-save-btn">Save changes</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- ── WordPress Connection ────────────────────────── -->
+    <section class="st-section" id="wordpress">
+      <div class="st-section-hdr">
+        <div>
+          <h2 class="st-section-title">WordPress Connection</h2>
+          <p class="st-section-sub">Connect your WordPress site to publish articles directly from the Article Generator.</p>
+        </div>
+      </div>
+
+      <!-- Connected state -->
+      <div id="wp-connected-state" style="display:none">
+        <div class="wp-status-card">
+          <div class="wp-status-badge">
+            <span class="wp-dot"></span>
+            <div class="wp-status-info">
+              <div class="wp-status-name" id="wp-status-name">—</div>
+              <div class="wp-status-url" id="wp-status-url">—</div>
+            </div>
+          </div>
+          <div class="wp-status-meta" id="wp-status-meta"></div>
+          <button class="wp-disconnect-btn" onclick="disconnectWp()">Disconnect</button>
+        </div>
+      </div>
+
+      <!-- Connect form -->
+      <div id="wp-connect-state">
+        <div class="wp-plan-note" id="wp-plan-note" style="display:none">
+          🔒 WordPress publishing is available on <strong>Starter+</strong> plans.
+          <a href="membership.html">Upgrade →</a>
+        </div>
+        <form class="st-profile-form" id="wp-connect-form" onsubmit="connectWp(event)" autocomplete="off">
+          <div class="st-form-row">
+            <div class="st-field st-field-full">
+              <label>WordPress Site URL</label>
+              <input type="text" id="wp-site-url" placeholder="https://mysite.com" autocomplete="off">
+              <div class="st-field-hint">Full URL of your WordPress site</div>
+            </div>
+          </div>
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>WordPress Username</label>
+              <input type="text" id="wp-username" placeholder="admin" autocomplete="off">
+            </div>
+            <div class="st-field">
+              <label>Application Password</label>
+              <input type="text" id="wp-app-password" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" autocomplete="off">
+            </div>
+          </div>
+          <div class="wp-howto">
+            <div class="wp-howto-title">How to generate an Application Password:</div>
+            <ol class="wp-howto-steps">
+              <li>In your WordPress admin, go to <strong>Users → Your Profile</strong></li>
+              <li>Scroll to <strong>Application Passwords</strong> at the bottom</li>
+              <li>Enter a name (e.g. "eureach") and click <strong>Add New Application Password</strong></li>
+              <li>Copy the generated password and paste it above</li>
+            </ol>
+          </div>
+          <div class="st-profile-error" id="wp-connect-err"></div>
+          <div class="st-profile-actions">
+            <button type="submit" class="st-save-btn" id="wp-connect-btn">Connect WordPress</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ── Email / SMTP ──────────────────────────────────── -->
+    <section class="st-section" id="email">
+      <div class="st-section-hdr">
+        <div>
+          <h2 class="st-section-title">Email / SMTP</h2>
+          <p class="st-section-sub">Connect your email account to send outreach sequences directly from the CRM — no copy-pasting required.</p>
+        </div>
+      </div>
+
+      <!-- Connected state -->
+      <div id="smtp-connected-state" style="display:none">
+        <div class="wp-status-card">
+          <div class="wp-status-badge">
+            <span class="wp-dot" style="background:#4ade80"></span>
+            <div class="wp-status-info">
+              <div class="wp-status-name" id="smtp-status-from">—</div>
+              <div class="wp-status-url" id="smtp-status-host">—</div>
+            </div>
+          </div>
+          <div class="wp-status-meta" id="smtp-status-meta"></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <a href="email_log.html" class="smtp-log-link">📋 Email Log</a>
+            <button class="wp-disconnect-btn" onclick="disconnectSmtp()">Disconnect</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connect form -->
+      <div id="smtp-connect-state">
+        <form class="st-profile-form" id="smtp-connect-form" onsubmit="connectSmtp(event)" autocomplete="off">
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>SMTP Host</label>
+              <input type="text" id="smtp-host" placeholder="smtp.gmail.com" autocomplete="off">
+              <div class="st-field-hint">Gmail: smtp.gmail.com · Outlook: smtp.office365.com</div>
+            </div>
+            <div class="st-field">
+              <label>Port</label>
+              <select id="smtp-port" class="st-select">
+                <option value="587">587 — STARTTLS (recommended)</option>
+                <option value="465">465 — SSL/TLS</option>
+                <option value="25">25 — Plain (not recommended)</option>
+              </select>
+            </div>
+          </div>
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Username / Email</label>
+              <input type="text" id="smtp-username" placeholder="you@gmail.com" autocomplete="off">
+            </div>
+            <div class="st-field">
+              <label>Password / App Password</label>
+              <input type="password" id="smtp-password" placeholder="••••••••" autocomplete="new-password">
+            </div>
+          </div>
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>From Email</label>
+              <input type="email" id="smtp-from" placeholder="you@yourdomain.com" autocomplete="off">
+            </div>
+            <div class="st-field">
+              <label>From Name <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+              <input type="text" id="smtp-from-name" placeholder="Your Name or Business">
+            </div>
+          </div>
+          <div class="smtp-howto">
+            <div class="smtp-howto-title">Gmail: use an App Password (not your regular password)</div>
+            <ol class="wp-howto-steps">
+              <li>Enable 2-Step Verification in your Google Account</li>
+              <li>Go to <strong>Google Account → Security → App Passwords</strong></li>
+              <li>Create a new App Password for "Mail"</li>
+              <li>Paste the 16-character password in the password field above</li>
+            </ol>
+          </div>
+          <div class="st-profile-error" id="smtp-connect-err"></div>
+          <div class="st-profile-actions">
+            <button type="submit" class="st-save-btn" id="smtp-connect-btn">Connect &amp; Test</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- ── Site modal ──────────────────────────────────────── -->
+<div class="st-overlay" id="st-overlay" onclick="closeModal()"></div>
+<div class="st-modal" id="st-modal" role="dialog" aria-modal="true" aria-label="Add / Edit Site">
+  <div class="st-modal-hdr">
+    <h3 class="st-modal-title" id="st-modal-title">Add Site</h3>
+    <button class="st-modal-close" onclick="closeModal()">✕</button>
+  </div>
+
+  <form class="st-modal-form" id="st-site-form" onsubmit="saveSite(event)">
+    <input type="hidden" id="st-edit-id">
+
+    <div class="st-form-row">
+      <div class="st-field st-field-full">
+        <label>Domain <span class="st-req">*</span></label>
+        <input type="text" id="st-domain" placeholder="e.g. myshop.de or www.mybusiness.gr" required autocomplete="off">
+        <div class="st-field-hint">Enter just the domain — no https:// needed</div>
+      </div>
+    </div>
+
+    <div class="st-form-row">
+      <div class="st-field st-field-full">
+        <label>Display Name</label>
+        <input type="text" id="st-name" placeholder="e.g. My Shop (optional — defaults to domain)">
+      </div>
+    </div>
+
+    <div class="st-form-row">
+      <div class="st-field st-field-full">
+        <label>Content Language(s) <span class="st-req">*</span></label>
+        <div class="st-lang-chips" id="st-lang-chips">
+          <label class="st-chip-label"><input type="checkbox" value="Greek">   🇬🇷 Greek</label>
+          <label class="st-chip-label"><input type="checkbox" value="English"> 🇬🇧 English</label>
+          <label class="st-chip-label"><input type="checkbox" value="German">  🇩🇪 German</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="st-form-row">
+      <div class="st-field">
+        <label>Niche / Industry <span class="st-req">*</span></label>
+        <select id="st-niche" required>
+          <option value="">— Select industry —</option>
+          <optgroup label="Health & Medical">
+            <option value="Medical Services">Medical Services</option>
+            <option value="Dental">Dental</option>
+            <option value="Wellness & Therapy">Wellness & Therapy</option>
+          </optgroup>
+          <optgroup label="Home Services">
+            <option value="Cleaning">Cleaning</option>
+            <option value="Construction & Renovation">Construction & Renovation</option>
+            <option value="Plumbing & Electrical">Plumbing & Electrical</option>
+          </optgroup>
+          <optgroup label="Professional Services">
+            <option value="Legal">Legal</option>
+            <option value="Accounting & Finance">Accounting & Finance</option>
+            <option value="Business Consulting">Business Consulting</option>
+          </optgroup>
+          <optgroup label="Retail & eCommerce">
+            <option value="Retail — General">Retail — General</option>
+            <option value="Retail — Furniture">Retail — Furniture</option>
+            <option value="Retail — Fashion">Retail — Fashion</option>
+            <option value="eCommerce">eCommerce</option>
+          </optgroup>
+          <optgroup label="Food & Hospitality">
+            <option value="Restaurant & Dining">Restaurant & Dining</option>
+            <option value="Hotel & Accommodation">Hotel & Accommodation</option>
+            <option value="Travel & Tourism">Travel & Tourism</option>
+          </optgroup>
+          <optgroup label="Technology">
+            <option value="SaaS / Software">SaaS / Software</option>
+            <option value="IT Services">IT Services</option>
+            <option value="Digital Marketing">Digital Marketing</option>
+          </optgroup>
+          <optgroup label="Education">
+            <option value="Education & Training">Education & Training</option>
+            <option value="Sports Coaching">Sports Coaching</option>
+            <option value="Language School">Language School</option>
+          </optgroup>
+          <optgroup label="Beauty & Lifestyle">
+            <option value="Beauty & Aesthetics">Beauty & Aesthetics</option>
+            <option value="Fitness & Gym">Fitness & Gym</option>
+          </optgroup>
+          <optgroup label="Other">
+            <option value="Real Estate">Real Estate</option>
+            <option value="Transport & Logistics">Transport & Logistics</option>
+            <option value="Other">Other</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="st-field">
+        <label>Default Tone(s)</label>
+        <div class="st-tone-chips" id="st-tone-chips">
+          <label class="st-chip-label"><input type="checkbox" value="Professional"> Professional</label>
+          <label class="st-chip-label"><input type="checkbox" value="Friendly"> Friendly</label>
+          <label class="st-chip-label"><input type="checkbox" value="Authoritative"> Authoritative</label>
+          <label class="st-chip-label"><input type="checkbox" value="Conversational"> Conversational</label>
+          <label class="st-chip-label"><input type="checkbox" value="Educational"> Educational</label>
+          <label class="st-chip-label"><input type="checkbox" value="Inspiring"> Inspiring</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="st-form-row">
+      <div class="st-field st-field-full">
+        <label>Target Audience</label>
+        <input type="text" id="st-audience" placeholder="e.g. Homeowners in Germany, Small business owners, Parents of young athletes">
+      </div>
+    </div>
+
+    <div class="st-form-row">
+      <div class="st-field st-field-full">
+        <label>Geographic Focus</label>
+        <input type="text" id="st-geo" placeholder="e.g. Berlin, Germany · Athens, Greece · European Union">
+      </div>
+    </div>
+
+    <div class="st-modal-actions">
+      <button type="button" class="st-cancel-btn" onclick="closeModal()">Cancel</button>
+      <button type="submit" class="st-save-btn" id="st-save-btn">Save Site</button>
+    </div>
+  </form>
+</div>
+
+<script src="js/settings.js"></script>
+<script>
+// ── Sidebar scroll spy ────────────────────────────────────
+const sections = document.querySelectorAll('.st-section');
+const navItems = document.querySelectorAll('.st-nav-item');
+
+navItems.forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navItems.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id));
+    }
+  });
+}, { rootMargin: '-30% 0px -60% 0px' });
+sections.forEach(s => observer.observe(s));
+
+// ── WordPress Connection ──────────────────────────────────
+async function loadWpStatus() {
+  try {
+    const res = await fetch('/api/wordpress/connect');
+    if (!res.ok) return;
+    const d = await res.json();
+    if (d.connected) showWpConnected(d);
+    else showWpForm();
+  } catch {}
+}
+
+function showWpConnected(d) {
+  document.getElementById('wp-connected-state').style.display = '';
+  document.getElementById('wp-connect-state').style.display   = 'none';
+  document.getElementById('wp-status-name').textContent = d.siteName || d.username || '—';
+  document.getElementById('wp-status-url').textContent  = d.siteUrl  || '—';
+  const connAt = d.connectedAt ? new Date(d.connectedAt).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }) : '';
+  document.getElementById('wp-status-meta').textContent = connAt ? 'Connected ' + connAt : '';
+}
+
+function showWpForm() {
+  document.getElementById('wp-connected-state').style.display = 'none';
+  document.getElementById('wp-connect-state').style.display   = '';
+}
+
+async function connectWp(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('wp-connect-err');
+  const btn   = document.getElementById('wp-connect-btn');
+  errEl.textContent = '';
+
+  const siteUrl     = document.getElementById('wp-site-url').value.trim();
+  const username    = document.getElementById('wp-username').value.trim();
+  const appPassword = document.getElementById('wp-app-password').value.trim();
+
+  if (!siteUrl || !username || !appPassword) {
+    errEl.textContent = 'All fields are required.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Connecting…';
+  try {
+    const res  = await fetch('/api/wordpress/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ siteUrl, username, appPassword }) });
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status === 403 && data.error === 'limit_reached') {
+        document.getElementById('wp-plan-note').style.display = '';
+        errEl.textContent = '';
+      } else {
+        errEl.textContent = data.error || 'Connection failed.';
+      }
+      return;
+    }
+    document.getElementById('wp-site-url').value = '';
+    document.getElementById('wp-username').value = '';
+    document.getElementById('wp-app-password').value = '';
+    showWpConnected({ siteName: data.siteName, siteUrl: data.siteUrl, connectedAt: new Date().toISOString() });
+    showToast('WordPress connected ✓');
+  } catch {
+    errEl.textContent = 'Network error. Please try again.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Connect WordPress';
+  }
+}
+
+async function disconnectWp() {
+  if (!confirm('Disconnect WordPress? You can reconnect at any time.')) return;
+  try {
+    await fetch('/api/wordpress/connect', { method: 'DELETE' });
+    showWpForm();
+    showToast('WordPress disconnected');
+  } catch {}
+}
+
+loadWpStatus();
+
+// ── SMTP / Email Connection ───────────────────────────────
+async function loadSmtpStatus() {
+  try {
+    const res = await fetch('/api/email/smtp');
+    if (!res.ok) return;
+    const d = await res.json();
+    if (d.connected) showSmtpConnected(d); else showSmtpForm();
+  } catch {}
+}
+function showSmtpConnected(d) {
+  document.getElementById('smtp-connected-state').style.display = '';
+  document.getElementById('smtp-connect-state').style.display = 'none';
+  const fromLabel = d.fromName ? `"${d.fromName}" <${d.from}>` : (d.from || '—');
+  document.getElementById('smtp-status-from').textContent = fromLabel;
+  document.getElementById('smtp-status-host').textContent = (d.host || '') + (d.port ? ':' + d.port : '');
+  const meta = d.connectedAt ? 'Connected ' + new Date(d.connectedAt).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }) : '';
+  document.getElementById('smtp-status-meta').textContent = meta;
+}
+function showSmtpForm() {
+  document.getElementById('smtp-connected-state').style.display = 'none';
+  document.getElementById('smtp-connect-state').style.display = '';
+}
+async function connectSmtp(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('smtp-connect-err');
+  const btn   = document.getElementById('smtp-connect-btn');
+  errEl.textContent = '';
+  const host     = document.getElementById('smtp-host').value.trim();
+  const port     = document.getElementById('smtp-port').value;
+  const username = document.getElementById('smtp-username').value.trim();
+  const password = document.getElementById('smtp-password').value;
+  const from     = document.getElementById('smtp-from').value.trim();
+  const fromName = document.getElementById('smtp-from-name').value.trim();
+  if (!host || !username || !password || !from) { errEl.textContent = 'Host, username, password, and from email are required.'; return; }
+  btn.disabled = true; btn.textContent = 'Testing connection…';
+  try {
+    const res  = await fetch('/api/email/smtp', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ host, port: parseInt(port), username, password, from, fromName }) });
+    const data = await res.json();
+    if (!res.ok) { errEl.textContent = data.error || 'Connection failed.'; return; }
+    document.getElementById('smtp-password').value = '';
+    showSmtpConnected({ host, port, username, from, fromName, connectedAt: new Date().toISOString() });
+    showToast('Email connected ✓');
+  } catch { errEl.textContent = 'Network error. Please try again.'; }
+  finally { btn.disabled = false; btn.textContent = 'Connect & Test'; }
+}
+async function disconnectSmtp() {
+  if (!confirm('Disconnect email? You can reconnect at any time.')) return;
+  try { await fetch('/api/email/smtp', { method:'DELETE' }); showSmtpForm(); showToast('Email disconnected'); } catch {}
+}
+loadSmtpStatus();
+
+// ── Load profile from /api/auth/me ────────────────────────
+async function loadProfile() {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) return;
+    const { user } = await res.json();
+    if (!user) return;
+
+    document.getElementById('pf-first').value  = user.firstName || '';
+    document.getElementById('pf-last').value   = user.lastName  || '';
+    document.getElementById('pf-email').value  = user.email     || '';
+
+    document.getElementById('stat-articles').textContent = user.articlesCreated || 0;
+    document.getElementById('stat-credits').textContent  = user.creditsUsed     || 0;
+    document.getElementById('stat-searches').textContent = user.searchesDone    || 0;
+    document.getElementById('stat-leads').textContent    = user.leadsFound      || 0;
+  } catch {}
+}
+loadProfile();
+
+// ── Save profile ──────────────────────────────────────────
+async function saveProfile(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('pf-error');
+  const btn   = e.target.querySelector('button[type=submit]');
+  errEl.textContent = '';
+
+  const newPw     = document.getElementById('pf-new-pw').value;
+  const confirmPw = document.getElementById('pf-confirm-pw').value;
+  if (newPw && newPw !== confirmPw) {
+    errEl.textContent = 'New passwords do not match.';
+    return;
+  }
+  if (newPw && newPw.length < 8) {
+    errEl.textContent = 'New password must be at least 8 characters.';
+    return;
+  }
+
+  const payload = {
+    firstName:       document.getElementById('pf-first').value.trim(),
+    lastName:        document.getElementById('pf-last').value.trim(),
+    email:           document.getElementById('pf-email').value.trim(),
+    currentPassword: document.getElementById('pf-current-pw').value,
+    newPassword:     newPw,
+  };
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const res  = await fetch('/api/auth/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+    document.getElementById('pf-current-pw').value = '';
+    document.getElementById('pf-new-pw').value     = '';
+    document.getElementById('pf-confirm-pw').value = '';
+    showToast('Profile saved ✓');
+  } catch (err) {
+    errEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save changes';
+  }
+}
+</script>
+<script src="/js/api.js"></script>
+</body>
+</html>

@@ -1,0 +1,187 @@
+/* ── Profile Page ───────────────────────────────────── */
+
+.profile-body { background: var(--navy); min-height: 100vh; }
+
+.prf-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 100px 24px 60px;
+}
+
+/* ── Header ───────────────────────────────────────── */
+.prf-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 36px;
+  padding: 28px 32px;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+}
+
+.prf-avatar {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 800; color: white;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 4px rgba(37,99,235,0.2);
+}
+
+.prf-name  { font-size: 1.4rem; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+.prf-email { font-size: 0.875rem; color: var(--muted); margin-bottom: 10px; }
+
+.prf-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.prf-plan-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(37,99,235,0.12);
+  border: 1px solid rgba(37,99,235,0.3);
+  color: #60a5fa;
+}
+
+.prf-role-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.3);
+  color: var(--gold);
+}
+
+/* ── Stat cards ───────────────────────────────────── */
+.prf-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.prf-card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s;
+}
+.prf-card:hover { border-color: rgba(255,255,255,0.15); }
+
+.prf-card-credits {
+  border-color: rgba(245,158,11,0.25);
+  background: rgba(245,158,11,0.04);
+}
+.prf-card-credits:hover { border-color: rgba(245,158,11,0.4); }
+
+.prf-card-icon { font-size: 1.2rem; }
+.prf-card-val  { font-size: 1.6rem; font-weight: 800; color: var(--white); line-height: 1; }
+.prf-card-label{ font-size: 0.75rem; color: var(--muted); font-weight: 500; }
+
+/* ── Section ──────────────────────────────────────── */
+.prf-section {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.prf-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.prf-section-title { font-size: 1rem; font-weight: 700; color: var(--white); margin-bottom: 16px; }
+.prf-section-header .prf-section-title { margin-bottom: 0; }
+.prf-section-sub   { font-size: 0.8rem; color: var(--muted); }
+
+/* ── Usage bars ───────────────────────────────────── */
+.prf-usage-grid { display: flex; flex-direction: column; gap: 16px; }
+
+.prf-usage-item {}
+.prf-usage-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.prf-usage-nums { color: var(--muted); font-size: 0.8rem; }
+
+.prf-bar-track {
+  height: 6px;
+  background: var(--glass2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.prf-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+  min-width: 2px;
+}
+
+.prf-unlimited { font-size: 0.75rem; color: #4ade80; margin-top: 4px; }
+.prf-reset-note { font-size: 0.78rem; color: var(--muted); margin-top: 16px; text-align: right; }
+
+/* ── Credit log table ─────────────────────────────── */
+.prf-table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.prf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.prf-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+.prf-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: middle;
+}
+.prf-table tr:last-child td { border-bottom: none; }
+.prf-table tr:hover td { background: var(--glass); }
+
+.prf-empty  { text-align: center; color: var(--muted); padding: 32px !important; }
+.prf-date   { color: var(--text); }
+.prf-time   { color: var(--muted); font-size: 0.78rem; }
+.prf-balance{ font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 680px) {
+  .prf-cards { grid-template-columns: repeat(2, 1fr); }
+  .prf-header { flex-direction: column; text-align: center; }
+  .prf-meta { justify-content: center; }
+}
+@media (max-width: 420px) {
+  .prf-cards { grid-template-columns: 1fr; }
+}

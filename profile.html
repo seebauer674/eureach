@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/profile.css">
+</head>
+<body class="profile-body">
+
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html">Lead Finder</a>
+      <a href="articles.html">Articles</a>
+      <a href="audit.html">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙ Settings</a>
+    </div>
+  </div>
+</nav>
+
+<div class="prf-page">
+
+  <!-- Header -->
+  <div class="prf-header">
+    <div class="prf-avatar" id="prf-avatar">—</div>
+    <div class="prf-header-info">
+      <h1 class="prf-name" id="prf-name">Loading…</h1>
+      <div class="prf-email" id="prf-email"></div>
+      <div class="prf-meta">
+        <span class="prf-plan-badge" id="prf-plan">—</span>
+        <span class="prf-role-badge" id="prf-role" style="display:none">Admin</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats cards -->
+  <div class="prf-cards">
+    <div class="prf-card prf-card-credits">
+      <div class="prf-card-icon">⚡</div>
+      <div class="prf-card-val" id="st-credits">—</div>
+      <div class="prf-card-label">Credits Balance</div>
+    </div>
+    <div class="prf-card">
+      <div class="prf-card-icon">🔍</div>
+      <div class="prf-card-val" id="st-searches">—</div>
+      <div class="prf-card-label">Searches This Month</div>
+    </div>
+    <div class="prf-card">
+      <div class="prf-card-icon">✍️</div>
+      <div class="prf-card-val" id="st-articles">—</div>
+      <div class="prf-card-label">Articles This Month</div>
+    </div>
+    <div class="prf-card">
+      <div class="prf-card-icon">🤖</div>
+      <div class="prf-card-val" id="st-audits">—</div>
+      <div class="prf-card-label">Audits This Month</div>
+    </div>
+    <div class="prf-card">
+      <div class="prf-card-icon">📍</div>
+      <div class="prf-card-val" id="st-leads-found">—</div>
+      <div class="prf-card-label">Total Leads Found</div>
+    </div>
+    <div class="prf-card">
+      <div class="prf-card-icon">🔁</div>
+      <div class="prf-card-val" id="st-searches-done">—</div>
+      <div class="prf-card-label">Total Searches Done</div>
+    </div>
+  </div>
+
+  <!-- Monthly usage progress bars -->
+  <div class="prf-section">
+    <div class="prf-section-title">Monthly Usage</div>
+    <div class="prf-usage-grid" id="prf-usage-grid">
+      <!-- filled by JS -->
+    </div>
+    <div class="prf-reset-note" id="prf-reset-note"></div>
+  </div>
+
+  <!-- Credit transaction log -->
+  <div class="prf-section">
+    <div class="prf-section-header">
+      <div class="prf-section-title">Credit History</div>
+      <div class="prf-section-sub" id="prf-log-count">—</div>
+    </div>
+    <div class="prf-table-wrap">
+      <table class="prf-table">
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Action</th>
+            <th>Amount</th>
+            <th>Balance After</th>
+          </tr>
+        </thead>
+        <tbody id="prf-log-tbody">
+          <tr><td colspan="4" class="prf-empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(async () => {
+  // Auth check
+  const meRes = await fetch('/api/auth/me').then(r => r.json()).catch(() => ({}));
+  if (!meRes.user) { window.location.href = '/signin.html'; return; }
+  const me = meRes.user;
+
+  // Check if admin viewing another user's profile
+  const params = new URLSearchParams(window.location.search);
+  const viewingUid = params.get('uid');
+  const isAdminView = viewingUid && me.role === 'admin';
+
+  // Fill user header from /api/auth/me (own profile) or admin-fetched user
+  let displayUser = me;
+  if (isAdminView) {
+    const adminData = await fetch('/api/admin/users').then(r => r.json()).catch(() => ({}));
+    displayUser = (adminData.users || []).find(u => u.id === viewingUid) || me;
+  }
+
+  // Avatar initials
+  const initials = ((displayUser.firstName?.[0] || '') + (displayUser.lastName?.[0] || displayUser.email[0])).toUpperCase();
+  document.getElementById('prf-avatar').textContent = initials;
+  document.getElementById('prf-name').textContent   = [displayUser.firstName, displayUser.lastName].filter(Boolean).join(' ') || displayUser.email;
+  document.getElementById('prf-email').textContent  = displayUser.email;
+
+  const PLAN_LABELS = { free:'Free', free_solo:'Free Solo', pro_solo:'Pro Solo', starter:'Starter', pro:'Pro', agency:'Agency' };
+  const planEl = document.getElementById('prf-plan');
+  planEl.textContent = PLAN_LABELS[displayUser.plan] || displayUser.plan;
+
+  if (displayUser.role === 'admin') {
+    document.getElementById('prf-role').style.display = 'inline-block';
+  }
+
+  // Fetch profile data — if admin viewing, use a workaround via admin endpoint
+  let profileUrl = '/api/profile';
+  const profileRes = await fetch(profileUrl).then(r => r.json()).catch(() => ({}));
+
+  // If admin viewing another user, also fetch that user's stats from admin users list
+  let stats   = profileRes.stats   || {};
+  let month   = profileRes.month   || {};
+  let log     = profileRes.creditLog || [];
+
+  // If admin viewing another user's profile, override stats from user object
+  if (isAdminView) {
+    const u = displayUser;
+    stats = {
+      credits:      u.credits      ?? 0,
+      searchesDone: u.searchesDone ?? 0,
+      leadsFound:   u.leadsFound   ?? 0,
+      creditsUsed:  u.creditsUsed  ?? 0,
+    };
+    // Credit log will be empty for admin view of other user (no API for that yet)
+    log = [];
+  }
+
+  // Fill stat cards
+  const credVal = stats.credits ?? 0;
+  const credEl  = document.getElementById('st-credits');
+  credEl.textContent = credVal;
+  credEl.style.color = credVal === 0 ? '#ef4444' : credVal < 10 ? '#f59e0b' : '#4ade80';
+
+  document.getElementById('st-searches').textContent     = formatUsage(month.leads,    month.leadsMax);
+  document.getElementById('st-articles').textContent     = formatUsage(month.articles, month.articlesMax);
+  document.getElementById('st-audits').textContent       = formatUsage(month.audits,   month.auditsMax);
+  document.getElementById('st-leads-found').textContent  = (stats.leadsFound   || 0).toLocaleString();
+  document.getElementById('st-searches-done').textContent= (stats.searchesDone || 0).toLocaleString();
+
+  // Monthly usage bars
+  const usageItems = [
+    { label: 'Lead Searches', used: month.leads    || 0, max: month.leadsMax,    icon: '🔍', color: '#2563eb' },
+    { label: 'Articles',      used: month.articles || 0, max: month.articlesMax, icon: '✍️', color: '#7c3aed' },
+    { label: 'AI Audits',     used: month.audits   || 0, max: month.auditsMax,   icon: '🤖', color: '#0891b2' },
+  ];
+  const grid = document.getElementById('prf-usage-grid');
+  grid.innerHTML = usageItems.map(item => {
+    const isUnlimited = item.max === -1;
+    const pct = isUnlimited ? 0 : (item.max === 0 ? 100 : Math.min(100, Math.round((item.used / item.max) * 100)));
+    const barColor = pct >= 90 ? '#ef4444' : pct >= 70 ? '#f59e0b' : item.color;
+    return `<div class="prf-usage-item">
+      <div class="prf-usage-top">
+        <span>${item.icon} ${item.label}</span>
+        <span class="prf-usage-nums">${item.used}${isUnlimited ? '' : ' / ' + (item.max === 0 ? '0 (locked)' : item.max)}</span>
+      </div>
+      <div class="prf-bar-track">
+        <div class="prf-bar-fill" style="width:${isUnlimited ? 0 : pct}%;background:${barColor}"></div>
+      </div>
+      ${isUnlimited ? '<div class="prf-unlimited">Unlimited</div>' : ''}
+    </div>`;
+  }).join('');
+
+  if (month.resetDate) {
+    document.getElementById('prf-reset-note').textContent = `Usage resets on ${month.resetDate}`;
+  }
+
+  // Credit log table
+  const tbody = document.getElementById('prf-log-tbody');
+  document.getElementById('prf-log-count').textContent = log.length ? `Last ${log.length} transactions` : '';
+
+  if (!log.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="prf-empty">No credit transactions yet.</td></tr>';
+  } else {
+    tbody.innerHTML = log.map(entry => {
+      const isCharge = entry.delta < 0;
+      const sign     = isCharge ? '' : '+';
+      const color    = isCharge ? '#f87171' : '#4ade80';
+      const dt       = new Date(entry.createdAt);
+      const dateStr  = dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+      const timeStr  = dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+      return `<tr>
+        <td><span class="prf-date">${dateStr}</span> <span class="prf-time">${timeStr}</span></td>
+        <td>${entry.reason || '—'}</td>
+        <td style="font-weight:700;color:${color}">${sign}${entry.delta}</td>
+        <td class="prf-balance">${entry.balance}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function formatUsage(used, max) {
+    if (max === -1) return (used || 0) + ' / ∞';
+    if (max === 0)  return 'Locked';
+    return `${used || 0} / ${max}`;
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Article Generator — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/articles.css">
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html">Lead Finder</a>
+      <a href="articles.html" style="color:var(--white)">Articles</a>
+      <a href="crm.html">CRM</a>
+      <a href="competitors.html">Competitors</a>
+      <a href="audit.html">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <div class="ag-credits-badge">
+        Credits: <strong>12</strong>
+      </div>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── PAGE ─────────────────────────────────────────────── -->
+<div class="ag-page">
+
+  <!-- Header -->
+  <div class="ag-page-header">
+    <div class="ag-page-header-inner">
+      <div>
+        <div class="ag-page-title">✍️ Article Generator</div>
+        <div class="ag-page-subtitle" id="ag-page-subtitle">AI-powered SEO + GEO + AEO articles · Greek, English &amp; German · Schema, Audits &amp; Promotion kit included</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="ag-page-body" id="ag-root"></div>
+
+</div>
+
+<script src="js/articles.js"></script>
+<script src="/js/api.js"></script>
+</body>
+</html>

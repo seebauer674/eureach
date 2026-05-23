@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="adm-layout">
+
+  <!-- Sidebar -->
+  <aside class="adm-sidebar">
+    <div class="adm-logo">eureach<span>.</span>eu <span class="adm-badge">Admin</span></div>
+    <div class="adm-nav">
+      <a class="adm-nav-item active" data-page="users">
+        <span class="adm-nav-icon">👥</span> Users
+      </a>
+    </div>
+    <div class="adm-sidebar-footer">
+      <a href="leads.html" class="adm-back-link">← Back to App</a>
+      <button class="adm-signout" id="adm-signout">Sign out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="adm-main">
+
+    <!-- Users Page -->
+    <div class="adm-page" id="page-users">
+
+      <div class="adm-page-header">
+        <div>
+          <h1 class="adm-page-title">Users</h1>
+          <p class="adm-page-sub" id="adm-user-count">Loading…</p>
+        </div>
+        <button class="btn btn-primary" id="adm-add-user-btn">+ Add User</button>
+      </div>
+
+      <!-- Search -->
+      <div class="adm-search-row">
+        <input class="adm-search" type="text" id="adm-search" placeholder="Search by name or email…">
+        <select class="adm-filter-select" id="adm-filter-plan">
+          <option value="">All Plans</option>
+          <option value="free">Free</option>
+          <option value="free_solo">Free Solo</option>
+          <option value="pro_solo">Pro Solo</option>
+          <option value="starter">Starter</option>
+          <option value="pro">Pro</option>
+          <option value="agency">Agency</option>
+        </select>
+        <select class="adm-filter-select" id="adm-filter-status">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="adm-table-wrap">
+        <table class="adm-table" id="adm-users-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Plan</th>
+              <th>Credits</th>
+              <th>Articles</th>
+              <th>Searches</th>
+              <th>Status</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adm-users-tbody">
+            <tr><td colspan="7" class="adm-loading">Loading users…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- ── Add / Edit Modal ────────────────────────────────────── -->
+<div class="adm-modal-overlay" id="adm-modal" style="display:none">
+  <div class="adm-modal">
+    <div class="adm-modal-header">
+      <h2 class="adm-modal-title" id="adm-modal-title">Add User</h2>
+      <button class="adm-modal-close" id="adm-modal-close">✕</button>
+    </div>
+    <div class="adm-modal-body">
+
+      <div class="adm-tabs">
+        <button class="adm-tab active" data-tab="basic">Basic Info</button>
+        <button class="adm-tab" data-tab="account">Account</button>
+        <button class="adm-tab" data-tab="credits">Credits</button>
+        <button class="adm-tab" data-tab="restrict">Restrictions</button>
+        <button class="adm-tab adm-tab-danger" data-tab="danger" id="adm-tab-danger" style="display:none">Danger</button>
+      </div>
+
+      <!-- Tab: Basic -->
+      <div class="adm-tab-content active" id="tab-basic">
+        <div class="adm-form-row">
+          <div class="adm-field">
+            <label>First Name *</label>
+            <input type="text" id="f-firstName" placeholder="First name">
+          </div>
+          <div class="adm-field">
+            <label>Last Name</label>
+            <input type="text" id="f-lastName" placeholder="Last name">
+          </div>
+        </div>
+        <div class="adm-field">
+          <label>Email *</label>
+          <input type="email" id="f-email" placeholder="user@example.com">
+        </div>
+        <div class="adm-field" id="f-password-wrap">
+          <label>Password *</label>
+          <input type="password" id="f-password" placeholder="Min 6 characters">
+        </div>
+      </div>
+
+      <!-- Tab: Account -->
+      <div class="adm-tab-content" id="tab-account">
+        <div class="adm-form-row">
+          <div class="adm-field">
+            <label>Plan</label>
+            <select id="f-plan">
+              <option value="free">Free</option>
+              <option value="free_solo">Free Solo</option>
+              <option value="pro_solo">Pro Solo</option>
+              <option value="starter">Starter</option>
+              <option value="pro">Pro</option>
+              <option value="agency">Agency</option>
+            </select>
+          </div>
+          <div class="adm-field">
+            <label>Role</label>
+            <select id="f-role">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="adm-field">
+          <label class="adm-toggle-label">
+            <span>Suspended</span>
+            <label class="adm-toggle">
+              <input type="checkbox" id="f-suspended">
+              <span class="adm-toggle-slider"></span>
+            </label>
+          </label>
+          <p class="adm-field-hint">Suspended users cannot use any features.</p>
+        </div>
+      </div>
+
+      <!-- Tab: Credits -->
+      <div class="adm-tab-content" id="tab-credits">
+        <p class="adm-credits-note">Current balances are shown below. Use the fields to <strong>add</strong> credits on top of existing balance.</p>
+        <div class="adm-credits-grid">
+          <div class="adm-credit-card" style="border-color:rgba(245,158,11,0.3)">
+            <div class="adm-credit-label" style="color:var(--gold)">⚡ Credits</div>
+            <div class="adm-credit-current" id="cr-credits-current">—</div>
+            <div class="adm-credit-add">
+              <input type="number" id="f-addCredits" min="0" value="0" placeholder="0">
+              <span>to add</span>
+            </div>
+          </div>
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">Articles</div>
+            <div class="adm-credit-current" id="cr-articles-current">—</div>
+            <div class="adm-credit-add">
+              <input type="number" id="f-addArticles" min="0" value="0" placeholder="0">
+              <span>to add</span>
+            </div>
+          </div>
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">Searches</div>
+            <div class="adm-credit-current" id="cr-searches-current">—</div>
+            <div class="adm-credit-add">
+              <input type="number" id="f-addSearches" min="0" value="0" placeholder="0">
+              <span>to add</span>
+            </div>
+          </div>
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">Audits</div>
+            <div class="adm-credit-current" id="cr-audits-current">—</div>
+            <div class="adm-credit-add">
+              <input type="number" id="f-addAudits" min="0" value="0" placeholder="0">
+              <span>to add</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Restrictions -->
+      <div class="adm-tab-content" id="tab-restrict">
+        <p class="adm-credits-note">Check features to <strong>block</strong> access. Admin role bypasses all restrictions.</p>
+        <div class="adm-restrict-grid">
+          <label class="adm-check-item"><input type="checkbox" name="restriction" value="leads"> Lead Finder</label>
+          <label class="adm-check-item"><input type="checkbox" name="restriction" value="articles"> Article Generator</label>
+          <label class="adm-check-item"><input type="checkbox" name="restriction" value="audits"> AI Audit</label>
+          <label class="adm-check-item"><input type="checkbox" name="restriction" value="outreach"> Outreach</label>
+          <label class="adm-check-item"><input type="checkbox" name="restriction" value="whatsapp"> WhatsApp</label>
+          <label class="adm-check-item"><input type="checkbox" name="restriction" value="crm"> CRM</label>
+          <label class="adm-check-item"><input type="checkbox" name="restriction" value="pipeline"> Pipeline</label>
+          <label class="adm-check-item"><input type="checkbox" name="restriction" value="competitors"> Competitors</label>
+        </div>
+      </div>
+
+      <!-- Tab: Danger -->
+      <div class="adm-tab-content" id="tab-danger">
+        <div class="adm-danger-zone">
+          <h3>Reset Password</h3>
+          <p>Set a new password for this user. They will be able to sign in with it immediately.</p>
+          <div class="adm-form-row">
+            <div class="adm-field" style="flex:1">
+              <input type="password" id="f-newPassword" placeholder="New password (min 6 chars)">
+            </div>
+            <button class="btn btn-ghost" id="adm-reset-pw-btn" style="height:42px;margin-top:20px">Reset Password</button>
+          </div>
+          <div id="adm-reset-pw-msg" class="adm-msg" style="display:none"></div>
+        </div>
+        <div class="adm-danger-zone adm-danger-delete">
+          <h3>Delete User</h3>
+          <p>Permanently delete this account. This action cannot be undone.</p>
+          <button class="btn adm-btn-delete" id="adm-delete-user-btn">🗑 Delete User</button>
+        </div>
+      </div>
+
+    </div>
+    <div class="adm-modal-footer">
+      <div id="adm-modal-error" class="adm-msg adm-msg-error" style="display:none"></div>
+      <button class="btn btn-ghost" id="adm-modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="adm-modal-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(async () => {
+  // ── Auth guard ──────────────────────────────────────────────────────────────
+  const me = await fetch('/api/auth/me').then(r => r.json()).catch(() => ({}));
+  if (!me.user || me.user.role !== 'admin') {
+    window.location.href = '/signin.html';
+    return;
+  }
+
+  // ── CSRF ────────────────────────────────────────────────────────────────────
+  function getCsrf() {
+    return document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrf_token='))?.split('=')[1] || '';
+  }
+  async function api(method, url, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() } };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(url, opts);
+    return r.json();
+  }
+
+  // ── State ────────────────────────────────────────────────────────────────────
+  let allUsers = [];
+  let editingId = null;
+
+  // ── Load users ──────────────────────────────────────────────────────────────
+  async function loadUsers() {
+    const data = await fetch('/api/admin/users').then(r => r.json());
+    allUsers = data.users || [];
+    renderTable();
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  const PLAN_LABELS = {
+    free: 'Free', free_solo: 'Free Solo', pro_solo: 'Pro Solo',
+    starter: 'Starter', pro: 'Pro', agency: 'Agency',
+  };
+  const PLAN_COLORS = {
+    free: '#64748b', free_solo: '#64748b', pro_solo: '#7c3aed',
+    starter: '#2563eb', pro: '#059669', agency: '#d97706',
+  };
+
+  function renderTable() {
+    const q      = document.getElementById('adm-search').value.toLowerCase();
+    const fPlan  = document.getElementById('adm-filter-plan').value;
+    const fStatus= document.getElementById('adm-filter-status').value;
+
+    let filtered = allUsers.filter(u => {
+      const name = (u.firstName + ' ' + u.lastName + ' ' + u.email).toLowerCase();
+      if (q && !name.includes(q)) return false;
+      if (fPlan && u.plan !== fPlan) return false;
+      if (fStatus === 'active'    && (u.suspended || u.role === 'admin')) return false;
+      if (fStatus === 'suspended' && !u.suspended) return false;
+      if (fStatus === 'admin'     && u.role !== 'admin') return false;
+      return true;
+    });
+
+    document.getElementById('adm-user-count').textContent = `${filtered.length} of ${allUsers.length} users`;
+
+    const tbody = document.getElementById('adm-users-tbody');
+    if (!filtered.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="adm-loading">No users found</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(u => {
+      const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ');
+      const initials = (u.firstName?.[0] || '') + (u.lastName?.[0] || u.email[0] || '');
+      const planColor = PLAN_COLORS[u.plan] || '#64748b';
+      const statusBadge = u.suspended
+        ? '<span class="adm-status adm-status-suspended">Suspended</span>'
+        : u.role === 'admin'
+        ? '<span class="adm-status adm-status-admin">Admin</span>'
+        : '<span class="adm-status adm-status-active">Active</span>';
+      const joined = new Date(u.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+      const arts = u.articlesLeft === 99999 ? '∞' : (u.articlesLeft ?? '—');
+      const srch = u.searchesLeft === 99999 ? '∞' : (u.searchesLeft ?? '—');
+      const cred = u.credits ?? 0;
+      const credColor = cred === 0 ? '#ef4444' : cred < 10 ? '#f59e0b' : '#4ade80';
+      return `<tr>
+        <td>
+          <div class="adm-user-cell">
+            <div class="adm-avatar">${initials.toUpperCase()}</div>
+            <div>
+              <div class="adm-user-name">${fullName || '—'}</div>
+              <div class="adm-user-email">${u.email}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="adm-plan-badge" style="--pc:${planColor}">${PLAN_LABELS[u.plan] || u.plan}</span></td>
+        <td class="adm-num" style="color:${credColor};font-weight:700">${cred}</td>
+        <td class="adm-num">${arts}</td>
+        <td class="adm-num">${srch}</td>
+        <td>${statusBadge}</td>
+        <td class="adm-date">${joined}</td>
+        <td>
+          <div class="adm-actions">
+            <button class="adm-btn-edit" data-id="${u.id}">✏️ Edit</button>
+            <a class="adm-btn-edit" href="/profile.html?uid=${u.id}" target="_blank">👤</a>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
+    document.querySelectorAll('.adm-btn-edit').forEach(btn => {
+      btn.addEventListener('click', () => openEdit(btn.dataset.id));
+    });
+  }
+
+  // ── Modal ────────────────────────────────────────────────────────────────────
+  function openAdd() {
+    editingId = null;
+    document.getElementById('adm-modal-title').textContent = 'Add User';
+    document.getElementById('f-password-wrap').style.display = '';
+    document.getElementById('adm-tab-danger').style.display = 'none';
+    resetForm();
+    switchTab('basic');
+    showModal();
+  }
+
+  function openEdit(id) {
+    editingId = id;
+    const u = allUsers.find(x => x.id === id);
+    if (!u) return;
+    document.getElementById('adm-modal-title').textContent = `Edit — ${u.firstName} ${u.lastName}`;
+    document.getElementById('f-password-wrap').style.display = 'none';
+    document.getElementById('adm-tab-danger').style.display = '';
+    resetForm();
+    // Fill basic
+    document.getElementById('f-firstName').value = u.firstName || '';
+    document.getElementById('f-lastName').value  = u.lastName  || '';
+    document.getElementById('f-email').value     = u.email     || '';
+    // Fill account
+    document.getElementById('f-plan').value      = u.plan || 'free';
+    document.getElementById('f-role').value      = u.role || 'user';
+    document.getElementById('f-suspended').checked = !!u.suspended;
+    // Fill credits
+    document.getElementById('cr-credits-current').textContent  = u.credits      ?? 0;
+    document.getElementById('cr-articles-current').textContent = u.articlesLeft === 99999 ? '∞' : (u.articlesLeft ?? 0);
+    document.getElementById('cr-searches-current').textContent = u.searchesLeft === 99999 ? '∞' : (u.searchesLeft ?? 0);
+    document.getElementById('cr-audits-current').textContent   = u.auditsLeft   === 99999 ? '∞' : (u.auditsLeft   ?? 0);
+    // Fill restrictions
+    document.querySelectorAll('[name=restriction]').forEach(cb => {
+      cb.checked = (u.restrictions || []).includes(cb.value);
+    });
+    switchTab('basic');
+    showModal();
+  }
+
+  function resetForm() {
+    ['f-firstName','f-lastName','f-email','f-password','f-newPassword'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('f-plan').value = 'free';
+    document.getElementById('f-role').value = 'user';
+    document.getElementById('f-suspended').checked = false;
+    document.getElementById('f-addCredits').value  = '0';
+    document.getElementById('f-addArticles').value = '0';
+    document.getElementById('f-addSearches').value = '0';
+    document.getElementById('f-addAudits').value   = '0';
+    document.querySelectorAll('[name=restriction]').forEach(cb => cb.checked = false);
+    hideError();
+  }
+
+  function showModal() { document.getElementById('adm-modal').style.display = 'flex'; }
+  function hideModal() { document.getElementById('adm-modal').style.display = 'none'; }
+  function showError(msg) {
+    const el = document.getElementById('adm-modal-error');
+    el.textContent = msg; el.style.display = 'block';
+  }
+  function hideError() {
+    document.getElementById('adm-modal-error').style.display = 'none';
+  }
+
+  // ── Tabs ─────────────────────────────────────────────────────────────────────
+  function switchTab(name) {
+    document.querySelectorAll('.adm-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.adm-tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + name));
+  }
+  document.querySelectorAll('.adm-tab').forEach(t => {
+    t.addEventListener('click', () => switchTab(t.dataset.tab));
+  });
+
+  // ── Save ─────────────────────────────────────────────────────────────────────
+  document.getElementById('adm-modal-save').addEventListener('click', async () => {
+    hideError();
+    const body = {
+      firstName:    document.getElementById('f-firstName').value.trim(),
+      lastName:     document.getElementById('f-lastName').value.trim(),
+      email:        document.getElementById('f-email').value.trim(),
+      plan:         document.getElementById('f-plan').value,
+      role:         document.getElementById('f-role').value,
+      suspended:    document.getElementById('f-suspended').checked,
+      restrictions: [...document.querySelectorAll('[name=restriction]:checked')].map(c => c.value),
+      addCredits:   parseInt(document.getElementById('f-addCredits').value)  || 0,
+      addArticles:  parseInt(document.getElementById('f-addArticles').value) || 0,
+      addSearches:  parseInt(document.getElementById('f-addSearches').value) || 0,
+      addAudits:    parseInt(document.getElementById('f-addAudits').value)   || 0,
+    };
+
+    let res;
+    if (editingId) {
+      res = await api('PATCH', `/api/admin/users/${editingId}`, body);
+    } else {
+      body.password = document.getElementById('f-password').value;
+      res = await api('POST', '/api/admin/users', body);
+    }
+
+    if (res.error) { showError(res.error); return; }
+    hideModal();
+    loadUsers();
+  });
+
+  // ── Reset password ────────────────────────────────────────────────────────────
+  document.getElementById('adm-reset-pw-btn').addEventListener('click', async () => {
+    const pw = document.getElementById('f-newPassword').value;
+    const msg = document.getElementById('adm-reset-pw-msg');
+    if (!pw) return;
+    const res = await api('POST', `/api/admin/users/${editingId}/reset-password`, { password: pw });
+    msg.style.display = 'block';
+    if (res.error) {
+      msg.className = 'adm-msg adm-msg-error'; msg.textContent = res.error;
+    } else {
+      msg.className = 'adm-msg adm-msg-ok'; msg.textContent = 'Password reset successfully.';
+      document.getElementById('f-newPassword').value = '';
+    }
+  });
+
+  // ── Delete user ───────────────────────────────────────────────────────────────
+  document.getElementById('adm-delete-user-btn').addEventListener('click', async () => {
+    const u = allUsers.find(x => x.id === editingId);
+    if (!u) return;
+    if (!confirm(`Delete ${u.firstName} ${u.lastName} (${u.email})?\nThis cannot be undone.`)) return;
+    const res = await api('DELETE', `/api/admin/users/${editingId}`);
+    if (res.error) { showError(res.error); return; }
+    hideModal();
+    loadUsers();
+  });
+
+  // ── Wire up controls ──────────────────────────────────────────────────────────
+  document.getElementById('adm-add-user-btn').addEventListener('click', openAdd);
+  document.getElementById('adm-modal-close').addEventListener('click', hideModal);
+  document.getElementById('adm-modal-cancel').addEventListener('click', hideModal);
+  document.getElementById('adm-modal').addEventListener('click', e => {
+    if (e.target === document.getElementById('adm-modal')) hideModal();
+  });
+  document.getElementById('adm-search').addEventListener('input', renderTable);
+  document.getElementById('adm-filter-plan').addEventListener('change', renderTable);
+  document.getElementById('adm-filter-status').addEventListener('change', renderTable);
+  document.getElementById('adm-signout').addEventListener('click', async () => {
+    await api('POST', '/api/auth/signout');
+    window.location.href = '/signin.html';
+  });
+
+  // ── Init ──────────────────────────────────────────────────────────────────────
+  loadUsers();
+})();
+</script>
+</body>
+</html>

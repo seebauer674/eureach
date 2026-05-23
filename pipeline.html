@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pipeline — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/pipeline.css?v=20260518">
+</head>
+<body>
+
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html">Lead Finder</a>
+      <a href="pipeline.html" style="color:var(--white)">Pipeline</a>
+      <a href="articles.html">Articles</a>
+      <a href="crm.html">CRM</a>
+      <a href="competitors.html">Competitors</a>
+      <a href="audit.html">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<div class="pl-page">
+
+  <!-- Header + stats bar -->
+  <div class="pl-header">
+    <div class="pl-header-inner">
+      <div>
+        <div class="pl-title">🔁 Lead Pipeline</div>
+        <div class="pl-subtitle">Track your leads from first contact to closed deal</div>
+      </div>
+    </div>
+    <div class="pl-stats" id="pl-stats"></div>
+  </div>
+
+  <!-- Kanban board -->
+  <div class="pl-board" id="pl-board">
+    <div class="pl-loading" id="pl-loading">
+      <div class="pl-spinner"></div>
+      Loading your pipeline…
+    </div>
+  </div>
+
+</div>
+
+<!-- Side panel -->
+<div class="pl-overlay" id="pl-overlay"></div>
+<div class="pl-panel" id="pl-panel">
+  <div class="pl-panel-header">
+    <div class="pl-panel-name" id="pl-panel-name"></div>
+    <button class="pl-panel-close" id="pl-panel-close">✕</button>
+  </div>
+  <div class="pl-panel-body" id="pl-panel-body"></div>
+</div>
+
+<script src="js/pipeline.js?v=20260518"></script>
+<script src="/js/api.js"></script>
+</body>
+</html>

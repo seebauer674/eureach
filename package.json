@@ -1,0 +1,12 @@
+{
+  "name": "eureach",
+  "version": "1.0.0",
+  "description": "AI lead generation and content platform for European businesses",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM Pipeline — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/crm.css">
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html">Lead Finder</a>
+      <a href="articles.html">Articles</a>
+      <a href="crm.html" style="color:var(--white)">CRM</a>
+      <a href="competitors.html">Competitors</a>
+      <a href="audit.html">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── PAGE ─────────────────────────────────────────────── -->
+<div class="crm-page">
+
+  <!-- Header -->
+  <div class="crm-header">
+    <div class="crm-header-inner">
+      <div>
+        <div class="crm-title">📋 CRM Pipeline</div>
+        <div class="crm-subtitle">Track your leads from first contact to closed deal</div>
+      </div>
+      <button class="btn btn-primary" id="crm-add-btn" style="font-size:0.85rem;padding:9px 20px">+ Add Lead</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="crm-stats" id="crm-stats">
+    <div class="crm-stat">
+      <span class="crm-stat-val" id="stat-total">0</span>
+      <span class="crm-stat-label">Total</span>
+    </div>
+    <div class="crm-stat">
+      <span class="crm-stat-val" id="stat-found">0</span>
+      <span class="crm-stat-label">Found</span>
+    </div>
+    <div class="crm-stat">
+      <span class="crm-stat-val" id="stat-contacted">0</span>
+      <span class="crm-stat-label">Contacted</span>
+    </div>
+    <div class="crm-stat">
+      <span class="crm-stat-val" id="stat-replied">0</span>
+      <span class="crm-stat-label">Replied</span>
+    </div>
+    <div class="crm-stat crm-stat-closed">
+      <span class="crm-stat-val" id="stat-closed">0</span>
+      <span class="crm-stat-label">Closed</span>
+    </div>
+  </div>
+
+  <!-- Kanban board -->
+  <div class="crm-board" id="crm-board">
+
+    <div class="crm-col">
+      <div class="crm-col-header">
+        <span class="crm-col-dot dot-found"></span>
+        <span class="crm-col-name">Found</span>
+        <span class="crm-col-count" id="count-found">0</span>
+      </div>
+      <div class="crm-col-cards" id="cards-found"></div>
+    </div>
+
+    <div class="crm-col">
+      <div class="crm-col-header">
+        <span class="crm-col-dot dot-contacted"></span>
+        <span class="crm-col-name">Contacted</span>
+        <span class="crm-col-count" id="count-contacted">0</span>
+      </div>
+      <div class="crm-col-cards" id="cards-contacted"></div>
+    </div>
+
+    <div class="crm-col">
+      <div class="crm-col-header">
+        <span class="crm-col-dot dot-replied"></span>
+        <span class="crm-col-name">Replied</span>
+        <span class="crm-col-count" id="count-replied">0</span>
+      </div>
+      <div class="crm-col-cards" id="cards-replied"></div>
+    </div>
+
+    <div class="crm-col">
+      <div class="crm-col-header">
+        <span class="crm-col-dot dot-closed"></span>
+        <span class="crm-col-name">Closed</span>
+        <span class="crm-col-count" id="count-closed">0</span>
+      </div>
+      <div class="crm-col-cards" id="cards-closed"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Add Lead Modal ───────────────────────────────────── -->
+<div class="crm-overlay" id="crm-overlay"></div>
+<div class="crm-modal" id="crm-modal">
+  <div class="crm-modal-header">
+    <div class="crm-modal-title">Add Lead to Pipeline</div>
+    <button class="crm-modal-close" id="crm-modal-close">✕</button>
+  </div>
+  <div class="crm-modal-body">
+    <div class="crm-field">
+      <label class="crm-label">Business Name *</label>
+      <input type="text" class="crm-input" id="m-name" placeholder="e.g. Gasthaus Adler">
+    </div>
+    <div class="crm-field">
+      <label class="crm-label">Business Type</label>
+      <input type="text" class="crm-input" id="m-type" placeholder="e.g. Restaurant">
+    </div>
+    <div class="crm-field">
+      <label class="crm-label">City</label>
+      <input type="text" class="crm-input" id="m-city" placeholder="e.g. Graz">
+    </div>
+    <div class="crm-field">
+      <label class="crm-label">Phone</label>
+      <input type="text" class="crm-input" id="m-phone" placeholder="+43 ...">
+    </div>
+    <div class="crm-field">
+      <label class="crm-label">Website</label>
+      <input type="text" class="crm-input" id="m-website" placeholder="www.example.com">
+    </div>
+    <div class="crm-field">
+      <label class="crm-label">Notes</label>
+      <textarea class="crm-input crm-textarea" id="m-notes" placeholder="Initial notes..."></textarea>
+    </div>
+    <div class="crm-modal-err" id="crm-modal-err"></div>
+    <div class="crm-modal-actions">
+      <button class="btn btn-ghost" id="crm-modal-cancel">Cancel</button>
+      <button class="btn btn-primary" id="crm-modal-save">Add to Pipeline</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Outreach Modal ────────────────────────────────────── -->
+<div class="crm-overlay" id="or-overlay"></div>
+<div class="crm-modal or-modal" id="or-modal">
+  <div class="crm-modal-header">
+    <div class="crm-modal-title" id="or-modal-title">Generate Outreach</div>
+    <button class="crm-modal-close" id="or-modal-close">✕</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="or-tabs">
+    <button class="or-tab or-tab-active" id="or-tab-email">📧 Email Sequence</button>
+    <button class="or-tab" id="or-tab-wa">💬 WhatsApp / SMS</button>
+  </div>
+
+  <!-- ── Email tab content ── -->
+  <div id="or-content-email">
+
+    <!-- Form view -->
+    <div class="crm-modal-body" id="or-form-body">
+      <p class="or-lead-name" id="or-lead-display"></p>
+      <div class="or-selectors">
+        <div class="crm-field">
+          <label class="crm-label">Language</label>
+          <select class="crm-input or-select" id="or-language">
+            <option value="english">🇬🇧 English</option>
+            <option value="greek">🇬🇷 Greek</option>
+            <option value="german">🇩🇪 German</option>
+          </select>
+        </div>
+        <div class="crm-field">
+          <label class="crm-label">Tone</label>
+          <select class="crm-input or-select" id="or-tone">
+            <option value="friendly">😊 Friendly</option>
+            <option value="formal">👔 Formal</option>
+            <option value="direct">⚡ Direct</option>
+          </select>
+        </div>
+      </div>
+      <div class="crm-modal-err" id="or-form-err"></div>
+      <div class="crm-modal-actions">
+        <button class="btn btn-ghost" id="or-form-cancel">Cancel</button>
+        <button class="btn btn-primary" id="or-generate-btn">✨ Generate Sequence</button>
+      </div>
+    </div>
+
+    <!-- Loading view -->
+    <div class="or-loading" id="or-loading" style="display:none">
+      <div class="or-spinner"></div>
+      <div class="or-loading-text">Writing your outreach sequence…</div>
+      <div class="or-loading-sub">Claude is personalizing 3 messages for this lead</div>
+    </div>
+
+    <!-- Results view -->
+    <div id="or-results-body" style="display:none">
+      <div class="or-messages" id="or-messages"></div>
+      <div class="or-results-footer">
+        <button class="btn btn-ghost" id="or-regen-btn">↺ Regenerate</button>
+        <button class="btn btn-primary" id="or-done-btn">Done</button>
+      </div>
+    </div>
+
+  </div><!-- /or-content-email -->
+
+  <!-- ── WhatsApp / SMS tab content ── -->
+  <div id="or-content-wa" style="display:none">
+
+    <!-- WA Form view -->
+    <div class="crm-modal-body" id="wa-form-body">
+      <p class="or-lead-name" id="wa-lead-display"></p>
+      <div class="or-selectors">
+        <div class="crm-field">
+          <label class="crm-label">Language</label>
+          <select class="crm-input or-select" id="wa-language">
+            <option value="english">🇬🇧 English</option>
+            <option value="greek">🇬🇷 Greek</option>
+            <option value="german">🇩🇪 German</option>
+          </select>
+        </div>
+        <div class="crm-field">
+          <label class="crm-label">Message Type</label>
+          <select class="crm-input or-select" id="wa-message-type">
+            <option value="cold">❄️ Cold Intro</option>
+            <option value="follow_up">🔄 Follow-up</option>
+            <option value="offer">🎁 Special Offer</option>
+          </select>
+        </div>
+      </div>
+      <div class="crm-field">
+        <label class="crm-label">Phone Number (optional)</label>
+        <input type="text" class="crm-input" id="wa-phone" placeholder="+30 6901234567">
+      </div>
+      <div class="crm-modal-err" id="wa-form-err"></div>
+      <div class="crm-modal-actions">
+        <button class="btn btn-ghost" id="wa-form-cancel">Cancel</button>
+        <button class="btn btn-primary" id="wa-generate-btn">✨ Generate Messages</button>
+      </div>
+    </div>
+
+    <!-- WA Loading view -->
+    <div class="or-loading" id="wa-loading" style="display:none">
+      <div class="or-spinner"></div>
+      <div class="or-loading-text">Writing your messages…</div>
+      <div class="or-loading-sub">Claude is crafting WhatsApp &amp; SMS for this lead</div>
+    </div>
+
+    <!-- WA Results view -->
+    <div id="wa-results-body" style="display:none">
+      <div class="wa-send-tip" id="wa-send-tip"></div>
+      <div class="wa-cards" id="wa-cards"></div>
+      <div class="or-results-footer">
+        <button class="btn btn-ghost" id="wa-regen-btn">↺ Regenerate</button>
+        <button class="btn btn-primary" id="wa-done-btn">Done</button>
+      </div>
+    </div>
+
+  </div><!-- /or-content-wa -->
+</div>
+
+<!-- ── Limit-reached modal ───────────────────────────────── -->
+<div class="crm-overlay" id="crm-limit-overlay" onclick="closeLimitModal()"></div>
+<div class="crm-modal" id="crm-limit-modal" style="max-width:440px;text-align:center;padding:40px 32px">
+  <div style="font-size:2.4rem;margin-bottom:12px">🔒</div>
+  <h2 style="margin:0 0 8px;font-size:1.25rem">Starter+ Feature</h2>
+  <p style="color:var(--muted);margin:0 0 8px;font-size:0.92rem"><strong class="crm-limit-feature"></strong> is not available on the Free plan.</p>
+  <p style="color:var(--muted);margin:0 0 24px;font-size:0.88rem">Upgrade to unlock AI outreach sequences, WhatsApp templates, unlimited CRM leads, and more.</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a href="membership.html?highlight=starter" class="btn btn-primary" style="font-size:0.85rem">⚡ View Plans</a>
+    <button class="btn btn-ghost" onclick="closeLimitModal()" style="font-size:0.85rem">Maybe later</button>
+  </div>
+</div>
+
+<script src="js/crm.js"></script>
+<script src="/js/api.js"></script>
+</body>
+</html>

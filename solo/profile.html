@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Η Επιχείρησή μου — eureach.eu</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/solo.css">
+</head>
+<body>
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links"><a href="/solo" style="color:var(--muted);font-size:0.875rem">← Solo</a></div>
+    <div class="nav-cta" style="display:flex;gap:10px;align-items:center">
+      <div class="lang-toggle">
+        <button class="lang-btn" id="btn-el" onclick="setLang('el')">🇬🇷 ΕΛ</button>
+        <button class="lang-btn" id="btn-en" onclick="setLang('en')">🇬🇧 EN</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="solo-layout">
+  <aside class="solo-sidebar">
+    <div class="solo-section-label">Solo</div>
+    <a href="/solo" class="solo-nav-item"><span class="solo-nav-icon">🏠</span><span data-el="Αρχική" data-en="Dashboard">Αρχική</span></a>
+    <a href="/solo/profile" class="solo-nav-item active"><span class="solo-nav-icon">🏢</span><span data-el="Η Επιχείρησή μου" data-en="My Business">Η Επιχείρησή μου</span></a>
+    <a href="/solo/audit" class="solo-nav-item"><span class="solo-nav-icon">📊</span><span data-el="Έλεγχος Ορατότητας" data-en="Visibility Audit">Έλεγχος Ορατότητας</span></a>
+    <a href="/solo/checklist" class="solo-nav-item"><span class="solo-nav-icon">✅</span><span data-el="Μηνιαία Λίστα" data-en="Monthly Checklist">Μηνιαία Λίστα</span></a>
+    <a href="/solo/articles" class="solo-nav-item"><span class="solo-nav-icon">✍️</span><span data-el="Άρθρα" data-en="Articles">Άρθρα</span></a>
+  </aside>
+
+  <main class="solo-main">
+    <h1 class="solo-page-title" data-el="Η Επιχείρησή μου" data-en="My Business">Η Επιχείρησή μου</h1>
+    <p class="solo-page-sub" data-el="Τα στοιχεία της επιχείρησής σου — χρησιμοποιούνται για τον έλεγχο ορατότητας και τη δημιουργία άρθρων." data-en="Your business details — used for visibility audits and article generation.">Τα στοιχεία της επιχείρησής σου — χρησιμοποιούνται για τον έλεγχο ορατότητας και τη δημιουργία άρθρων.</p>
+
+    <div class="solo-card">
+      <form id="profile-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label data-el="Επωνυμία *" data-en="Business Name *">Επωνυμία *</label>
+            <input type="text" id="businessName" name="businessName" required placeholder="π.χ. Υδραυλικός Νίκος">
+          </div>
+          <div class="form-group">
+            <label data-el="Επάγγελμα *" data-en="Trade / Profession *">Επάγγελμα *</label>
+            <input type="text" id="trade" name="trade" required placeholder="π.χ. Υδραυλικός, Ηλεκτρολόγος, Δικηγόρος">
+          </div>
+          <div class="form-group">
+            <label data-el="Πόλη" data-en="City">Πόλη</label>
+            <input type="text" id="city" name="city" placeholder="π.χ. Αθήνα">
+          </div>
+          <div class="form-group">
+            <label data-el="Περιοχή" data-en="Region">Περιοχή</label>
+            <input type="text" id="region" name="region" placeholder="π.χ. Αττική">
+          </div>
+          <div class="form-group">
+            <label data-el="Τηλέφωνο" data-en="Phone">Τηλέφωνο</label>
+            <input type="tel" id="phone" name="phone" placeholder="π.χ. 210 1234567">
+          </div>
+          <div class="form-group">
+            <label data-el="Ιστότοπος" data-en="Website">Ιστότοπος</label>
+            <input type="url" id="website" name="website" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label data-el="Ώρες Λειτουργίας" data-en="Working Hours">Ώρες Λειτουργίας</label>
+            <input type="text" id="workingHours" name="workingHours" placeholder="π.χ. Δε-Πα 09:00-17:00">
+          </div>
+          <div class="form-group">
+            <label data-el="Περιοχή Εξυπηρέτησης" data-en="Service Area">Περιοχή Εξυπηρέτησης</label>
+            <input type="text" id="serviceArea" name="serviceArea" placeholder="π.χ. Αθήνα, Πειραιάς, Γλυφάδα">
+          </div>
+          <div class="form-group full">
+            <label data-el="Περιγραφή Επιχείρησης" data-en="Business Description">Περιγραφή Επιχείρησης</label>
+            <textarea id="description" name="description" rows="4" placeholder="Σύντομη περιγραφή της επιχείρησής σου, των υπηρεσιών σου και της εμπειρίας σου..."></textarea>
+          </div>
+        </div>
+        <div style="margin-top:20px;display:flex;gap:10px;align-items:center">
+          <button type="submit" class="btn btn-primary" id="save-btn" data-el="Αποθήκευση" data-en="Save">Αποθήκευση</button>
+          <span id="save-status" style="font-size:0.82rem;color:var(--muted)"></span>
+        </div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/js/api.js"></script>
+<script>
+let lang = localStorage.getItem("eureach_lang") || "el";
+
+function setLang(l) {
+  lang = l;
+  localStorage.setItem("eureach_lang", l);
+  document.querySelectorAll("[data-el]").forEach(el => { el.textContent = el.getAttribute("data-" + l) || el.textContent; });
+  document.getElementById("btn-el").classList.toggle("active", l === "el");
+  document.getElementById("btn-en").classList.toggle("active", l === "en");
+}
+
+function showToast(msg, type = "success") {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show " + type;
+  setTimeout(() => { t.className = "toast"; }, 3000);
+}
+
+async function init() {
+  setLang(lang);
+  const r = await fetch("/api/solo/profile");
+  if (r.status === 401) { location.href = "/signin.html"; return; }
+  const { data: profile } = await r.json();
+  if (profile) {
+    const fields = ["businessName","trade","city","region","phone","website","workingHours","serviceArea","description"];
+    fields.forEach(k => { const el = document.getElementById(k); if (el && profile[k]) el.value = profile[k]; });
+  }
+}
+
+document.getElementById("profile-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById("save-btn");
+  btn.disabled = true;
+  btn.textContent = lang === "el" ? "Αποθήκευση..." : "Saving...";
+  const data = {};
+  ["businessName","trade","city","region","phone","website","workingHours","serviceArea","description"].forEach(k => {
+    const el = document.getElementById(k);
+    if (el) data[k] = el.value;
+  });
+  const r = await fetch("/api/solo/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+  btn.disabled = false;
+  btn.textContent = lang === "el" ? "Αποθήκευση" : "Save";
+  if (r.ok) {
+    showToast(lang === "el" ? "✓ Αποθηκεύτηκε!" : "✓ Saved!");
+  } else {
+    const { error } = await r.json();
+    showToast((lang === "el" ? "Σφάλμα: " : "Error: ") + error, "error");
+  }
+});
+
+init();
+</script>
+</body>
+</html>

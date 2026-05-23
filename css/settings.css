@@ -1,0 +1,454 @@
+/* ── Settings Page ───────────────────────────────────── */
+.app-nav { background: rgba(7,13,31,0.98); }
+
+.st-page {
+  min-height: 100vh;
+  padding-top: 64px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+/* ── Sidebar nav ─────────────────────────────────────── */
+.st-sidebar {
+  position: sticky;
+  top: 84px;
+  padding-top: 32px;
+}
+.st-nav { display: flex; flex-direction: column; gap: 2px; }
+.st-nav-item {
+  display: block; padding: 9px 14px; border-radius: 8px;
+  font-size: 0.85rem; font-weight: 500; color: var(--muted);
+  text-decoration: none; transition: all 0.15s;
+}
+.st-nav-item:hover { color: var(--white); background: rgba(255,255,255,0.05); }
+.st-nav-item.active { color: var(--white); background: rgba(255,255,255,0.08); font-weight: 600; }
+
+/* ── Main content ────────────────────────────────────── */
+.st-main {
+  padding-top: 32px;
+  padding-bottom: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+/* ── Section ─────────────────────────────────────────── */
+.st-section { }
+.st-section-hdr {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+  margin-bottom: 20px;
+}
+.st-section-title { font-size: 1.15rem; font-weight: 800; margin-bottom: 4px; }
+.st-section-sub { font-size: 0.82rem; color: var(--muted); max-width: 480px; line-height: 1.5; }
+
+/* ── Add button ──────────────────────────────────────── */
+.st-add-btn {
+  padding: 9px 18px; border-radius: 8px; font-size: 0.82rem; font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  border: none; color: white; cursor: pointer; transition: all 0.2s;
+  white-space: nowrap; flex-shrink: 0;
+}
+.st-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,58,237,0.35); }
+.st-add-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ── Site cards grid ─────────────────────────────────── */
+.st-sites-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.st-site-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+  transition: border-color 0.2s;
+}
+.st-site-card:hover { border-color: rgba(124,58,237,0.35); }
+
+.st-site-card-top {
+  display: flex; align-items: center; gap: 12px;
+}
+.st-site-favicon {
+  width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(124,58,237,0.3), rgba(37,99,235,0.3));
+  border: 1px solid rgba(124,58,237,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 800; color: #c4b5fd;
+}
+.st-site-info { flex: 1; min-width: 0; }
+.st-site-name { font-size: 0.9rem; font-weight: 700; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-site-domain { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+.st-site-badge {
+  font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 100px;
+  background: rgba(124,58,237,0.12); border: 1px solid rgba(124,58,237,0.25); color: #c4b5fd;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+.st-site-meta { display: flex; flex-direction: column; gap: 7px; }
+.st-site-meta-row { display: flex; gap: 8px; font-size: 0.78rem; align-items: baseline; }
+.st-meta-label { color: var(--muted); font-weight: 600; min-width: 68px; flex-shrink: 0; }
+.st-tone-pill {
+  display: inline-block; padding: 1px 7px; border-radius: 100px; font-size: 0.65rem; font-weight: 700;
+  background: rgba(255,255,255,0.07); border: 1px solid var(--border); color: var(--muted);
+  margin-right: 3px;
+}
+
+.st-site-actions { display: flex; gap: 8px; }
+.st-site-btn {
+  flex: 1; padding: 7px 10px; border-radius: 7px; font-size: 0.75rem; font-weight: 600;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+.st-site-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+.st-site-btn-danger:hover { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.07); }
+
+/* ── Empty state ─────────────────────────────────────── */
+.st-empty-sites {
+  grid-column: 1 / -1;
+  text-align: center; padding: 56px 24px;
+  border: 1px dashed var(--border); border-radius: var(--radius2);
+}
+.st-empty-icon  { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.35; }
+.st-empty-title { font-size: 1rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.st-empty-sub   { font-size: 0.82rem; color: var(--muted); opacity: 0.65; margin-bottom: 20px; }
+.st-add-btn-inline {
+  padding: 10px 22px; border-radius: 9px; font-size: 0.85rem; font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  border: none; color: white; cursor: pointer; transition: all 0.2s;
+}
+.st-add-btn-inline:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,58,237,0.35); }
+
+/* ── Plan note ───────────────────────────────────────── */
+.st-plan-note {
+  font-size: 0.75rem; color: var(--muted);
+  display: flex; align-items: center; gap: 8px;
+}
+.st-plan-note a { color: #93c5fd; }
+.st-plan-badge {
+  padding: 2px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 700;
+  background: linear-gradient(135deg, rgba(124,58,237,0.25), rgba(37,99,235,0.2));
+  border: 1px solid rgba(124,58,237,0.35); color: #c4b5fd;
+}
+
+/* ── Plan card ───────────────────────────────────────── */
+.st-plan-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 28px; max-width: 500px;
+}
+.st-plan-name { font-size: 1.2rem; font-weight: 800; margin-bottom: 4px; }
+.st-plan-meta { font-size: 0.8rem; color: var(--muted); margin-bottom: 24px; }
+.st-plan-stats { display: flex; gap: 32px; margin-bottom: 24px; }
+.st-stat-val { font-size: 1.8rem; font-weight: 800; color: var(--white); line-height: 1; }
+.st-stat-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+.st-upgrade-btn {
+  width: 100%; padding: 12px; border-radius: 10px; font-size: 0.9rem; font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  border: none; color: white; cursor: pointer; transition: all 0.2s;
+}
+.st-upgrade-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(124,58,237,0.4); }
+
+/* ── Modal ───────────────────────────────────────────── */
+.st-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.st-overlay.open { opacity: 1; pointer-events: all; }
+
+.st-modal {
+  position: fixed; z-index: 101;
+  top: 50%; left: 50%; transform: translate(-50%, -48%);
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px); overflow-y: auto;
+  background: #0d1630;
+  border: 1px solid rgba(124,58,237,0.35);
+  border-radius: var(--radius2);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.st-modal.open {
+  opacity: 1; pointer-events: all;
+  transform: translate(-50%, -50%);
+}
+
+.st-modal-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; background: #0d1630; z-index: 1;
+}
+.st-modal-title { font-size: 1rem; font-weight: 800; }
+.st-modal-close {
+  width: 28px; height: 28px; border-radius: 6px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; font-size: 0.8rem;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+}
+.st-modal-close:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+
+.st-modal-form { padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+
+.st-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.st-field { display: flex; flex-direction: column; gap: 6px; }
+.st-field-full { grid-column: 1 / -1; }
+.st-field label {
+  font-size: 0.75rem; font-weight: 600; color: var(--muted); letter-spacing: 0.02em;
+}
+.st-req { color: #f87171; }
+.st-field input, .st-field select {
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 0.875rem;
+  padding: 9px 12px; outline: none; font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.st-field input:focus, .st-field select:focus {
+  border-color: rgba(124,58,237,0.6);
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+}
+.st-field select { appearance: none; cursor: pointer; }
+.st-field select option, .st-field select optgroup { background: #0d1630; }
+.st-field-hint { font-size: 0.7rem; color: var(--muted); opacity: 0.65; }
+
+/* ── Chip checkboxes (lang + tone) ───────────────────── */
+.st-lang-chips, .st-tone-chips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.st-chip-label {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 100px; font-size: 0.78rem; font-weight: 600;
+  border: 1px solid var(--border); background: var(--glass);
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+  user-select: none;
+}
+.st-chip-label input { display: none; }
+.st-chip-label:hover { color: var(--white); border-color: rgba(255,255,255,0.18); }
+.st-chip-label:has(input:checked) {
+  background: rgba(124,58,237,0.18);
+  border-color: rgba(124,58,237,0.5);
+  color: #c4b5fd;
+}
+
+/* ── Modal actions ───────────────────────────────────── */
+.st-modal-actions {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px;
+}
+.st-cancel-btn {
+  padding: 9px 20px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); cursor: pointer; transition: all 0.15s;
+}
+.st-cancel-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+.st-save-btn {
+  padding: 9px 24px; border-radius: 8px; font-size: 0.82rem; font-weight: 700;
+  background: linear-gradient(135deg, #7c3aed, #2563eb);
+  border: none; color: white; cursor: pointer; transition: all 0.2s;
+}
+.st-save-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 16px rgba(124,58,237,0.4); }
+
+/* ── Toast ───────────────────────────────────────────── */
+.st-toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999;
+  background: #1e293b; border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px; padding: 10px 18px;
+  font-size: 0.85rem; color: #e2e8f0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  opacity: 0; transform: translateY(6px); transition: opacity 0.2s, transform 0.2s;
+}
+.st-toast.show { opacity: 1; transform: none; }
+
+/* ── Activity stats grid ─────────────────────────────── */
+.st-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 32px;
+}
+.st-activity-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  text-align: center;
+  transition: border-color 0.2s, transform 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.st-activity-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top, var(--ac, var(--blue)), transparent 70%);
+  opacity: 0.08;
+  pointer-events: none;
+}
+.st-activity-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-2px); }
+.st-activity-icon { font-size: 1.4rem; margin-bottom: 10px; }
+.st-activity-val {
+  font-size: 2rem; font-weight: 800; letter-spacing: -1px; line-height: 1;
+  color: var(--white); margin-bottom: 4px;
+}
+.st-activity-lbl { font-size: 0.72rem; color: var(--muted); font-weight: 500; }
+
+/* ── Profile form ────────────────────────────────────── */
+.st-profile-form {
+  background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 600px;
+}
+.st-profile-divider {
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted);
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.st-profile-divider span { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 0.72rem; opacity: 0.65; }
+.st-profile-error {
+  font-size: 0.82rem; color: #f87171; min-height: 18px;
+}
+.st-profile-actions { display: flex; justify-content: flex-end; padding-top: 4px; }
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 700px) {
+  .st-page { grid-template-columns: 1fr; }
+  .st-sidebar { position: static; padding-top: 20px; }
+  .st-nav { flex-direction: row; flex-wrap: wrap; }
+  .st-form-row { grid-template-columns: 1fr; }
+  .st-field-full { grid-column: 1; }
+  .st-section-hdr { flex-direction: column; }
+  .st-activity-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 400px) {
+  .st-activity-grid { grid-template-columns: 1fr; }
+}
+
+/* ── WordPress Connection ─────────────────────────────── */
+.wp-status-card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.wp-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.wp-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 8px rgba(74,222,128,0.5);
+  flex-shrink: 0;
+}
+
+.wp-status-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--white);
+}
+
+.wp-status-url {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.wp-status-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.wp-disconnect-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.wp-disconnect-btn:hover { border-color: #f87171; color: #f87171; }
+
+.wp-plan-note {
+  background: rgba(124,58,237,0.1);
+  border: 1px solid rgba(124,58,237,0.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.83rem;
+  color: var(--text);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+.wp-plan-note a { color: var(--blue2); }
+
+.wp-howto {
+  background: var(--navy2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 4px 0 16px;
+  font-size: 0.82rem;
+}
+.wp-howto-title {
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.wp-howto-steps {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.wp-howto-steps strong { color: var(--text); }
+
+/* ── Email / SMTP section ─────────────────────────────── */
+.st-select {
+  background: var(--glass); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 10px 12px; font-size: 0.88rem; width: 100%;
+  font-family: inherit; cursor: pointer;
+}
+.st-select:focus { outline: none; border-color: var(--blue2); }
+.smtp-howto {
+  background: var(--navy2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px 16px; margin: 4px 0 16px; font-size: 0.82rem;
+}
+.smtp-howto-title { font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.smtp-log-link {
+  font-size: 0.82rem; color: var(--blue2); text-decoration: none;
+  padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(37,99,235,0.3);
+  transition: background 0.15s;
+}
+.smtp-log-link:hover { background: rgba(37,99,235,0.1); }
