@@ -239,6 +239,11 @@
   border-color: var(--blue);
 }
 
+.crm-status-select option {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
 .crm-delete-btn {
   background: none;
   border: 1px solid var(--border);

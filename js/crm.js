@@ -701,6 +701,12 @@ function openEmailSendForm(btn, msg) {
       }
       const t = new Date(data.sentAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
       form.innerHTML = `<div class="or-send-success">✅ Sent at ${t}</div>`;
+      // Auto-move to Contacted if still at 'found'
+      if (lead.status === 'found') {
+        await patchEntry(lead.id, { status: 'contacted' });
+        const idx2 = entries.findIndex(e => e.id === lead.id);
+        if (idx2 !== -1) entries[idx2].status = 'contacted';
+      }
       btn.textContent = "✓ Sent"; btn.disabled = true; btn.classList.add("or-send-btn-done");
     } catch {
       form.querySelector(".or-send-err").textContent = "Network error. Please try again.";
@@ -769,6 +775,12 @@ function toggleCallPanel(btn, lead) {
       panel.remove(); btn.classList.remove("active");
       render();
       showToast("Call logged ✓");
+      // Auto-move to Contacted if still at 'found'
+      if (lead.status === 'found') {
+        await patchEntry(lead.id, { status: 'contacted' });
+        const idx2 = entries.findIndex(e => e.id === lead.id);
+        if (idx2 !== -1) entries[idx2].status = 'contacted';
+      }
     } catch { panel.querySelector(".crm-panel-err").textContent = "Network error."; saveBtn.disabled = false; saveBtn.textContent = "Save"; }
   });
 }
@@ -935,6 +947,12 @@ async function toggleEmailPanel(btn, lead) {
       if (!res.ok) { errEl.textContent = data.error || 'Send failed.'; sendBtn.disabled = false; sendBtn.textContent = '✉ Send'; return; }
       panel.remove(); btn.classList.remove('active');
       showToast('Email sent ✓');
+      // Auto-move to Contacted if still at 'found'
+      if (lead.status === 'found') {
+        await patchEntry(lead.id, { status: 'contacted' });
+        const idx2 = entries.findIndex(e => e.id === lead.id);
+        if (idx2 !== -1) entries[idx2].status = 'contacted';
+      }
     } catch { errEl.textContent = 'Network error.'; sendBtn.disabled = false; sendBtn.textContent = '✉ Send'; }
   });
 }
