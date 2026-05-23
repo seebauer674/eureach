@@ -283,16 +283,30 @@
 
 <!-- ── Lead Detail Modal ───────────────────────────────── -->
 <div class="crm-overlay" id="lead-detail-overlay" onclick="closeLeadDetail()"></div>
-<div class="crm-modal" id="lead-detail-modal" style="max-width:520px">
-  <div class="crm-modal-header">
-    <div class="crm-modal-title" id="ld-title">Lead Details</div>
-    <button class="crm-modal-close" onclick="closeLeadDetail()">✕</button>
+<div class="ld-modal" id="lead-detail-modal">
+  <div class="ld-modal-header">
+    <div class="ld-modal-name" id="ld-name">Lead</div>
+    <button class="ld-modal-close" onclick="closeLeadDetail()">✕</button>
   </div>
-  <div class="crm-modal-body" style="padding:0 28px 24px">
-    <div class="ld-meta" id="ld-meta"></div>
-    <label class="crm-modal-label" style="margin-top:16px;display:block">Notes</label>
-    <textarea class="crm-card-notes" id="ld-notes" style="width:100%;min-height:90px;box-sizing:border-box" placeholder="Add notes…"></textarea>
-    <div class="ld-calllog" id="ld-calllog"></div>
+  <div class="ld-contact-bar" id="ld-contact-bar"></div>
+  <div class="ld-status-notes">
+    <select class="crm-status-select" id="ld-status-sel">
+      <option value="found">🔵 Found</option>
+      <option value="contacted">🟡 Contacted</option>
+      <option value="replied">🟣 Replied</option>
+      <option value="closed">🟢 Closed</option>
+    </select>
+    <textarea class="ld-notes-ta" id="ld-notes" placeholder="Notes about this lead…"></textarea>
+  </div>
+  <div class="ld-feed-wrap">
+    <div class="ld-feed-label">Activity</div>
+    <div class="ld-feed" id="ld-feed"></div>
+  </div>
+  <div class="ld-action-panel" id="ld-action-panel"></div>
+  <div class="ld-action-bar">
+    <button class="ld-act-btn" id="ld-act-email">✉ Email</button>
+    <button class="ld-act-btn" id="ld-act-call">📞 Log Call</button>
+    <button class="ld-act-btn" id="ld-act-msg">💬 Message</button>
   </div>
 </div>
 <script src="js/crm.js"></script>

@@ -852,6 +852,29 @@ async function handleCrmLogCall(req, res, id) {
   json(res, 201, { call: callEntry, callLog: crm[idx].callLog });
 }
 
+async function handleCrmLogMessage(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const body    = await readBody(req);
+  const channel = sanitizeString(body.channel || "", 20);
+  const text    = sanitizeString(body.text    || "", 1000);
+  const validChannels = ["sms", "telegram", "viber"];
+  if (!validChannels.includes(channel)) return json(res, 400, { error: "Invalid channel." });
+  if (!text) return json(res, 400, { error: "text required." });
+
+  const crm = readJSON(CRM_FILE);
+  const idx = crm.findIndex(e => e.id === id && e.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: "Entry not found." });
+
+  const msgEntry = { id: generateId(), channel, text, sentAt: new Date().toISOString() };
+  crm[idx].messageLog = [...(crm[idx].messageLog || []), msgEntry];
+  crm[idx].updatedAt  = msgEntry.sentAt;
+  writeJSON(CRM_FILE, crm);
+  json(res, 201, { message: msgEntry, messageLog: crm[idx].messageLog });
+}
+
 // ── Lead scoring ─────────────────────────────────────────────────────────────
 
 function readScoreCache() {
@@ -1869,6 +1892,16 @@ async function handleEmailSend(req, res) {
   const entry = { id: generateId(), userId: user.id, leadId: leadId || null, to, subject, sentAt: new Date().toISOString(), sequenceStep: sequenceStep || null, opened: false, clicked: false };
   log.push(entry);
   writeJSON(EMAIL_LOG_FILE, log);
+  // Also append to CRM entry's emailLog if leadId provided
+  if (leadId) {
+    const crm = readJSON(CRM_FILE);
+    const cidx = crm.findIndex(e => e.id === leadId && e.userId === user.id);
+    if (cidx !== -1) {
+      crm[cidx].emailLog = [...(crm[cidx].emailLog || []), { id: entry.id, subject, body, to, sentAt: entry.sentAt }];
+      crm[cidx].updatedAt = entry.sentAt;
+      writeJSON(CRM_FILE, crm);
+    }
+  }
   return json(res, 200, { ok: true, sentAt: entry.sentAt, id: entry.id });
 }
 
@@ -2439,6 +2472,7 @@ async function handleRequest(req, res) {
   if (urlPath.startsWith("/api/crm/")              && method === "PATCH")  return handleCrmUpdate(req, res, urlPath.slice(9));
   if (urlPath.startsWith("/api/crm/")              && method === "DELETE") return handleCrmDelete(req, res, urlPath.slice(9));
   if (urlPath.endsWith("/call") && urlPath.startsWith("/api/crm/") && method === "POST")   return handleCrmLogCall(req, res, urlPath.split("/")[3]);
+  if (urlPath.endsWith("/message") && urlPath.startsWith("/api/crm/") && method === "POST") return handleCrmLogMessage(req, res, urlPath.split("/")[3]);
 
   // Pipeline API routes
   if (urlPath === "/api/pipeline"                              && method === "GET")    return handlePipelineList(req, res);

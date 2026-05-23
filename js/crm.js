@@ -199,42 +199,244 @@ function cardHTML(e) {
 
 
 /* ── Lead Detail Modal ───────────────────────────────── */
+let ldCurrentLead = null;
+let ldActivePanel = null;
+
 function openLeadDetail(lead) {
-  document.getElementById('ld-title').textContent = lead.leadName;
-  const metaRows = [
-    lead.businessType ? `<div class="ld-row"><span>🏢</span>${esc(lead.businessType)}</div>` : '',
-    lead.city         ? `<div class="ld-row"><span>📍</span>${esc(lead.city)}</div>` : '',
-    lead.phone        ? `<div class="ld-row"><span>📞</span>${esc(lead.phone)}</div>` : '',
-    lead.website      ? `<div class="ld-row"><span>🌐</span><a href="https://${esc(lead.website)}" target="_blank">${esc(lead.website)}</a></div>` : '',
-    lead.email        ? `<div class="ld-row"><span>✉</span>${esc(lead.email)}</div>` : '',
+  ldCurrentLead = lead;
+  document.getElementById('ld-name').textContent = lead.leadName;
+
+  const pills = [
+    lead.businessType ? `<span class="ld-pill">🏢 ${esc(lead.businessType)}</span>` : '',
+    lead.city         ? `<span class="ld-pill">📍 ${esc(lead.city)}</span>` : '',
+    lead.phone        ? `<a class="ld-pill ld-pill-link" href="tel:${esc(lead.phone)}">📞 ${esc(lead.phone)}</a>` : '',
+    lead.website      ? `<a class="ld-pill ld-pill-link" href="https://${esc(lead.website)}" target="_blank">🌐 ${esc(lead.website)}</a>` : '',
+    lead.email        ? `<span class="ld-pill">✉ ${esc(lead.email)}</span>` : '',
   ].filter(Boolean).join('');
-  document.getElementById('ld-meta').innerHTML = metaRows || '<span style="color:var(--muted)">No contact info</span>';
+  document.getElementById('ld-contact-bar').innerHTML = pills || '<span class="ld-pill" style="color:var(--muted)">No contact info</span>';
 
-  const notesEl = document.getElementById('ld-notes');
-  notesEl.value = lead.notes || '';
-  notesEl.dataset.id = lead.id;
-  notesEl.onblur = () => patchEntry(lead.id, { notes: notesEl.value });
+  const sel = document.getElementById('ld-status-sel');
+  sel.value = lead.status;
+  sel.onchange = () => { lead.status = sel.value; patchEntry(lead.id, { status: sel.value }); render(); };
 
-  const log = lead.callLog || [];
-  const icons = { answered: '✅', no_answer: '📵', voicemail: '📱', callback: '🔁' };
-  const labels = { answered: 'Answered', no_answer: 'No answer', voicemail: 'Voicemail', callback: 'Callback' };
-  if (log.length) {
-    const rows = log.slice().reverse().map(c => {
-      const dt = new Date(c.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-      return `<div class="ld-call-row"><span>${icons[c.outcome] || '📞'} ${labels[c.outcome] || c.outcome}</span><span class="ld-call-dt">${dt}</span>${c.notes ? `<div class="ld-call-notes">${esc(c.notes)}</div>` : ''}</div>`;
-    }).join('');
-    document.getElementById('ld-calllog').innerHTML = `<div class="ld-calllog-title">Call History</div>${rows}`;
-  } else {
-    document.getElementById('ld-calllog').innerHTML = '';
-  }
+  const ta = document.getElementById('ld-notes');
+  ta.value = lead.notes || '';
+  ta.onblur = () => patchEntry(lead.id, { notes: ta.value });
+
+  ldRenderFeed(lead);
+
+  document.getElementById('ld-action-panel').innerHTML = '';
+  ldActivePanel = null;
+  document.querySelectorAll('.ld-act-btn').forEach(b => b.classList.remove('active'));
+
+  document.getElementById('ld-act-email').onclick = () => ldTogglePanel('email');
+  document.getElementById('ld-act-call').onclick  = () => ldTogglePanel('call');
+  document.getElementById('ld-act-msg').onclick   = () => ldTogglePanel('message');
 
   document.getElementById('lead-detail-overlay').classList.add('open');
   document.getElementById('lead-detail-modal').classList.add('open');
 }
 
+function ldRenderFeed(lead) {
+  const items = [];
+  (lead.callLog    || []).forEach(c => items.push({ type: 'call',    data: c, at: c.at }));
+  (lead.emailLog   || []).forEach(e => items.push({ type: 'email',   data: e, at: e.sentAt }));
+  (lead.messageLog || []).forEach(m => items.push({ type: 'message', data: m, at: m.sentAt }));
+  items.sort((a, b) => new Date(b.at) - new Date(a.at));
+
+  const feedEl = document.getElementById('ld-feed');
+  if (!items.length) {
+    feedEl.innerHTML = '<div class="ld-feed-empty">No activity yet — use the buttons below to start.</div>';
+    return;
+  }
+
+  const callIcons  = { answered: '✅', no_answer: '📵', voicemail: '📱', callback: '🔁' };
+  const callLabels = { answered: 'Answered', no_answer: 'No answer', voicemail: 'Voicemail', callback: 'Callback' };
+  const chIcons    = { sms: '💬', telegram: '✈️', viber: '💜' };
+
+  feedEl.innerHTML = items.map(item => {
+    const dt   = new Date(item.at);
+    const dStr = dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const tStr = dt.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const when = `<span class="ld-feed-when">${dStr} ${tStr}</span>`;
+
+    if (item.type === 'call') {
+      const c = item.data;
+      return `<div class="ld-feed-item">
+        <div class="ld-feed-icon">${callIcons[c.outcome] || '📞'}</div>
+        <div class="ld-feed-body">
+          <div class="ld-feed-line"><strong>${callLabels[c.outcome] || c.outcome}</strong>${when}</div>
+          ${c.notes ? `<div class="ld-feed-note">${esc(c.notes)}</div>` : ''}
+        </div>
+      </div>`;
+    }
+    if (item.type === 'email') {
+      const e = item.data;
+      return `<div class="ld-feed-item ld-feed-email-item" onclick="this.classList.toggle('expanded')">
+        <div class="ld-feed-icon">✉</div>
+        <div class="ld-feed-body">
+          <div class="ld-feed-line"><strong>${esc(e.subject)}</strong>${when}</div>
+          <div class="ld-feed-expand">${esc(e.body || '')}</div>
+        </div>
+      </div>`;
+    }
+    if (item.type === 'message') {
+      const m = item.data;
+      return `<div class="ld-feed-item">
+        <div class="ld-feed-icon">${chIcons[m.channel] || '💬'}</div>
+        <div class="ld-feed-body">
+          <div class="ld-feed-line"><strong>${esc(m.channel.charAt(0).toUpperCase() + m.channel.slice(1))}</strong>${when}</div>
+          <div class="ld-feed-note">${esc(m.text)}</div>
+        </div>
+      </div>`;
+    }
+    return '';
+  }).join('');
+}
+
+function ldTogglePanel(type) {
+  const panel  = document.getElementById('ld-action-panel');
+  const btnMap = { email: 'ld-act-email', call: 'ld-act-call', message: 'ld-act-msg' };
+
+  if (ldActivePanel === type) {
+    panel.innerHTML = '';
+    ldActivePanel = null;
+    document.querySelectorAll('.ld-act-btn').forEach(b => b.classList.remove('active'));
+    return;
+  }
+  ldActivePanel = type;
+  document.querySelectorAll('.ld-act-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(btnMap[type]).classList.add('active');
+
+  if (type === 'email') {
+    panel.innerHTML = `<div class="ld-panel">
+      <div class="ld-panel-title">✉ Send Email</div>
+      <div class="ld-panel-row"><label>To</label><input class="ld-panel-input" id="ldp-to" type="email" value="${esc(ldCurrentLead.email || '')}" placeholder="recipient@email.com"></div>
+      <div class="ld-panel-row"><label>Subject</label><input class="ld-panel-input" id="ldp-subj" placeholder="Email subject…"></div>
+      <div class="ld-panel-row"><label>Body</label><textarea class="ld-panel-ta" id="ldp-body" placeholder="Write your message…"></textarea></div>
+      <div class="ld-panel-err" id="ldp-err"></div>
+      <div class="ld-panel-footer">
+        <button class="crm-panel-cancel" onclick="ldTogglePanel('email')">Cancel</button>
+        <button class="crm-panel-save" id="ldp-send">✉ Send</button>
+      </div>
+    </div>`;
+    document.getElementById('ldp-send').onclick = async () => {
+      const to   = document.getElementById('ldp-to').value.trim();
+      const subj = document.getElementById('ldp-subj').value.trim();
+      const body = document.getElementById('ldp-body').value.trim();
+      const err  = document.getElementById('ldp-err');
+      if (!to || !subj || !body) { err.textContent = 'All fields required.'; return; }
+      const btn = document.getElementById('ldp-send');
+      btn.disabled = true; btn.textContent = 'Sending…';
+      const res  = await fetch('/api/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, subject: subj, body, leadId: ldCurrentLead.id }) });
+      const data = await res.json();
+      if (!res.ok) { err.textContent = data.error || 'Send failed.'; btn.disabled = false; btn.textContent = '✉ Send'; return; }
+      const entry = entries.find(e => e.id === ldCurrentLead.id);
+      if (entry) { entry.emailLog = entry.emailLog || []; entry.emailLog.push({ subject: subj, body, to, sentAt: data.sentAt }); ldCurrentLead = entry; }
+      ldTogglePanel('email');
+      ldRenderFeed(ldCurrentLead);
+      showToast('Email sent ✓');
+      if (ldCurrentLead.status === 'found') {
+        await patchEntry(ldCurrentLead.id, { status: 'contacted' });
+        const i2 = entries.findIndex(e => e.id === ldCurrentLead.id);
+        if (i2 !== -1) { entries[i2].status = 'contacted'; ldCurrentLead.status = 'contacted'; }
+        document.getElementById('ld-status-sel').value = 'contacted';
+        render();
+      }
+    };
+  }
+
+  if (type === 'call') {
+    let outcome = null;
+    panel.innerHTML = `<div class="ld-panel">
+      <div class="ld-panel-title">📞 Log Call</div>
+      <div class="ld-outcome-btns">
+        <button class="crm-outcome-btn" data-o="answered">✅ Answered</button>
+        <button class="crm-outcome-btn" data-o="no_answer">📵 No answer</button>
+        <button class="crm-outcome-btn" data-o="voicemail">📱 Voicemail</button>
+        <button class="crm-outcome-btn" data-o="callback">🔁 Callback</button>
+      </div>
+      <div class="ld-panel-row" style="margin-top:10px"><label>Notes</label><textarea class="ld-panel-ta" id="ldp-cnotes" placeholder="What was discussed…"></textarea></div>
+      <div class="ld-panel-err" id="ldp-err"></div>
+      <div class="ld-panel-footer">
+        <button class="crm-panel-cancel" onclick="ldTogglePanel('call')">Cancel</button>
+        <button class="crm-panel-save" id="ldp-csave">Save</button>
+      </div>
+    </div>`;
+    panel.querySelectorAll('.crm-outcome-btn').forEach(b => {
+      b.onclick = () => { panel.querySelectorAll('.crm-outcome-btn').forEach(x => x.classList.remove('selected')); b.classList.add('selected'); outcome = b.dataset.o; };
+    });
+    document.getElementById('ldp-csave').onclick = async () => {
+      const err = document.getElementById('ldp-err');
+      if (!outcome) { err.textContent = 'Select an outcome.'; return; }
+      const notes = document.getElementById('ldp-cnotes').value.trim();
+      const btn   = document.getElementById('ldp-csave');
+      btn.disabled = true; btn.textContent = 'Saving…';
+      const res  = await fetch(`/api/crm/${ldCurrentLead.id}/call`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ outcome, notes }) });
+      const data = await res.json();
+      if (!res.ok) { err.textContent = data.error || 'Failed.'; btn.disabled = false; btn.textContent = 'Save'; return; }
+      const entry = entries.find(e => e.id === ldCurrentLead.id);
+      if (entry) { entry.callLog = data.callLog; ldCurrentLead = entry; }
+      ldTogglePanel('call');
+      ldRenderFeed(ldCurrentLead);
+      showToast('Call logged ✓');
+      if (ldCurrentLead.status === 'found') {
+        await patchEntry(ldCurrentLead.id, { status: 'contacted' });
+        const i2 = entries.findIndex(e => e.id === ldCurrentLead.id);
+        if (i2 !== -1) { entries[i2].status = 'contacted'; ldCurrentLead.status = 'contacted'; }
+        document.getElementById('ld-status-sel').value = 'contacted';
+        render();
+      }
+    };
+  }
+
+  if (type === 'message') {
+    let channel = 'telegram';
+    panel.innerHTML = `<div class="ld-panel">
+      <div class="ld-panel-title">💬 Send Message</div>
+      <div class="ld-channel-tabs">
+        <button class="ld-ch-tab active" data-ch="telegram">✈️ Telegram</button>
+        <button class="ld-ch-tab" data-ch="sms">💬 SMS</button>
+        <button class="ld-ch-tab" data-ch="viber">💜 Viber</button>
+      </div>
+      <div class="ld-panel-row"><textarea class="ld-panel-ta" id="ldp-msg" placeholder="Write your message…"></textarea></div>
+      <div class="ld-panel-err" id="ldp-err"></div>
+      <div class="ld-panel-footer">
+        <button class="crm-panel-cancel" onclick="ldTogglePanel('message')">Cancel</button>
+        <button class="crm-panel-save" id="ldp-msend">Send & Log</button>
+      </div>
+    </div>`;
+    panel.querySelectorAll('.ld-ch-tab').forEach(t => {
+      t.onclick = () => { panel.querySelectorAll('.ld-ch-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); channel = t.dataset.ch; };
+    });
+    document.getElementById('ldp-msend').onclick = async () => {
+      const text = document.getElementById('ldp-msg').value.trim();
+      const err  = document.getElementById('ldp-err');
+      if (!text) { err.textContent = 'Enter a message.'; return; }
+      const btn = document.getElementById('ldp-msend');
+      btn.disabled = true; btn.textContent = 'Logging…';
+      const res  = await fetch(`/api/crm/${ldCurrentLead.id}/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, text }) });
+      const data = await res.json();
+      if (!res.ok) { err.textContent = data.error || 'Failed.'; btn.disabled = false; btn.textContent = 'Send & Log'; return; }
+      const entry = entries.find(e => e.id === ldCurrentLead.id);
+      if (entry) { entry.messageLog = data.messageLog; ldCurrentLead = entry; }
+      const phone = (ldCurrentLead.phone || '').replace(/\D/g, '');
+      const enc   = encodeURIComponent(text);
+      if (channel === 'telegram' && phone) window.open(`https://t.me/+${phone}`, '_blank');
+      else if (channel === 'sms'      && phone) window.open(`sms:+${phone}`, '_blank');
+      else if (channel === 'viber'    && phone) window.open(`viber://chat?number=%2B${phone}`, '_blank');
+      ldTogglePanel('message');
+      ldRenderFeed(ldCurrentLead);
+      showToast('Message logged ✓');
+    };
+  }
+}
+
 function closeLeadDetail() {
   document.getElementById('lead-detail-overlay').classList.remove('open');
   document.getElementById('lead-detail-modal').classList.remove('open');
+  ldCurrentLead = null;
+  ldActivePanel = null;
 }
 
 function bindColEvents(col) {
