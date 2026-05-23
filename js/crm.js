@@ -252,7 +252,7 @@ function ldRenderFeed(lead) {
 
   const callIcons  = { answered: '✅', no_answer: '📵', voicemail: '📱', callback: '🔁' };
   const callLabels = { answered: 'Answered', no_answer: 'No answer', voicemail: 'Voicemail', callback: 'Callback' };
-  const chIcons    = { sms: '💬', telegram: '✈️', viber: '💜' };
+  const chIcons    = { sms: '💬', telegram: '✈️', viber: '💜', whatsapp: '💬' };
 
   feedEl.innerHTML = items.map(item => {
     const dt   = new Date(item.at);
@@ -452,44 +452,89 @@ function ldTogglePanel(type) {
   }
 
   if (type === 'message') {
-    let channel = 'telegram';
-    panel.innerHTML = `<div class="ld-panel">
-      <div class="ld-panel-title">💬 Send Message</div>
-      <div class="ld-channel-tabs">
-        <button class="ld-ch-tab active" data-ch="telegram">✈️ Telegram</button>
-        <button class="ld-ch-tab" data-ch="sms">💬 SMS</button>
-        <button class="ld-ch-tab" data-ch="viber">💜 Viber</button>
-      </div>
-      <div class="ld-panel-row"><textarea class="ld-panel-ta" id="ldp-msg" placeholder="Write your message…"></textarea></div>
-      <div class="ld-panel-err" id="ldp-err"></div>
-      <div class="ld-panel-footer">
-        <button class="crm-panel-cancel" onclick="ldTogglePanel('message')">Cancel</button>
-        <button class="crm-panel-save" id="ldp-msend">Send & Log</button>
-      </div>
-    </div>`;
-    panel.querySelectorAll('.ld-ch-tab').forEach(t => {
-      t.onclick = () => { panel.querySelectorAll('.ld-ch-tab').forEach(x => x.classList.remove('active')); t.classList.add('active'); channel = t.dataset.ch; };
-    });
-    document.getElementById('ldp-msend').onclick = async () => {
-      const text = document.getElementById('ldp-msg').value.trim();
-      const err  = document.getElementById('ldp-err');
-      if (!text) { err.textContent = 'Enter a message.'; return; }
-      const btn = document.getElementById('ldp-msend');
-      btn.disabled = true; btn.textContent = 'Logging…';
-      const res  = await fetch(`/api/crm/${ldCurrentLead.id}/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel, text }) });
-      const data = await res.json();
-      if (!res.ok) { err.textContent = data.error || 'Failed.'; btn.disabled = false; btn.textContent = 'Send & Log'; return; }
-      const entry = entries.find(e => e.id === ldCurrentLead.id);
-      if (entry) { entry.messageLog = data.messageLog; ldCurrentLead = entry; }
-      const phone = (ldCurrentLead.phone || '').replace(/\D/g, '');
-      const enc   = encodeURIComponent(text);
-      if (channel === 'telegram' && phone) window.open(`https://t.me/+${phone}`, '_blank');
-      else if (channel === 'sms'      && phone) window.open(`sms:+${phone}`, '_blank');
-      else if (channel === 'viber'    && phone) window.open(`viber://chat?number=%2B${phone}`, '_blank');
-      ldTogglePanel('message');
-      ldRenderFeed(ldCurrentLead);
-      showToast('Message logged ✓');
-    };
+    (async () => {
+      let userCfg = {};
+      try { const r = await fetch('/api/auth/me'); const d = await r.json(); userCfg = d.user || {}; } catch {}
+
+      const lead     = ldCurrentLead;
+      const leadPhone = (lead.phone || '').replace(/[^\d+]/g, '');
+      const hasPhone  = leadPhone.length > 4;
+
+      const channels = [
+        { ch: 'telegram', icon: '✈️', label: 'Telegram', val: userCfg.telegramHandle, hint: userCfg.telegramHandle ? `@${userCfg.telegramHandle}` : null,
+          link: p => `https://t.me/+${p}` },
+        { ch: 'whatsapp', icon: '💬', label: 'WhatsApp', val: userCfg.whatsappPhone,  hint: userCfg.whatsappPhone  || null,
+          link: p => `https://wa.me/${p}` },
+        { ch: 'viber',    icon: '💜', label: 'Viber',    val: userCfg.viberPhone,     hint: userCfg.viberPhone     || null,
+          link: p => `viber://chat?number=%2B${p}` },
+      ];
+
+      const anyConfigured = channels.some(c => c.val);
+      let activeChannel = channels.find(c => c.val) || channels[0];
+
+      const tabsHTML = channels.map(c => {
+        const configured = !!c.val;
+        const cls = c.ch === activeChannel.ch ? 'ld-ch-tab active' : 'ld-ch-tab';
+        const disabledAttr = configured ? '' : 'data-unconfigured="1"';
+        return `<button class="${cls} ${configured ? '' : 'ld-ch-tab-off'}" data-ch="${c.ch}" ${disabledAttr} title="${configured ? c.hint || '' : 'Not configured — set up in My Profile'}">${c.icon} ${c.label}${configured ? '' : ' <span class="ld-ch-lock">⚠</span>'}</button>`;
+      }).join('');
+
+      const phoneBar = hasPhone
+        ? `<div class="ld-msg-phone">📞 Contacting: <strong>${esc(lead.phone)}</strong></div>`
+        : `<div class="ld-msg-warn">⚠ No phone number on this lead — add one to enable messaging.</div>`;
+
+      const setupBar = anyConfigured ? '' : `<div class="ld-msg-warn">No messaging channels configured. <a href="profile.html">Set up in My Profile →</a></div>`;
+
+      panel.innerHTML = `<div class="ld-panel">
+        <div class="ld-panel-title">💬 Send Message</div>
+        ${setupBar}
+        <div class="ld-channel-tabs">${tabsHTML}</div>
+        ${phoneBar}
+        <div class="ld-panel-row"><textarea class="ld-panel-ta" id="ldp-msg" placeholder="Write your message…"></textarea></div>
+        <div class="ld-panel-err" id="ldp-err"></div>
+        <div class="ld-panel-footer">
+          <button class="crm-panel-cancel" onclick="ldTogglePanel('message')">Cancel</button>
+          <button class="crm-panel-save" id="ldp-msend" ${(!anyConfigured || !hasPhone) ? 'disabled' : ''}>Send & Log</button>
+        </div>
+      </div>`;
+
+      // Tab switching — skip unconfigured
+      panel.querySelectorAll('.ld-ch-tab').forEach(t => {
+        t.onclick = () => {
+          if (t.dataset.unconfigured) {
+            document.getElementById('ldp-err').textContent = `${t.textContent.replace('⚠','').trim()} not configured. Set up in My Profile.`;
+            return;
+          }
+          panel.querySelectorAll('.ld-ch-tab').forEach(x => x.classList.remove('active'));
+          t.classList.add('active');
+          activeChannel = channels.find(c => c.ch === t.dataset.ch) || activeChannel;
+          document.getElementById('ldp-err').textContent = '';
+        };
+      });
+
+      // Live validation
+      const sendBtn = document.getElementById('ldp-msend');
+      document.getElementById('ldp-msg').addEventListener('input', () => {
+        sendBtn.disabled = !document.getElementById('ldp-msg').value.trim() || !anyConfigured || !hasPhone;
+      });
+
+      sendBtn.onclick = async () => {
+        const text = document.getElementById('ldp-msg').value.trim();
+        const err  = document.getElementById('ldp-err');
+        if (!text) { err.textContent = 'Enter a message.'; return; }
+        sendBtn.disabled = true; sendBtn.textContent = 'Logging…';
+        const res  = await fetch(`/api/crm/${lead.id}/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel: activeChannel.ch, text }) });
+        const data = await res.json();
+        if (!res.ok) { err.textContent = data.error || 'Failed.'; sendBtn.disabled = false; sendBtn.textContent = 'Send & Log'; return; }
+        const entry = entries.find(e => e.id === lead.id);
+        if (entry) { entry.messageLog = data.messageLog; ldCurrentLead = entry; }
+        // Open app with lead's phone
+        if (leadPhone) window.open(activeChannel.link(leadPhone), '_blank');
+        ldTogglePanel('message');
+        ldRenderFeed(ldCurrentLead);
+        showToast('Message logged ✓');
+      };
+    })();
   }
 }
 
