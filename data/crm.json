@@ -1,1 +1,29 @@
-[]
+[
+  {
+    "id": "35fddfd641af800a60547c88",
+    "userId": "669c87088f8594eb7a72398c",
+    "leadName": "Ouzeri Piraeus",
+    "businessType": "Restaurants",
+    "city": "Athens",
+    "phone": "+30 240 4811984",
+    "website": "www.ouzeripiraeu.gr",
+    "status": "found",
+    "notes": "",
+    "createdAt": "2026-05-23T10:26:26.361Z",
+    "updatedAt": "2026-05-23T10:26:26.361Z"
+  },
+  {
+    "id": "8f1b1cdc3c1bb27b478df1d1",
+    "userId": "669c87088f8594eb7a72398c",
+    "leadName": "Κατάστημα Κεντρικό",
+    "businessType": "Retail Stores",
+    "city": "Athens",
+    "phone": "+30 226 5430220",
+    "website": "www..gr",
+    "email": null,
+    "status": "found",
+    "notes": "",
+    "createdAt": "2026-05-23T10:29:54.902Z",
+    "updatedAt": "2026-05-23T10:29:54.902Z"
+  }
+]

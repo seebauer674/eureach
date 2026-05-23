@@ -13,6 +13,7 @@ module.exports = {
     sites:         1,
     solo_audits:   0,
     solo_articles: 0,
+    templates:     1,
   },
   free_solo: {
     searches:      0,
@@ -26,6 +27,7 @@ module.exports = {
     sites:         0,
     solo_audits:   1,
     solo_articles: 1,
+    templates:     0,
   },
   pro_solo: {
     searches:      0,
@@ -39,6 +41,7 @@ module.exports = {
     sites:         0,
     solo_audits:   4,
     solo_articles: 6,
+    templates:     0,
   },
   starter: {
     searches:      50,
@@ -52,6 +55,7 @@ module.exports = {
     sites:         2,
     solo_audits:   0,
     solo_articles: 0,
+    templates:     20,
   },
   pro: {
     searches:      300,
@@ -65,6 +69,7 @@ module.exports = {
     sites:         3,
     solo_audits:   0,
     solo_articles: 0,
+    templates:     100,
   },
   agency: {
     searches:      -1,
@@ -78,5 +83,6 @@ module.exports = {
     sites:         -1,
     solo_audits:   0,
     solo_articles: 0,
+    templates:     -1,
   },
 };

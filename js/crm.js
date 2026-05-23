@@ -197,6 +197,7 @@ function cardHTML(e) {
     <div class="crm-action-bar">
       <button class="crm-action-btn crm-call-btn"     data-id="${e.id}">📞 Log Call</button>
       <button class="crm-action-btn crm-reminder-btn" data-id="${e.id}">⏰ Remind me</button>
+      <button class="crm-action-btn crm-email-btn"    data-id="${e.id}">✉ Email</button>
       <button class="crm-action-btn crm-outreach-btn" data-id="${e.id}">✨ Outreach</button>
     </div>
   </div>`;
@@ -236,6 +237,13 @@ function bindColEvents(col) {
     btn.addEventListener("click", () => {
       const lead = entries.find(e => e.id === btn.dataset.id);
       if (lead) toggleReminderPanel(btn, lead);
+    });
+  });
+
+  col.querySelectorAll(".crm-email-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const lead = entries.find(e => e.id === btn.dataset.id);
+      if (lead) toggleEmailPanel(btn, lead);
     });
   });
 }
@@ -836,9 +844,104 @@ async function saveReminder(lead, reminder, panel, btn) {
   } catch { errEl.textContent = "Network error."; }
 }
 
+/* ── Email compose panel ─────────────────────────────── */
+async function toggleEmailPanel(btn, lead) {
+  const card = btn.closest('.crm-card');
+  const existing = card.querySelector('.crm-email-panel');
+  if (existing) { existing.remove(); btn.classList.remove('active'); return; }
+  closeAllPanels(card);
+  btn.classList.add('active');
+
+  const panel = document.createElement('div');
+  panel.className = 'crm-email-panel';
+  panel.innerHTML = `
+    <div class="crm-panel-label">Compose Email</div>
+    <input type="email" class="crm-panel-input crm-email-to" placeholder="To: email address" value="${esc(lead.email || '')}" maxlength="200">
+    <input type="text" class="crm-panel-input crm-email-subject" placeholder="Subject" maxlength="200">
+    <textarea class="crm-panel-textarea crm-email-body" rows="6" placeholder="Body…" maxlength="5000"></textarea>
+    <div class="crm-panel-pick-row">
+      <div class="crm-pick-template-wrap">
+        <button class="crm-pick-template-btn">📋 Pick Template ▾</button>
+        <div class="crm-pick-template-dropdown" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="crm-panel-footer">
+      <button class="crm-panel-save crm-email-send-btn">✉ Send</button>
+      <button class="crm-panel-cancel">Cancel</button>
+    </div>
+    <div class="crm-panel-err"></div>`;
+  card.appendChild(panel);
+
+  const toInput      = panel.querySelector('.crm-email-to');
+  const subjectInput = panel.querySelector('.crm-email-subject');
+  const bodyInput    = panel.querySelector('.crm-email-body');
+  const sendBtn      = panel.querySelector('.crm-email-send-btn');
+  const errEl        = panel.querySelector('.crm-panel-err');
+  const pickBtn      = panel.querySelector('.crm-pick-template-btn');
+  const dropdown     = panel.querySelector('.crm-pick-template-dropdown');
+
+  panel.querySelector('.crm-panel-cancel').addEventListener('click', () => {
+    panel.remove(); btn.classList.remove('active');
+  });
+
+  // Template picker
+  pickBtn.addEventListener('click', async () => {
+    if (dropdown.style.display !== 'none') { dropdown.style.display = 'none'; return; }
+    dropdown.textContent = 'Loading…';
+    dropdown.style.display = 'block';
+    try {
+      const res = await fetch('/api/templates');
+      const data = await res.json();
+      const list = data.templates || [];
+      if (!list.length) {
+        dropdown.innerHTML = '<div class="crm-pick-empty">No templates saved yet. <a href="templates.html">Create one →</a></div>';
+        return;
+      }
+      dropdown.innerHTML = list.map(t => `<div class="crm-pick-item" data-id="${esc(t.id)}">${esc(t.name)}<span class="crm-pick-type">${esc(t.templateType)}</span></div>`).join('');
+      dropdown.querySelectorAll('.crm-pick-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const tmpl = list.find(t => t.id === item.dataset.id);
+          if (!tmpl) return;
+          subjectInput.value = tmpl.subject;
+          bodyInput.value = tmpl.body
+            .replace(/\{\{businessName\}\}/g, lead.leadName || '')
+            .replace(/\{\{senderName\}\}/g, '');
+          dropdown.style.display = 'none';
+        });
+      });
+    } catch {
+      dropdown.innerHTML = '<div class="crm-pick-empty">Failed to load templates.</div>';
+    }
+  });
+
+  // Close dropdown on outside click
+  document.addEventListener('click', function closeDropdown(e) {
+    if (!panel.contains(e.target)) { dropdown.style.display = 'none'; document.removeEventListener('click', closeDropdown); }
+  });
+
+  sendBtn.addEventListener('click', async () => {
+    const to      = toInput.value.trim();
+    const subject = subjectInput.value.trim();
+    const body    = bodyInput.value.trim();
+    if (!to || !subject || !body) { errEl.textContent = 'To, Subject, and Body are required.'; return; }
+    if (!to.includes('@')) { errEl.textContent = 'Enter a valid email address.'; return; }
+    sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
+    try {
+      const res = await fetch('/api/email/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to, subject, body, leadId: lead.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Send failed.'; sendBtn.disabled = false; sendBtn.textContent = '✉ Send'; return; }
+      panel.remove(); btn.classList.remove('active');
+      showToast('Email sent ✓');
+    } catch { errEl.textContent = 'Network error.'; sendBtn.disabled = false; sendBtn.textContent = '✉ Send'; }
+  });
+}
+
 function closeAllPanels(card) {
-  card.querySelectorAll(".crm-call-panel, .crm-reminder-panel").forEach(p => p.remove());
-  card.querySelectorAll(".crm-call-btn, .crm-reminder-btn").forEach(b => b.classList.remove("active"));
+  card.querySelectorAll(".crm-call-panel, .crm-reminder-panel, .crm-email-panel").forEach(p => p.remove());
+  card.querySelectorAll(".crm-call-btn, .crm-reminder-btn, .crm-email-btn").forEach(b => b.classList.remove("active"));
 }
 
 /* ── Auth notice ─────────────────────────────────────── */

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Templates — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/templates.css">
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html">Lead Finder</a>
+      <a href="articles.html">Articles</a>
+      <a href="templates.html" style="color:var(--white)">Templates</a>
+      <a href="crm.html">CRM</a>
+      <a href="competitors.html">Competitors</a>
+      <a href="audit.html">AI Audit</a>
+    </div>
+    <div class="nav-cta">
+      <a href="signin.html" class="btn btn-ghost" id="et-signin-link" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── PAGE ─────────────────────────────────────────────── -->
+<div class="et-page">
+
+  <!-- Header -->
+  <div class="et-page-header">
+    <div class="et-page-header-inner">
+      <div>
+        <div class="et-page-title">✉ Email Templates</div>
+        <div class="et-page-subtitle">AI-generated cold outreach templates · Save, reuse, send directly from CRM</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div class="et-credits-badge">
+          Templates left: <strong id="et-credits-val">—</strong>
+        </div>
+        <button class="et-generate-btn" id="et-new-btn" style="font-size:0.82rem;padding:8px 18px;">+ New Template</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="et-page-body">
+
+    <!-- View toggle bar -->
+    <div class="et-view-bar">
+      <div class="et-view-tabs">
+        <button class="et-view-tab active" id="et-tab-form">✨ Create</button>
+        <button class="et-view-tab" id="et-tab-list">📂 Saved Templates</button>
+      </div>
+    </div>
+
+    <!-- ── FORM VIEW ── -->
+    <div id="et-form-section">
+
+      <div class="et-form-wrap">
+        <div class="et-form-title">Generate a New Template</div>
+        <div class="et-form-sub">Fill in the details below and let AI craft a personalized outreach template</div>
+
+        <div class="et-grid">
+          <div class="et-field et-field-full">
+            <label for="et-name">Template Name <span style="color:#f87171">*</span></label>
+            <input type="text" id="et-name" placeholder="e.g. Restaurant Cold Outreach" maxlength="200">
+          </div>
+
+          <div class="et-field">
+            <label for="et-type">Template Type</label>
+            <select id="et-type">
+              <option value="Cold Outreach">Cold Outreach</option>
+              <option value="Follow-up">Follow-up</option>
+              <option value="Special Offer">Special Offer</option>
+              <option value="Re-engagement">Re-engagement</option>
+              <option value="Custom">Custom</option>
+            </select>
+          </div>
+
+          <div class="et-field">
+            <label for="et-lang">Language</label>
+            <select id="et-lang">
+              <option value="English">English</option>
+              <option value="Greek">Greek</option>
+              <option value="German">German</option>
+            </select>
+          </div>
+
+          <div class="et-field">
+            <label for="et-tone">Tone</label>
+            <select id="et-tone">
+              <option value="Friendly">Friendly</option>
+              <option value="Formal">Formal</option>
+              <option value="Direct">Direct</option>
+            </select>
+          </div>
+
+          <div class="et-field et-field-full">
+            <label for="et-context">Business Context <span style="color:#f87171">*</span></label>
+            <input type="text" id="et-context" placeholder="e.g. Restaurant owners in Athens, Fitness studios in Berlin">
+          </div>
+        </div>
+
+        <div class="et-submit-row">
+          <div class="et-credit-note">Uses <strong>1 template credit</strong></div>
+          <button class="et-generate-btn" id="et-generate-btn">✨ Generate Template</button>
+        </div>
+        <div class="et-status" id="et-form-status"></div>
+      </div>
+
+      <!-- Generating spinner -->
+      <div id="et-generating" style="display:none;">
+        <div class="et-generating">
+          <div class="et-gen-ring"></div>
+          <div class="et-gen-title">AI is writing your template…</div>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div id="et-preview-section" style="display:none;margin-top:24px;">
+        <div class="et-preview-wrap">
+          <div class="et-preview-header">
+            <div>
+              <div class="et-preview-label">Generated Template</div>
+              <div style="font-size:0.92rem;font-weight:700;color:var(--white);margin-top:4px;" id="et-preview-name"></div>
+            </div>
+            <div class="et-preview-actions">
+              <button class="et-ghost-btn" id="et-discard-btn">✕ Discard</button>
+              <button class="et-save-btn" id="et-save-btn" disabled>✓ Saved</button>
+            </div>
+          </div>
+
+          <div class="et-field-group">
+            <label>Subject Line</label>
+            <div class="et-subject-val" id="et-preview-subject"></div>
+          </div>
+          <div class="et-field-group">
+            <label>Body</label>
+            <div class="et-body-val" id="et-preview-body"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /et-form-section -->
+
+    <!-- ── LIST VIEW ── -->
+    <div id="et-list-section" style="display:none;">
+      <div class="et-list-header">
+        <div class="et-list-title">Your Saved Templates</div>
+      </div>
+      <div id="et-list-body">
+        <div style="color:var(--muted);font-size:0.85rem;padding:20px">Loading…</div>
+      </div>
+    </div>
+
+  </div><!-- /et-page-body -->
+</div><!-- /et-page -->
+
+<!-- ── Gate modal (out of credits) ── -->
+<div class="et-gate-overlay" id="et-gate-overlay">
+  <div class="et-gate-modal">
+    <div class="et-gate-icon">✉</div>
+    <div class="et-gate-title">Template limit reached</div>
+    <div class="et-gate-sub">You've used all your template credits for this month. Upgrade your plan to generate more AI-powered email templates.</div>
+    <a href="membership.html" class="et-gate-btn">⚡ Upgrade Plan</a>
+    <button class="et-gate-close" id="et-gate-close">Not now</button>
+  </div>
+</div>
+
+<script src="js/templates.js"></script>
+<script src="/js/api.js"></script>
+</body>
+</html>

@@ -30,6 +30,7 @@ const GOOGLE_CLIENT_ID     = process.env.GOOGLE_CLIENT_ID     || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const GOOGLE_REDIRECT_URI  = "https://eureach.eu/api/auth/gmail/callback";
 const EMAIL_LOG_FILE    = path.join(ROOT, "data/email_log.json");
+const TEMPLATES_FILE    = path.join(ROOT, "data/email_templates.json");
 const PIPELINE_FILE     = path.join(ROOT, "data/pipeline.json");
 
 // AES-256-CBC key derived from secret — set WP_ENCRYPT_SECRET env var in production
@@ -490,6 +491,8 @@ function handleMe(req, res) {
     canWhatsApp:     limits.whatsapp    !== 0,
     canCompetitors:  limits.competitors !== 0,
     crmLeadsMax:     limits.crmLeads,
+    templatesLeft:   computeLeft(limits.templates,   usage.templates || 0),
+    templatesMax:    limits.templates,
   };
   json(res, 200, { user: { ...safeUser(user), usage, ...computed } });
 }
@@ -978,6 +981,119 @@ async function handleArticlesDeduct(req, res) {
   writeJSON(USERS_FILE, users);
 
   json(res, 200, { articlesLeft: users[idx].articlesLeft, articlesMax: max, resetDate: resetDateLabel() });
+}
+
+// ── Templates ────────────────────────────────────────────────────────────────
+
+async function handleTemplatesGenerate(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  if (!checkAiRateLimit(res, user.id)) return;
+
+  const users = readJSON(USERS_FILE);
+  const idx   = users.findIndex(u => u.id === user.id);
+  if (idx === -1) return json(res, 404, { error: 'User not found.' });
+
+  const limits = PLAN_LIMITS[users[idx].plan] || PLAN_LIMITS.free;
+  const usage  = users[idx].usage || {};
+  const max    = limits.templates;
+  const used   = usage.templates || 0;
+
+  if (max !== -1 && used >= max) {
+    return limitReached(res, 'templates', used, max);
+  }
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: 'AI service not configured.' });
+
+  const body = await readBody(req);
+  const { name, templateType, language, tone, context } = body;
+  if (!name || !templateType) return json(res, 400, { error: 'name and templateType are required.' });
+
+  const systemPrompt = 'You are an expert cold outreach email writer. Return ONLY valid JSON with this exact structure: {"subject": "...", "body": "..."}. No markdown, no explanation, no code fences.';
+  const userMessage = [
+    'Generate a professional cold outreach email template for local business outreach.',
+    'Template type: ' + templateType,
+    'Business context: ' + (context || 'local businesses'),
+    'Tone: ' + (tone || 'Friendly'),
+    'Language: ' + (language || 'English'),
+    '',
+    'Return ONLY valid JSON: {"subject": "...", "body": "..."}',
+    '',
+    'The body should be 3-4 short paragraphs, conversational, with {{businessName}} and {{senderName}} placeholders. No HTML.'
+  ].join('\n');
+
+  let aiResult;
+  try {
+    aiResult = await callClaude(apiKey, systemPrompt, userMessage, 1024);
+  } catch (err) {
+    return json(res, 500, { error: 'AI generation failed: ' + err.message });
+  }
+
+  let parsed;
+  try {
+    const text = aiResult.content && aiResult.content[0] ? aiResult.content[0].text : '';
+    const cleaned = text.replace(/^`{1,3}json\n?/i, '').replace(/`{1,3}$/, '').trim();
+    parsed = JSON.parse(cleaned);
+  } catch {
+    return json(res, 500, { error: 'Failed to parse AI response.' });
+  }
+
+  if (!parsed.subject || !parsed.body) {
+    return json(res, 500, { error: 'AI returned incomplete template.' });
+  }
+
+  // Deduct usage
+  if (max !== -1) {
+    users[idx].usage = Object.assign({}, usage, { templates: used + 1 });
+    users[idx].templatesLeft = computeLeft(max, used + 1);
+  }
+  writeJSON(USERS_FILE, users);
+
+  // Save template
+  const templates = readJSON(TEMPLATES_FILE);
+  const entry = {
+    id:           generateId(),
+    userId:       user.id,
+    name:         sanitizeString(name, 200),
+    templateType: sanitizeString(templateType, 50),
+    language:     sanitizeString(language || 'English', 50),
+    tone:         sanitizeString(tone || 'Friendly', 50),
+    context:      sanitizeString(context || '', 500),
+    subject:      parsed.subject,
+    body:         parsed.body,
+    createdAt:    new Date().toISOString(),
+  };
+  templates.push(entry);
+  writeJSON(TEMPLATES_FILE, templates);
+
+  json(res, 200, {
+    template:      entry,
+    templatesLeft: users[idx].templatesLeft !== undefined ? users[idx].templatesLeft : -1,
+    resetDate:     resetDateLabel(),
+  });
+}
+
+function handleTemplatesList(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const templates = readJSON(TEMPLATES_FILE).filter(t => t.userId === user.id)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  json(res, 200, { templates });
+}
+
+function handleTemplatesDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const templates = readJSON(TEMPLATES_FILE);
+  const tIdx = templates.findIndex(t => t.id === id && t.userId === user.id);
+  if (tIdx === -1) return json(res, 404, { error: 'Template not found.' });
+  templates.splice(tIdx, 1);
+  writeJSON(TEMPLATES_FILE, templates);
+  json(res, 200, { ok: true });
 }
 
 // ── Competitor audit core ─────────────────────────────────────────────────────
@@ -2278,6 +2394,11 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/leads/score"       && method === "POST") return handleLeadsScore(req, res);
   if (urlPath === "/api/leads/score/cache" && method === "GET")  return handleLeadsScoreCache(req, res);
   if (urlPath === "/api/articles/deduct"   && method === "POST") return handleArticlesDeduct(req, res);
+
+  // Templates API routes
+  if (urlPath === "/api/templates/generate"       && method === "POST")   return handleTemplatesGenerate(req, res);
+  if (urlPath === "/api/templates"                && method === "GET")    return handleTemplatesList(req, res);
+  if (urlPath.startsWith("/api/templates/")       && method === "DELETE") return handleTemplatesDelete(req, res, urlPath.slice(16));
 
   // WordPress API routes
   if (urlPath === "/api/wordpress/connect"  && method === "GET")    return handleWpStatus(req, res);
