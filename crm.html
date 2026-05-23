@@ -280,6 +280,21 @@
   </div>
 </div>
 
+
+<!-- ── Lead Detail Modal ───────────────────────────────── -->
+<div class="crm-overlay" id="lead-detail-overlay" onclick="closeLeadDetail()"></div>
+<div class="crm-modal" id="lead-detail-modal" style="max-width:520px">
+  <div class="crm-modal-header">
+    <div class="crm-modal-title" id="ld-title">Lead Details</div>
+    <button class="crm-modal-close" onclick="closeLeadDetail()">✕</button>
+  </div>
+  <div class="crm-modal-body" style="padding:0 28px 24px">
+    <div class="ld-meta" id="ld-meta"></div>
+    <label class="crm-modal-label" style="margin-top:16px;display:block">Notes</label>
+    <textarea class="crm-card-notes" id="ld-notes" style="width:100%;min-height:90px;box-sizing:border-box" placeholder="Add notes…"></textarea>
+    <div class="ld-calllog" id="ld-calllog"></div>
+  </div>
+</div>
 <script src="js/crm.js"></script>
 <script src="/js/api.js"></script>
 </body>

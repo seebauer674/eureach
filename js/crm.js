@@ -170,20 +170,14 @@ function cardHTML(e) {
   const badgesRow     = (reminderBadge || callBadge)
     ? `<div class="crm-badges-row">${callBadge}${reminderBadge}</div>`
     : "";
+  const sub = [e.businessType, e.city].filter(Boolean).join(" · ");
   return `
-  <div class="crm-card" data-id="${e.id}">
+  <div class="crm-card crm-card-compact" data-id="${e.id}">
     <div class="crm-card-name-row">
-      <div class="crm-card-name">${esc(e.leadName)}</div>
+      <div class="crm-card-name crm-card-name-link" data-id="${e.id}" title="View details">${esc(e.leadName)}</div>
       ${scoreBadge}
     </div>
-    <div class="crm-card-meta">
-      ${e.businessType ? `<div class="crm-card-row"><span>🏢</span>${esc(e.businessType)}</div>` : ""}
-      ${e.city         ? `<div class="crm-card-row"><span>📍</span>${esc(e.city)}</div>` : ""}
-      ${e.phone        ? `<div class="crm-card-row"><span>📞</span>${esc(e.phone)}</div>` : ""}
-      ${e.website      ? `<div class="crm-card-row"><span>🌐</span><a href="https://${esc(e.website)}" target="_blank">${esc(e.website)}</a></div>` : ""}
-      ${e.email        ? `<div class="crm-card-row"><span>✉</span><span class="crm-email-val">${esc(e.email)}</span></div>` : ""}
-    </div>
-    <textarea class="crm-card-notes" data-id="${e.id}" placeholder="Add notes…">${esc(e.notes || "")}</textarea>
+    ${sub ? `<div class="crm-card-sub">${esc(sub)}</div>` : ""}
     ${badgesRow}
     <div class="crm-card-footer">
       <select class="crm-status-select" data-id="${e.id}">
@@ -203,6 +197,46 @@ function cardHTML(e) {
   </div>`;
 }
 
+
+/* ── Lead Detail Modal ───────────────────────────────── */
+function openLeadDetail(lead) {
+  document.getElementById('ld-title').textContent = lead.leadName;
+  const metaRows = [
+    lead.businessType ? `<div class="ld-row"><span>🏢</span>${esc(lead.businessType)}</div>` : '',
+    lead.city         ? `<div class="ld-row"><span>📍</span>${esc(lead.city)}</div>` : '',
+    lead.phone        ? `<div class="ld-row"><span>📞</span>${esc(lead.phone)}</div>` : '',
+    lead.website      ? `<div class="ld-row"><span>🌐</span><a href="https://${esc(lead.website)}" target="_blank">${esc(lead.website)}</a></div>` : '',
+    lead.email        ? `<div class="ld-row"><span>✉</span>${esc(lead.email)}</div>` : '',
+  ].filter(Boolean).join('');
+  document.getElementById('ld-meta').innerHTML = metaRows || '<span style="color:var(--muted)">No contact info</span>';
+
+  const notesEl = document.getElementById('ld-notes');
+  notesEl.value = lead.notes || '';
+  notesEl.dataset.id = lead.id;
+  notesEl.onblur = () => patchEntry(lead.id, { notes: notesEl.value });
+
+  const log = lead.callLog || [];
+  const icons = { answered: '✅', no_answer: '📵', voicemail: '📱', callback: '🔁' };
+  const labels = { answered: 'Answered', no_answer: 'No answer', voicemail: 'Voicemail', callback: 'Callback' };
+  if (log.length) {
+    const rows = log.slice().reverse().map(c => {
+      const dt = new Date(c.at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return `<div class="ld-call-row"><span>${icons[c.outcome] || '📞'} ${labels[c.outcome] || c.outcome}</span><span class="ld-call-dt">${dt}</span>${c.notes ? `<div class="ld-call-notes">${esc(c.notes)}</div>` : ''}</div>`;
+    }).join('');
+    document.getElementById('ld-calllog').innerHTML = `<div class="ld-calllog-title">Call History</div>${rows}`;
+  } else {
+    document.getElementById('ld-calllog').innerHTML = '';
+  }
+
+  document.getElementById('lead-detail-overlay').classList.add('open');
+  document.getElementById('lead-detail-modal').classList.add('open');
+}
+
+function closeLeadDetail() {
+  document.getElementById('lead-detail-overlay').classList.remove('open');
+  document.getElementById('lead-detail-modal').classList.remove('open');
+}
+
 function bindColEvents(col) {
   col.querySelectorAll(".crm-status-select").forEach(sel => {
     sel.addEventListener("change", () => patchEntry(sel.dataset.id, { status: sel.value }));
@@ -219,7 +253,14 @@ function bindColEvents(col) {
     });
   });
 
-  col.querySelectorAll(".crm-outreach-btn").forEach(btn => {
+  col.querySelectorAll(".crm-card-name-link").forEach(el => {
+    el.addEventListener("click", () => {
+      const lead = entries.find(e => e.id === el.dataset.id);
+      if (lead) openLeadDetail(lead);
+    });
+  });
+
+    col.querySelectorAll(".crm-outreach-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const lead = entries.find(e => e.id === btn.dataset.id);
       if (lead) openOutreachModal(lead);

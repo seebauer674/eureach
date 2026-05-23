@@ -1075,3 +1075,64 @@
   color: var(--muted);
 }
 .crm-pick-empty a { color: #93c5fd; }
+
+
+/* ── Compact card ──────────────────────────────────────── */
+.crm-card-compact {
+  padding: 12px 14px 10px;
+}
+.crm-card-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 2px 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.crm-card-name-link {
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.crm-card-name-link:hover {
+  color: var(--blue2);
+}
+
+/* ── Lead Detail Modal ─────────────────────────────────── */
+.ld-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.ld-row a { color: var(--blue2); }
+.ld-calllog-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  margin: 20px 0 8px;
+}
+.ld-call-row {
+  font-size: 0.85rem;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
+.ld-call-dt {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.ld-call-notes {
+  width: 100%;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
