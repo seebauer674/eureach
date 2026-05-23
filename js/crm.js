@@ -181,6 +181,7 @@ function cardHTML(e) {
       ${e.city         ? `<div class="crm-card-row"><span>📍</span>${esc(e.city)}</div>` : ""}
       ${e.phone        ? `<div class="crm-card-row"><span>📞</span>${esc(e.phone)}</div>` : ""}
       ${e.website      ? `<div class="crm-card-row"><span>🌐</span><a href="https://${esc(e.website)}" target="_blank">${esc(e.website)}</a></div>` : ""}
+      ${e.email        ? `<div class="crm-card-row"><span>✉</span><span class="crm-email-val">${esc(e.email)}</span></div>` : ""}
     </div>
     <textarea class="crm-card-notes" data-id="${e.id}" placeholder="Add notes…">${esc(e.notes || "")}</textarea>
     ${badgesRow}
@@ -647,9 +648,10 @@ function openEmailSendForm(btn, msg) {
   btn.classList.add("active");
   const form = document.createElement("div");
   form.className = "or-send-form";
+  const prefillEmail = orCurrentLead?.email || "";
   form.innerHTML = `
     <div class="or-send-form-inner">
-      <input type="email" class="or-send-email" placeholder="Recipient email address" autocomplete="email">
+      <input type="email" class="or-send-email" placeholder="Recipient email address" autocomplete="email" value="${esc(prefillEmail)}">
       <button class="or-send-confirm">✉ Send now</button>
       <button class="or-send-cancel">Cancel</button>
     </div>

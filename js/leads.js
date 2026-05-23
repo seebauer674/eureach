@@ -880,12 +880,9 @@ function bindCardActions() {
       const lead = results.find(r => r.id == id);
       if (!lead) return;
       if (action === "save") {
-        lead.status = "saved";
-        btn.textContent = "✓ Saved";
-        btn.disabled = true;
-        showToast(`${lead.name} saved`);
+        addLeadToCrm(lead, btn, true);
       } else if (action === "crm") {
-        addLeadToCrm(lead, btn);
+        addLeadToCrm(lead, btn, false);
       } else if (action === "pipeline") {
         addLeadToPipeline(lead, btn);
       } else if (action === "audit") {
@@ -898,11 +895,12 @@ function bindCardActions() {
 }
 
 /* ── Add to CRM ──────────────────────────────────────── */
-async function addLeadToCrm(lead, btn) {
+async function addLeadToCrm(lead, btn, savedMode = false) {
   const city     = citySel.value;
   const subLabel = subcatSel.options[subcatSel.selectedIndex]?.textContent?.replace(/^[^ ]+ /, "") || "";
   btn.disabled = true;
   btn.textContent = "…";
+  const resetLabel = savedMode ? "💾 Save" : "➕ CRM";
   try {
     const res = await fetch("/api/crm", {
       method: "POST",
@@ -913,24 +911,27 @@ async function addLeadToCrm(lead, btn) {
         city:         city,
         phone:        lead.phone    || null,
         website:      lead.website  || null,
+        email:        lead.email    || null,
         notes:        "",
       }),
     });
     if (res.ok) {
-      btn.textContent = "✓ Added";
-      showToast(`${lead.name} added to CRM`);
+      btn.textContent = savedMode ? "✓ Saved" : "✓ Added";
+      showToast(savedMode ? `${lead.name} saved to CRM` : `${lead.name} added to CRM`);
     } else if (res.status === 401) {
       btn.disabled = false;
-      btn.textContent = "➕ CRM";
+      btn.textContent = resetLabel;
       showToast("Sign in to save leads to CRM");
+    } else if (res.status === 409) {
+      btn.textContent = "✓ Already in CRM";
     } else {
       btn.disabled = false;
-      btn.textContent = "➕ CRM";
+      btn.textContent = resetLabel;
       showToast("Failed to add to CRM");
     }
   } catch {
     btn.disabled = false;
-    btn.textContent = "➕ CRM";
+    btn.textContent = resetLabel;
     showToast("Failed to add to CRM");
   }
 }

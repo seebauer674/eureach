@@ -760,7 +760,7 @@ async function handleCrmCreate(req, res) {
   if (!user) return json(res, 401, { error: "Not authenticated." });
 
   const body = await readBody(req);
-  const { leadName, businessType, city, phone, website, notes } = body;
+  const { leadName, businessType, city, phone, website, email, notes } = body;
   if (!leadName || !leadName.trim()) return json(res, 400, { error: "leadName is required." });
 
   const crm   = readJSON(CRM_FILE);
@@ -778,6 +778,7 @@ async function handleCrmCreate(req, res) {
     city:         (city || "").trim(),
     phone:        phone  || null,
     website:      website || null,
+    email:        email  ? sanitizeEmail(email) : null,
     status:       "found",
     notes:        (notes || "").trim(),
     createdAt:    now,
