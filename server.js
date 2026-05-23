@@ -25,6 +25,10 @@ const AUDITS_FILE       = path.join(ROOT, "data/audits.json");
 const CREDIT_LOG_FILE   = path.join(ROOT, "data/credit_log.json");
 const WP_FILE           = path.join(ROOT, "data/wordpress_connections.json");
 const SMTP_FILE         = path.join(ROOT, "data/smtp_connections.json");
+const GMAIL_FILE        = path.join(ROOT, "data/gmail_connections.json");
+const GOOGLE_CLIENT_ID     = process.env.GOOGLE_CLIENT_ID     || "";
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const GOOGLE_REDIRECT_URI  = "https://eureach.eu/api/auth/gmail/callback";
 const EMAIL_LOG_FILE    = path.join(ROOT, "data/email_log.json");
 const PIPELINE_FILE     = path.join(ROOT, "data/pipeline.json");
 
@@ -1435,6 +1439,208 @@ function smtpSend({ host, port, username, password, from, fromName, to, subject,
   });
 }
 
+// ── Gmail OAuth helpers ──────────────────────────────────────────────────────
+
+function googlePost(urlStr, params) {
+  return new Promise((resolve, reject) => {
+    const body    = new URLSearchParams(params).toString();
+    const parsed  = new URL(urlStr);
+    const options = {
+      hostname: parsed.hostname,
+      path:     parsed.pathname,
+      method:   "POST",
+      headers:  { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(body) },
+    };
+    const req = https.request(options, res => {
+      let data = "";
+      res.on("data", c => data += c);
+      res.on("end", () => { try { resolve({ status: res.statusCode, body: JSON.parse(data) }); } catch { resolve({ status: res.statusCode, body: data }); } });
+    });
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function googleGet(urlStr, accessToken) {
+  return new Promise((resolve, reject) => {
+    const parsed  = new URL(urlStr);
+    const options = {
+      hostname: parsed.hostname,
+      path:     parsed.pathname + parsed.search,
+      method:   "GET",
+      headers:  { "Authorization": "Bearer " + accessToken },
+    };
+    const req = https.request(options, res => {
+      let data = "";
+      res.on("data", c => data += c);
+      res.on("end", () => { try { resolve({ status: res.statusCode, body: JSON.parse(data) }); } catch { resolve({ status: res.statusCode, body: data }); } });
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+function googleJsonPost(urlStr, bodyObj, accessToken) {
+  return new Promise((resolve, reject) => {
+    const parsed  = new URL(urlStr);
+    const bodyStr = JSON.stringify(bodyObj);
+    const options = {
+      hostname: parsed.hostname,
+      path:     parsed.pathname,
+      method:   "POST",
+      headers:  { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(bodyStr), "Authorization": "Bearer " + accessToken },
+    };
+    const req = https.request(options, res => {
+      let data = "";
+      res.on("data", c => data += c);
+      res.on("end", () => { try { resolve({ status: res.statusCode, body: JSON.parse(data) }); } catch { resolve({ status: res.statusCode, body: data }); } });
+    });
+    req.on("error", reject);
+    req.write(bodyStr);
+    req.end();
+  });
+}
+
+async function gmailGetAccessToken(userId) {
+  const conn = readJSON(GMAIL_FILE).find(c => c.userId === userId);
+  if (!conn) return null;
+  let refreshToken;
+  try { refreshToken = decryptStr(conn.refreshTokenEnc); } catch { return null; }
+  const r = await googlePost("https://oauth2.googleapis.com/token", {
+    client_id:     GOOGLE_CLIENT_ID,
+    client_secret: GOOGLE_CLIENT_SECRET,
+    refresh_token: refreshToken,
+    grant_type:    "refresh_token",
+  });
+  if (r.status !== 200 || !r.body.access_token) return null;
+  return { accessToken: r.body.access_token, email: conn.email };
+}
+
+function buildRfc2822(fromEmail, fromName, to, subject, bodyText) {
+  const fromHeader = fromName ? `"${fromName.replace(/["\\]/g, "")}" <${fromEmail}>` : fromEmail;
+  return [
+    `From: ${fromHeader}`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: text/plain; charset=UTF-8`,
+    ``,
+    bodyText,
+  ].join("\r\n");
+}
+
+async function gmailSendMessage({ userId, to, subject, body, fromName }) {
+  const tok = await gmailGetAccessToken(userId);
+  if (!tok) throw new Error("Gmail not connected");
+  const raw     = buildRfc2822(tok.email, fromName || null, to, subject, body);
+  const encoded = Buffer.from(raw).toString("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+  const r = await googleJsonPost(
+    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+    { raw: encoded },
+    tok.accessToken
+  );
+  if (r.status !== 200) throw new Error("Gmail API error: " + JSON.stringify(r.body));
+  return r.body;
+}
+
+// ── Gmail OAuth handlers ──────────────────────────────────────────────────────
+
+async function handleGmailConnect(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) { res.writeHead(302, { Location: "/signin.html" }); return res.end(); }
+  if (!GOOGLE_CLIENT_ID) return json(res, 503, { error: "Gmail OAuth not configured on this server." });
+  const state = crypto.createHmac("sha256", WP_ENCRYPT_KEY).update(cookies.session).digest("hex").slice(0, 32);
+  const params = new URLSearchParams({
+    client_id:     GOOGLE_CLIENT_ID,
+    redirect_uri:  GOOGLE_REDIRECT_URI,
+    response_type: "code",
+    scope:         "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email",
+    access_type:   "offline",
+    prompt:        "consent",
+    state,
+  });
+  res.writeHead(302, { Location: "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString() });
+  res.end();
+}
+
+async function handleGmailCallback(req, res) {
+  const urlObj   = new URL("https://eureach.eu" + req.url);
+  const code     = urlObj.searchParams.get("code");
+  const state    = urlObj.searchParams.get("state");
+  const errParam = urlObj.searchParams.get("error");
+
+  if (errParam || !code || !state) {
+    res.writeHead(302, { Location: "/settings.html?gmail=denied#email" });
+    return res.end();
+  }
+
+  // Find the session whose HMAC matches the state
+  const sessions = readJSON(SESSIONS_FILE);
+  let matchedUser = null;
+  for (const sess of sessions) {
+    if (sess.expiresAt <= Date.now()) continue;
+    const expected = crypto.createHmac("sha256", WP_ENCRYPT_KEY).update(sess.token).digest("hex").slice(0, 32);
+    if (expected === state) {
+      const users = readJSON(USERS_FILE);
+      matchedUser = users.find(u => u.id === sess.userId) || null;
+      break;
+    }
+  }
+
+  if (!matchedUser) {
+    res.writeHead(302, { Location: "/settings.html?gmail=error#email" });
+    return res.end();
+  }
+
+  const tokenRes = await googlePost("https://oauth2.googleapis.com/token", {
+    code,
+    client_id:     GOOGLE_CLIENT_ID,
+    client_secret: GOOGLE_CLIENT_SECRET,
+    redirect_uri:  GOOGLE_REDIRECT_URI,
+    grant_type:    "authorization_code",
+  });
+
+  if (tokenRes.status !== 200 || !tokenRes.body.refresh_token) {
+    res.writeHead(302, { Location: "/settings.html?gmail=error#email" });
+    return res.end();
+  }
+
+  const infoRes  = await googleGet("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", tokenRes.body.access_token);
+  const gmailEmail = infoRes.body?.email || "";
+
+  const conns = readJSON(GMAIL_FILE).filter(c => c.userId !== matchedUser.id);
+  conns.push({
+    userId:          matchedUser.id,
+    email:           gmailEmail,
+    refreshTokenEnc: encryptStr(tokenRes.body.refresh_token),
+    connectedAt:     new Date().toISOString(),
+  });
+  writeJSON(GMAIL_FILE, conns);
+
+  res.writeHead(302, { Location: "/settings.html?gmail=connected#email" });
+  res.end();
+}
+
+async function handleGmailDisconnect(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  writeJSON(GMAIL_FILE, readJSON(GMAIL_FILE).filter(c => c.userId !== user.id));
+  return json(res, 200, { ok: true });
+}
+
+async function handleGmailStatus(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const conn = readJSON(GMAIL_FILE).find(c => c.userId === user.id);
+  if (!conn) return json(res, 200, { connected: false });
+  return json(res, 200, { connected: true, email: conn.email, connectedAt: conn.connectedAt });
+}
+
 // ── Email / SMTP handlers ──────────────────────────────────────────────────────
 
 async function handleSmtpStatus(req, res) {
@@ -1493,13 +1699,19 @@ async function handleEmailSend(req, res) {
   const sequenceStep = sanitizeInteger(raw2.sequenceStep, 0, 10) || null;
   if (!to || !subject || !body) return json(res, 400, { error: "to, subject, and body are required." });
   if (!to.includes("@")) return json(res, 400, { error: "Enter a valid email address." });
-  const conn = readJSON(SMTP_FILE).find(c => c.userId === user.id);
-  if (!conn) return json(res, 400, { error: "No SMTP connection configured. Go to Settings → Email to connect." });
-  let password;
-  try { password = decryptStr(conn.passwordEnc); }
-  catch { return json(res, 500, { error: "Failed to decrypt SMTP credentials. Please reconnect in Settings." }); }
+  // Try Gmail OAuth first, fall back to SMTP
+  const gmailConn = readJSON(GMAIL_FILE).find(c => c.userId === user.id);
+  const smtpConn  = readJSON(SMTP_FILE).find(c => c.userId === user.id);
+  if (!gmailConn && !smtpConn) return json(res, 400, { error: "No email connection configured. Go to Settings → Email to connect Gmail or SMTP." });
   try {
-    await smtpSend({ host: conn.host, port: conn.port, username: conn.username, password, from: conn.from, fromName: conn.fromName || "", to, subject, body });
+    if (gmailConn) {
+      await gmailSendMessage({ userId: user.id, to, subject, body });
+    } else {
+      let password;
+      try { password = decryptStr(smtpConn.passwordEnc); }
+      catch { return json(res, 500, { error: "Failed to decrypt SMTP credentials. Please reconnect in Settings." }); }
+      await smtpSend({ host: smtpConn.host, port: smtpConn.port, username: smtpConn.username, password, from: smtpConn.from, fromName: smtpConn.fromName || "", to, subject, body });
+    }
   } catch (err) {
     return json(res, 500, { error: "Send failed: " + err.message });
   }
@@ -2055,6 +2267,11 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/email/smtp"  && method === "DELETE") return handleSmtpDisconnect(req, res);
   if (urlPath === "/api/email/send"  && method === "POST")   return handleEmailSend(req, res);
   if (urlPath === "/api/email/log"   && method === "GET")    return handleEmailLog(req, res);
+  // Gmail OAuth routes
+  if (urlPath === "/api/auth/gmail/connect"    && method === "GET")    return handleGmailConnect(req, res);
+  if (urlPath === "/api/auth/gmail/callback"   && method === "GET")    return handleGmailCallback(req, res);
+  if (urlPath === "/api/auth/gmail/disconnect" && method === "DELETE") return handleGmailDisconnect(req, res);
+  if (urlPath === "/api/auth/gmail/status"     && method === "GET")    return handleGmailStatus(req, res);
 
   // Outreach API routes
   if (urlPath === "/api/outreach"  && method === "POST") return handleOutreach(req, res);

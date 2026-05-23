@@ -221,85 +221,111 @@
       </div>
     </section>
 
-    <!-- ── Email / SMTP ──────────────────────────────────── -->
+    <!-- ── Email ──────────────────────────────────────────── -->
     <section class="st-section" id="email">
       <div class="st-section-hdr">
         <div>
-          <h2 class="st-section-title">Email / SMTP</h2>
-          <p class="st-section-sub">Connect your email account to send outreach sequences directly from the CRM — no copy-pasting required.</p>
+          <h2 class="st-section-title">Email</h2>
+          <p class="st-section-sub">Connect your email to send outreach sequences directly from the CRM.</p>
         </div>
       </div>
 
-      <!-- Connected state -->
-      <div id="smtp-connected-state" style="display:none">
+      <!-- Gmail connected state -->
+      <div id="gmail-connected-state" style="display:none">
         <div class="wp-status-card">
           <div class="wp-status-badge">
             <span class="wp-dot" style="background:#4ade80"></span>
             <div class="wp-status-info">
-              <div class="wp-status-name" id="smtp-status-from">—</div>
-              <div class="wp-status-url" id="smtp-status-host">—</div>
+              <div class="wp-status-name" id="gmail-status-email">—</div>
+              <div class="wp-status-url">Gmail · OAuth (sends from your account)</div>
             </div>
           </div>
-          <div class="wp-status-meta" id="smtp-status-meta"></div>
+          <div class="wp-status-meta" id="gmail-status-meta"></div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <a href="email_log.html" class="smtp-log-link">📋 Email Log</a>
-            <button class="wp-disconnect-btn" onclick="disconnectSmtp()">Disconnect</button>
+            <button class="wp-disconnect-btn" onclick="disconnectGmail()">Disconnect</button>
           </div>
         </div>
       </div>
 
-      <!-- Connect form -->
-      <div id="smtp-connect-state">
-        <form class="st-profile-form" id="smtp-connect-form" onsubmit="connectSmtp(event)" autocomplete="off">
-          <div class="st-form-row">
-            <div class="st-field">
-              <label>SMTP Host</label>
-              <input type="text" id="smtp-host" placeholder="smtp.gmail.com" autocomplete="off">
-              <div class="st-field-hint">Gmail: smtp.gmail.com · Outlook: smtp.office365.com</div>
-            </div>
-            <div class="st-field">
-              <label>Port</label>
-              <select id="smtp-port" class="st-select">
-                <option value="587">587 — STARTTLS (recommended)</option>
-                <option value="465">465 — SSL/TLS</option>
-                <option value="25">25 — Plain (not recommended)</option>
-              </select>
-            </div>
-          </div>
-          <div class="st-form-row">
-            <div class="st-field">
-              <label>Username / Email</label>
-              <input type="text" id="smtp-username" placeholder="you@gmail.com" autocomplete="off">
-            </div>
-            <div class="st-field">
-              <label>Password / App Password</label>
-              <input type="password" id="smtp-password" placeholder="••••••••" autocomplete="new-password">
-            </div>
-          </div>
-          <div class="st-form-row">
-            <div class="st-field">
-              <label>From Email</label>
-              <input type="email" id="smtp-from" placeholder="you@yourdomain.com" autocomplete="off">
-            </div>
-            <div class="st-field">
-              <label>From Name <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-              <input type="text" id="smtp-from-name" placeholder="Your Name or Business">
+      <!-- Gmail connect button (shown when no Gmail and no SMTP) -->
+      <div id="gmail-connect-state">
+        <a href="/api/auth/gmail/connect" class="gmail-connect-btn" id="gmail-connect-btn">
+          <svg width="20" height="20" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 5C13.5 5 5 13.5 5 24s8.5 19 19 19 19-8.5 19-19S34.5 5 24 5z"/><path fill="#FBBC05" d="M5 24C5 13.5 13.5 5 24 5v38C13.5 43 5 34.5 5 24z"/><path fill="#34A853" d="M24 5v38c10.5 0 19-8.5 19-19S34.5 5 24 5z"/><path fill="#4285F4" d="M5 24c0 10.5 8.5 19 19 19V5C13.5 5 5 13.5 5 24z"/></svg>
+          Connect Gmail
+        </a>
+        <div class="gmail-connect-sub">Emails will be sent directly from your Gmail account. eureach never stores your emails.</div>
+        <div id="gmail-connect-msg" class="st-profile-error" style="display:none"></div>
+
+        <div class="smtp-toggle-wrap">
+          <button class="smtp-toggle-btn" onclick="toggleSmtpForm()">Use SMTP instead ▾</button>
+        </div>
+
+        <!-- SMTP form (collapsed by default) -->
+        <div id="smtp-form-wrap" style="display:none">
+
+          <!-- SMTP connected state -->
+          <div id="smtp-connected-state" style="display:none">
+            <div class="wp-status-card" style="margin-top:12px">
+              <div class="wp-status-badge">
+                <span class="wp-dot" style="background:#4ade80"></span>
+                <div class="wp-status-info">
+                  <div class="wp-status-name" id="smtp-status-from">—</div>
+                  <div class="wp-status-url" id="smtp-status-host">—</div>
+                </div>
+              </div>
+              <div class="wp-status-meta" id="smtp-status-meta"></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <a href="email_log.html" class="smtp-log-link">📋 Email Log</a>
+                <button class="wp-disconnect-btn" onclick="disconnectSmtp()">Disconnect</button>
+              </div>
             </div>
           </div>
-          <div class="smtp-howto">
-            <div class="smtp-howto-title">Gmail: use an App Password (not your regular password)</div>
-            <ol class="wp-howto-steps">
-              <li>Enable 2-Step Verification in your Google Account</li>
-              <li>Go to <strong>Google Account → Security → App Passwords</strong></li>
-              <li>Create a new App Password for "Mail"</li>
-              <li>Paste the 16-character password in the password field above</li>
-            </ol>
+
+          <div id="smtp-connect-state">
+            <form class="st-profile-form" id="smtp-connect-form" onsubmit="connectSmtp(event)" autocomplete="off" style="margin-top:12px">
+              <div class="st-form-row">
+                <div class="st-field">
+                  <label>SMTP Host</label>
+                  <input type="text" id="smtp-host" placeholder="smtp.gmail.com" autocomplete="off">
+                  <div class="st-field-hint">Gmail: smtp.gmail.com · Outlook: smtp.office365.com</div>
+                </div>
+                <div class="st-field">
+                  <label>Port</label>
+                  <select id="smtp-port" class="st-select">
+                    <option value="587">587 — STARTTLS (recommended)</option>
+                    <option value="465">465 — SSL/TLS</option>
+                    <option value="25">25 — Plain (not recommended)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="st-form-row">
+                <div class="st-field">
+                  <label>Username / Email</label>
+                  <input type="text" id="smtp-username" placeholder="you@gmail.com" autocomplete="off">
+                </div>
+                <div class="st-field">
+                  <label>Password / App Password</label>
+                  <input type="password" id="smtp-password" placeholder="••••••••" autocomplete="new-password">
+                </div>
+              </div>
+              <div class="st-form-row">
+                <div class="st-field">
+                  <label>From Email</label>
+                  <input type="email" id="smtp-from" placeholder="you@yourdomain.com" autocomplete="off">
+                </div>
+                <div class="st-field">
+                  <label>From Name <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+                  <input type="text" id="smtp-from-name" placeholder="Your Name or Business">
+                </div>
+              </div>
+              <div class="st-profile-error" id="smtp-connect-err"></div>
+              <div class="st-profile-actions">
+                <button type="submit" class="st-save-btn" id="smtp-connect-btn">Connect &amp; Test</button>
+              </div>
+            </form>
           </div>
-          <div class="st-profile-error" id="smtp-connect-err"></div>
-          <div class="st-profile-actions">
-            <button type="submit" class="st-save-btn" id="smtp-connect-btn">Connect &amp; Test</button>
-          </div>
-        </form>
+        </div>
       </div>
     </section>
 
@@ -531,28 +557,81 @@ async function disconnectWp() {
 
 loadWpStatus();
 
-// ── SMTP / Email Connection ───────────────────────────────
-async function loadSmtpStatus() {
+// ── Email Connection (Gmail OAuth + SMTP fallback) ───────────
+async function loadEmailStatus() {
+  // Check Gmail first
   try {
-    const res = await fetch('/api/email/smtp');
-    if (!res.ok) return;
-    const d = await res.json();
-    if (d.connected) showSmtpConnected(d); else showSmtpForm();
+    const r = await fetch('/api/auth/gmail/status');
+    if (r.ok) {
+      const d = await r.json();
+      if (d.connected) { showGmailConnected(d); return; }
+    }
   } catch {}
+  // Then check SMTP
+  try {
+    const r = await fetch('/api/email/smtp');
+    if (r.ok) {
+      const d = await r.json();
+      if (d.connected) { showSmtpConnected(d); return; }
+    }
+  } catch {}
+  showConnectOptions();
 }
+
+function showGmailConnected(d) {
+  document.getElementById('gmail-connected-state').style.display  = '';
+  document.getElementById('gmail-connect-state').style.display    = 'none';
+  document.getElementById('gmail-status-email').textContent       = d.email || '—';
+  const meta = d.connectedAt ? 'Connected ' + new Date(d.connectedAt).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }) : '';
+  document.getElementById('gmail-status-meta').textContent = meta;
+  // Handle ?gmail= param in URL
+  const p = new URLSearchParams(location.search);
+  if (p.get('gmail') === 'connected') showToast('Gmail connected ✓');
+  if (p.get('gmail') === 'denied')  showToast('Gmail connection cancelled');
+  if (p.get('gmail') === 'error')   showToast('Gmail connection failed — please try again');
+}
+
 function showSmtpConnected(d) {
-  document.getElementById('smtp-connected-state').style.display = '';
-  document.getElementById('smtp-connect-state').style.display = 'none';
+  document.getElementById('gmail-connected-state').style.display  = 'none';
+  document.getElementById('gmail-connect-state').style.display    = '';
+  document.getElementById('smtp-form-wrap').style.display         = '';
+  document.getElementById('smtp-connected-state').style.display   = '';
+  document.getElementById('smtp-connect-state').style.display     = 'none';
   const fromLabel = d.fromName ? `"${d.fromName}" <${d.from}>` : (d.from || '—');
   document.getElementById('smtp-status-from').textContent = fromLabel;
   document.getElementById('smtp-status-host').textContent = (d.host || '') + (d.port ? ':' + d.port : '');
   const meta = d.connectedAt ? 'Connected ' + new Date(d.connectedAt).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }) : '';
   document.getElementById('smtp-status-meta').textContent = meta;
 }
-function showSmtpForm() {
-  document.getElementById('smtp-connected-state').style.display = 'none';
-  document.getElementById('smtp-connect-state').style.display = '';
+
+function showConnectOptions() {
+  document.getElementById('gmail-connected-state').style.display = 'none';
+  document.getElementById('gmail-connect-state').style.display   = '';
+  document.getElementById('smtp-connected-state').style.display  = 'none';
+  document.getElementById('smtp-connect-state').style.display    = '';
+  const p = new URLSearchParams(location.search);
+  const msgEl = document.getElementById('gmail-connect-msg');
+  if (p.get('gmail') === 'denied') { msgEl.textContent = 'Gmail connection was cancelled.'; msgEl.style.display = ''; }
+  if (p.get('gmail') === 'error')  { msgEl.textContent = 'Gmail connection failed. Please try again.'; msgEl.style.display = ''; }
 }
+
+function toggleSmtpForm() {
+  const wrap = document.getElementById('smtp-form-wrap');
+  const btn  = document.querySelector('.smtp-toggle-btn');
+  const open = wrap.style.display === 'none';
+  wrap.style.display = open ? '' : 'none';
+  btn.textContent    = open ? 'Use SMTP instead ▴' : 'Use SMTP instead ▾';
+}
+
+async function disconnectGmail() {
+  if (!confirm('Disconnect Gmail? You can reconnect at any time.')) return;
+  try {
+    await fetch('/api/auth/gmail/disconnect', { method: 'DELETE' });
+    showConnectOptions();
+    showToast('Gmail disconnected');
+  } catch {}
+}
+
 async function connectSmtp(e) {
   e.preventDefault();
   const errEl = document.getElementById('smtp-connect-err');
@@ -572,15 +651,17 @@ async function connectSmtp(e) {
     if (!res.ok) { errEl.textContent = data.error || 'Connection failed.'; return; }
     document.getElementById('smtp-password').value = '';
     showSmtpConnected({ host, port, username, from, fromName, connectedAt: new Date().toISOString() });
-    showToast('Email connected ✓');
+    showToast('SMTP connected ✓');
   } catch { errEl.textContent = 'Network error. Please try again.'; }
   finally { btn.disabled = false; btn.textContent = 'Connect & Test'; }
 }
+
 async function disconnectSmtp() {
-  if (!confirm('Disconnect email? You can reconnect at any time.')) return;
-  try { await fetch('/api/email/smtp', { method:'DELETE' }); showSmtpForm(); showToast('Email disconnected'); } catch {}
+  if (!confirm('Disconnect SMTP? You can reconnect at any time.')) return;
+  try { await fetch('/api/email/smtp', { method:'DELETE' }); showConnectOptions(); showToast('SMTP disconnected'); } catch {}
 }
-loadSmtpStatus();
+
+loadEmailStatus();
 
 // ── Load profile from /api/auth/me ────────────────────────
 async function loadProfile() {
