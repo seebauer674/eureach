@@ -1008,20 +1008,29 @@ async function handleTemplatesGenerate(req, res) {
   if (!apiKey) return json(res, 500, { error: 'AI service not configured.' });
 
   const body = await readBody(req);
-  const { name, templateType, language, tone, context } = body;
+  const { name, templateType, purpose, language, tone, context } = body;
   if (!name || !templateType) return json(res, 400, { error: 'name and templateType are required.' });
 
   const systemPrompt = 'You are an expert cold outreach email writer. Return ONLY valid JSON with this exact structure: {"subject": "...", "body": "..."}. No markdown, no explanation, no code fences.';
   const userMessage = [
-    'Generate a professional cold outreach email template for local business outreach.',
+    'Generate a professional email template for local business outreach.',
     'Template type: ' + templateType,
+    'Email purpose / goal: ' + (purpose || 'Convert to Customer'),
     'Business context: ' + (context || 'local businesses'),
     'Tone: ' + (tone || 'Friendly'),
     'Language: ' + (language || 'English'),
     '',
+    'The email must clearly work toward the stated purpose:',
+    '- Convert to Customer → clear CTA to try the service',
+    '- Book a Meeting → end with a specific call/meeting request',
+    '- Inform / Educate → provide useful insight, soft CTA',
+    '- Promote an Offer → highlight the offer with urgency',
+    '- Request a Partnership → explain mutual benefit, propose next step',
+    '- Reconnect → warm tone, reference prior contact, low-pressure CTA',
+    '',
     'Return ONLY valid JSON: {"subject": "...", "body": "..."}',
     '',
-    'The body should be 3-4 short paragraphs, conversational, with {{businessName}} and {{senderName}} placeholders. No HTML.'
+    'The body should be 3-4 short paragraphs with {{businessName}} and {{senderName}} placeholders. No HTML.'
   ].join('\n');
 
   let aiResult;
@@ -1058,6 +1067,7 @@ async function handleTemplatesGenerate(req, res) {
     userId:       user.id,
     name:         sanitizeString(name, 200),
     templateType: sanitizeString(templateType, 50),
+    purpose:      sanitizeString(purpose || '', 60),
     language:     sanitizeString(language || 'English', 50),
     tone:         sanitizeString(tone || 'Friendly', 50),
     context:      sanitizeString(context || '', 500),

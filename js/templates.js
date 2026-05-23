@@ -66,6 +66,7 @@
   async function onGenerate() {
     const name         = document.getElementById("et-name").value.trim();
     const templateType = document.getElementById("et-type").value;
+    const purpose      = document.getElementById("et-purpose").value;
     const language     = document.getElementById("et-lang").value;
     const tone         = document.getElementById("et-tone").value;
     const context      = document.getElementById("et-context").value.trim();
@@ -92,7 +93,7 @@
       const res = await fetch("/api/templates/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, templateType, language, tone, context }),
+        body: JSON.stringify({ name, templateType, purpose, language, tone, context }),
       });
       const data = await res.json();
 
@@ -188,7 +189,7 @@
     <div class="et-card" data-id="${esc(t.id)}">
       <div>
         <div class="et-card-name">${esc(t.name)}</div>
-        <span class="et-card-type">${esc(t.templateType)}</span>
+        <span class="et-card-type">${esc(t.templateType)}</span>${t.purpose ? ` <span class="et-card-purpose">${esc(t.purpose)}</span>` : ''}
       </div>
       <div class="et-card-subject" title="${esc(t.subject)}">${esc(subjectPreview)}</div>
       <div class="et-card-meta">${esc(t.language)} · ${esc(t.tone)} · ${date}</div>
