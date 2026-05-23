@@ -451,8 +451,12 @@ async function handleUpdateProfile(req, res) {
     users[idx].email = email.toLowerCase().trim();
   }
 
-  if (firstName !== undefined) users[idx].firstName = firstName.trim();
-  if (lastName  !== undefined) users[idx].lastName  = lastName.trim();
+  if (firstName  !== undefined) users[idx].firstName  = firstName.trim();
+  if (lastName   !== undefined) users[idx].lastName   = lastName.trim();
+  if (body.replyEmail !== undefined) {
+    const re = sanitizeEmail(body.replyEmail || "");
+    users[idx].replyEmail = re || null;
+  }
 
   if (newPassword) {
     if (!currentPassword) return json(res, 400, { error: "Current password is required to set a new one." });
@@ -1515,7 +1519,7 @@ function handleAuditShareDelete(req, res, id) {
 }
 
 // ── Raw SMTP sender (no external libraries) ───────────────────────────────────
-function smtpSend({ host, port, username, password, from, fromName, to, subject, body, testOnly = false }) {
+function smtpSend({ host, port, username, password, from, fromName, to, subject, body, replyTo, testOnly = false }) {
   const useSSL = (port === 465);
   return new Promise((resolve, reject) => {
     let socket = null;
@@ -1600,6 +1604,7 @@ function smtpSend({ host, port, username, password, from, fromName, to, subject,
           `MIME-Version: 1.0`,
           `Content-Type: text/plain; charset=UTF-8`,
           `Content-Transfer-Encoding: 8bit`,
+          ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
           "",
           ...body.split("\n").map(l => l.startsWith(".") ? "." + l : l),
         ];
@@ -1690,23 +1695,24 @@ async function gmailGetAccessToken(userId) {
   return { accessToken: r.body.access_token, email: conn.email };
 }
 
-function buildRfc2822(fromEmail, fromName, to, subject, bodyText) {
+function buildRfc2822(fromEmail, fromName, to, subject, bodyText, replyTo) {
   const fromHeader = fromName ? `"${fromName.replace(/["\\]/g, "")}" <${fromEmail}>` : fromEmail;
-  return [
+  const lines = [
     `From: ${fromHeader}`,
     `To: ${to}`,
     `Subject: ${subject}`,
     `MIME-Version: 1.0`,
     `Content-Type: text/plain; charset=UTF-8`,
-    ``,
-    bodyText,
-  ].join("\r\n");
+  ];
+  if (replyTo) lines.push(`Reply-To: ${replyTo}`);
+  lines.push(``, bodyText);
+  return lines.join("\r\n");
 }
 
-async function gmailSendMessage({ userId, to, subject, body, fromName }) {
+async function gmailSendMessage({ userId, to, subject, body, fromName, replyTo }) {
   const tok = await gmailGetAccessToken(userId);
   if (!tok) throw new Error("Gmail not connected");
-  const raw     = buildRfc2822(tok.email, fromName || null, to, subject, body);
+  const raw     = buildRfc2822(tok.email, fromName || null, to, subject, body, replyTo || null);
   const encoded = Buffer.from(raw).toString("base64")
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
   const r = await googleJsonPost(
@@ -1822,9 +1828,12 @@ function handleEmailStatus(req, res) {
   if (!user) return json(res, 401, { error: "Not authenticated." });
   const gmail = readJSON(GMAIL_FILE).find(c => c.userId === user.id);
   const smtp  = readJSON(SMTP_FILE).find(c => c.userId === user.id);
-  if (gmail) return json(res, 200, { configured: true, method: "gmail", from: gmail.email || "" });
-  if (smtp)  return json(res, 200, { configured: true, method: "smtp",  from: smtp.from  || "" });
-  return json(res, 200, { configured: false });
+  const users2  = readJSON(USERS_FILE);
+  const userRec  = users2.find(u => u.id === user.id);
+  const replyEmail = userRec?.replyEmail || "";
+  if (gmail) return json(res, 200, { configured: true, method: "gmail", from: gmail.email || "", replyEmail });
+  if (smtp)  return json(res, 200, { configured: true, method: "smtp",  from: smtp.from  || "", replyEmail });
+  return json(res, 200, { configured: false, replyEmail });
 }
 
 async function handleSmtpStatus(req, res) {
@@ -1888,13 +1897,16 @@ async function handleEmailSend(req, res) {
   const smtpConn  = readJSON(SMTP_FILE).find(c => c.userId === user.id);
   if (!gmailConn && !smtpConn) return json(res, 400, { error: "No email connection configured. Go to Settings → Email to connect Gmail or SMTP." });
   try {
+    const allUsers = readJSON(USERS_FILE);
+    const userFull  = allUsers.find(u => u.id === user.id);
+    const replyTo   = userFull?.replyEmail || null;
     if (gmailConn) {
-      await gmailSendMessage({ userId: user.id, to, subject, body });
+      await gmailSendMessage({ userId: user.id, to, subject, body, replyTo });
     } else {
       let password;
       try { password = decryptStr(smtpConn.passwordEnc); }
       catch { return json(res, 500, { error: "Failed to decrypt SMTP credentials. Please reconnect in Settings." }); }
-      await smtpSend({ host: smtpConn.host, port: smtpConn.port, username: smtpConn.username, password, from: smtpConn.from, fromName: smtpConn.fromName || "", to, subject, body });
+      await smtpSend({ host: smtpConn.host, port: smtpConn.port, username: smtpConn.username, password, from: smtpConn.from, fromName: smtpConn.fromName || "", to, subject, body, replyTo });
     }
   } catch (err) {
     return json(res, 500, { error: "Send failed: " + err.message });

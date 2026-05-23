@@ -106,6 +106,28 @@
 
 </div>
 
+  <!-- Email Settings -->
+  <div class="prf-section" id="prf-email-section">
+    <div class="prf-section-title">📧 Email Settings</div>
+    <p class="prf-section-desc">Set the reply-to address that recipients see when they reply to your outreach emails.</p>
+    <div class="prf-field-row">
+      <label class="prf-field-label" for="prf-reply-email">Reply-To Email</label>
+      <input class="prf-field-input" id="prf-reply-email" type="email" placeholder="your@business.com">
+    </div>
+    <div class="prf-field-row">
+      <label class="prf-field-label" for="prf-first-name">First Name</label>
+      <input class="prf-field-input" id="prf-first-name" type="text" placeholder="First name">
+    </div>
+    <div class="prf-field-row">
+      <label class="prf-field-label" for="prf-last-name">Last Name</label>
+      <input class="prf-field-input" id="prf-last-name" type="text" placeholder="Last name">
+    </div>
+    <div class="prf-save-row">
+      <div class="prf-save-msg" id="prf-save-msg"></div>
+      <button class="btn btn-primary" id="prf-save-btn" style="font-size:0.85rem;padding:9px 22px">Save Changes</button>
+    </div>
+  </div>
+
 <script>
 (async () => {
   // Auth check
@@ -228,6 +250,37 @@
     if (max === 0)  return 'Locked';
     return `${used || 0} / ${max}`;
   }
+
+  // ── Email Settings section ──
+  document.getElementById('prf-reply-email').value = me.replyEmail || '';
+  document.getElementById('prf-first-name').value  = me.firstName  || '';
+  document.getElementById('prf-last-name').value   = me.lastName   || '';
+
+  document.getElementById('prf-save-btn').addEventListener('click', async () => {
+    const btn  = document.getElementById('prf-save-btn');
+    const msg  = document.getElementById('prf-save-msg');
+    btn.disabled = true; btn.textContent = 'Saving…';
+    msg.textContent = '';
+    const res = await fetch('/api/auth/profile', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        replyEmail: document.getElementById('prf-reply-email').value.trim(),
+        firstName:  document.getElementById('prf-first-name').value.trim(),
+        lastName:   document.getElementById('prf-last-name').value.trim(),
+      }),
+    });
+    const data = await res.json();
+    btn.disabled = false; btn.textContent = 'Save Changes';
+    if (res.ok) {
+      msg.style.color = '#4ade80';
+      msg.textContent = '✓ Saved';
+      setTimeout(() => msg.textContent = '', 3000);
+    } else {
+      msg.style.color = '#f87171';
+      msg.textContent = data.error || 'Save failed.';
+    }
+  });
 })();
 </script>
 </body>

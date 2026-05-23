@@ -317,7 +317,7 @@ function ldTogglePanel(type) {
       panel.innerHTML = `<div class="ld-panel">
         <div class="ld-panel-title">✉ Send Email</div>
         ${emailCfg.configured
-          ? `<div class="ld-email-from">Sending from: <strong>${esc(emailCfg.from)}</strong> via ${emailCfg.method === 'gmail' ? 'Gmail' : 'SMTP'}</div>`
+          ? `<div class="ld-email-from">Sending from: <strong>${esc(emailCfg.from)}</strong> via ${emailCfg.method === 'gmail' ? 'Gmail' : 'SMTP'}${emailCfg.replyEmail ? ' · Replies go to: <strong>' + esc(emailCfg.replyEmail) + '</strong>' : ' · <a href="profile.html" style="color:var(--blue2)">Set reply-to →</a>'}</div>`
           : `<div class="ld-email-warn">⚠ No email configured. <a href="settings.html#email">Set up email →</a></div>`
         }
         <div class="ld-panel-row"><label>To</label><input class="ld-panel-input" id="ldp-to" type="email" value="${esc(ldCurrentLead.email || '')}" placeholder="recipient@email.com"></div>
