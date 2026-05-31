@@ -1218,7 +1218,94 @@ async function handleArticlesDeduct(req, res) {
 
 // ── Competitor audit core ─────────────────────────────────────────────────────
 
+async function crawlWebsite(rawUrl) {
+  if (!rawUrl) return null;
+  try {
+    let target = rawUrl.trim();
+    if (!/^https?:\/\//i.test(target)) target = "https://" + target;
+    const parsed = new URL(target);
+    if (isPrivateHost(parsed.hostname)) return null;
+
+    const fetchPage = (pageUrl, redirects = 0) => new Promise((resolve, reject) => {
+      if (redirects > 5) return reject(new Error("Too many redirects"));
+      const mod = pageUrl.startsWith("https") ? https : http;
+      const req = mod.get(pageUrl, {
+        timeout: 8000,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; EureachBot/1.0; +https://eureach.eu)",
+          "Accept": "text/html,application/xhtml+xml",
+          "Accept-Language": "en",
+        },
+      }, res => {
+        if ([301,302,303,307,308].includes(res.statusCode) && res.headers.location) {
+          const next = new URL(res.headers.location, pageUrl).href;
+          res.resume();
+          return fetchPage(next, redirects + 1).then(resolve).catch(reject);
+        }
+        if (res.statusCode !== 200) { res.resume(); return resolve(null); }
+        const chunks = [];
+        res.on("data", c => { chunks.push(c); if (Buffer.concat(chunks).length > 500000) res.destroy(); });
+        res.on("end",  () => resolve(Buffer.concat(chunks).toString("utf8", 0, 500000)));
+        res.on("error", reject);
+      });
+      req.on("error", reject);
+      req.on("timeout", () => { req.destroy(); reject(new Error("timeout")); });
+    });
+
+    const html = await fetchPage(target);
+    if (!html) return null;
+
+    const extract    = (pat, fl="i")  => { const m = html.match(new RegExp(pat,fl)); return m ? m[1].replace(/<[^>]+>/g,"").trim() : null; };
+    const extractAll = (pat, fl="gi") => { const r=[]; let m; const re=new RegExp(pat,fl); while((m=re.exec(html)) && r.length<10) r.push(m[1].replace(/<[^>]+>/g,"").trim()); return r; };
+
+    const title       = extract('<title[^>]*>([^<]{1,200})');
+    const description = extract('<meta[^>]+name=["\']description["\'][^>]+content=["\']([^"\']{1,400})["\']') ||
+                        extract('<meta[^>]+content=["\']([^"\']{1,400})["\'][^>]+name=["\']description["\']');
+    const h1s         = extractAll('<h1[^>]*>([^<]{1,150})');
+    const h2s         = extractAll('<h2[^>]*>([^<]{1,150})');
+    const ogTitle     = extract('<meta[^>]+property=["\']og:title["\'][^>]+content=["\']([^"\']{1,200})["\']');
+    const ogDesc      = extract('<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']{1,400})["\']');
+
+    const schemaTypes = [];
+    const schemaRe = /<script[^>]+type=["\']application\/ld\+json["\'][^>]*>([\s\S]*?)<\/script>/gi;
+    let sm;
+    while ((sm = schemaRe.exec(html)) && schemaTypes.length < 5) {
+      try { const obj = JSON.parse(sm[1]); schemaTypes.push(obj["@type"] || "Unknown"); } catch {}
+    }
+
+    const hasPhone      = /tel:|phone|\u03c4\u03b7\u03bb/i.test(html);
+    const hasEmail      = /mailto:|contact|email/i.test(html);
+    const hasFacebook   = /facebook\.com/i.test(html);
+    const hasInstagram  = /instagram\.com/i.test(html);
+    const hasLinkedIn   = /linkedin\.com/i.test(html);
+    const hasGoogleMaps = /maps\.google|google\.com\/maps|goo\.gl\/maps/i.test(html);
+
+    let hasRobots = false, hasSitemap = false;
+    try {
+      await new Promise(res2 => {
+        const rUrl = parsed.origin + "/robots.txt";
+        const mod2 = rUrl.startsWith("https") ? https : http;
+        mod2.get(rUrl, {timeout:3000}, r => { hasRobots = r.statusCode === 200; r.resume(); res2(); }).on("error", res2).on("timeout", res2);
+      });
+    } catch {}
+    try {
+      await new Promise(res3 => {
+        const sUrl = parsed.origin + "/sitemap.xml";
+        const mod3 = sUrl.startsWith("https") ? https : http;
+        mod3.get(sUrl, {timeout:3000}, r => { hasSitemap = r.statusCode === 200; r.resume(); res3(); }).on("error", res3).on("timeout", res3);
+      });
+    } catch {}
+
+    return { title, description, h1s, h2s, ogTitle, ogDesc, schemaTypes, hasPhone, hasEmail, hasFacebook, hasInstagram, hasLinkedIn, hasGoogleMaps, hasRobots, hasSitemap };
+  } catch {
+    return null;
+  }
+}
+
 async function runCompetitorAudit(apiKey, name, url, industry, model = "claude-sonnet-4-6") {
+  // Crawl website for real data
+  const crawl = url ? await crawlWebsite(url) : null;
+
   const systemPrompt = `You are an expert AI search visibility analyst. You evaluate businesses for how well they appear in AI-powered search engines: ChatGPT, Perplexity, Google AI Overviews, and similar tools. You assess their digital footprint, content strategy, schema markup signals, local SEO, and citation potential. You produce realistic, differentiated scores — avoid clustering around 70-80. Use the full 0-100 range.
 
 Return ONLY a valid JSON object — no markdown, no explanation, no code fences:
@@ -1236,12 +1323,32 @@ Return ONLY a valid JSON object — no markdown, no explanation, no code fences:
   "recommendations": [<3-5 actionable improvements>]
 }`;
 
+  const crawlSection = crawl ? `
+REAL WEBSITE DATA (crawled from ${url}):
+- Page title: ${crawl.title || "not found"}
+- Meta description: ${crawl.description || "missing"}
+- H1 headings: ${crawl.h1s.length ? crawl.h1s.join(" | ") : "none found"}
+- H2 headings: ${crawl.h2s.length ? crawl.h2s.slice(0,5).join(" | ") : "none found"}
+- OG title: ${crawl.ogTitle || "missing"}
+- OG description: ${crawl.ogDesc || "missing"}
+- Schema.org types: ${crawl.schemaTypes.length ? crawl.schemaTypes.join(", ") : "none — no structured data"}
+- Has phone: ${crawl.hasPhone}
+- Has email/contact: ${crawl.hasEmail}
+- Has Facebook: ${crawl.hasFacebook}
+- Has Instagram: ${crawl.hasInstagram}
+- Has LinkedIn: ${crawl.hasLinkedIn}
+- Has Google Maps link: ${crawl.hasGoogleMaps}
+- Has robots.txt: ${crawl.hasRobots}
+- Has sitemap.xml: ${crawl.hasSitemap}
+
+Score based on this REAL data. Be critical where data is missing or weak.` : `
+No website crawl available — base analysis on what is publicly known or reasonably inferred about this business.`;
+
   const userMessage = `Analyze this business for AI search visibility:
 - Name: ${name}
 - Website: ${url || "unknown"}
 - Industry: ${industry || "general business"}
-
-Base your analysis on what is publicly known or reasonably inferred about businesses of this type and size in this industry. Score each dimension independently and honestly.`;
+${crawlSection}`;
 
   const groqKey = getGroqKey();
   let raw = "";
