@@ -1246,7 +1246,7 @@ async function crawlWebsite(rawUrl) {
         const lastModified = res.headers["last-modified"] || null;
         const chunks = [];
         res.on("data", c => { chunks.push(c); if (Buffer.concat(chunks).length > 500000) res.destroy(); });
-        res.on("end",  () => resolve({ html: Buffer.concat(chunks).toString("utf8", 0, 500000), lastModified }));
+        res.on("end",  () => resolve({ html: Buffer.concat(chunks).toString("utf8", 0, 500000), lastModified, finalUrl: pageUrl }));
         res.on("error", reject);
       });
       req.on("error", reject);
@@ -1255,7 +1255,8 @@ async function crawlWebsite(rawUrl) {
 
     const pageResult = await fetchPage(target);
     if (!pageResult) return null;
-    const { html, lastModified: pageLastModified } = pageResult;
+    const { html, lastModified: pageLastModified, finalUrl } = pageResult;
+    const origin = (() => { try { return new URL(finalUrl || target).origin; } catch { return parsed.origin; } })();
 
     const extract    = (pat, fl="i")  => { const m = html.match(new RegExp(pat,fl)); return m ? m[1].replace(/<[^>]+>/g,"").trim() : null; };
     const extractAll = (pat, fl="gi") => { const r=[]; let m; const re=new RegExp(pat,fl); while((m=re.exec(html)) && r.length<10) r.push(m[1].replace(/<[^>]+>/g,"").trim()); return r; };
@@ -1299,20 +1300,29 @@ async function crawlWebsite(rawUrl) {
         r2.on("timeout", () => { r2.destroy(); resolve(false); });
       } catch { resolve(false); }
     });
-    const fetchSitemapDates = (sitemapUrl) => new Promise(resolve => {
+    const fetchXmlDates = (xmlUrl) => new Promise(resolve => {
       try {
-        const mod2 = sitemapUrl.startsWith("https") ? https : http;
-        const r2 = mod2.get(sitemapUrl, {timeout:4000}, res2 => {
+        const mod2 = xmlUrl.startsWith("https") ? https : http;
+        const r2 = mod2.get(xmlUrl, {timeout:4000, headers:{"User-Agent":"Mozilla/5.0"}}, res2 => {
           if (res2.statusCode !== 200) { res2.resume(); return resolve([]); }
           const chunks2 = [];
-          res2.on("data", c => { chunks2.push(c); if (Buffer.concat(chunks2).length > 200000) res2.destroy(); });
+          res2.on("data", c => { chunks2.push(c); if (Buffer.concat(chunks2).length > 300000) res2.destroy(); });
           res2.on("end", () => {
             try {
               const xml = Buffer.concat(chunks2).toString("utf8");
+              // Sitemap index — extract lastmod dates directly from index entries
+              if (xml.includes("<sitemapindex")) {
+                const indexDates = [];
+                const re3 = /<lastmod>([^<]+)<\/lastmod>/gi;
+                let m3;
+                while ((m3 = re3.exec(xml)) && indexDates.length < 20) indexDates.push(m3[1].trim().slice(0,10));
+                indexDates.sort((a,b) => b.localeCompare(a));
+                return resolve(indexDates.slice(0,3));
+              }
               const dates = [];
               const re2 = /<lastmod>([^<]+)<\/lastmod>/gi;
               let m2;
-              while ((m2 = re2.exec(xml)) && dates.length < 20) dates.push(m2[1].trim());
+              while ((m2 = re2.exec(xml)) && dates.length < 20) dates.push(m2[1].trim().slice(0,10));
               dates.sort((a,b) => b.localeCompare(a));
               resolve(dates.slice(0,3));
             } catch { resolve([]); }
@@ -1326,8 +1336,8 @@ async function crawlWebsite(rawUrl) {
 
     let sitemapDates = [];
     [hasRobots, [hasSitemap, sitemapDates]] = await Promise.all([
-      headCheck(parsed.origin + "/robots.txt"),
-      fetchSitemapDates(parsed.origin + "/sitemap.xml").then(dates => [dates.length > 0, dates]),
+      headCheck(origin + "/robots.txt"),
+      fetchXmlDates(origin + "/sitemap.xml").then(dates => [dates.length > 0, dates]),
     ]);
 
     // Best last-updated date: schema > sitemap > Last-Modified header
