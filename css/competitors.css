@@ -1075,3 +1075,10 @@
   backdrop-filter: blur(4px);
   z-index: 400;
 }
+
+.ct-site-updated, .ct-site-updates-list {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.ct-site-updated strong { color: var(--text); }

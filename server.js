@@ -1243,17 +1243,19 @@ async function crawlWebsite(rawUrl) {
           return fetchPage(next, redirects + 1).then(resolve).catch(reject);
         }
         if (res.statusCode !== 200) { res.resume(); return resolve(null); }
+        const lastModified = res.headers["last-modified"] || null;
         const chunks = [];
         res.on("data", c => { chunks.push(c); if (Buffer.concat(chunks).length > 500000) res.destroy(); });
-        res.on("end",  () => resolve(Buffer.concat(chunks).toString("utf8", 0, 500000)));
+        res.on("end",  () => resolve({ html: Buffer.concat(chunks).toString("utf8", 0, 500000), lastModified }));
         res.on("error", reject);
       });
       req.on("error", reject);
       req.on("timeout", () => { req.destroy(); reject(new Error("timeout")); });
     });
 
-    const html = await fetchPage(target);
-    if (!html) return null;
+    const pageResult = await fetchPage(target);
+    if (!pageResult) return null;
+    const { html, lastModified: pageLastModified } = pageResult;
 
     const extract    = (pat, fl="i")  => { const m = html.match(new RegExp(pat,fl)); return m ? m[1].replace(/<[^>]+>/g,"").trim() : null; };
     const extractAll = (pat, fl="gi") => { const r=[]; let m; const re=new RegExp(pat,fl); while((m=re.exec(html)) && r.length<10) r.push(m[1].replace(/<[^>]+>/g,"").trim()); return r; };
@@ -1267,10 +1269,16 @@ async function crawlWebsite(rawUrl) {
     const ogDesc      = extract('<meta[^>]+property=["\']og:description["\'][^>]+content=["\']([^"\']{1,400})["\']');
 
     const schemaTypes = [];
+    let schemaDateModified = null;
     const schemaRe = /<script[^>]+type=["\']application\/ld\+json["\'][^>]*>([\s\S]*?)<\/script>/gi;
     let sm;
     while ((sm = schemaRe.exec(html)) && schemaTypes.length < 5) {
-      try { const obj = JSON.parse(sm[1]); schemaTypes.push(obj["@type"] || "Unknown"); } catch {}
+      try {
+        const obj = JSON.parse(sm[1]);
+        schemaTypes.push(obj["@type"] || "Unknown");
+        if (!schemaDateModified && (obj.dateModified || obj.datePublished))
+          schemaDateModified = obj.dateModified || obj.datePublished;
+      } catch {}
     }
 
     const hasPhone      = /tel:|phone|\u03c4\u03b7\u03bb/i.test(html);
@@ -1291,12 +1299,45 @@ async function crawlWebsite(rawUrl) {
         r2.on("timeout", () => { r2.destroy(); resolve(false); });
       } catch { resolve(false); }
     });
-    [hasRobots, hasSitemap] = await Promise.all([
+    const fetchSitemapDates = (sitemapUrl) => new Promise(resolve => {
+      try {
+        const mod2 = sitemapUrl.startsWith("https") ? https : http;
+        const r2 = mod2.get(sitemapUrl, {timeout:4000}, res2 => {
+          if (res2.statusCode !== 200) { res2.resume(); return resolve([]); }
+          const chunks2 = [];
+          res2.on("data", c => { chunks2.push(c); if (Buffer.concat(chunks2).length > 200000) res2.destroy(); });
+          res2.on("end", () => {
+            try {
+              const xml = Buffer.concat(chunks2).toString("utf8");
+              const dates = [];
+              const re2 = /<lastmod>([^<]+)<\/lastmod>/gi;
+              let m2;
+              while ((m2 = re2.exec(xml)) && dates.length < 20) dates.push(m2[1].trim());
+              dates.sort((a,b) => b.localeCompare(a));
+              resolve(dates.slice(0,3));
+            } catch { resolve([]); }
+          });
+          res2.on("error", () => resolve([]));
+        });
+        r2.on("error", () => resolve([]));
+        r2.on("timeout", () => { r2.destroy(); resolve([]); });
+      } catch { resolve([]); }
+    });
+
+    let sitemapDates = [];
+    [hasRobots, [hasSitemap, sitemapDates]] = await Promise.all([
       headCheck(parsed.origin + "/robots.txt"),
-      headCheck(parsed.origin + "/sitemap.xml"),
+      fetchSitemapDates(parsed.origin + "/sitemap.xml").then(dates => [dates.length > 0, dates]),
     ]);
 
-    return { title, description, h1s, h2s, ogTitle, ogDesc, schemaTypes, hasPhone, hasEmail, hasFacebook, hasInstagram, hasLinkedIn, hasGoogleMaps, hasRobots, hasSitemap };
+    // Best last-updated date: schema > sitemap > Last-Modified header
+    const lastUpdated = schemaDateModified
+      ? schemaDateModified.slice(0,10)
+      : sitemapDates.length ? sitemapDates[0]
+      : pageLastModified ? pageLastModified
+      : null;
+
+    return { title, description, h1s, h2s, ogTitle, ogDesc, schemaTypes, hasPhone, hasEmail, hasFacebook, hasInstagram, hasLinkedIn, hasGoogleMaps, hasRobots, hasSitemap, lastUpdated, recentUpdates: sitemapDates };
   } catch {
     return null;
   }
@@ -1439,6 +1480,9 @@ Write specific strengths, weaknesses and recommendations based on the data above
     result.overall_score = computed.overall;
     result.breakdown     = computed.breakdown;
   }
+  // Attach crawl date signals
+  result.lastUpdated   = crawl ? (crawl.lastUpdated || null) : null;
+  result.recentUpdates = crawl ? (crawl.recentUpdates || []) : [];
   if (typeof result.overall_score !== "number") throw new Error("Missing overall_score");
   return result;
 }
@@ -1494,7 +1538,7 @@ async function handleCompetitorCreate(req, res) {
   const compModel = getModel(compUsers[compIdx]);
   try {
     const result   = await runCompetitorAudit(apiKey, competitorName.trim(), (competitorUrl || "").trim(), (industry || "").trim(), compModel);
-    const snapshot = { date: new Date().toISOString(), score: result.overall_score, breakdown: result.breakdown, recommendations: result.recommendations, strengths: result.strengths, weaknesses: result.weaknesses };
+    const snapshot = { date: new Date().toISOString(), score: result.overall_score, breakdown: result.breakdown, recommendations: result.recommendations, strengths: result.strengths, weaknesses: result.weaknesses, lastUpdated: result.lastUpdated || null, recentUpdates: result.recentUpdates || [] };
     const entry = {
       id:             generateId(),
       userId:         user.id,
@@ -1550,7 +1594,7 @@ async function handleCompetitorCheck(req, res, id) {
   const comp = all[idx];
   try {
     const result   = await runCompetitorAudit(apiKey, comp.competitorName, comp.competitorUrl, comp.industry, getModel(recheckUsers[recheckUidx]));
-    const snapshot = { date: new Date().toISOString(), score: result.overall_score, breakdown: result.breakdown, recommendations: result.recommendations, strengths: result.strengths, weaknesses: result.weaknesses };
+    const snapshot = { date: new Date().toISOString(), score: result.overall_score, breakdown: result.breakdown, recommendations: result.recommendations, strengths: result.strengths, weaknesses: result.weaknesses, lastUpdated: result.lastUpdated || null, recentUpdates: result.recentUpdates || [] };
     const prevScore = comp.snapshots.length ? comp.snapshots[comp.snapshots.length - 1].score : null;
     comp.snapshots.push(snapshot);
     comp.alert = prevScore !== null && (prevScore - result.overall_score) > 10;
@@ -3291,7 +3335,7 @@ setInterval(async () => {
     if (now - new Date(lastSnap.date).getTime() < THIRTY_DAYS_MS) continue;
     try {
       const result   = await runCompetitorAudit(apiKey, comp.competitorName, comp.competitorUrl, comp.industry);
-      const snapshot = { date: new Date().toISOString(), score: result.overall_score, breakdown: result.breakdown, recommendations: result.recommendations, strengths: result.strengths, weaknesses: result.weaknesses };
+      const snapshot = { date: new Date().toISOString(), score: result.overall_score, breakdown: result.breakdown, recommendations: result.recommendations, strengths: result.strengths, weaknesses: result.weaknesses, lastUpdated: result.lastUpdated || null, recentUpdates: result.recentUpdates || [] };
       const prevScore = lastSnap.score;
       comp.snapshots.push(snapshot);
       comp.alert = (prevScore - result.overall_score) > 10;
