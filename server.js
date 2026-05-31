@@ -1,3 +1,5 @@
+try { require("dotenv").config(); } catch {}
+require("dns").setDefaultResultOrder("ipv4first");
 const http   = require("http");
 const https  = require("https");
 const net    = require("net");
@@ -5,6 +7,16 @@ const tls    = require("tls");
 const fs     = require("fs");
 const path   = require("path");
 const crypto = require("crypto");
+
+// Stripe — lazy-loaded so server starts without key configured
+let _stripe = null;
+function getStripe() {
+  if (_stripe) return _stripe;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) return null;
+  try { _stripe = require("stripe")(key); return _stripe; }
+  catch { return null; }
+}
 
 const { applySecurityHeaders }                              = require("./security/headers");
 const { checkRateLimit }                                    = require("./security/rateLimiter");
@@ -20,18 +32,19 @@ const CRM_FILE       = path.join(ROOT, "data/crm.json");
 const SEQUENCES_FILE    = path.join(ROOT, "data/sequences.json");
 const WHATSAPP_FILE     = path.join(ROOT, "data/whatsapp_templates.json");
 const COMPETITOR_FILE   = path.join(ROOT, "data/competitor_tracking.json");
+const SAVED_SEARCHES_FILE = path.join(ROOT, "data/competitor-saved-searches.json");
+const LEAD_SAVED_SEARCHES_FILE = path.join(ROOT, "data/lead-saved-searches.json");
+const OUTREACH_SAVED_LISTS_FILE = path.join(ROOT, "data/outreach-saved-lists.json");
+const CRM_SAVED_LISTS_FILE       = path.join(ROOT, "data/crm-saved-lists.json");
+const ARTICLE_SAVED_LISTS_FILE = path.join(ROOT, "data/article-saved-lists.json");
 const LEAD_SCORES_FILE  = path.join(ROOT, "data/lead_scores.json");
 const AUDITS_FILE       = path.join(ROOT, "data/audits.json");
-const CREDIT_LOG_FILE   = path.join(ROOT, "data/credit_log.json");
 const WP_FILE           = path.join(ROOT, "data/wordpress_connections.json");
-const SMTP_FILE         = path.join(ROOT, "data/smtp_connections.json");
-const GMAIL_FILE        = path.join(ROOT, "data/gmail_connections.json");
-const GOOGLE_CLIENT_ID     = process.env.GOOGLE_CLIENT_ID     || "";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const GOOGLE_REDIRECT_URI  = "https://eureach.eu/api/auth/gmail/callback";
-const EMAIL_LOG_FILE    = path.join(ROOT, "data/email_log.json");
-const TEMPLATES_FILE    = path.join(ROOT, "data/email_templates.json");
-const PIPELINE_FILE     = path.join(ROOT, "data/pipeline.json");
+const SMTP_FILE              = path.join(ROOT, "data/smtp_connections.json");
+const EMAIL_LOG_FILE         = path.join(ROOT, "data/email_log.json");
+const OUTREACH_QUEUE_FILE    = path.join(ROOT, "data/outreach-queue.json");
+const BUSINESS_PROFILE_FILE  = path.join(ROOT, "data/business-profiles.json");
+const SITES_FILE             = path.join(ROOT, "data/user-sites.json");
 
 // AES-256-CBC key derived from secret — set WP_ENCRYPT_SECRET env var in production
 const WP_ENCRYPT_KEY = crypto.createHash("sha256")
@@ -108,7 +121,6 @@ const SOSBOARD_TOKENS   = "/var/www/sosboard/data/tokens-config.json";
 
 const SESSION_TTL_MS  = 30 * 24 * 60 * 60 * 1000; // 30 days
 const SCRYPT_PARAMS   = { N: 16384, r: 8, p: 1, keylen: 64 };
-const IDLE_LOGIN_CHARGE = 3; // credits charged on 3rd+ login per day with no action taken
 
 const PLAN_LIMITS = require("./config/limits");
 
@@ -118,19 +130,25 @@ function currentMonth() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-// Returns usage object, resetting leads/articles if month changed (audits are lifetime)
-function getUserUsage(user) {
-  const month = currentMonth();
-  if (!user.usage || user.usage.month !== month) {
-    return { month, leads: 0, articles: 0, audits: (user.usage && user.usage.audits) || 0 };
-  }
-  return { ...user.usage };
+// Returns { creditsLeft, creditsMax } — handles monthly reset automatically
+function getCredits(userRecord) {
+  const plan = PLAN_LIMITS.plans[userRecord.plan] || PLAN_LIMITS.plans.free;
+  const max  = plan.credits;
+  if (max === -1) return { creditsLeft: -1, creditsMax: -1 };
+  if (userRecord.creditMonth !== currentMonth()) return { creditsLeft: max, creditsMax: max };
+  return { creditsLeft: userRecord.creditsLeft ?? max, creditsMax: max };
 }
 
-// Returns remaining uses: -1 = unlimited, else max - used (floored at 0)
-function computeLeft(max, used) {
-  if (max === -1) return -1;
-  return Math.max(0, max - used);
+// Deducts `cost` credits from users[idx]. Mutates array in place — caller must writeJSON after.
+// Returns { ok, creditsLeft, creditsMax }.
+function deductCredits(users, idx, cost) {
+  const { creditsLeft, creditsMax } = getCredits(users[idx]);
+  if (creditsMax === -1) return { ok: true, creditsLeft: -1, creditsMax: -1 };
+  if (creditsLeft < cost) return { ok: false, creditsLeft, creditsMax };
+  users[idx].creditsLeft = creditsLeft - cost;
+  users[idx].creditsMax  = creditsMax;
+  users[idx].creditMonth = currentMonth();
+  return { ok: true, creditsLeft: users[idx].creditsLeft, creditsMax };
 }
 
 // Next month reset date string e.g. "June 1"
@@ -140,9 +158,12 @@ function resetDateLabel() {
   return next.toLocaleDateString("en-US", { month: "long", day: "numeric" });
 }
 
-// 403 limit_reached response
+// 403 responses
 function limitReached(res, feature, current, max) {
-  return json(res, 403, { error: "limit_reached", feature, current, max, upgradeUrl: "/pricing" });
+  return json(res, 403, { error: "limit_reached", feature, current, max, upgradeUrl: "/membership" });
+}
+function insufficientCredits(res, creditsLeft, creditsMax, cost) {
+  return json(res, 403, { error: "insufficient_credits", creditsLeft, creditsMax, cost, upgradeUrl: "/membership" });
 }
 
 const MIME = {
@@ -168,14 +189,6 @@ function writeJSON(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
 }
 
-function logCreditTransaction(userId, delta, reason, newBalance) {
-  const log = readJSON(CREDIT_LOG_FILE);
-  log.push({ id: generateId(), userId, delta, reason, balance: newBalance, createdAt: new Date().toISOString() });
-  // Keep last 500 entries per user (prune oldest)
-  const kept = log.slice(-2000);
-  writeJSON(CREDIT_LOG_FILE, kept);
-}
-
 // ── Crypto helpers ────────────────────────────────────────────────────────────
 
 function hashPassword(password) {
@@ -190,13 +203,10 @@ function hashPassword(password) {
 
 function verifyPassword(password, stored) {
   return new Promise((resolve, reject) => {
-    if (!stored || typeof stored !== 'string') return resolve(false);
-    const [salt, expected] = stored.split(':');
-    if (!salt || !expected || expected.length !== SCRYPT_PARAMS.keylen * 2) return resolve(false);
+    const [salt, expected] = stored.split(":");
     crypto.scrypt(password, salt, SCRYPT_PARAMS.keylen, SCRYPT_PARAMS, (err, hash) => {
-      if (err) { reject(err); return; }
-      try { resolve(crypto.timingSafeEqual(Buffer.from(expected, 'hex'), hash)); }
-      catch (e) { resolve(false); }
+      if (err) reject(err);
+      else resolve(crypto.timingSafeEqual(Buffer.from(expected, "hex"), hash));
     });
   });
 }
@@ -267,6 +277,83 @@ function readBody(req) {
   });
 }
 
+// Raw body reader — for Stripe webhook signature verification
+function readRawBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", chunk => chunks.push(chunk));
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+// ── Trial / billing helpers ───────────────────────────────────────────────────
+
+function isTrialActive(user) {
+  if (user.plan !== "trial") return false;
+  if (!user.trialEndsAt) return false;
+  return new Date() < new Date(user.trialEndsAt);
+}
+
+function isTrialExpired(user) {
+  if (user.trialStatus !== "active") return false;
+  if (!user.trialEndsAt) return false;
+  return new Date() >= new Date(user.trialEndsAt);
+}
+
+function isPaidUser(user) {
+  return user.plan === "paid";
+}
+
+function hasAccess(user) {
+  return user.role === "admin" || isTrialActive(user) || isPaidUser(user);
+}
+
+function getDaysRemainingInTrial(user) {
+  if (!isTrialActive(user)) return 0;
+  const ms = new Date(user.trialEndsAt) - new Date();
+  return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+}
+
+function getModel(user) {
+  if (isTrialActive(user)) return "claude-haiku-4-5-20251001";
+  if (isPaidUser(user)) return "claude-sonnet-4-6";
+  return "claude-sonnet-4-6"; // free plan users still get sonnet for now
+}
+
+// Auto-expire trial if webhook was missed; mutates users array in place, returns updated user
+function autoExpireTrialIfNeeded(users, idx) {
+  const u = users[idx];
+  if (u.plan === "trial" && isTrialExpired(u)) {
+    users[idx].plan = "free";
+    users[idx].trialStatus = "expired";
+    writeJSON(USERS_FILE, users);
+    return users[idx];
+  }
+  return u;
+}
+
+// Get or init trialUsage for a user record
+function getTrialUsage(user) {
+  return user.trialUsage || { competitorSearches: 0, articlesGenerated: 0, auditsToday: 0, auditsTodayDate: null };
+}
+
+// ── System email (uses env-configured SMTP) ───────────────────────────────────
+
+async function sendSystemEmail(to, subject, body) {
+  const host = process.env.SYSTEM_EMAIL_HOST;
+  const port = parseInt(process.env.SYSTEM_EMAIL_PORT || "587", 10);
+  const username = process.env.SYSTEM_EMAIL_USER;
+  const password = process.env.SYSTEM_EMAIL_PASS;
+  const from = process.env.SYSTEM_EMAIL_FROM || username;
+  if (!host || !username || !password) return; // not configured — silently skip
+  try {
+    await smtpSend({ host, port, username, password, from, fromName: "eureach.eu", to, subject, body });
+  } catch (err) {
+    console.error("[system email] failed:", err.message);
+  }
+}
+
 // ── Response helpers ──────────────────────────────────────────────────────────
 
 function json(res, status, data, headers = {}) {
@@ -283,7 +370,7 @@ function json(res, status, data, headers = {}) {
 }
 
 function safeUser(user) {
-  const { passwordHash, dailyActivity, ...safe } = user;
+  const { passwordHash, ...safe } = user;
   return safe;
 }
 
@@ -320,9 +407,8 @@ async function handleSignup(req, res) {
   }
 
   const passwordHash = await hashPassword(password);
-  const limits       = PLAN_LIMITS[chosenPlan];
+  const planCfg      = PLAN_LIMITS.plans[chosenPlan] || PLAN_LIMITS.plans.free;
 
-  const month = currentMonth();
   const user = {
     id:           generateId(),
     email:        email.toLowerCase().trim(),
@@ -330,9 +416,9 @@ async function handleSignup(req, res) {
     lastName:     (last_name || "").trim(),
     passwordHash,
     plan:         chosenPlan,
-    articlesLeft: limits.articles,
-    searchesLeft: limits.searches,
-    usage:        { month, leads: 0, articles: 0, audits: 0 },
+    creditsLeft:  planCfg.credits === -1 ? -1 : planCfg.credits,
+    creditsMax:   planCfg.credits,
+    creditMonth:  currentMonth(),
     sites:        [],
     createdAt:    new Date().toISOString(),
   };
@@ -372,33 +458,23 @@ async function handleSignin(req, res) {
     return json(res, 401, { error: "Incorrect email or password." });
   }
 
-  // Daily login tracking — charge IDLE_LOGIN_CHARGE on 3rd+ login with no action taken
-  const _today = new Date().toISOString().slice(0, 10);
-  const _uidx  = users.findIndex(u => u.id === user.id);
-  if (_uidx !== -1) {
-    const da    = users[_uidx].dailyActivity || {};
-    const fresh = da.date !== _today;
-    const count = fresh ? 1 : (da.loginCount || 0) + 1;
-    const acted = fresh ? false : !!da.hasActed;
-    if (!acted && count >= 3 && users[_uidx].role !== 'admin') {
-      const _prevCr = users[_uidx].credits || 0;
-      users[_uidx].credits = Math.max(0, _prevCr - IDLE_LOGIN_CHARGE);
-      logCreditTransaction(users[_uidx].id, -IDLE_LOGIN_CHARGE, 'Idle login (3rd login with no action)', users[_uidx].credits);
-      logEvent('idle_login_charge', user.email, ip);
-    }
-    users[_uidx].dailyActivity = { date: _today, loginCount: count, hasActed: acted };
-    writeJSON(USERS_FILE, users);
-  }
-
-  const token    = createSession(user.id);
-  const _outUser = _uidx !== -1 ? users[_uidx] : user;
-  json(res, 200, { user: safeUser(_outUser) }, { "Set-Cookie": sessionCookie(token) });
+  const token = createSession(user.id);
+  json(res, 200, { user: safeUser(user) }, { "Set-Cookie": sessionCookie(token) });
 }
 
 async function handleLeadsSearch(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  // Lead Finder is fully blocked during trial
+  if (isTrialActive(user)) {
+    return json(res, 403, {
+      success: false, error: "trial_lead_limit",
+      message: "Lead Finder is not available during the free trial. Upgrade to €15/month to unlock it.",
+      upgradeUrl: "/upgrade",
+    });
+  }
 
   const body      = await readBody(req);
   const leadsFound = Math.max(0, parseInt(body.leadsFound) || 0);
@@ -407,25 +483,17 @@ async function handleLeadsSearch(req, res) {
   const idx   = users.findIndex(u => u.id === user.id);
   if (idx === -1) return json(res, 404, { error: "User not found." });
 
-  const limits = PLAN_LIMITS[users[idx].plan] || PLAN_LIMITS.free;
-  const usage  = getUserUsage(users[idx]);
-  const max    = limits.searches;
+  const cost   = PLAN_LIMITS.costs.leadSearch;
+  const result = deductCredits(users, idx, cost);
+  if (!result.ok) return insufficientCredits(res, result.creditsLeft, result.creditsMax, cost);
 
-  if (max !== -1 && usage.leads >= max) {
-    return limitReached(res, "leads", usage.leads, max);
-  }
-
-  if (max !== -1) usage.leads += 1;
-  users[idx].usage        = usage;
-  users[idx].searchesLeft = computeLeft(max, usage.leads);
   users[idx].searchesDone = (users[idx].searchesDone || 0) + 1;
   users[idx].leadsFound   = (users[idx].leadsFound   || 0) + leadsFound;
-  users[idx].creditsUsed  = (users[idx].creditsUsed  || 0) + 1;
 
   writeJSON(USERS_FILE, users);
   json(res, 200, {
-    searchesLeft: users[idx].searchesLeft,
-    searchesMax:  max,
+    creditsLeft:  result.creditsLeft,
+    creditsMax:   result.creditsMax,
     resetDate:    resetDateLabel(),
     searchesDone: users[idx].searchesDone,
     leadsFound:   users[idx].leadsFound,
@@ -438,7 +506,7 @@ async function handleUpdateProfile(req, res) {
   if (!user) return json(res, 401, { error: "Not authenticated." });
 
   const body = await readBody(req);
-  const { firstName, lastName, email, currentPassword, newPassword } = body;
+  const { firstName, lastName, email, currentPassword, newPassword, preferredLang } = body;
 
   const users = readJSON(USERS_FILE);
   const idx   = users.findIndex(u => u.id === user.id);
@@ -451,12 +519,9 @@ async function handleUpdateProfile(req, res) {
     users[idx].email = email.toLowerCase().trim();
   }
 
-  if (firstName  !== undefined) users[idx].firstName  = firstName.trim();
-  if (lastName   !== undefined) users[idx].lastName   = lastName.trim();
-  if (body.replyEmail     !== undefined) users[idx].replyEmail     = sanitizeEmail(body.replyEmail || "") || null;
-  if (body.telegramHandle !== undefined) users[idx].telegramHandle = sanitizeString(body.telegramHandle || "", 100).replace(/^@/, "") || null;
-  if (body.whatsappPhone  !== undefined) users[idx].whatsappPhone  = sanitizeString(body.whatsappPhone  || "", 30).replace(/[^\d+\s\-()\.]/g, "") || null;
-  if (body.viberPhone     !== undefined) users[idx].viberPhone     = sanitizeString(body.viberPhone     || "", 30).replace(/[^\d+\s\-()\.]/g, "") || null;
+  if (firstName     !== undefined) users[idx].firstName     = firstName.trim();
+  if (lastName      !== undefined) users[idx].lastName      = lastName.trim();
+  if (preferredLang !== undefined) users[idx].preferredLang = preferredLang;
 
   if (newPassword) {
     if (!currentPassword) return json(res, 400, { error: "Current password is required to set a new one." });
@@ -480,28 +545,123 @@ function handleMe(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
-  const limits  = PLAN_LIMITS[user.plan] || PLAN_LIMITS.free;
-  const usage   = getUserUsage(user);
-  const rd      = resetDateLabel();
+  const plan = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
+  const { creditsLeft, creditsMax } = getCredits(user);
   const computed = {
-    searchesLeft:    computeLeft(limits.searches,    usage.leads),
-    searchesMax:     limits.searches,
-    articlesLeft:    computeLeft(limits.articles,    usage.articles),
-    articlesMax:     limits.articles,
-    auditsLeft:      computeLeft(limits.audits,      usage.audits),
-    auditsMax:       limits.audits,
-    resetDate:       rd,
-    canOutreach:     limits.outreach    !== 0,
-    canWhatsApp:     limits.whatsapp    !== 0,
-    canCompetitors:  limits.competitors !== 0,
-    crmLeadsMax:     limits.crmLeads,
-    templatesLeft:   computeLeft(limits.templates,   usage.templates || 0),
-    templatesMax:    limits.templates,
+    creditsLeft,
+    creditsMax,
+    resetDate:    resetDateLabel(),
+    canOutreach:  true,
+    canWhatsApp:  true,
+    canCompetitors: true,
+    crmLeadsMax:  plan.crmLeads,
+    canWordPress: plan.wordpress,
+    sitesMax:     plan.sites,
   };
-  json(res, 200, { user: { ...safeUser(user), usage, ...computed } });
+  const profiles = Array.isArray(readJSON(BUSINESS_PROFILE_FILE)) ? readJSON(BUSINESS_PROFILE_FILE) : [];
+  const bizProfile = profiles.find(p => p.userId === user.id) || null;
+  json(res, 200, { user: { ...safeUser(user), ...computed, bizProfile } });
+}
+
+
+// ── Profile stats endpoint ────────────────────────────────────────────────────
+function handleProfileStats(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const { creditsLeft, creditsMax } = getCredits(user);
+  const creditsUsed = creditsMax === -1 ? 0 : Math.max(0, creditsMax - creditsLeft);
+
+  json(res, 200, {
+    stats: {
+      credits:      creditsLeft,
+      creditsMax,
+      creditsUsed,
+      leadsFound:   user.leadsFound   || 0,
+      searchesDone: user.searchesDone || 0,
+    },
+    month: {
+      leads:       user.monthLeads    || 0,
+      leadsMax:    -1,
+      articles:    user.monthArticles || 0,
+      articlesMax: -1,
+      audits:      user.monthAudits   || 0,
+      auditsMax:   -1,
+      resetDate:   resetDateLabel(),
+    },
+    creditLog: user.creditLog || [],
+  });
+}
+
+// ── Support email endpoint ────────────────────────────────────────────────────
+async function handleSupportEmail(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const { subject, message } = await readBody(req);
+  if (!subject || !message) return json(res, 400, { error: "Subject and message are required." });
+
+  const SUPPORT_FILE = path.join(ROOT, "data", "support_emails.json");
+  const log = readJSON(SUPPORT_FILE) || [];
+  log.push({
+    id:        Date.now().toString(),
+    userId:    user.id,
+    email:     user.email,
+    firstName: user.firstName || "",
+    subject,
+    message,
+    createdAt: new Date().toISOString(),
+  });
+  writeJSON(SUPPORT_FILE, log);
+  json(res, 200, { ok: true });
 }
 
 // ── Anthropic helpers ─────────────────────────────────────────────────────────
+
+function getZeroBounceKey() {
+  if (process.env.ZEROBOUNCE_API_KEY) return process.env.ZEROBOUNCE_API_KEY;
+  try {
+    const cfg = JSON.parse(fs.readFileSync(SOSBOARD_TOKENS, "utf8"));
+    return cfg.zerobounce?.apiKey || null;
+  } catch { return null; }
+}
+
+async function handleVerifyEmail(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const body  = await readBody(req);
+  const email = (body.email || "").trim().toLowerCase();
+  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
+    return json(res, 400, { error: "Invalid email address." });
+  }
+
+  const apiKey = getZeroBounceKey();
+  if (!apiKey) return json(res, 500, { error: "Email verification not configured." });
+
+  try {
+    const https  = require("https");
+    const url    = `https://api.zerobounce.net/v2/validate?api_key=${apiKey}&email=${encodeURIComponent(email)}&ip_address=`;
+    const result = await new Promise((resolve, reject) => {
+      https.get(url, (r) => {
+        let data = "";
+        r.on("data", c => data += c);
+        r.on("end", () => { try { resolve(JSON.parse(data)); } catch { reject(new Error("Parse error")); } });
+      }).on("error", reject);
+    });
+    return json(res, 200, {
+      email:     result.address,
+      status:    result.status,
+      subStatus: result.sub_status || "",
+      freeEmail: result.free_email,
+    });
+  } catch (e) {
+    return json(res, 502, { error: "Verification service unavailable." });
+  }
+}
 
 function getAnthropicKey() {
   if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
@@ -511,10 +671,10 @@ function getAnthropicKey() {
   } catch { return null; }
 }
 
-function callClaude(apiKey, systemPrompt, userMessage, maxTokens = 2048) {
+function callClaude(apiKey, systemPrompt, userMessage, maxTokens = 2048, model = "claude-sonnet-4-6") {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
-      model: "claude-sonnet-4-6",
+      model,
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }],
@@ -544,6 +704,48 @@ function callClaude(apiKey, systemPrompt, userMessage, maxTokens = 2048) {
   });
 }
 
+function getGroqKey() {
+  if (process.env.GROQ_API_KEY) return process.env.GROQ_API_KEY;
+  try {
+    const cfg = JSON.parse(fs.readFileSync(SOSBOARD_TOKENS, "utf8"));
+    return cfg.groq?.apiKey || null;
+  } catch { return null; }
+}
+
+function callGroq(apiKey, systemPrompt, userMessage, maxTokens = 1024, model = "llama-3.3-70b-versatile") {
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user",   content: userMessage  },
+      ],
+    });
+    const options = {
+      hostname: "api.groq.com",
+      path: "/openai/v1/chat/completions",
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey,
+        "Content-Length": Buffer.byteLength(body),
+      },
+    };
+    const req = https.request(options, res => {
+      let data = "";
+      res.on("data", chunk => { data += chunk; });
+      res.on("end", () => {
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(new Error("Failed to parse Groq response")); }
+      });
+    });
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
 // ── AI rate limit helper: 30 requests/user/hour ───────────────────────────────
 function checkAiRateLimit(res, userId) {
   const rl = checkRateLimit(userId, "ai_request", 30, 60 * 60 * 1000);
@@ -563,21 +765,38 @@ async function handleOutreach(req, res) {
   if (!user) return json(res, 401, { error: "Not authenticated." });
   if (!checkAiRateLimit(res, user.id)) return;
 
-  const limits = PLAN_LIMITS[user.plan] || PLAN_LIMITS.free;
-  if (limits.outreach === 0) return limitReached(res, "outreach", 0, 0);
-
   const apiKey = getAnthropicKey();
   if (!apiKey) return json(res, 500, { error: "AI service not configured." });
 
   const body = await readBody(req);
-  const { crmId, leadName, businessType, city, language, tone } = body;
+  const { crmId, leadName, businessType, city, language, tone, gdprCompliant } = body;
 
   if (!leadName) return json(res, 400, { error: "leadName is required." });
+
+  const outUsers = readJSON(USERS_FILE);
+  const outIdx   = outUsers.findIndex(u => u.id === user.id);
+  if (outIdx === -1) return json(res, 404, { error: "User not found." });
+  const outCost   = PLAN_LIMITS.costs.outreach;
+  const outResult = deductCredits(outUsers, outIdx, outCost);
+  if (!outResult.ok) return insufficientCredits(res, outResult.creditsLeft, outResult.creditsMax, outCost);
+  writeJSON(USERS_FILE, outUsers);
 
   const langMap  = { greek: "Greek", english: "English", german: "German" };
   const toneMap  = { formal: "formal and professional", friendly: "warm and friendly", direct: "direct and concise" };
   const langLabel = langMap[language]  || "English";
   const toneLabel = toneMap[tone]      || "friendly";
+
+  const gdprFooter = gdprCompliant ? (
+    language === "german"
+      ? "\n\n---\nSie erhalten diese E-Mail, da Ihr Unternehmen öffentlich gelistet ist. Diese Nachricht richtet sich ausschließlich an Ihr Unternehmen und ist für Ihre geschäftlichen Interessen relevant. Um keine weiteren E-Mails zu erhalten, antworten Sie bitte mit \"Abmelden\"."
+      : language === "greek"
+      ? "\n\n---\nΛαμβάνετε αυτό το email επειδή η επιχείρησή σας είναι δημόσια καταχωρισμένη. Το μήνυμα αυτό απευθύνεται αποκλειστικά στην επιχείρησή σας. Για διαγραφή από τη λίστα, απαντήστε με \"Διαγραφή\"."
+      : "\n\n---\nYou are receiving this email because your business is publicly listed. This message is directed to your business and relevant to your professional interests. To unsubscribe, reply with \"Unsubscribe\"."
+  ) : "";
+
+  const gdprRule = gdprCompliant
+    ? `- This sequence must be GDPR and §7 UWG compliant: reference only publicly available business information, make the relevance to their specific business type clear, and never imply personal data was collected. Do NOT add a footer — it will be appended separately.`
+    : "";
 
   const systemPrompt = `You are an expert B2B sales copywriter specializing in outreach for local businesses across Europe. You write highly personalized cold outreach sequences that get replies.
 
@@ -597,7 +816,8 @@ Rules:
 - Write ALL messages in ${langLabel}.
 - Apply a ${toneLabel} tone to messages 1 and 2.
 - Do not use placeholder text like [Your Name] — write as if from "the eureach.eu team".
-- Subject lines must be specific and curiosity-inducing, not generic.`;
+- Subject lines must be specific and curiosity-inducing, not generic.
+${gdprRule}`;
 
   const userMessage = `Generate a 3-step outreach sequence for this lead:
 - Business Name: ${leadName}
@@ -605,7 +825,7 @@ Rules:
 - City: ${city || "Europe"}`;
 
   try {
-    const aiRes = await callClaude(apiKey, systemPrompt, userMessage);
+    const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 2048, getModel(outUsers[outIdx]));
 
     if (aiRes.error) return json(res, 502, { error: aiRes.error.message || "AI error." });
 
@@ -621,6 +841,13 @@ Rules:
       if (!match) return json(res, 502, { error: "AI returned unexpected format." });
       const parsed = JSON.parse(match[0]);
       sequence = parsed.sequence;
+    }
+
+    // Append GDPR footer to email steps
+    if (gdprFooter) {
+      sequence.forEach(step => {
+        if (step.channel === "Email") step.body += gdprFooter;
+      });
     }
 
     // Persist to sequences.json
@@ -651,6 +878,7 @@ function handleSequencesList(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
 
   const { searchParams } = new URL("http://x" + req.url);
   const crmId = searchParams.get("crmId");
@@ -668,9 +896,6 @@ async function handleWhatsApp(req, res) {
   if (!user) return json(res, 401, { error: "Not authenticated." });
   if (!checkAiRateLimit(res, user.id)) return;
 
-  const limits = PLAN_LIMITS[user.plan] || PLAN_LIMITS.free;
-  if (limits.whatsapp === 0) return limitReached(res, "whatsapp", 0, 0);
-
   const apiKey = getAnthropicKey();
   if (!apiKey) return json(res, 500, { error: "AI service not configured." });
 
@@ -678,6 +903,14 @@ async function handleWhatsApp(req, res) {
   const { crmId, leadName, businessType, city, phone, language, messageType } = body;
 
   if (!leadName) return json(res, 400, { error: "leadName is required." });
+
+  const waUsers = readJSON(USERS_FILE);
+  const waIdx   = waUsers.findIndex(u => u.id === user.id);
+  if (waIdx === -1) return json(res, 404, { error: "User not found." });
+  const waCost   = PLAN_LIMITS.costs.whatsapp;
+  const waResult = deductCredits(waUsers, waIdx, waCost);
+  if (!waResult.ok) return insufficientCredits(res, waResult.creditsLeft, waResult.creditsMax, waCost);
+  writeJSON(USERS_FILE, waUsers);
 
   const langMap  = { greek: "Greek", english: "English", german: "German" };
   const langLabel = langMap[language] || "English";
@@ -710,7 +943,7 @@ Rules:
 - Message type: ${typeLabel}`;
 
   try {
-    const aiRes = await callClaude(apiKey, systemPrompt, userMessage);
+    const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 2048, getModel(waUsers[waIdx]));
     if (aiRes.error) return json(res, 502, { error: aiRes.error.message || "AI error." });
 
     const raw = aiRes.content?.[0]?.text || "";
@@ -765,13 +998,14 @@ async function handleCrmCreate(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
 
   const body = await readBody(req);
-  const { leadName, businessType, city, phone, website, email, notes } = body;
+  const { leadName, businessType, city, phone, website, notes } = body;
   if (!leadName || !leadName.trim()) return json(res, 400, { error: "leadName is required." });
 
   const crm   = readJSON(CRM_FILE);
-  const clim  = PLAN_LIMITS[user.plan] || PLAN_LIMITS.free;
+  const clim  = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
   if (clim.crmLeads !== -1) {
     const userCount = crm.filter(e => e.userId === user.id).length;
     if (userCount >= clim.crmLeads) return limitReached(res, "crm", userCount, clim.crmLeads);
@@ -785,7 +1019,6 @@ async function handleCrmCreate(req, res) {
     city:         (city || "").trim(),
     phone:        phone  || null,
     website:      website || null,
-    email:        email  ? sanitizeEmail(email) : null,
     status:       "found",
     notes:        (notes || "").trim(),
     createdAt:    now,
@@ -800,6 +1033,7 @@ async function handleCrmUpdate(req, res, id) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
 
   const body = await readBody(req);
   const crm  = readJSON(CRM_FILE);
@@ -813,7 +1047,6 @@ async function handleCrmUpdate(req, res, id) {
   }
   if (body.notes    !== undefined) crm[idx].notes    = body.notes;
   if (body.leadName !== undefined) crm[idx].leadName = body.leadName.trim();
-  if (body.reminder !== undefined) crm[idx].reminder = body.reminder; // {date,note} or null
   crm[idx].updatedAt = new Date().toISOString();
 
   writeJSON(CRM_FILE, crm);
@@ -824,6 +1057,7 @@ function handleCrmDelete(req, res, id) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
 
   const crm = readJSON(CRM_FILE);
   const idx = crm.findIndex(e => e.id === id && e.userId === user.id);
@@ -832,51 +1066,6 @@ function handleCrmDelete(req, res, id) {
   crm.splice(idx, 1);
   writeJSON(CRM_FILE, crm);
   json(res, 200, { ok: true });
-}
-
-async function handleCrmLogCall(req, res, id) {
-  const cookies = parseCookies(req);
-  const user    = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: "Not authenticated." });
-
-  const body    = await readBody(req);
-  const outcome = sanitizeString(body.outcome || "", 30);
-  const notes   = sanitizeString(body.notes   || "", 500);
-  const validOutcomes = ["answered", "no_answer", "voicemail", "callback"];
-  if (!validOutcomes.includes(outcome)) return json(res, 400, { error: "Invalid outcome." });
-
-  const crm = readJSON(CRM_FILE);
-  const idx = crm.findIndex(e => e.id === id && e.userId === user.id);
-  if (idx === -1) return json(res, 404, { error: "Entry not found." });
-
-  const callEntry = { id: generateId(), outcome, notes, at: new Date().toISOString() };
-  crm[idx].callLog   = [...(crm[idx].callLog || []), callEntry];
-  crm[idx].updatedAt = new Date().toISOString();
-  writeJSON(CRM_FILE, crm);
-  json(res, 201, { call: callEntry, callLog: crm[idx].callLog });
-}
-
-async function handleCrmLogMessage(req, res, id) {
-  const cookies = parseCookies(req);
-  const user    = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: "Not authenticated." });
-
-  const body    = await readBody(req);
-  const channel = sanitizeString(body.channel || "", 20);
-  const text    = sanitizeString(body.text    || "", 1000);
-  const validChannels = ["sms", "telegram", "viber"];
-  if (!validChannels.includes(channel)) return json(res, 400, { error: "Invalid channel." });
-  if (!text) return json(res, 400, { error: "text required." });
-
-  const crm = readJSON(CRM_FILE);
-  const idx = crm.findIndex(e => e.id === id && e.userId === user.id);
-  if (idx === -1) return json(res, 404, { error: "Entry not found." });
-
-  const msgEntry = { id: generateId(), channel, text, sentAt: new Date().toISOString() };
-  crm[idx].messageLog = [...(crm[idx].messageLog || []), msgEntry];
-  crm[idx].updatedAt  = msgEntry.sentAt;
-  writeJSON(CRM_FILE, crm);
-  json(res, 201, { message: msgEntry, messageLog: crm[idx].messageLog });
 }
 
 // ── Lead scoring ─────────────────────────────────────────────────────────────
@@ -895,11 +1084,19 @@ async function handleLeadsScore(req, res) {
   if (!checkAiRateLimit(res, user.id)) return;
 
   const apiKey = getAnthropicKey();
-  if (!apiKey) return json(res, 500, { error: "AI service not configured." });
+  if (!apiKey && !getGroqKey()) return json(res, 500, { error: "AI service not configured." });
 
   const body  = await readBody(req);
   const leads = Array.isArray(body.leads) ? body.leads.slice(0, 30) : [];
   if (!leads.length) return json(res, 400, { error: "leads array is required." });
+
+  const scoreUsers  = readJSON(USERS_FILE);
+  const scoreIdx    = scoreUsers.findIndex(u => u.id === user.id);
+  if (scoreIdx === -1) return json(res, 404, { error: "User not found." });
+  const scoreCost   = PLAN_LIMITS.costs.leadScore;
+  const scoreResult = deductCredits(scoreUsers, scoreIdx, scoreCost);
+  if (!scoreResult.ok) return insufficientCredits(res, scoreResult.creditsLeft, scoreResult.creditsMax, scoreCost);
+  writeJSON(USERS_FILE, scoreUsers);
 
   const cache = readScoreCache();
 
@@ -937,7 +1134,7 @@ Return ONLY a valid JSON array — no markdown, no code fences:
     const userMessage = `Score these ${uncached.length} leads:\n${leadsJson}`;
 
     try {
-      const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 2048);
+      const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 2048, getModel(scoreUsers[scoreIdx]));
       if (!aiRes.error) {
         const raw = aiRes.content?.[0]?.text || "";
         let parsed;
@@ -979,7 +1176,7 @@ function handleLeadsScoreCache(req, res) {
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
   const all    = readScoreCache();
-  const mine   = all.filter(c => c.userId === user.id);
+  const mine   = Object.values(all).filter(c => c.userId === user.id);
   json(res, 200, { cache: mine });
 }
 
@@ -994,148 +1191,34 @@ async function handleArticlesDeduct(req, res) {
   const idx   = users.findIndex(u => u.id === user.id);
   if (idx === -1) return json(res, 404, { error: "User not found." });
 
-  const limits = PLAN_LIMITS[users[idx].plan] || PLAN_LIMITS.free;
-  const usage  = getUserUsage(users[idx]);
-  const max    = limits.articles;
+  // Auto-expire trial if needed
+  autoExpireTrialIfNeeded(users, idx);
 
-  if (max !== -1 && usage.articles >= max) {
-    return limitReached(res, "articles", usage.articles, max);
+  // Trial article limit (3 total during trial)
+  if (isTrialActive(users[idx])) {
+    const tu = getTrialUsage(users[idx]);
+    if ((tu.articlesGenerated || 0) >= 3) {
+      return json(res, 403, {
+        success: false, error: "trial_article_limit",
+        message: "Your free trial includes 3 articles. Upgrade to €15/month for 6 articles per month.",
+        upgradeUrl: "/upgrade",
+      });
+    }
+    tu.articlesGenerated = (tu.articlesGenerated || 0) + 1;
+    users[idx].trialUsage = tu;
   }
 
-  if (max !== -1) usage.articles += 1;
-  users[idx].usage        = usage;
-  users[idx].articlesLeft = computeLeft(max, usage.articles);
+  const artCost   = PLAN_LIMITS.costs.articleGenerate;
+  const artResult = deductCredits(users, idx, artCost);
+  if (!artResult.ok) return insufficientCredits(res, artResult.creditsLeft, artResult.creditsMax, artCost);
+
   writeJSON(USERS_FILE, users);
-
-  json(res, 200, { articlesLeft: users[idx].articlesLeft, articlesMax: max, resetDate: resetDateLabel() });
-}
-
-// ── Templates ────────────────────────────────────────────────────────────────
-
-async function handleTemplatesGenerate(req, res) {
-  const cookies = parseCookies(req);
-  const user    = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: 'Not authenticated.' });
-  if (!checkAiRateLimit(res, user.id)) return;
-
-  const users = readJSON(USERS_FILE);
-  const idx   = users.findIndex(u => u.id === user.id);
-  if (idx === -1) return json(res, 404, { error: 'User not found.' });
-
-  const limits = PLAN_LIMITS[users[idx].plan] || PLAN_LIMITS.free;
-  const usage  = users[idx].usage || {};
-  const max    = limits.templates;
-  const used   = usage.templates || 0;
-
-  if (max !== -1 && used >= max) {
-    return limitReached(res, 'templates', used, max);
-  }
-
-  const apiKey = getAnthropicKey();
-  if (!apiKey) return json(res, 500, { error: 'AI service not configured.' });
-
-  const body = await readBody(req);
-  const { name, templateType, purpose, language, tone, context } = body;
-  if (!name || !templateType) return json(res, 400, { error: 'name and templateType are required.' });
-
-  const systemPrompt = 'You are an expert cold outreach email writer. Return ONLY valid JSON with this exact structure: {"subject": "...", "body": "..."}. No markdown, no explanation, no code fences.';
-  const userMessage = [
-    'Generate a professional email template for local business outreach.',
-    'Template type: ' + templateType,
-    'Email purpose / goal: ' + (purpose || 'Convert to Customer'),
-    'Business context: ' + (context || 'local businesses'),
-    'Tone: ' + (tone || 'Friendly'),
-    'Language: ' + (language || 'English'),
-    '',
-    'The email must clearly work toward the stated purpose:',
-    '- Convert to Customer → clear CTA to try the service',
-    '- Book a Meeting → end with a specific call/meeting request',
-    '- Inform / Educate → provide useful insight, soft CTA',
-    '- Promote an Offer → highlight the offer with urgency',
-    '- Request a Partnership → explain mutual benefit, propose next step',
-    '- Reconnect → warm tone, reference prior contact, low-pressure CTA',
-    '',
-    'Return ONLY valid JSON: {"subject": "...", "body": "..."}',
-    '',
-    'The body should be 3-4 short paragraphs with {{businessName}} and {{senderName}} placeholders. No HTML.'
-  ].join('\n');
-
-  let aiResult;
-  try {
-    aiResult = await callClaude(apiKey, systemPrompt, userMessage, 1024);
-  } catch (err) {
-    return json(res, 500, { error: 'AI generation failed: ' + err.message });
-  }
-
-  let parsed;
-  try {
-    const text = aiResult.content && aiResult.content[0] ? aiResult.content[0].text : '';
-    const cleaned = text.replace(/^`{1,3}json\n?/i, '').replace(/`{1,3}$/, '').trim();
-    parsed = JSON.parse(cleaned);
-  } catch {
-    return json(res, 500, { error: 'Failed to parse AI response.' });
-  }
-
-  if (!parsed.subject || !parsed.body) {
-    return json(res, 500, { error: 'AI returned incomplete template.' });
-  }
-
-  // Deduct usage
-  if (max !== -1) {
-    users[idx].usage = Object.assign({}, usage, { templates: used + 1 });
-    users[idx].templatesLeft = computeLeft(max, used + 1);
-  }
-  writeJSON(USERS_FILE, users);
-
-  // Save template
-  const templates = readJSON(TEMPLATES_FILE);
-  const entry = {
-    id:           generateId(),
-    userId:       user.id,
-    name:         sanitizeString(name, 200),
-    templateType: sanitizeString(templateType, 50),
-    purpose:      sanitizeString(purpose || '', 60),
-    language:     sanitizeString(language || 'English', 50),
-    tone:         sanitizeString(tone || 'Friendly', 50),
-    context:      sanitizeString(context || '', 500),
-    subject:      parsed.subject,
-    body:         parsed.body,
-    createdAt:    new Date().toISOString(),
-  };
-  templates.push(entry);
-  writeJSON(TEMPLATES_FILE, templates);
-
-  json(res, 200, {
-    template:      entry,
-    templatesLeft: users[idx].templatesLeft !== undefined ? users[idx].templatesLeft : -1,
-    resetDate:     resetDateLabel(),
-  });
-}
-
-function handleTemplatesList(req, res) {
-  const cookies = parseCookies(req);
-  const user    = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: 'Not authenticated.' });
-  const templates = readJSON(TEMPLATES_FILE).filter(t => t.userId === user.id)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  json(res, 200, { templates });
-}
-
-function handleTemplatesDelete(req, res, id) {
-  const cookies = parseCookies(req);
-  const user    = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: 'Not authenticated.' });
-  const templates = readJSON(TEMPLATES_FILE);
-  const tIdx = templates.findIndex(t => t.id === id && t.userId === user.id);
-  if (tIdx === -1) return json(res, 404, { error: 'Template not found.' });
-  templates.splice(tIdx, 1);
-  writeJSON(TEMPLATES_FILE, templates);
-  json(res, 200, { ok: true });
+  json(res, 200, { creditsLeft: artResult.creditsLeft, creditsMax: artResult.creditsMax, resetDate: resetDateLabel() });
 }
 
 // ── Competitor audit core ─────────────────────────────────────────────────────
 
-async function runCompetitorAudit(apiKey, name, url, industry) {
+async function runCompetitorAudit(apiKey, name, url, industry, model = "claude-sonnet-4-6") {
   const systemPrompt = `You are an expert AI search visibility analyst. You evaluate businesses for how well they appear in AI-powered search engines: ChatGPT, Perplexity, Google AI Overviews, and similar tools. You assess their digital footprint, content strategy, schema markup signals, local SEO, and citation potential. You produce realistic, differentiated scores — avoid clustering around 70-80. Use the full 0-100 range.
 
 Return ONLY a valid JSON object — no markdown, no explanation, no code fences:
@@ -1160,10 +1243,17 @@ Return ONLY a valid JSON object — no markdown, no explanation, no code fences:
 
 Base your analysis on what is publicly known or reasonably inferred about businesses of this type and size in this industry. Score each dimension independently and honestly.`;
 
-  const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 1024);
-  if (aiRes.error) throw new Error(aiRes.error.message || "AI error");
-
-  const raw = aiRes.content?.[0]?.text || "";
+  const groqKey = getGroqKey();
+  let raw = "";
+  if (groqKey) {
+    const groqRes = await callGroq(groqKey, systemPrompt, userMessage, 1024);
+    if (groqRes.error) throw new Error(groqRes.error.message || "Groq error");
+    raw = groqRes.choices?.[0]?.message?.content || "";
+  } else {
+    const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 1024, model);
+    if (aiRes.error) throw new Error(aiRes.error.message || "AI error");
+    raw = aiRes.content?.[0]?.text || "";
+  }
   let result;
   try {
     result = JSON.parse(raw);
@@ -1193,13 +1283,6 @@ async function handleCompetitorCreate(req, res) {
   if (!user) return json(res, 401, { error: "Not authenticated." });
   if (!checkAiRateLimit(res, user.id)) return;
 
-  const complim = PLAN_LIMITS[user.plan] || PLAN_LIMITS.free;
-  if (complim.competitors === 0) return limitReached(res, "competitors", 0, 0);
-  if (complim.competitors !== -1) {
-    const existing = readJSON(COMPETITOR_FILE).filter(c => c.userId === user.id).length;
-    if (existing >= complim.competitors) return limitReached(res, "competitors", existing, complim.competitors);
-  }
-
   const apiKey = getAnthropicKey();
   if (!apiKey) return json(res, 500, { error: "AI service not configured." });
 
@@ -1207,8 +1290,34 @@ async function handleCompetitorCreate(req, res) {
   const { competitorName, competitorUrl, industry } = body;
   if (!competitorName || !competitorName.trim()) return json(res, 400, { error: "competitorName is required." });
 
+  const compUsers  = readJSON(USERS_FILE);
+  let compIdx    = compUsers.findIndex(u => u.id === user.id);
+  if (compIdx === -1) return json(res, 404, { error: "User not found." });
+
+  // Auto-expire trial if needed
+  autoExpireTrialIfNeeded(compUsers, compIdx);
+  compIdx = compUsers.findIndex(u => u.id === user.id); // re-find after potential write
+
+  // Trial competitor search limit (1 total during trial)
+  if (isTrialActive(compUsers[compIdx])) {
+    const usage = getTrialUsage(compUsers[compIdx]);
+    if (usage.competitorSearches >= 1) {
+      return json(res, 403, {
+        success: false, error: "trial_competitor_limit",
+        message: "Your free trial includes 1 competitor search. Upgrade to €15/month for unlimited searches.",
+        upgradeUrl: "/upgrade",
+      });
+    }
+  }
+
+  const compCost   = PLAN_LIMITS.costs.competitorCreate;
+  const compResult = deductCredits(compUsers, compIdx, compCost);
+  if (!compResult.ok) return insufficientCredits(res, compResult.creditsLeft, compResult.creditsMax, compCost);
+  writeJSON(USERS_FILE, compUsers);
+
+  const compModel = getModel(compUsers[compIdx]);
   try {
-    const result   = await runCompetitorAudit(apiKey, competitorName.trim(), (competitorUrl || "").trim(), (industry || "").trim());
+    const result   = await runCompetitorAudit(apiKey, competitorName.trim(), (competitorUrl || "").trim(), (industry || "").trim(), compModel);
     const snapshot = { date: new Date().toISOString(), score: result.overall_score, breakdown: result.breakdown, recommendations: result.recommendations, strengths: result.strengths, weaknesses: result.weaknesses };
     const entry = {
       id:             generateId(),
@@ -1224,6 +1333,17 @@ async function handleCompetitorCreate(req, res) {
     const all = readJSON(COMPETITOR_FILE);
     all.push(entry);
     writeJSON(COMPETITOR_FILE, all);
+
+    // Increment trial competitor search counter
+    const freshUsers = readJSON(USERS_FILE);
+    const freshIdx   = freshUsers.findIndex(u => u.id === user.id);
+    if (freshIdx !== -1 && isTrialActive(freshUsers[freshIdx])) {
+      const tu = getTrialUsage(freshUsers[freshIdx]);
+      tu.competitorSearches = (tu.competitorSearches || 0) + 1;
+      freshUsers[freshIdx].trialUsage = tu;
+      writeJSON(USERS_FILE, freshUsers);
+    }
+
     json(res, 201, { competitor: entry });
   } catch (err) {
     console.error("Competitor audit error:", err);
@@ -1239,13 +1359,21 @@ async function handleCompetitorCheck(req, res, id) {
   const apiKey = getAnthropicKey();
   if (!apiKey) return json(res, 500, { error: "AI service not configured." });
 
+  const recheckUsers  = readJSON(USERS_FILE);
+  const recheckUidx   = recheckUsers.findIndex(u => u.id === user.id);
+  if (recheckUidx === -1) return json(res, 404, { error: "User not found." });
+  const recheckCost   = PLAN_LIMITS.costs.competitorCheck;
+  const recheckResult = deductCredits(recheckUsers, recheckUidx, recheckCost);
+  if (!recheckResult.ok) return insufficientCredits(res, recheckResult.creditsLeft, recheckResult.creditsMax, recheckCost);
+  writeJSON(USERS_FILE, recheckUsers);
+
   const all = readJSON(COMPETITOR_FILE);
   const idx = all.findIndex(c => c.id === id && c.userId === user.id);
   if (idx === -1) return json(res, 404, { error: "Competitor not found." });
 
   const comp = all[idx];
   try {
-    const result   = await runCompetitorAudit(apiKey, comp.competitorName, comp.competitorUrl, comp.industry);
+    const result   = await runCompetitorAudit(apiKey, comp.competitorName, comp.competitorUrl, comp.industry, getModel(recheckUsers[recheckUidx]));
     const snapshot = { date: new Date().toISOString(), score: result.overall_score, breakdown: result.breakdown, recommendations: result.recommendations, strengths: result.strengths, weaknesses: result.weaknesses };
     const prevScore = comp.snapshots.length ? comp.snapshots[comp.snapshots.length - 1].score : null;
     comp.snapshots.push(snapshot);
@@ -1263,11 +1391,321 @@ function handleCompetitorDelete(req, res, id) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
   const all = readJSON(COMPETITOR_FILE);
   const filtered = all.filter(c => !(c.id === id && c.userId === user.id));
   if (filtered.length === all.length) return json(res, 404, { error: "Competitor not found." });
   writeJSON(COMPETITOR_FILE, filtered);
   json(res, 200, { ok: true });
+}
+
+
+function handleCompetitorSetMyBusiness(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = readJSON(COMPETITOR_FILE);
+  const mine = all.find(c => c.id === id && c.userId === user.id);
+  if (!mine) return json(res, 404, { error: "Competitor not found." });
+  const updated = all.map(c => {
+    if (c.userId !== user.id) return c;
+    return Object.assign({}, c, { isMyBusiness: c.id === id });
+  });
+  writeJSON(COMPETITOR_FILE, updated);
+  json(res, 200, { competitor: updated.find(c => c.id === id && c.userId === user.id) });
+}
+
+async function handleCompetitorSearch(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return json(res, 503, { error: "no_places_key", message: "Google Places API key not configured. Add GOOGLE_PLACES_API_KEY to .env on the server." });
+
+  const body    = await readBody(req);
+  const { niche, city, country } = body;
+  if (!niche || !city || !country) return json(res, 400, { error: "niche, city and country are required." });
+
+  const cleanCountry = country.replace(/^\S+\s/, ""); // strip flag emoji
+  const query = `${niche} in ${city}, ${cleanCountry}`;
+
+  try {
+    const gRes = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.websiteUri,places.rating,places.userRatingCount,places.nationalPhoneNumber",
+      },
+      body: JSON.stringify({ textQuery: query, maxResultCount: 10, languageCode: "en" }),
+    });
+    const data = await gRes.json();
+    if (!gRes.ok) return json(res, 502, { error: data.error?.message || "Google Places API error." });
+
+    const results = (data.places || []).map(p => ({
+      name:    p.displayName?.text   || "",
+      address: p.formattedAddress    || "",
+      website: (p.websiteUri || "").replace(/^https?:\/\//, "").replace(/\/$/, ""),
+      phone:   p.nationalPhoneNumber || "",
+      rating:  p.rating              || null,
+      reviews: p.userRatingCount     || 0,
+    }));
+    json(res, 200, { results, query });
+  } catch (err) {
+    json(res, 502, { error: "Failed to reach Google Places API: " + err.message });
+  }
+}
+
+
+async function handleSavedSearchSave(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const { label, results } = body;
+  if (!label || !Array.isArray(results) || !results.length) return json(res, 400, { error: "label and results are required." });
+  const all = Array.isArray(readJSON(SAVED_SEARCHES_FILE)) ? readJSON(SAVED_SEARCHES_FILE) : [];
+  const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), userId: user.id, label, results, savedAt: new Date().toISOString() };
+  all.push(entry);
+  writeJSON(SAVED_SEARCHES_FILE, all);
+  json(res, 201, { savedSearch: entry });
+}
+
+function handleSavedSearchesGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = Array.isArray(readJSON(SAVED_SEARCHES_FILE)) ? readJSON(SAVED_SEARCHES_FILE) : [];
+  json(res, 200, { savedSearches: all.filter(s => s.userId === user.id) });
+}
+
+function handleSavedSearchDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all      = Array.isArray(readJSON(SAVED_SEARCHES_FILE)) ? readJSON(SAVED_SEARCHES_FILE) : [];
+  const filtered = all.filter(s => !(s.id === id && s.userId === user.id));
+  writeJSON(SAVED_SEARCHES_FILE, filtered);
+  json(res, 200, { ok: true });
+}
+
+async function handleLeadSavedSearchSave(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const { label, results } = body;
+  if (!label || !Array.isArray(results) || !results.length) return json(res, 400, { error: "label and results are required." });
+  const all   = Array.isArray(readJSON(LEAD_SAVED_SEARCHES_FILE)) ? readJSON(LEAD_SAVED_SEARCHES_FILE) : [];
+  const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), userId: user.id, label, results, savedAt: new Date().toISOString() };
+  all.push(entry);
+  writeJSON(LEAD_SAVED_SEARCHES_FILE, all);
+  json(res, 201, { savedSearch: entry });
+}
+
+function handleLeadSavedSearchesGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = Array.isArray(readJSON(LEAD_SAVED_SEARCHES_FILE)) ? readJSON(LEAD_SAVED_SEARCHES_FILE) : [];
+  json(res, 200, { savedSearches: all.filter(s => s.userId === user.id) });
+}
+
+function handleLeadSavedSearchDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all      = Array.isArray(readJSON(LEAD_SAVED_SEARCHES_FILE)) ? readJSON(LEAD_SAVED_SEARCHES_FILE) : [];
+  const filtered = all.filter(s => !(s.id === id && s.userId === user.id));
+  writeJSON(LEAD_SAVED_SEARCHES_FILE, filtered);
+  json(res, 200, { ok: true });
+}
+
+async function handleOutreachSavedListSave(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const { label, results } = body;
+  if (!label || !Array.isArray(results) || !results.length) return json(res, 400, { error: "label and results are required." });
+  const all   = Array.isArray(readJSON(OUTREACH_SAVED_LISTS_FILE)) ? readJSON(OUTREACH_SAVED_LISTS_FILE) : [];
+  const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), userId: user.id, label, results, savedAt: new Date().toISOString() };
+  all.push(entry);
+  writeJSON(OUTREACH_SAVED_LISTS_FILE, all);
+  json(res, 201, { savedList: entry });
+}
+
+function handleOutreachSavedListsGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = Array.isArray(readJSON(OUTREACH_SAVED_LISTS_FILE)) ? readJSON(OUTREACH_SAVED_LISTS_FILE) : [];
+  json(res, 200, { savedLists: all.filter(s => s.userId === user.id) });
+}
+
+function handleOutreachSavedListDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all      = Array.isArray(readJSON(OUTREACH_SAVED_LISTS_FILE)) ? readJSON(OUTREACH_SAVED_LISTS_FILE) : [];
+  const filtered = all.filter(s => !(s.id === id && s.userId === user.id));
+  writeJSON(OUTREACH_SAVED_LISTS_FILE, filtered);
+  json(res, 200, { ok: true });
+}
+
+async function handleCrmSavedListSave(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const { label, results } = body;
+  if (!label || !Array.isArray(results) || !results.length) return json(res, 400, { error: "label and results are required." });
+  const all   = Array.isArray(readJSON(CRM_SAVED_LISTS_FILE)) ? readJSON(CRM_SAVED_LISTS_FILE) : [];
+  const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), userId: user.id, label, results, savedAt: new Date().toISOString() };
+  all.push(entry);
+  writeJSON(CRM_SAVED_LISTS_FILE, all);
+  json(res, 201, { savedList: entry });
+}
+
+function handleCrmSavedListsGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = Array.isArray(readJSON(CRM_SAVED_LISTS_FILE)) ? readJSON(CRM_SAVED_LISTS_FILE) : [];
+  json(res, 200, { savedLists: all.filter(s => s.userId === user.id) });
+}
+
+function handleCrmSavedListDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all      = Array.isArray(readJSON(CRM_SAVED_LISTS_FILE)) ? readJSON(CRM_SAVED_LISTS_FILE) : [];
+  const filtered = all.filter(s => !(s.id === id && s.userId === user.id));
+  writeJSON(CRM_SAVED_LISTS_FILE, filtered);
+  json(res, 200, { ok: true });
+}
+
+
+/* ── Article Saved Lists ────────────────────────────────────── */
+async function handleArticleSavedListSave(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const { label, results } = body;
+  if (!label || !Array.isArray(results) || !results.length) return json(res, 400, { error: "label and results are required." });
+  const all   = Array.isArray(readJSON(ARTICLE_SAVED_LISTS_FILE)) ? readJSON(ARTICLE_SAVED_LISTS_FILE) : [];
+  const entry = { id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), userId: user.id, label, results, savedAt: new Date().toISOString() };
+  all.push(entry);
+  writeJSON(ARTICLE_SAVED_LISTS_FILE, all);
+  json(res, 201, { savedList: entry });
+}
+
+function handleArticleSavedListsGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = Array.isArray(readJSON(ARTICLE_SAVED_LISTS_FILE)) ? readJSON(ARTICLE_SAVED_LISTS_FILE) : [];
+  json(res, 200, { savedLists: all.filter(s => s.userId === user.id) });
+}
+
+function handleArticleSavedListDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all      = Array.isArray(readJSON(ARTICLE_SAVED_LISTS_FILE)) ? readJSON(ARTICLE_SAVED_LISTS_FILE) : [];
+  const filtered = all.filter(s => !(s.id === id && s.userId === user.id));
+  writeJSON(ARTICLE_SAVED_LISTS_FILE, filtered);
+  json(res, 200, { ok: true });
+}
+
+/* ── User Sites (My Sites) ─────────────────────────────────── */
+
+function handleSitesGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all   = Array.isArray(readJSON(SITES_FILE)) ? readJSON(SITES_FILE) : [];
+  const sites = all.filter(s => s.userId === user.id).map(({ userId, ...s }) => s);
+  json(res, 200, { sites });
+}
+
+async function handleSitesSave(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body  = await readBody(req);
+  const sites = Array.isArray(body.sites) ? body.sites : [];
+  const all   = Array.isArray(readJSON(SITES_FILE)) ? readJSON(SITES_FILE) : [];
+  const others = all.filter(s => s.userId !== user.id);
+  const stamped = sites.map(s => ({ ...s, userId: user.id }));
+  writeJSON(SITES_FILE, [...others, ...stamped]);
+  json(res, 200, { ok: true });
+}
+
+async function handleSiteDelete(req, res, siteId) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all      = Array.isArray(readJSON(SITES_FILE)) ? readJSON(SITES_FILE) : [];
+  const filtered = all.filter(s => !(s.id === siteId && s.userId === user.id));
+  if (filtered.length === all.length) return json(res, 404, { error: "Site not found." });
+  writeJSON(SITES_FILE, filtered);
+  json(res, 200, { ok: true });
+}
+
+
+/* ── Lead Finder Search ────────────────────────────────── */
+
+async function handleLeadSearch(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 403, {
+    error: "trial_lead_limit",
+    message: "Lead Finder is not available during the free trial. Upgrade to unlock it.",
+    upgradeUrl: "/upgrade",
+  });
+
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return json(res, 503, { error: "no_places_key", message: "Google Places API key not configured." });
+
+  const body = await readBody(req);
+  const { subcatLabel, city, country } = body;
+  if (!subcatLabel || !city || !country) return json(res, 400, { error: "subcatLabel, city and country are required." });
+
+  const cleanCountry = country.replace(/^\S+\s/, ""); // strip flag emoji
+  const query = `${subcatLabel} in ${city}, ${cleanCountry}`;
+
+  try {
+    const gRes = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.websiteUri,places.rating,places.userRatingCount,places.nationalPhoneNumber",
+      },
+      body: JSON.stringify({ textQuery: query, maxResultCount: 20, languageCode: "en" }),
+    });
+    const data = await gRes.json();
+    if (!gRes.ok) return json(res, 502, { error: data.error?.message || "Google Places API error." });
+
+    const leads = (data.places || []).map((p, i) => ({
+      id:      i + 1,
+      name:    p.displayName?.text   || "",
+      address: p.formattedAddress    || "",
+      website: (p.websiteUri || "").replace(/^https?:\/\//, "").replace(/\/$/, ""),
+      phone:   p.nationalPhoneNumber || null,
+      rating:  p.rating              || null,
+      reviews: p.userRatingCount     || 0,
+      email:   null,
+      status:  "new",
+    }));
+    json(res, 200, { leads, query });
+  } catch (err) {
+    json(res, 502, { error: "Failed to reach Google Places API: " + err.message });
+  }
 }
 
 function handleCompetitorShare(req, res, token) {
@@ -1276,6 +1714,195 @@ function handleCompetitorShare(req, res, token) {
   if (!comp) return json(res, 404, { error: "Share link not found." });
   const { userId, shareToken, ...pub } = comp;
   json(res, 200, { competitor: pub });
+}
+
+/* ── Business Profile ──────────────────────────────────────── */
+const BIZ_EDIT_LIMIT = 2;
+
+function bizEditsThisMonth(profile) {
+  if (!profile) return 0;
+  const now = new Date();
+  const ym  = `${now.getFullYear()}-${now.getMonth()}`;
+  return profile.editMonth === ym ? (profile.editCount || 0) : 0;
+}
+
+function handleBusinessProfileGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all     = readJSON(BUSINESS_PROFILE_FILE);
+  const profile = (Array.isArray(all) ? all : []).find(p => p.userId === user.id) || null;
+  const editsUsed = bizEditsThisMonth(profile);
+  json(res, 200, { profile, editsUsed, editsLeft: BIZ_EDIT_LIMIT - editsUsed });
+}
+
+async function handleBusinessProfileSave(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
+  const body    = await readBody(req);
+  const { businessName, businessUrl, businessWebsite, country, city, businessCountry, businessCity,
+          industry, businessDescription, yearsInBusiness, mainKeyword, uniqueStrength,
+          knownCompetitors, businessType, customerType, pricePositioning, searchScope } = body;
+  const resolvedUrl     = (businessUrl || businessWebsite || "").trim();
+  const resolvedCountry = (country || businessCountry || "").trim();
+  const resolvedCity    = (city || businessCity || "").trim();
+  const all     = Array.isArray(readJSON(BUSINESS_PROFILE_FILE)) ? readJSON(BUSINESS_PROFILE_FILE) : [];
+  const idx     = all.findIndex(p => p.userId === user.id);
+  const existing = idx !== -1 ? all[idx] : null;
+
+  const editsUsed = bizEditsThisMonth(existing);
+  if (editsUsed >= BIZ_EDIT_LIMIT) {
+    return json(res, 429, { error: `You can only update your business profile ${BIZ_EDIT_LIMIT} times per month. You have used all ${BIZ_EDIT_LIMIT} edits for this month.` });
+  }
+
+  const now = new Date();
+  const ym  = `${now.getFullYear()}-${now.getMonth()}`;
+  const profile = {
+    ...(existing || {}),
+    userId:              user.id,
+    businessName:        (businessName        || "").trim(),
+    businessUrl:         resolvedUrl,
+    country:             resolvedCountry,
+    city:                resolvedCity,
+    industry:            (industry            || "").trim(),
+    businessDescription: (businessDescription || "").trim(),
+    yearsInBusiness:     (yearsInBusiness     || "").trim(),
+    mainKeyword:         (mainKeyword         || "").trim(),
+    uniqueStrength:      (uniqueStrength      || "").trim(),
+    knownCompetitors:    (knownCompetitors    || "").trim(),
+    businessType:        (businessType        || "").trim(),
+    customerType:        (customerType        || "").trim(),
+    pricePositioning:    (pricePositioning    || "").trim(),
+    searchScope:         (searchScope         || "").trim(),
+    updatedAt:           now.toISOString(),
+    editMonth:           ym,
+    editCount:           editsUsed + 1,
+  };
+
+  if (idx !== -1) all[idx] = profile; else all.push(profile);
+  writeJSON(BUSINESS_PROFILE_FILE, all);
+  const editsLeft = BIZ_EDIT_LIMIT - profile.editCount;
+  json(res, 200, { profile, editsUsed: profile.editCount, editsLeft });
+}
+
+// ── Admin handlers ────────────────────────────────────────────────────────────
+
+function requireAdmin(req) {
+  const cookies = parseCookies(req);
+  return getSessionUser(cookies.session);
+}
+
+function handleAdminUsers(req, res) {
+  const user = requireAdmin(req);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const users    = readJSON(USERS_FILE);
+  const profiles = Array.isArray(readJSON(BUSINESS_PROFILE_FILE)) ? readJSON(BUSINESS_PROFILE_FILE) : [];
+  const now = new Date();
+  const ym  = `${now.getFullYear()}-${now.getMonth()}`;
+  const result = users.map(u => {
+    const { passwordHash, ...safe } = u;
+    const profile = profiles.find(p => p.userId === u.id) || null;
+    const editsUsed = profile && profile.editMonth === ym ? (profile.editCount || 0) : 0;
+    return { ...safe, bizProfile: profile ? { businessName: profile.businessName, country: profile.country, city: profile.city, industry: profile.industry, updatedAt: profile.updatedAt } : null, bizEditsUsed: editsUsed, bizEditsLeft: BIZ_EDIT_LIMIT - editsUsed };
+  });
+  json(res, 200, { users: result });
+}
+
+async function handleAdminSetBizEdits(req, res, targetUserId) {
+  const user = requireAdmin(req);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const body = await readBody(req);
+  const { editCount } = body;
+  if (editCount === undefined || isNaN(Number(editCount))) return json(res, 400, { error: "editCount required." });
+  const all = Array.isArray(readJSON(BUSINESS_PROFILE_FILE)) ? readJSON(BUSINESS_PROFILE_FILE) : [];
+  const now = new Date();
+  const ym  = `${now.getFullYear()}-${now.getMonth()}`;
+  const idx = all.findIndex(p => p.userId === targetUserId);
+  if (idx !== -1) {
+    all[idx].editCount = Math.max(0, Math.min(BIZ_EDIT_LIMIT, Number(editCount)));
+    all[idx].editMonth = ym;
+  } else {
+    all.push({ userId: targetUserId, editCount: Math.max(0, Math.min(BIZ_EDIT_LIMIT, Number(editCount))), editMonth: ym });
+  }
+  writeJSON(BUSINESS_PROFILE_FILE, all);
+  json(res, 200, { ok: true, editsUsed: Number(editCount), editsLeft: BIZ_EDIT_LIMIT - Number(editCount) });
+}
+
+async function handleAdminUpdateUser(req, res, targetUserId) {
+  const admin = requireAdmin(req);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const body = await readBody(req);
+  const users = readJSON(USERS_FILE);
+  const idx   = users.findIndex(u => u.id === targetUserId);
+  if (idx === -1) return json(res, 404, { error: "User not found." });
+
+  const PLANS = require("./config/limits");
+  const { firstName, lastName, email, plan, creditsLeft, creditsMax, suspended, role } = body;
+
+  if (firstName  !== undefined) users[idx].firstName  = String(firstName).trim();
+  if (lastName   !== undefined) users[idx].lastName   = String(lastName).trim();
+  if (email      !== undefined) users[idx].email      = String(email).trim().toLowerCase();
+  if (suspended  !== undefined) users[idx].suspended  = Boolean(suspended);
+  if (role       !== undefined && (role === "admin" || role === "user")) users[idx].role = role;
+
+  if (plan !== undefined && PLANS.plans[plan]) {
+    users[idx].plan       = plan;
+    const cfg             = PLANS.plans[plan];
+    users[idx].creditsMax = cfg.credits;
+    if (cfg.credits === -1) { users[idx].creditsLeft = -1; }
+    else if (users[idx].creditsLeft === undefined || users[idx].creditsLeft < 0) {
+      users[idx].creditsLeft = cfg.credits;
+    }
+    users[idx].creditMonth = currentMonth();
+  }
+  if (creditsLeft !== undefined) users[idx].creditsLeft = Number(creditsLeft);
+  if (creditsMax  !== undefined) users[idx].creditsMax  = Number(creditsMax);
+
+  writeJSON(USERS_FILE, users);
+  const { passwordHash, ...safe } = users[idx];
+  json(res, 200, { user: safe });
+}
+
+async function handleAdminDeleteUser(req, res, targetUserId) {
+  const admin = requireAdmin(req);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+  if (targetUserId === admin.id) return json(res, 400, { error: "Cannot delete your own account." });
+  const users   = readJSON(USERS_FILE);
+  const updated = users.filter(u => u.id !== targetUserId);
+  if (updated.length === users.length) return json(res, 404, { error: "User not found." });
+  writeJSON(USERS_FILE, updated);
+  json(res, 200, { ok: true });
+}
+
+function handleAdminStats(req, res) {
+  const admin = requireAdmin(req);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const users     = readJSON(USERS_FILE);
+  const crm       = readJSON(CRM_FILE);
+  const sequences = readJSON(SEQUENCES_FILE);
+  const audits    = readJSON(AUDITS_FILE);
+  const secLog    = readJSON(path.join(ROOT, "data/security_log.json"));
+  const auditLog  = readJSON(path.join(ROOT, "data/audit_log.json"));
+
+  const byPlan = {};
+  users.forEach(u => { const p = u.plan || "free"; byPlan[p] = (byPlan[p] || 0) + 1; });
+  const totalCreditsUsed = users.reduce((s, u) => s + (u.creditsUsed || 0), 0);
+  const activeToday = users.filter(u => u.dailyActivity && u.dailyActivity.date === new Date().toISOString().slice(0,10)).length;
+
+  json(res, 200, {
+    totalUsers:       users.length,
+    activeToday,
+    suspended:        users.filter(u => u.suspended).length,
+    byPlan,
+    totalCrmLeads:    Array.isArray(crm) ? crm.length : 0,
+    totalSequences:   Array.isArray(sequences) ? sequences.length : 0,
+    totalAudits:      Array.isArray(audits) ? audits.length : 0,
+    totalCreditsUsed,
+    recentSecurity:   Array.isArray(secLog) ? secLog.slice(-20).reverse() : [],
+    recentAuditLog:   Array.isArray(auditLog) ? auditLog.slice(-20).reverse() : [],
+  });
 }
 
 // ── WordPress handlers ────────────────────────────────────────────────────────
@@ -1294,9 +1921,10 @@ async function handleWpConnect(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
 
-  const limits = PLAN_LIMITS[user.plan] || PLAN_LIMITS.free;
-  if (limits.wordpress === 0) return limitReached(res, "wordpress", 0, 0);
+  const limits = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
+  if (!limits.wordpress) return limitReached(res, "wordpress", 0, 0);
 
   const body = await readBody(req);
   const rawUrl  = sanitizeUrl(body.siteUrl || "");
@@ -1346,6 +1974,7 @@ async function handleWpPublish(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
 
   const conns = readJSON(WP_FILE);
   const conn  = conns.find(c => c.userId === user.id);
@@ -1392,33 +2021,42 @@ async function handleAuditCreate(req, res) {
   if (!user) return json(res, 401, { error: "Not authenticated." });
   if (!checkAiRateLimit(res, user.id)) return;
 
-  const limits = PLAN_LIMITS[user.plan] || PLAN_LIMITS.free;
-  const users  = readJSON(USERS_FILE);
-  const uidx   = users.findIndex(u => u.id === user.id);
+  const users = readJSON(USERS_FILE);
+  const uidx  = users.findIndex(u => u.id === user.id);
   if (uidx === -1) return json(res, 404, { error: "User not found." });
 
-  // Lifetime audit limit check
-  if (limits.audits !== -1) {
-    const usage = getUserUsage(users[uidx]);
-    if (usage.audits >= limits.audits) {
-      return limitReached(res, "audits", usage.audits, limits.audits);
+  // Auto-expire trial if needed
+  autoExpireTrialIfNeeded(users, uidx);
+
+  // Trial audit daily limit (1 per day)
+  if (isTrialActive(users[uidx])) {
+    const tu = getTrialUsage(users[uidx]);
+    const today = new Date().toISOString().slice(0, 10);
+    const auditsToday = tu.auditsTodayDate === today ? (tu.auditsToday || 0) : 0;
+    if (auditsToday >= 1) {
+      return json(res, 403, {
+        success: false, error: "trial_audit_limit",
+        message: "Your free trial includes 1 AI audit per day. Upgrade to €15/month for 4 audits per month.",
+        upgradeUrl: "/upgrade",
+      });
     }
   }
 
+  const auditCost   = PLAN_LIMITS.costs.auditCreate;
+  const auditResult = deductCredits(users, uidx, auditCost);
+  if (!auditResult.ok) return insufficientCredits(res, auditResult.creditsLeft, auditResult.creditsMax, auditCost);
+
   const apiKey = getAnthropicKey();
-  if (!apiKey) return json(res, 500, { error: "AI service not configured." });
+  if (!apiKey && !getGroqKey()) return json(res, 500, { error: "AI service not configured." });
 
   const body = await readBody(req);
   const { businessName, businessUrl, industry } = body;
   if (!businessName || !businessName.trim()) return json(res, 400, { error: "businessName is required." });
 
+  const auditModel = getModel(users[uidx]);
   try {
-    const result = await runCompetitorAudit(apiKey, businessName.trim(), (businessUrl || "").trim(), (industry || "").trim());
+    const result = await runCompetitorAudit(apiKey, businessName.trim(), (businessUrl || "").trim(), (industry || "").trim(), auditModel);
 
-    // Increment lifetime audit counter
-    const usage = getUserUsage(users[uidx]);
-    usage.audits = (usage.audits || 0) + 1;
-    users[uidx].usage = usage;
     writeJSON(USERS_FILE, users);
 
     const now   = new Date().toISOString();
@@ -1444,6 +2082,18 @@ async function handleAuditCreate(req, res) {
     audits.push(entry);
     writeJSON(AUDITS_FILE, audits);
 
+    // Increment trial audit counter
+    const freshUsers2 = readJSON(USERS_FILE);
+    const freshIdx2   = freshUsers2.findIndex(u => u.id === user.id);
+    if (freshIdx2 !== -1 && isTrialActive(freshUsers2[freshIdx2])) {
+      const tu2   = getTrialUsage(freshUsers2[freshIdx2]);
+      const today = new Date().toISOString().slice(0, 10);
+      tu2.auditsToday     = tu2.auditsTodayDate === today ? (tu2.auditsToday || 0) + 1 : 1;
+      tu2.auditsTodayDate = today;
+      freshUsers2[freshIdx2].trialUsage = tu2;
+      writeJSON(USERS_FILE, freshUsers2);
+    }
+
     json(res, 201, { audit: entry });
   } catch (err) {
     console.error("Audit create error:", err);
@@ -1463,6 +2113,7 @@ function handleAuditDelete(req, res, id) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
   const audits  = readJSON(AUDITS_FILE);
   const filtered = audits.filter(a => !(a.id === id && a.userId === user.id));
   if (filtered.length === audits.length) return json(res, 404, { error: "Audit not found." });
@@ -1474,6 +2125,14 @@ async function handleAuditShareCreate(req, res, id) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const shareUsers  = readJSON(USERS_FILE);
+  const shareUidx   = shareUsers.findIndex(u => u.id === user.id);
+  if (shareUidx === -1) return json(res, 404, { error: "User not found." });
+  const shareCost   = PLAN_LIMITS.costs.auditShareCreate;
+  const shareResult = deductCredits(shareUsers, shareUidx, shareCost);
+  if (!shareResult.ok) return insufficientCredits(res, shareResult.creditsLeft, shareResult.creditsMax, shareCost);
+  writeJSON(USERS_FILE, shareUsers);
 
   const audits = readJSON(AUDITS_FILE);
   const idx    = audits.findIndex(a => a.id === id && a.userId === user.id);
@@ -1506,6 +2165,7 @@ function handleAuditShareDelete(req, res, id) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
 
   const audits = readJSON(AUDITS_FILE);
   const idx    = audits.findIndex(a => a.id === id && a.userId === user.id);
@@ -1519,7 +2179,7 @@ function handleAuditShareDelete(req, res, id) {
 }
 
 // ── Raw SMTP sender (no external libraries) ───────────────────────────────────
-function smtpSend({ host, port, username, password, from, fromName, to, subject, body, replyTo, testOnly = false }) {
+function smtpSend({ host, port, username, password, from, fromName, to, subject, body, testOnly = false }) {
   const useSSL = (port === 465);
   return new Promise((resolve, reject) => {
     let socket = null;
@@ -1604,7 +2264,6 @@ function smtpSend({ host, port, username, password, from, fromName, to, subject,
           `MIME-Version: 1.0`,
           `Content-Type: text/plain; charset=UTF-8`,
           `Content-Transfer-Encoding: 8bit`,
-          ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
           "",
           ...body.split("\n").map(l => l.startsWith(".") ? "." + l : l),
         ];
@@ -1617,224 +2276,7 @@ function smtpSend({ host, port, username, password, from, fromName, to, subject,
   });
 }
 
-// ── Gmail OAuth helpers ──────────────────────────────────────────────────────
-
-function googlePost(urlStr, params) {
-  return new Promise((resolve, reject) => {
-    const body    = new URLSearchParams(params).toString();
-    const parsed  = new URL(urlStr);
-    const options = {
-      hostname: parsed.hostname,
-      path:     parsed.pathname,
-      method:   "POST",
-      headers:  { "Content-Type": "application/x-www-form-urlencoded", "Content-Length": Buffer.byteLength(body) },
-    };
-    const req = https.request(options, res => {
-      let data = "";
-      res.on("data", c => data += c);
-      res.on("end", () => { try { resolve({ status: res.statusCode, body: JSON.parse(data) }); } catch { resolve({ status: res.statusCode, body: data }); } });
-    });
-    req.on("error", reject);
-    req.write(body);
-    req.end();
-  });
-}
-
-function googleGet(urlStr, accessToken) {
-  return new Promise((resolve, reject) => {
-    const parsed  = new URL(urlStr);
-    const options = {
-      hostname: parsed.hostname,
-      path:     parsed.pathname + parsed.search,
-      method:   "GET",
-      headers:  { "Authorization": "Bearer " + accessToken },
-    };
-    const req = https.request(options, res => {
-      let data = "";
-      res.on("data", c => data += c);
-      res.on("end", () => { try { resolve({ status: res.statusCode, body: JSON.parse(data) }); } catch { resolve({ status: res.statusCode, body: data }); } });
-    });
-    req.on("error", reject);
-    req.end();
-  });
-}
-
-function googleJsonPost(urlStr, bodyObj, accessToken) {
-  return new Promise((resolve, reject) => {
-    const parsed  = new URL(urlStr);
-    const bodyStr = JSON.stringify(bodyObj);
-    const options = {
-      hostname: parsed.hostname,
-      path:     parsed.pathname,
-      method:   "POST",
-      headers:  { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(bodyStr), "Authorization": "Bearer " + accessToken },
-    };
-    const req = https.request(options, res => {
-      let data = "";
-      res.on("data", c => data += c);
-      res.on("end", () => { try { resolve({ status: res.statusCode, body: JSON.parse(data) }); } catch { resolve({ status: res.statusCode, body: data }); } });
-    });
-    req.on("error", reject);
-    req.write(bodyStr);
-    req.end();
-  });
-}
-
-async function gmailGetAccessToken(userId) {
-  const conn = readJSON(GMAIL_FILE).find(c => c.userId === userId);
-  if (!conn) return null;
-  let refreshToken;
-  try { refreshToken = decryptStr(conn.refreshTokenEnc); } catch { return null; }
-  const r = await googlePost("https://oauth2.googleapis.com/token", {
-    client_id:     GOOGLE_CLIENT_ID,
-    client_secret: GOOGLE_CLIENT_SECRET,
-    refresh_token: refreshToken,
-    grant_type:    "refresh_token",
-  });
-  if (r.status !== 200 || !r.body.access_token) return null;
-  return { accessToken: r.body.access_token, email: conn.email };
-}
-
-function buildRfc2822(fromEmail, fromName, to, subject, bodyText, replyTo) {
-  const fromHeader = fromName ? `"${fromName.replace(/["\\]/g, "")}" <${fromEmail}>` : fromEmail;
-  const lines = [
-    `From: ${fromHeader}`,
-    `To: ${to}`,
-    `Subject: ${subject}`,
-    `MIME-Version: 1.0`,
-    `Content-Type: text/plain; charset=UTF-8`,
-  ];
-  if (replyTo) lines.push(`Reply-To: ${replyTo}`);
-  lines.push(``, bodyText);
-  return lines.join("\r\n");
-}
-
-async function gmailSendMessage({ userId, to, subject, body, fromName, replyTo }) {
-  const tok = await gmailGetAccessToken(userId);
-  if (!tok) throw new Error("Gmail not connected");
-  const raw     = buildRfc2822(tok.email, fromName || null, to, subject, body, replyTo || null);
-  const encoded = Buffer.from(raw).toString("base64")
-    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-  const r = await googleJsonPost(
-    "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
-    { raw: encoded },
-    tok.accessToken
-  );
-  if (r.status !== 200) throw new Error("Gmail API error: " + JSON.stringify(r.body));
-  return r.body;
-}
-
-// ── Gmail OAuth handlers ──────────────────────────────────────────────────────
-
-async function handleGmailConnect(req, res) {
-  const cookies = parseCookies(req);
-  const user = getSessionUser(cookies.session);
-  if (!user) { res.writeHead(302, { Location: "/signin.html" }); return res.end(); }
-  if (!GOOGLE_CLIENT_ID) return json(res, 503, { error: "Gmail OAuth not configured on this server." });
-  const state = crypto.createHmac("sha256", WP_ENCRYPT_KEY).update(cookies.session).digest("hex").slice(0, 32);
-  const params = new URLSearchParams({
-    client_id:     GOOGLE_CLIENT_ID,
-    redirect_uri:  GOOGLE_REDIRECT_URI,
-    response_type: "code",
-    scope:         "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email",
-    access_type:   "offline",
-    prompt:        "consent",
-    state,
-  });
-  res.writeHead(302, { Location: "https://accounts.google.com/o/oauth2/v2/auth?" + params.toString() });
-  res.end();
-}
-
-async function handleGmailCallback(req, res) {
-  const urlObj   = new URL("https://eureach.eu" + req.url);
-  const code     = urlObj.searchParams.get("code");
-  const state    = urlObj.searchParams.get("state");
-  const errParam = urlObj.searchParams.get("error");
-
-  if (errParam || !code || !state) {
-    res.writeHead(302, { Location: "/settings.html?gmail=denied#email" });
-    return res.end();
-  }
-
-  // Find the session whose HMAC matches the state
-  const sessions = readJSON(SESSIONS_FILE);
-  let matchedUser = null;
-  for (const sess of sessions) {
-    if (sess.expiresAt <= Date.now()) continue;
-    const expected = crypto.createHmac("sha256", WP_ENCRYPT_KEY).update(sess.token).digest("hex").slice(0, 32);
-    if (expected === state) {
-      const users = readJSON(USERS_FILE);
-      matchedUser = users.find(u => u.id === sess.userId) || null;
-      break;
-    }
-  }
-
-  if (!matchedUser) {
-    res.writeHead(302, { Location: "/settings.html?gmail=error#email" });
-    return res.end();
-  }
-
-  const tokenRes = await googlePost("https://oauth2.googleapis.com/token", {
-    code,
-    client_id:     GOOGLE_CLIENT_ID,
-    client_secret: GOOGLE_CLIENT_SECRET,
-    redirect_uri:  GOOGLE_REDIRECT_URI,
-    grant_type:    "authorization_code",
-  });
-
-  if (tokenRes.status !== 200 || !tokenRes.body.refresh_token) {
-    res.writeHead(302, { Location: "/settings.html?gmail=error#email" });
-    return res.end();
-  }
-
-  const infoRes  = await googleGet("https://www.googleapis.com/oauth2/v1/userinfo?alt=json", tokenRes.body.access_token);
-  const gmailEmail = infoRes.body?.email || "";
-
-  const conns = readJSON(GMAIL_FILE).filter(c => c.userId !== matchedUser.id);
-  conns.push({
-    userId:          matchedUser.id,
-    email:           gmailEmail,
-    refreshTokenEnc: encryptStr(tokenRes.body.refresh_token),
-    connectedAt:     new Date().toISOString(),
-  });
-  writeJSON(GMAIL_FILE, conns);
-
-  res.writeHead(302, { Location: "/settings.html?gmail=connected#email" });
-  res.end();
-}
-
-async function handleGmailDisconnect(req, res) {
-  const cookies = parseCookies(req);
-  const user = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: "Not authenticated." });
-  writeJSON(GMAIL_FILE, readJSON(GMAIL_FILE).filter(c => c.userId !== user.id));
-  return json(res, 200, { ok: true });
-}
-
-async function handleGmailStatus(req, res) {
-  const cookies = parseCookies(req);
-  const user = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: "Not authenticated." });
-  const conn = readJSON(GMAIL_FILE).find(c => c.userId === user.id);
-  if (!conn) return json(res, 200, { connected: false });
-  return json(res, 200, { connected: true, email: conn.email, connectedAt: conn.connectedAt });
-}
-
 // ── Email / SMTP handlers ──────────────────────────────────────────────────────
-
-function handleEmailStatus(req, res) {
-  const cookies = parseCookies(req);
-  const user = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: "Not authenticated." });
-  const gmail = readJSON(GMAIL_FILE).find(c => c.userId === user.id);
-  const smtp  = readJSON(SMTP_FILE).find(c => c.userId === user.id);
-  const users2  = readJSON(USERS_FILE);
-  const userRec  = users2.find(u => u.id === user.id);
-  const replyEmail = userRec?.replyEmail || "";
-  if (gmail) return json(res, 200, { configured: true, method: "gmail", from: gmail.email || "", replyEmail });
-  if (smtp)  return json(res, 200, { configured: true, method: "smtp",  from: smtp.from  || "", replyEmail });
-  return json(res, 200, { configured: false, replyEmail });
-}
 
 async function handleSmtpStatus(req, res) {
   const cookies = parseCookies(req);
@@ -1849,6 +2291,7 @@ async function handleSmtpConnect(req, res) {
   const cookies = parseCookies(req);
   const user = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
   const raw = await readBody(req);
   const host     = sanitizeString(raw.host || "", 253);
   const portNum  = sanitizeInteger(raw.port, 1, 65535);
@@ -1884,6 +2327,7 @@ async function handleEmailSend(req, res) {
   const cookies = parseCookies(req);
   const user = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
   const raw2       = await readBody(req);
   const to         = sanitizeEmail(raw2.to || "");
   const subject    = sanitizeString(raw2.subject || "", 200);
@@ -1892,22 +2336,13 @@ async function handleEmailSend(req, res) {
   const sequenceStep = sanitizeInteger(raw2.sequenceStep, 0, 10) || null;
   if (!to || !subject || !body) return json(res, 400, { error: "to, subject, and body are required." });
   if (!to.includes("@")) return json(res, 400, { error: "Enter a valid email address." });
-  // Try Gmail OAuth first, fall back to SMTP
-  const gmailConn = readJSON(GMAIL_FILE).find(c => c.userId === user.id);
-  const smtpConn  = readJSON(SMTP_FILE).find(c => c.userId === user.id);
-  if (!gmailConn && !smtpConn) return json(res, 400, { error: "No email connection configured. Go to Settings → Email to connect Gmail or SMTP." });
+  const conn = readJSON(SMTP_FILE).find(c => c.userId === user.id);
+  if (!conn) return json(res, 400, { error: "No SMTP connection configured. Go to Settings → Email to connect." });
+  let password;
+  try { password = decryptStr(conn.passwordEnc); }
+  catch { return json(res, 500, { error: "Failed to decrypt SMTP credentials. Please reconnect in Settings." }); }
   try {
-    const allUsers = readJSON(USERS_FILE);
-    const userFull  = allUsers.find(u => u.id === user.id);
-    const replyTo   = userFull?.replyEmail || null;
-    if (gmailConn) {
-      await gmailSendMessage({ userId: user.id, to, subject, body, replyTo });
-    } else {
-      let password;
-      try { password = decryptStr(smtpConn.passwordEnc); }
-      catch { return json(res, 500, { error: "Failed to decrypt SMTP credentials. Please reconnect in Settings." }); }
-      await smtpSend({ host: smtpConn.host, port: smtpConn.port, username: smtpConn.username, password, from: smtpConn.from, fromName: smtpConn.fromName || "", to, subject, body, replyTo });
-    }
+    await smtpSend({ host: conn.host, port: conn.port, username: conn.username, password, from: conn.from, fromName: conn.fromName || "", to, subject, body });
   } catch (err) {
     return json(res, 500, { error: "Send failed: " + err.message });
   }
@@ -1915,16 +2350,6 @@ async function handleEmailSend(req, res) {
   const entry = { id: generateId(), userId: user.id, leadId: leadId || null, to, subject, sentAt: new Date().toISOString(), sequenceStep: sequenceStep || null, opened: false, clicked: false };
   log.push(entry);
   writeJSON(EMAIL_LOG_FILE, log);
-  // Also append to CRM entry's emailLog if leadId provided
-  if (leadId) {
-    const crm = readJSON(CRM_FILE);
-    const cidx = crm.findIndex(e => e.id === leadId && e.userId === user.id);
-    if (cidx !== -1) {
-      crm[cidx].emailLog = [...(crm[cidx].emailLog || []), { id: entry.id, subject, body, to, sentAt: entry.sentAt }];
-      crm[cidx].updatedAt = entry.sentAt;
-      writeJSON(CRM_FILE, crm);
-    }
-  }
   return json(res, 200, { ok: true, sentAt: entry.sentAt, id: entry.id });
 }
 
@@ -1932,426 +2357,530 @@ async function handleEmailLog(req, res) {
   const cookies = parseCookies(req);
   const user = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
   const log = readJSON(EMAIL_LOG_FILE)
     .filter(e => e.userId === user.id)
     .sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
   return json(res, 200, { log });
 }
 
-// ── Pipeline (Lead CRM) ───────────────────────────────────────────────────────
+// ── Outreach Queue handlers ────────────────────────────────────────────────────
 
-function getPipelineLeads(userId) {
-  return readJSON(PIPELINE_FILE).filter(l => l.userId === userId);
-}
-
-function savePipelineLeads(userId, leads) {
-  const all = readJSON(PIPELINE_FILE).filter(l => l.userId !== userId);
-  writeJSON(PIPELINE_FILE, [...all, ...leads]);
-}
-
-async function handlePipelineList(req, res) {
+function handleOutreachQueueGet(req, res) {
   const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { error: "Unauthorized." });
-  return json(res, 200, getPipelineLeads(user.id));
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const queue = readJSON(OUTREACH_QUEUE_FILE).filter(q => q.userId === user.id)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  json(res, 200, { queue });
 }
 
-async function handlePipelineAdd(req, res) {
+async function handleOutreachEnqueue(req, res) {
   const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { error: "Unauthorized." });
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
   const body = await readBody(req);
-  const { name, category, city, phone, website, email, rating, reviews, address } = body;
-  if (!name) return json(res, 400, { error: "name required" });
-  const leads = getPipelineLeads(user.id);
-  if (leads.find(l => l.name === name && l.city === city)) {
-    return json(res, 409, { error: "Already in pipeline" });
+  const sequenceId   = sanitizeString(body.sequenceId || "", 50);
+  const leadEmail    = sanitizeEmail(body.leadEmail || "");
+  const leadName     = sanitizeString(body.leadName || "", 200);
+  const leadId       = sanitizeString(body.leadId || "", 50);
+  const crmId        = sanitizeString(body.crmId  || "", 50);
+  const businessType = sanitizeString(body.businessType || "", 100);
+  const city         = sanitizeString(body.city || "", 100);
+  if (!sequenceId || !leadEmail) return json(res, 400, { error: "sequenceId and leadEmail are required." });
+
+  const seqs = readJSON(SEQUENCES_FILE);
+  const seq  = seqs.find(s => s.id === sequenceId && s.userId === user.id);
+  if (!seq) return json(res, 404, { error: "Sequence not found." });
+
+  const queue = readJSON(OUTREACH_QUEUE_FILE);
+  if (queue.find(q => q.sequenceId === sequenceId && q.userId === user.id)) {
+    return json(res, 409, { error: "This sequence is already queued." });
   }
-  const lead = {
-    id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36),
-    userId: user.id,
-    name, category: category || "", city: city || "",
-    phone: phone || "", website: website || "", email: email || "",
-    address: address || "", rating: rating || 0, reviews: reviews || 0,
-    stage: "new",
-    notes: [],
-    history: [{ stage: "new", date: new Date().toISOString() }],
-    followUpDate: null,
-    addedAt: new Date().toISOString()
+
+  const now = new Date();
+  const delays = [0, 3, 7]; // days per step
+  const entry = {
+    id:           generateId(),
+    userId:       user.id,
+    sequenceId,
+    leadId:       leadId || null,
+    crmId:        crmId || seq.crmId || null,
+    leadName:     leadName || seq.leadName,
+    leadEmail,
+    businessType: businessType || seq.businessType || "",
+    city:         city || seq.city || "",
+    status:       "active",
+    steps: seq.sequence.map((s, i) => ({
+      step:         i + 1,
+      channel:      s.channel,
+      subject:      s.subject || null,
+      body:         s.body,
+      status:       "pending",
+      sentAt:       null,
+      scheduledFor: new Date(now.getTime() + delays[i] * 86400000).toISOString(),
+    })),
+    createdAt: now.toISOString(),
   };
-  leads.push(lead);
-  savePipelineLeads(user.id, leads);
-  return json(res, 201, lead);
+  queue.push(entry);
+  writeJSON(OUTREACH_QUEUE_FILE, queue);
+  json(res, 200, { entry });
 }
 
-async function handlePipelineStage(req, res, id) {
+async function handleOutreachSendStep(req, res) {
   const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { error: "Unauthorized." });
-  const body = await readBody(req);
-  const { stage } = body;
-  const STAGES = ["new", "contacted", "replied", "audited", "proposal", "won", "lost"];
-  if (!STAGES.includes(stage)) return json(res, 400, { error: "Invalid stage" });
-  const leads = getPipelineLeads(user.id);
-  const lead = leads.find(l => l.id === id);
-  if (!lead) return json(res, 404, { error: "Not found" });
-  lead.stage = stage;
-  lead.history.push({ stage, date: new Date().toISOString() });
-  savePipelineLeads(user.id, leads);
-  return json(res, 200, lead);
-}
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
+  const body    = await readBody(req);
+  const queueId = sanitizeString(body.queueId || "", 50);
+  const step    = sanitizeInteger(body.step, 1, 10);
+  if (!queueId || !step) return json(res, 400, { error: "queueId and step are required." });
 
-async function handlePipelineNote(req, res, id) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { error: "Unauthorized." });
-  const body = await readBody(req);
-  const { text } = body;
-  if (!text) return json(res, 400, { error: "text required" });
-  const leads = getPipelineLeads(user.id);
-  const lead = leads.find(l => l.id === id);
-  if (!lead) return json(res, 404, { error: "Not found" });
-  lead.notes.push({ text, date: new Date().toISOString() });
-  savePipelineLeads(user.id, leads);
-  return json(res, 200, lead);
-}
+  const queue = readJSON(OUTREACH_QUEUE_FILE);
+  const idx   = queue.findIndex(q => q.id === queueId && q.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: "Queue entry not found." });
 
-async function handlePipelineFollowup(req, res, id) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { error: "Unauthorized." });
-  const body = await readBody(req);
-  const leads = getPipelineLeads(user.id);
-  const lead = leads.find(l => l.id === id);
-  if (!lead) return json(res, 404, { error: "Not found" });
-  lead.followUpDate = body.followUpDate || null;
-  savePipelineLeads(user.id, leads);
-  return json(res, 200, lead);
-}
+  const entry   = queue[idx];
+  const stepIdx = entry.steps.findIndex(s => s.step === step);
+  if (stepIdx === -1) return json(res, 404, { error: "Step not found." });
 
-async function handlePipelineDelete(req, res, id) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { error: "Unauthorized." });
-  const leads = getPipelineLeads(user.id);
-  const idx = leads.findIndex(l => l.id === id);
-  if (idx === -1) return json(res, 404, { error: "Not found" });
-  leads.splice(idx, 1);
-  savePipelineLeads(user.id, leads);
-  return json(res, 200, { ok: true });
-}
+  const stepData = entry.steps[stepIdx];
+  if (stepData.status === "sent") return json(res, 400, { error: "Step already sent." });
 
-async function handlePipelineGenerateEmail(req, res) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { error: "Unauthorized." });
-  const body = await readBody(req);
-  const { name, category, city, website } = body;
-  if (!name) return json(res, 400, { error: "name required" });
-  const apiKey = getAnthropicKey();
-  if (!apiKey) return json(res, 500, { error: "AI key not configured" });
-  const prompt = `Γράψε ένα σύντομο, επαγγελματικό email προσέγγισης στα Ελληνικά για μια επιχείρηση.
+  if (stepData.channel !== "Email") {
+    queue[idx].steps[stepIdx].status = "sent";
+    queue[idx].steps[stepIdx].sentAt = new Date().toISOString();
+    if (entry.steps.every((s, i) => i === stepIdx || s.status === "sent")) {
+      queue[idx].status = "completed";
+    }
+    writeJSON(OUTREACH_QUEUE_FILE, queue);
+    return json(res, 200, { ok: true, manual: true });
+  }
 
-Στοιχεία επιχείρησης:
-- Όνομα: ${name}
-- Κατηγορία: ${category || "—"}
-- Πόλη: ${city || "—"}
-- Website: ${website || "—"}
+  // Deduct credits for email send
+  const sendCost = PLAN_LIMITS.costs.outreach;
+  const sendUsers = readJSON(USERS_FILE);
+  const sendIdx   = sendUsers.findIndex(u => u.id === user.id);
+  if (sendIdx !== -1) {
+    const sendResult = deductCredits(sendUsers, sendIdx, sendCost);
+    if (!sendResult.ok) return insufficientCredits(res, sendResult.creditsLeft, sendResult.creditsMax, sendCost);
+    writeJSON(USERS_FILE, sendUsers);
+  }
 
-Το email πρέπει:
-1. Να είναι σύντομο (3-4 παράγραφοι)
-2. Να αναφέρει ότι είδαμε την επιχείρησή τους online
-3. Να προτείνει βοήθεια με digital marketing / SEO / web presence
-4. Να έχει φιλικό αλλά επαγγελματικό τόνο
-5. Να τελειώνει με CTA για ένα σύντομο τηλεφώνημα ή email απάντηση
+  const conn = readJSON(SMTP_FILE).find(c => c.userId === user.id);
+  if (!conn) return json(res, 400, { error: "No SMTP configured. Go to Settings → Email." });
+  let password;
+  try { password = decryptStr(conn.passwordEnc); }
+  catch { return json(res, 500, { error: "Failed to decrypt SMTP credentials. Please reconnect." }); }
 
-Γράψε ΜΟΝΟ το κείμενο του email (θέμα + σώμα), χωρίς εξηγήσεις.`;
   try {
-    const result = await callClaude(apiKey, "You are a professional Greek digital marketing consultant writing outreach emails.", prompt, 800);
-    const text = result?.content?.[0]?.text || result?.text || String(result);
-    return json(res, 200, { email: text });
-  } catch (e) {
-    return json(res, 500, { error: "AI generation failed" });
+    await smtpSend({ host: conn.host, port: conn.port, username: conn.username, password,
+      from: conn.from, fromName: conn.fromName || "", to: entry.leadEmail,
+      subject: stepData.subject || "(no subject)", body: stepData.body });
+  } catch (err) {
+    return json(res, 500, { error: "Send failed: " + err.message });
+  }
+
+  const now = new Date().toISOString();
+  queue[idx].steps[stepIdx].status = "sent";
+  queue[idx].steps[stepIdx].sentAt = now;
+  if (entry.steps.every((s, i) => i === stepIdx ? true : s.status === "sent")) {
+    queue[idx].status = "completed";
+  }
+  writeJSON(OUTREACH_QUEUE_FILE, queue);
+
+  const log = readJSON(EMAIL_LOG_FILE);
+  log.push({ id: generateId(), userId: user.id, leadId: entry.leadId || null,
+    to: entry.leadEmail, subject: stepData.subject || "", sentAt: now,
+    sequenceStep: step, opened: false, clicked: false });
+  writeJSON(EMAIL_LOG_FILE, log);
+
+  // Auto-advance CRM status to 'contacted' on first email sent
+  if (entry.crmId) {
+    const crm    = readJSON(CRM_FILE);
+    const crmIdx = crm.findIndex(c => c.id === entry.crmId && c.userId === user.id);
+    if (crmIdx !== -1 && crm[crmIdx].status === 'found') {
+      crm[crmIdx].status    = 'contacted';
+      crm[crmIdx].updatedAt = now;
+      writeJSON(CRM_FILE, crm);
+    }
+  }
+
+  json(res, 200, { ok: true, sentAt: now });
+}
+
+async function handleOutreachUpdate(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
+  const body    = await readBody(req);
+  const queueId = sanitizeString(body.queueId || "", 50);
+  const action  = sanitizeString(body.action || "", 20);
+  if (!queueId || !["pause", "resume", "stop"].includes(action)) {
+    return json(res, 400, { error: "queueId and action (pause|resume|stop) are required." });
+  }
+  const queue = readJSON(OUTREACH_QUEUE_FILE);
+  const idx   = queue.findIndex(q => q.id === queueId && q.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: "Not found." });
+  if (action === "pause")  queue[idx].status = "paused";
+  if (action === "resume") queue[idx].status = "active";
+  if (action === "stop")   queue[idx].status = "stopped";
+  writeJSON(OUTREACH_QUEUE_FILE, queue);
+  json(res, 200, { ok: true, status: queue[idx].status });
+}
+
+// Background scheduler — runs every 15 min, auto-sends due email steps
+async function runOutreachScheduler() {
+  try {
+    const queue = readJSON(OUTREACH_QUEUE_FILE);
+    const now   = new Date();
+    let   dirty = false;
+    for (let i = 0; i < queue.length; i++) {
+      const entry = queue[i];
+      if (entry.status !== "active") continue;
+      const conn = readJSON(SMTP_FILE).find(c => c.userId === entry.userId);
+      if (!conn) continue;
+      let password;
+      try { password = decryptStr(conn.passwordEnc); } catch { continue; }
+      for (let j = 0; j < entry.steps.length; j++) {
+        const s = entry.steps[j];
+        if (s.status !== "pending" || s.channel !== "Email") continue;
+        if (new Date(s.scheduledFor) > now) continue;
+        try {
+          await smtpSend({ host: conn.host, port: conn.port, username: conn.username, password,
+            from: conn.from, fromName: conn.fromName || "", to: entry.leadEmail,
+            subject: s.subject || "(no subject)", body: s.body });
+          const sentAt = new Date().toISOString();
+          queue[i].steps[j].status = "sent";
+          queue[i].steps[j].sentAt = sentAt;
+          dirty = true;
+          const log = readJSON(EMAIL_LOG_FILE);
+          log.push({ id: generateId(), userId: entry.userId, leadId: entry.leadId || null,
+            to: entry.leadEmail, subject: s.subject || "", sentAt, sequenceStep: s.step,
+            opened: false, clicked: false });
+          writeJSON(EMAIL_LOG_FILE, log);
+        } catch { /* skip this step, retry next interval */ }
+      }
+      if (queue[i].steps.every(s => s.status === "sent" || s.channel !== "Email")) {
+        queue[i].status = "completed";
+        dirty = true;
+      }
+    }
+    if (dirty) writeJSON(OUTREACH_QUEUE_FILE, queue);
+  } catch { /* scheduler errors are silent */ }
+}
+setInterval(runOutreachScheduler, 15 * 60 * 1000);
+
+// ── Trial / Billing handlers ──────────────────────────────────────────────────
+
+async function handleTrialStart(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const stripe = getStripe();
+  if (!stripe) return json(res, 500, { error: "Billing not configured." });
+
+  if (user.trialStatus && user.trialStatus !== "not_started") {
+    return json(res, 400, { error: "Trial already used or account already active." });
+  }
+
+  const body = await readBody(req);
+  const { paymentMethodId } = body;
+  if (!paymentMethodId) return json(res, 400, { error: "paymentMethodId is required." });
+
+  try {
+    const customer = await stripe.customers.create({
+      email: user.email,
+      name:  `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+    });
+
+    await stripe.paymentMethods.attach(paymentMethodId, { customer: customer.id });
+    await stripe.customers.update(customer.id, {
+      invoice_settings: { default_payment_method: paymentMethodId },
+    });
+
+    const priceId = process.env.STRIPE_PRICE_ID;
+    if (!priceId) return json(res, 500, { error: "STRIPE_PRICE_ID not configured." });
+
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [{ price: priceId }],
+      trial_period_days: 7,
+      payment_settings: { save_default_payment_method: "on_subscription" },
+      expand: ["latest_invoice.payment_intent"],
+    });
+
+    const now          = new Date();
+    const trialEndsAt  = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const users = readJSON(USERS_FILE);
+    const idx   = users.findIndex(u => u.id === user.id);
+    if (idx === -1) return json(res, 404, { error: "User not found." });
+
+    users[idx].plan                  = "trial";
+    users[idx].trialStatus           = "active";
+    users[idx].trialStartedAt        = now.toISOString();
+    users[idx].trialEndsAt           = trialEndsAt;
+    users[idx].stripeCustomerId      = customer.id;
+    users[idx].stripeSubscriptionId  = subscription.id;
+    users[idx].stripePaymentMethodId = paymentMethodId;
+    users[idx].billingEmail          = user.email;
+    users[idx].trialUsage            = { competitorSearches: 0, articlesGenerated: 0, auditsToday: 0, auditsTodayDate: null };
+    writeJSON(USERS_FILE, users);
+
+    // Send trial started email (async, don't block response)
+    const trialEndDate = new Date(trialEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    sendSystemEmail(
+      user.email,
+      "Your eureach trial has started — 7 days free",
+      `Hi ${user.firstName || "there"},\n\nYour 7-day free trial is now active.\n\nTrial ends: ${trialEndDate}\nIf you don't cancel before then, your card will be charged €15.\n\nWhat to do first:\n→ Run your AI Visibility Audit\n→ Search for your competitors\n→ Generate your first article\n\nCancel anytime at: https://eureach.eu/billing\n\n– The eureach team`
+    ).catch(() => {});
+
+    json(res, 200, { success: true, trialEndsAt, daysRemaining: 7 });
+  } catch (err) {
+    console.error("Trial start error:", err);
+    json(res, 500, { error: "Failed to start trial: " + (err.message || "Unknown error") });
   }
 }
 
-// ── Solo vertical ─────────────────────────────────────────────────────────────
+async function handleTrialCancel(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
 
-const SOLO_PROFILES_DIR   = path.join(ROOT, "data/solo_profiles");
-const SOLO_AUDITS_DIR     = path.join(ROOT, "data/solo_audits");
-const SOLO_CHECKLISTS_DIR = path.join(ROOT, "data/solo_checklists");
-const SOLO_ARTICLES_DIR   = path.join(ROOT, "data/solo_articles");
-
-for (const dir of [SOLO_PROFILES_DIR, SOLO_AUDITS_DIR, SOLO_CHECKLISTS_DIR, SOLO_ARTICLES_DIR]) {
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-}
-
-function getSoloProfile(userId) {
-  const file = path.join(SOLO_PROFILES_DIR, `${userId}.json`);
-  try { return JSON.parse(fs.readFileSync(file, "utf8")); } catch { return null; }
-}
-
-function saveSoloProfile(userId, data) {
-  fs.writeFileSync(path.join(SOLO_PROFILES_DIR, `${userId}.json`), JSON.stringify(data, null, 2), "utf8");
-}
-
-function checkSoloLimit(res, user, feature) {
-  const limits = PLAN_LIMITS[user.plan] || PLAN_LIMITS.free;
-  const max = limits[feature];
-  if (max === undefined || max === 0) {
-    json(res, 403, { success: false, error: "limit_reached", feature, upgradeUrl: "/solo#pricing" });
-    return false;
+  if (!isTrialActive(user)) {
+    return json(res, 400, { error: "No active trial to cancel." });
   }
-  if (max === -1) return true;
-  const month = currentMonth();
-  const usage = (user.soloUsage && user.soloUsage.month === month) ? user.soloUsage : { month, solo_audits: 0, solo_articles: 0 };
-  const used = usage[feature] || 0;
-  if (used >= max) {
-    json(res, 403, { success: false, error: "limit_reached", feature, current: used, max, upgradeUrl: "/solo#pricing" });
-    return false;
+
+  const stripe = getStripe();
+  if (!stripe) return json(res, 500, { error: "Billing not configured." });
+
+  try {
+    if (user.stripeSubscriptionId) {
+      await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+    }
+
+    const users = readJSON(USERS_FILE);
+    const idx   = users.findIndex(u => u.id === user.id);
+    if (idx !== -1) {
+      users[idx].plan        = "cancelled";
+      users[idx].trialStatus = "cancelled";
+      users[idx].cancelledAt = new Date().toISOString();
+      writeJSON(USERS_FILE, users);
+    }
+
+    json(res, 200, { success: true, message: "Trial cancelled. You will not be charged." });
+  } catch (err) {
+    console.error("Trial cancel error:", err);
+    json(res, 500, { error: "Failed to cancel trial: " + (err.message || "Unknown error") });
   }
-  return true;
 }
 
-function incrementSoloUsage(userId, feature) {
+async function handleBillingWebhook(req, res) {
+  const stripe = getStripe();
+  if (!stripe) return json(res, 500, { error: "Billing not configured." });
+
+  const rawBody = await readRawBody(req);
+  const sig     = req.headers["stripe-signature"];
+  const secret  = process.env.STRIPE_WEBHOOK_SECRET;
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(rawBody, sig, secret);
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err.message);
+    return json(res, 400, { error: "Invalid signature." });
+  }
+
   const users = readJSON(USERS_FILE);
-  const idx = users.findIndex(u => u.id === userId);
-  if (idx === -1) return;
-  const month = currentMonth();
-  const usage = (users[idx].soloUsage && users[idx].soloUsage.month === month)
-    ? { ...users[idx].soloUsage }
-    : { month, solo_audits: 0, solo_articles: 0 };
-  usage[feature] = (usage[feature] || 0) + 1;
-  users[idx].soloUsage = usage;
-  writeJSON(USERS_FILE, users);
-}
 
-function handleSoloProfileGet(req, res) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { success: false, error: "Not authenticated." });
-  json(res, 200, { success: true, data: getSoloProfile(user.id) || null });
-}
-
-async function handleSoloProfileSave(req, res) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { success: false, error: "Not authenticated." });
-  const body = await readBody(req);
-  const allowed = ["businessName","trade","city","region","phone","website","workingHours","serviceArea","description","languages"];
-  const profile = { userId: user.id };
-  for (const k of allowed) {
-    if (body[k] !== undefined) {
-      profile[k] = (typeof body[k] === "string") ? sanitizeString(body[k], 500) : body[k];
+  if (event.type === "customer.subscription.trial_will_end") {
+    const sub    = event.data.object;
+    const userId = users.find(u => u.stripeSubscriptionId === sub.id);
+    if (userId) {
+      const endDate = new Date(sub.trial_end * 1000).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+      sendSystemEmail(
+        userId.email,
+        "3 days left in your eureach trial",
+        `Your trial ends on ${endDate}.\n\nIf you'd like to continue, no action needed — you'll be charged €15 automatically.\n\nTo cancel: https://eureach.eu/billing → Cancel trial\n\n– The eureach team`
+      ).catch(() => {});
     }
   }
-  const existing = getSoloProfile(user.id);
-  profile.createdAt = existing ? existing.createdAt : new Date().toISOString();
-  profile.updatedAt = new Date().toISOString();
-  saveSoloProfile(user.id, profile);
-  json(res, 200, { success: true, data: profile });
-}
 
-async function handleSoloAuditRun(req, res) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { success: false, error: "Not authenticated." });
-  if (!checkAiRateLimit(res, user.id)) return;
-  if (!checkSoloLimit(res, user, "solo_audits")) return;
-  const profile = getSoloProfile(user.id);
-  if (!profile || !profile.businessName) return json(res, 400, { success: false, error: "Complete your business profile first." });
-  const apiKey = getAnthropicKey();
-  if (!apiKey) return json(res, 503, { success: false, error: "AI service temporarily unavailable." });
+  if (event.type === "invoice.payment_succeeded") {
+    const invoice = event.data.object;
+    if (invoice.billing_reason === "subscription_cycle" || invoice.billing_reason === "subscription_create") {
+      const u = users.find(u => u.stripeCustomerId === invoice.customer);
+      if (u && u.plan === "trial") {
+        const idx = users.findIndex(x => x.id === u.id);
+        users[idx].plan        = "paid";
+        users[idx].trialStatus = "converted";
+        users[idx].paidSince   = new Date().toISOString();
+        users[idx].trialUsage  = { competitorSearches: 0, articlesGenerated: 0, auditsToday: 0, auditsTodayDate: null };
+        writeJSON(USERS_FILE, users);
 
-  const systemPrompt = `You are an AI visibility consultant for small Greek businesses. Respond ONLY in valid JSON, no markdown, no preamble.`;
-  const userMessage = `Audit the AI and online visibility of this business:
-Business name: ${profile.businessName}
-Trade/profession: ${profile.trade || ""}
-City: ${profile.city || ""}
-Region: ${profile.region || ""}
-Website: ${profile.website || ""}
-Description: ${profile.description || ""}
-
-Check:
-1. Would ChatGPT, Gemini, and Perplexity know this business exists and recommend it?
-2. Is the business likely listed on Google Maps, Google Business Profile?
-3. Does the business have enough online presence to appear in AI search results?
-4. What are the 3 most urgent improvements needed?
-
-Respond with this exact JSON structure:
-{
-  "score": <integer 0-100>,
-  "summary": "<2 sentences in Greek summarizing visibility status>",
-  "findings": [
-    {"area": "<area name in Greek>", "status": "good|warning|critical", "detail": "<explanation in Greek>"}
-  ],
-  "actions": [
-    {"priority": 1, "action": "<specific action in Greek>", "effort": "low|medium|high", "impact": "low|medium|high"}
-  ]
-}
-Return exactly 4 findings and exactly 4 actions. findings and actions must be in Greek.`;
-
-  try {
-    const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 2000);
-    if (aiRes.error) return json(res, 503, { success: false, error: "AI service temporarily unavailable." });
-    const raw = aiRes.content?.[0]?.text || "";
-    let result;
-    try { result = JSON.parse(raw); }
-    catch { const m = raw.match(/\{[\s\S]*\}/); if (!m) return json(res, 503, { success: false, error: "AI returned unexpected format." }); result = JSON.parse(m[0]); }
-    const entry = { id: generateId(), userId: user.id, score: result.score, summary: result.summary, findings: result.findings, actions: result.actions, createdAt: new Date().toISOString() };
-    fs.writeFileSync(path.join(SOLO_AUDITS_DIR, `${user.id}_${Date.now()}.json`), JSON.stringify(entry, null, 2), "utf8");
-    incrementSoloUsage(user.id, "solo_audits");
-    json(res, 200, { success: true, data: entry });
-  } catch (err) {
-    console.error("Solo audit error:", err);
-    json(res, 503, { success: false, error: "AI service temporarily unavailable." });
-  }
-}
-
-function handleSoloAuditsList(req, res) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { success: false, error: "Not authenticated." });
-  try {
-    const files = fs.readdirSync(SOLO_AUDITS_DIR).filter(f => f.startsWith(user.id + "_") && f.endsWith(".json")).sort().reverse().slice(0, 10);
-    const audits = files.map(f => { try { return JSON.parse(fs.readFileSync(path.join(SOLO_AUDITS_DIR, f), "utf8")); } catch { return null; } }).filter(Boolean);
-    json(res, 200, { success: true, data: audits });
-  } catch { json(res, 200, { success: true, data: [] }); }
-}
-
-async function handleSoloChecklistGet(req, res) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { success: false, error: "Not authenticated." });
-  const month = currentMonth();
-  const file = path.join(SOLO_CHECKLISTS_DIR, `${user.id}_${month}.json`);
-  if (fs.existsSync(file)) {
-    try { return json(res, 200, { success: true, data: JSON.parse(fs.readFileSync(file, "utf8")) }); } catch {}
-  }
-  const profile = getSoloProfile(user.id);
-  if (!profile || !profile.trade) return json(res, 400, { success: false, error: "Complete your business profile first." });
-  let lastScore = 50;
-  try {
-    const aFiles = fs.readdirSync(SOLO_AUDITS_DIR).filter(f => f.startsWith(user.id + "_")).sort().reverse();
-    if (aFiles.length) lastScore = JSON.parse(fs.readFileSync(path.join(SOLO_AUDITS_DIR, aFiles[0]), "utf8")).score || 50;
-  } catch {}
-  const apiKey = getAnthropicKey();
-  if (!apiKey) return json(res, 503, { success: false, error: "AI service temporarily unavailable." });
-  const monthNames = ["Ιανουάριος","Φεβρουάριος","Μάρτιος","Απρίλιος","Μάιος","Ιούνιος","Ιούλιος","Αύγουστος","Σεπτέμβριος","Οκτώβριος","Νοέμβριος","Δεκέμβριος"];
-  const d = new Date();
-  const monthYear = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
-  const systemPrompt = `You are a digital marketing assistant for solo Greek professionals. Respond ONLY in valid JSON, no markdown, no preamble.`;
-  const userMessage = `Generate a monthly visibility checklist for:
-Trade: ${profile.trade}
-City: ${profile.city || ""}
-Website: ${profile.website || ""}
-Current month: ${monthYear}
-Last audit score: ${lastScore} / 100
-
-Return exactly 6 actionable tasks for this month. Each task must be something a non-technical person can do in under 30 minutes. Tasks should be in Greek. Mix: Google Business Profile, social media, review management, content publishing, local community.
-
-JSON format:
-{
-  "month": "${month}",
-  "items": [
-    {"id": "1", "task": "<task in Greek>", "category": "google|social|reviews|content|local", "estimatedMinutes": <integer>, "done": false}
-  ]
-}`;
-  try {
-    const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 800);
-    if (aiRes.error) return json(res, 503, { success: false, error: "AI service temporarily unavailable." });
-    const raw = aiRes.content?.[0]?.text || "";
-    let result;
-    try { result = JSON.parse(raw); }
-    catch { const m = raw.match(/\{[\s\S]*\}/); if (!m) return json(res, 503, { success: false, error: "AI returned unexpected format." }); result = JSON.parse(m[0]); }
-    fs.writeFileSync(file, JSON.stringify(result, null, 2), "utf8");
-    json(res, 200, { success: true, data: result });
-  } catch (err) {
-    console.error("Solo checklist error:", err);
-    json(res, 503, { success: false, error: "AI service temporarily unavailable." });
-  }
-}
-
-async function handleSoloChecklistComplete(req, res) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { success: false, error: "Not authenticated." });
-  const body = await readBody(req);
-  const { itemId } = body;
-  if (!itemId) return json(res, 400, { success: false, error: "itemId is required." });
-  const month = currentMonth();
-  const file = path.join(SOLO_CHECKLISTS_DIR, `${user.id}_${month}.json`);
-  if (!fs.existsSync(file)) return json(res, 404, { success: false, error: "No checklist for this month." });
-  try {
-    const checklist = JSON.parse(fs.readFileSync(file, "utf8"));
-    const item = checklist.items.find(i => i.id === String(itemId));
-    if (!item) return json(res, 404, { success: false, error: "Item not found." });
-    item.done = true;
-    fs.writeFileSync(file, JSON.stringify(checklist, null, 2), "utf8");
-    json(res, 200, { success: true, data: checklist });
-  } catch { json(res, 500, { success: false, error: "Failed to update." }); }
-}
-
-async function handleSoloArticleGenerate(req, res) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { success: false, error: "Not authenticated." });
-  if (!checkAiRateLimit(res, user.id)) return;
-  if (!checkSoloLimit(res, user, "solo_articles")) return;
-  const profile = getSoloProfile(user.id);
-  if (!profile || !profile.businessName) return json(res, 400, { success: false, error: "Complete your business profile first." });
-  const body = await readBody(req);
-  const { articleType, language = "el" } = body;
-  const validTypes = ["why_hire_me","my_services","emergency_available","local_expert","faq"];
-  if (!validTypes.includes(articleType)) return json(res, 400, { success: false, error: "Invalid articleType." });
-  const apiKey = getAnthropicKey();
-  if (!apiKey) return json(res, 503, { success: false, error: "AI service temporarily unavailable." });
-  const langLabel = language === "el" ? "Greek" : "English";
-  const trade = profile.trade || "professional";
-  const city  = profile.city  || "Greece";
-  const typeLabels = {
-    why_hire_me: `"Why choose a local ${trade} in ${city}" — builds trust and local authority`,
-    my_services: `"Complete guide to ${trade} services in ${city}" — covers all service offerings`,
-    emergency_available: `"24/7 ${trade} in ${city} — what to do in an emergency" — for tradespeople with emergency services`,
-    local_expert: `"${trade} in ${city} — local knowledge that matters" — emphasizes local expertise`,
-    faq: `"Frequently asked questions about ${trade} services in ${city}" — FAQ format for AI visibility`,
-  };
-  const systemPrompt = `You are an SEO copywriter writing self-promotion content for a solo Greek professional. Write in ${langLabel}. Output ONLY the article text — no JSON, no preamble, no markdown wrapper. Include an H1 title, 3-4 subheadings (H2), and 600-900 words total.`;
-  const userMessage = `Write a "${articleType}" article for:
-Business: ${profile.businessName}
-Trade: ${trade}
-City: ${city}
-Region: ${profile.region || ""}
-Phone: ${profile.phone || ""}
-Website: ${profile.website || ""}
-Description: ${profile.description || ""}
-
-Article type: ${typeLabels[articleType]}
-
-Write in ${langLabel}. Target: Greek residents searching for ${trade} services locally and via AI assistants.`;
-  try {
-    const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 1500);
-    if (aiRes.error) return json(res, 503, { success: false, error: "AI service temporarily unavailable." });
-    const text = aiRes.content?.[0]?.text || "";
-    const wordCount = text.split(/\s+/).filter(Boolean).length;
-    const entry = { id: generateId(), userId: user.id, articleType, language, text, wordCount, createdAt: new Date().toISOString() };
-    fs.writeFileSync(path.join(SOLO_ARTICLES_DIR, `${user.id}_${Date.now()}.json`), JSON.stringify(entry, null, 2), "utf8");
-    incrementSoloUsage(user.id, "solo_articles");
-    json(res, 200, { success: true, data: entry });
-  } catch (err) {
-    console.error("Solo article error:", err);
-    json(res, 503, { success: false, error: "AI service temporarily unavailable." });
-  }
-}
-
-function handleSoloArticlesList(req, res) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { success: false, error: "Not authenticated." });
-  try {
-    const files = fs.readdirSync(SOLO_ARTICLES_DIR).filter(f => f.startsWith(user.id + "_") && f.endsWith(".json")).sort().reverse().slice(0, 20);
-    const articles = files.map(f => { try { const a = JSON.parse(fs.readFileSync(path.join(SOLO_ARTICLES_DIR, f), "utf8")); return { id: a.id, articleType: a.articleType, language: a.language, wordCount: a.wordCount, createdAt: a.createdAt }; } catch { return null; } }).filter(Boolean);
-    json(res, 200, { success: true, data: articles });
-  } catch { json(res, 200, { success: true, data: [] }); }
-}
-
-function handleSoloArticleGet(req, res, id) {
-  const user = getSessionUser(parseCookies(req).session);
-  if (!user) return json(res, 401, { success: false, error: "Not authenticated." });
-  try {
-    const files = fs.readdirSync(SOLO_ARTICLES_DIR).filter(f => f.startsWith(user.id + "_") && f.endsWith(".json"));
-    for (const f of files) {
-      try { const a = JSON.parse(fs.readFileSync(path.join(SOLO_ARTICLES_DIR, f), "utf8")); if (a.id === id) return json(res, 200, { success: true, data: a }); } catch {}
+        const last4 = invoice.payment_intent?.payment_method_details?.card?.last4 || "****";
+        sendSystemEmail(
+          u.email,
+          "Welcome to eureach — €15 charged",
+          `Your trial has ended and your subscription is now active.\n€15 has been charged to your card ending in ${last4}.\n\nYou now have:\n→ Unlimited competitor searches\n→ Upgraded AI analysis\n→ Full article generation\n\nManage your subscription: https://eureach.eu/billing\n\n– The eureach team`
+        ).catch(() => {});
+      }
     }
-    json(res, 404, { success: false, error: "Not found." });
-  } catch { json(res, 404, { success: false, error: "Not found." }); }
+  }
+
+  if (event.type === "invoice.payment_failed") {
+    const invoice = event.data.object;
+    const u = users.find(u => u.stripeCustomerId === invoice.customer);
+    if (u) {
+      const idx = users.findIndex(x => x.id === u.id);
+      users[idx].plan        = "free";
+      users[idx].trialStatus = "expired";
+      writeJSON(USERS_FILE, users);
+
+      const last4 = "****";
+      sendSystemEmail(
+        u.email,
+        "eureach — Payment failed, account paused",
+        `We couldn't charge your card ending in ${last4}.\n\nYour account has been paused.\nUpdate your payment method to continue: https://eureach.eu/billing\n\n– The eureach team`
+      ).catch(() => {});
+    }
+  }
+
+  if (event.type === "customer.subscription.deleted") {
+    const sub = event.data.object;
+    const u   = users.find(u => u.stripeSubscriptionId === sub.id);
+    if (u && u.plan !== "paid") {
+      const idx = users.findIndex(x => x.id === u.id);
+      if (users[idx].plan !== "cancelled") {
+        users[idx].plan = "cancelled";
+        writeJSON(USERS_FILE, users);
+      }
+    }
+  }
+
+  json(res, 200, { received: true });
 }
 
+function handleBillingStatus(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const daysRemaining = getDaysRemainingInTrial(user);
+  const usage         = getTrialUsage(user);
+
+  const nextChargeDate = user.trialEndsAt
+    ? new Date(user.trialEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : null;
+
+  json(res, 200, {
+    plan:             user.plan || "free",
+    trialStatus:      user.trialStatus || "not_started",
+    daysRemaining,
+    trialEndsAt:      user.trialEndsAt || null,
+    nextChargeDate,
+    nextChargeAmount: "€15",
+    usage: {
+      competitorSearches:      usage.competitorSearches || 0,
+      competitorSearchesLimit: 1,
+      articlesGenerated:       usage.articlesGenerated || 0,
+      articlesLimit:           3,
+      auditsToday:             usage.auditsToday || 0,
+      auditsDailyLimit:        1,
+    },
+  });
+}
+
+async function handleBillingUpdateCard(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!user.stripeCustomerId) return json(res, 400, { error: "No billing account found." });
+
+  const stripe = getStripe();
+  if (!stripe) return json(res, 500, { error: "Billing not configured." });
+
+  const body = await readBody(req);
+  const { paymentMethodId } = body;
+  if (!paymentMethodId) return json(res, 400, { error: "paymentMethodId is required." });
+
+  try {
+    await stripe.paymentMethods.attach(paymentMethodId, { customer: user.stripeCustomerId });
+    await stripe.customers.update(user.stripeCustomerId, {
+      invoice_settings: { default_payment_method: paymentMethodId },
+    });
+    if (user.stripeSubscriptionId) {
+      await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        default_payment_method: paymentMethodId,
+      });
+    }
+
+    const users = readJSON(USERS_FILE);
+    const idx   = users.findIndex(u => u.id === user.id);
+    if (idx !== -1) {
+      users[idx].stripePaymentMethodId = paymentMethodId;
+      writeJSON(USERS_FILE, users);
+    }
+
+    json(res, 200, { success: true });
+  } catch (err) {
+    console.error("Update card error:", err);
+    json(res, 500, { error: "Failed to update card: " + (err.message || "Unknown error") });
+  }
+}
+
+async function handleBillingUpgradeNow(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!isTrialActive(user)) return json(res, 400, { error: "No active trial to upgrade." });
+  if (!user.stripeSubscriptionId) return json(res, 400, { error: "No subscription found." });
+
+  const stripe = getStripe();
+  if (!stripe) return json(res, 500, { error: "Billing not configured." });
+
+  try {
+    await stripe.subscriptions.update(user.stripeSubscriptionId, { trial_end: "now" });
+    json(res, 200, { success: true, message: "Upgrade initiated. Your card will be charged €15 shortly." });
+  } catch (err) {
+    console.error("Upgrade now error:", err);
+    json(res, 500, { error: "Failed to upgrade: " + (err.message || "Unknown error") });
+  }
+}
+
+// ── Startup migration — add trial fields to existing users ────────────────────
+(function migrateUsers() {
+  try {
+    const users  = readJSON(USERS_FILE);
+    let changed  = false;
+    for (const u of users) {
+      if (u.trialStatus === undefined) {
+        u.trialStatus           = "not_started";
+        u.trialStartedAt        = null;
+        u.trialEndsAt           = null;
+        u.stripeCustomerId      = null;
+        u.stripeSubscriptionId  = null;
+        u.stripePaymentMethodId = null;
+        u.billingEmail          = null;
+        u.paidSince             = null;
+        u.cancelledAt           = null;
+        u.trialUsage            = { competitorSearches: 0, articlesGenerated: 0, auditsToday: 0, auditsTodayDate: null };
+        changed = true;
+      }
+      if (!u.trialUsage) {
+        u.trialUsage = { competitorSearches: 0, articlesGenerated: 0, auditsToday: 0, auditsTodayDate: null };
+        changed = true;
+      }
+    }
+    if (changed) {
+      writeJSON(USERS_FILE, users);
+      console.log("[migration] Added trial fields to existing users");
+    }
+  } catch (err) {
+    console.error("[migration] Failed:", err.message);
+  }
+})();
 
 // ── Router ────────────────────────────────────────────────────────────────────
 
@@ -2360,7 +2889,7 @@ const BLOCKED_STATIC_PREFIXES = ["/data/", "/config/", "/security/", "/."];
 const BLOCKED_STATIC_FILES    = ["/server.js", "/package.json", "/package-lock.json", "/.env"];
 
 // CSRF-exempt endpoints (before session exists)
-const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin"];
+const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook"];
 
 function generateCsrfToken() { return crypto.randomBytes(24).toString("hex"); }
 
@@ -2411,60 +2940,28 @@ async function handleRequest(req, res) {
     }
   }
 
-
-  // ── Suspension & feature restriction check ────────────────────────────────────
-  if (urlPath.startsWith('/api/') && !urlPath.startsWith('/api/auth/') && !urlPath.startsWith('/api/admin/')) {
-    const _sc = parseCookies(req);
-    const _su = getSessionUser(_sc.session);
-    if (_su && _su.role !== 'admin') {
-      if (_su.suspended)
-        return json(res, 403, { error: 'Your account has been suspended. Please contact support.' });
-      const RMAP = {
-        leads: '/api/leads/', articles: '/api/articles/', audits: '/api/audit',
-        outreach: '/api/outreach', whatsapp: '/api/whatsapp', crm: '/api/crm',
-        pipeline: '/api/pipeline', competitors: '/api/competitor/',
-      };
-      if (_su.restrictions && _su.restrictions.length)
-        for (const [feat, prefix] of Object.entries(RMAP))
-          if (_su.restrictions.includes(feat) && urlPath.startsWith(prefix))
-            return json(res, 403, { error: `The '${feat}' feature is restricted on your account.` });
-    }
-  }
-
-
-  // ── Daily activity marker — mark hasActed when user hits a billable endpoint ──
-  {
-    const _ABILL = ['/api/leads/search','/api/articles/deduct','/api/audit','/api/outreach','/api/whatsapp','/api/pipeline/generate-email','/api/competitor/track','/api/solo/audit/run','/api/solo/articles/generate','/api/solo/checklist/complete'];
-    if (method === 'POST' && _ABILL.some(p => urlPath === p || urlPath.startsWith(p + '/'))) {
-      const _ac = parseCookies(req);
-      const _au = getSessionUser(_ac.session);
-      if (_au) {
-        const _at  = new Date().toISOString().slice(0, 10);
-        const _aus = readJSON(USERS_FILE);
-        const _ai  = _aus.findIndex(u => u.id === _au.id);
-        if (_ai !== -1 && _aus[_ai].dailyActivity?.date === _at && !_aus[_ai].dailyActivity.hasActed) {
-          _aus[_ai].dailyActivity.hasActed = true;
-          writeJSON(USERS_FILE, _aus);
-        }
-      }
-    }
-  }
-
   // Auth API routes
   if (urlPath === "/api/auth/signup"  && method === "POST")  return handleSignup(req, res);
   if (urlPath === "/api/auth/signin"  && method === "POST")  return handleSignin(req, res);
   if (urlPath === "/api/auth/signout" && method === "POST")  return handleSignout(req, res);
   if (urlPath === "/api/auth/me"      && method === "GET")   return handleMe(req, res);
   if (urlPath === "/api/auth/profile" && method === "PATCH") return handleUpdateProfile(req, res);
-  if (urlPath === "/api/leads/search"      && method === "POST") return handleLeadsSearch(req, res);
-  if (urlPath === "/api/leads/score"       && method === "POST") return handleLeadsScore(req, res);
+  if (urlPath === "/api/profile"       && method === "GET")  return handleProfileStats(req, res);
+  if (urlPath === "/api/support-email" && method === "POST") return handleSupportEmail(req, res);
+
+  // Trial / Billing routes
+  if (urlPath === "/api/trial/start"          && method === "POST") return handleTrialStart(req, res);
+  if (urlPath === "/api/trial/cancel"         && method === "POST") return handleTrialCancel(req, res);
+  if (urlPath === "/api/billing/webhook"      && method === "POST") return handleBillingWebhook(req, res);
+  if (urlPath === "/api/billing/status"       && method === "GET")  return handleBillingStatus(req, res);
+  if (urlPath === "/api/billing/update-card"  && method === "POST") return handleBillingUpdateCard(req, res);
+  if (urlPath === "/api/billing/upgrade-now"  && method === "POST") return handleBillingUpgradeNow(req, res);
+  if (urlPath === "/api/billing/stripe-key"   && method === "GET")  return json(res, 200, { publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || null });
+  if (urlPath === "/api/leads/search"        && method === "POST") return handleLeadsSearch(req, res);
+  if (urlPath === "/api/leads/verify-email" && method === "POST") return handleVerifyEmail(req, res);
+  if (urlPath === "/api/leads/score"         && method === "POST") return handleLeadsScore(req, res);
   if (urlPath === "/api/leads/score/cache" && method === "GET")  return handleLeadsScoreCache(req, res);
   if (urlPath === "/api/articles/deduct"   && method === "POST") return handleArticlesDeduct(req, res);
-
-  // Templates API routes
-  if (urlPath === "/api/templates/generate"       && method === "POST")   return handleTemplatesGenerate(req, res);
-  if (urlPath === "/api/templates"                && method === "GET")    return handleTemplatesList(req, res);
-  if (urlPath.startsWith("/api/templates/")       && method === "DELETE") return handleTemplatesDelete(req, res, urlPath.slice(16));
 
   // WordPress API routes
   if (urlPath === "/api/wordpress/connect"  && method === "GET")    return handleWpStatus(req, res);
@@ -2478,41 +2975,65 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/email/smtp"  && method === "DELETE") return handleSmtpDisconnect(req, res);
   if (urlPath === "/api/email/send"  && method === "POST")   return handleEmailSend(req, res);
   if (urlPath === "/api/email/log"   && method === "GET")    return handleEmailLog(req, res);
-  // Gmail OAuth routes
-  if (urlPath === "/api/auth/gmail/connect"    && method === "GET")    return handleGmailConnect(req, res);
-  if (urlPath === "/api/auth/gmail/callback"   && method === "GET")    return handleGmailCallback(req, res);
-  if (urlPath === "/api/auth/gmail/disconnect" && method === "DELETE") return handleGmailDisconnect(req, res);
-  if (urlPath === "/api/auth/gmail/status"     && method === "GET")    return handleGmailStatus(req, res);
 
   // Outreach API routes
-  if (urlPath === "/api/outreach"  && method === "POST") return handleOutreach(req, res);
-  if (urlPath === "/api/outreach"  && method === "GET")  return handleSequencesList(req, res);
-  if (urlPath === "/api/whatsapp"  && method === "POST") return handleWhatsApp(req, res);
+  if (urlPath === "/api/outreach"              && method === "POST")  return handleOutreach(req, res);
+  if (urlPath === "/api/outreach"              && method === "GET")   return handleSequencesList(req, res);
+  if (urlPath === "/api/outreach/queue"        && method === "GET")   return handleOutreachQueueGet(req, res);
+  if (urlPath === "/api/outreach/enqueue"      && method === "POST")  return handleOutreachEnqueue(req, res);
+  if (urlPath === "/api/outreach/send-step"    && method === "POST")  return handleOutreachSendStep(req, res);
+  if (urlPath === "/api/outreach/update"       && method === "POST")  return handleOutreachUpdate(req, res);
+  if (urlPath === "/api/whatsapp"              && method === "POST")  return handleWhatsApp(req, res);
 
   // CRM API routes
   if (urlPath === "/api/crm"                       && method === "GET")    return handleCrmList(req, res);
   if (urlPath === "/api/crm"                       && method === "POST")   return handleCrmCreate(req, res);
   if (urlPath.startsWith("/api/crm/")              && method === "PATCH")  return handleCrmUpdate(req, res, urlPath.slice(9));
   if (urlPath.startsWith("/api/crm/")              && method === "DELETE") return handleCrmDelete(req, res, urlPath.slice(9));
-  if (urlPath.endsWith("/call") && urlPath.startsWith("/api/crm/") && method === "POST")   return handleCrmLogCall(req, res, urlPath.split("/")[3]);
-  if (urlPath.endsWith("/message") && urlPath.startsWith("/api/crm/") && method === "POST") return handleCrmLogMessage(req, res, urlPath.split("/")[3]);
-
-  // Pipeline API routes
-  if (urlPath === "/api/pipeline"                              && method === "GET")    return handlePipelineList(req, res);
-  if (urlPath === "/api/pipeline"                              && method === "POST")   return handlePipelineAdd(req, res);
-  if (urlPath === "/api/pipeline/generate-email"               && method === "POST")   return handlePipelineGenerateEmail(req, res);
-  if (urlPath.startsWith("/api/pipeline/") && urlPath.endsWith("/stage")    && method === "PATCH")  return handlePipelineStage(req, res, urlPath.slice(14, -6));
-  if (urlPath.startsWith("/api/pipeline/") && urlPath.endsWith("/note")     && method === "POST")   return handlePipelineNote(req, res, urlPath.slice(14, -5));
-  if (urlPath.startsWith("/api/pipeline/") && urlPath.endsWith("/followup") && method === "PATCH")  return handlePipelineFollowup(req, res, urlPath.slice(14, -9));
-  if (urlPath.startsWith("/api/pipeline/")                     && method === "DELETE") return handlePipelineDelete(req, res, urlPath.slice(14));
 
   // Competitor tracking API routes
+  if (urlPath === "/api/business/profile"          && method === "GET")    return handleBusinessProfileGet(req, res);
+  if (urlPath === "/api/business/profile"          && method === "POST")   return handleBusinessProfileSave(req, res);
+  if (urlPath === "/api/sites"                       && method === "GET")    return handleSitesGet(req, res);
+  if (urlPath === "/api/sites"                       && method === "POST")   return handleSitesSave(req, res);
+  if (urlPath.startsWith("/api/sites/")              && method === "DELETE") return handleSiteDelete(req, res, urlPath.slice(11));
+  if (urlPath === "/api/admin/stats"               && method === "GET")    return handleAdminStats(req, res);
+  if (urlPath === "/api/admin/users"               && method === "GET")    return handleAdminUsers(req, res);
+  if (urlPath.startsWith("/api/admin/users/")) {
+    const parts = urlPath.slice("/api/admin/users/".length).split("/");
+    const uid   = parts[0];
+    const sub   = parts[1];
+    if (method === "PATCH"  && !sub)            return handleAdminUpdateUser(req, res, uid);
+    if (method === "DELETE" && !sub)            return handleAdminDeleteUser(req, res, uid);
+    if (method === "POST"   && sub === "biz-edits") return handleAdminSetBizEdits(req, res, uid);
+  }
+  if (urlPath === "/api/leads/find"                 && method === "POST")   return handleLeadSearch(req, res);
+  if (urlPath === "/api/competitor/search"          && method === "POST")   return handleCompetitorSearch(req, res);
+  if (urlPath === "/api/competitor/saved-searches"   && method === "POST")   return handleSavedSearchSave(req, res);
+  if (urlPath === "/api/competitor/saved-searches"   && method === "GET")    return handleSavedSearchesGet(req, res);
+  if (urlPath.startsWith("/api/competitor/saved-searches/") && method === "DELETE") return handleSavedSearchDelete(req, res, urlPath.slice(31));
+  if (urlPath === "/api/leads/saved-searches"              && method === "POST")   return handleLeadSavedSearchSave(req, res);
+  if (urlPath === "/api/leads/saved-searches"              && method === "GET")    return handleLeadSavedSearchesGet(req, res);
+  if (urlPath.startsWith("/api/leads/saved-searches/")     && method === "DELETE") return handleLeadSavedSearchDelete(req, res, urlPath.slice(27));
+  if (urlPath === "/api/outreach/saved-lists"              && method === "POST")   return handleOutreachSavedListSave(req, res);
+  if (urlPath === "/api/outreach/saved-lists"              && method === "GET")    return handleOutreachSavedListsGet(req, res);
+  if (urlPath.startsWith("/api/outreach/saved-lists/")     && method === "DELETE") return handleOutreachSavedListDelete(req, res, urlPath.slice(26));
+  if (urlPath === "/api/crm/saved-lists"              && method === "POST")   return handleCrmSavedListSave(req, res);
+  if (urlPath === "/api/crm/saved-lists"              && method === "GET")    return handleCrmSavedListsGet(req, res);
+  if (urlPath.startsWith("/api/crm/saved-lists/")     && method === "DELETE") return handleCrmSavedListDelete(req, res, urlPath.slice(21));
+  if (urlPath === "/api/articles/saved-lists"              && method === "POST")   return handleArticleSavedListSave(req, res);
+  if (urlPath === "/api/articles/saved-lists"              && method === "GET")    return handleArticleSavedListsGet(req, res);
+  if (urlPath.startsWith("/api/articles/saved-lists/")     && method === "DELETE") return handleArticleSavedListDelete(req, res, urlPath.slice(26));
   if (urlPath === "/api/competitor/track"          && method === "GET")    return handleCompetitorList(req, res);
   if (urlPath === "/api/competitor/track"          && method === "POST")   return handleCompetitorCreate(req, res);
-  if (urlPath.startsWith("/api/competitor/track/") && method === "DELETE") return handleCompetitorDelete(req, res, urlPath.slice(24));
+  if (urlPath.startsWith("/api/competitor/track/") && method === "DELETE") return handleCompetitorDelete(req, res, urlPath.slice(22));
   if (urlPath.startsWith("/api/competitor/track/") && method === "POST"  ) {
-    const parts = urlPath.slice(24).split("/");
+    const parts = urlPath.slice(22).split("/");
     if (parts[1] === "check") return handleCompetitorCheck(req, res, parts[0]);
+  }
+  if (urlPath.startsWith("/api/competitor/track/") && method === "PATCH" ) {
+    const parts = urlPath.slice(22).split("/");
+    if (parts[1] === "set-my-business") return handleCompetitorSetMyBusiness(req, res, parts[0]);
   }
   if (urlPath.startsWith("/api/competitor/share/") && method === "GET")   return handleCompetitorShare(req, res, urlPath.slice(22));
 
@@ -2536,38 +3057,21 @@ async function handleRequest(req, res) {
     });
   }
 
-
-  // Solo HTML pages
-  if (urlPath === "/solo" || urlPath === "/solo/") return fs.readFile(path.join(ROOT, "solo/index.html"), (e,d) => { if(e){res.writeHead(404);res.end("Not found");return;} res.writeHead(200,{"Content-Type":"text/html; charset=utf-8"});res.end(d); });
-  if (urlPath === "/solo/profile")   return fs.readFile(path.join(ROOT, "solo/profile.html"),   (e,d) => { if(e){res.writeHead(404);res.end("Not found");return;} res.writeHead(200,{"Content-Type":"text/html; charset=utf-8"});res.end(d); });
-  if (urlPath === "/solo/audit")     return fs.readFile(path.join(ROOT, "solo/audit.html"),     (e,d) => { if(e){res.writeHead(404);res.end("Not found");return;} res.writeHead(200,{"Content-Type":"text/html; charset=utf-8"});res.end(d); });
-  if (urlPath === "/solo/checklist") return fs.readFile(path.join(ROOT, "solo/checklist.html"), (e,d) => { if(e){res.writeHead(404);res.end("Not found");return;} res.writeHead(200,{"Content-Type":"text/html; charset=utf-8"});res.end(d); });
-  if (urlPath === "/solo/articles")  return fs.readFile(path.join(ROOT, "solo/articles.html"),  (e,d) => { if(e){res.writeHead(404);res.end("Not found");return;} res.writeHead(200,{"Content-Type":"text/html; charset=utf-8"});res.end(d); });
-
-  // Solo API routes
-  if (urlPath === "/api/solo/profile"             && method === "GET")  return handleSoloProfileGet(req, res);
-  if (urlPath === "/api/solo/profile"             && method === "POST") return handleSoloProfileSave(req, res);
-  if (urlPath === "/api/solo/audit/run"           && method === "POST") return handleSoloAuditRun(req, res);
-  if (urlPath === "/api/solo/audits"              && method === "GET")  return handleSoloAuditsList(req, res);
-  if (urlPath === "/api/solo/checklist"           && method === "GET")  return handleSoloChecklistGet(req, res);
-  if (urlPath === "/api/solo/checklist/complete"  && method === "POST") return handleSoloChecklistComplete(req, res);
-  if (urlPath === "/api/solo/articles/generate"   && method === "POST") return handleSoloArticleGenerate(req, res);
-  if (urlPath === "/api/solo/articles"            && method === "GET")  return handleSoloArticlesList(req, res);
-  if (urlPath.startsWith("/api/solo/articles/")   && method === "GET")  return handleSoloArticleGet(req, res, urlPath.slice(20));
-
-
-
-  if (urlPath === '/api/profile' && method === 'GET') return handleProfile(req, res);
-
-  // Admin API routes
-  if (urlPath === '/api/admin/users' && method === 'GET')    return handleAdminListUsers(req, res);
-  if (urlPath === '/api/admin/users' && method === 'POST')   return handleAdminCreateUser(req, res);
-  if (urlPath.startsWith('/api/admin/users/') && urlPath.endsWith('/reset-password') && method === 'POST')
-    return handleAdminResetPassword(req, res, urlPath.slice(18, -15));
-  if (urlPath.startsWith('/api/admin/users/') && method === 'PATCH')
-    return handleAdminUpdateUser(req, res, urlPath.slice(18));
-  if (urlPath.startsWith('/api/admin/users/') && method === 'DELETE')
-    return handleAdminDeleteUser(req, res, urlPath.slice(18));
+  // Upgrade + Billing pages
+  if (urlPath === "/upgrade") {
+    return fs.readFile(path.join(ROOT, "upgrade.html"), (err, data) => {
+      if (err) { res.writeHead(404); res.end("Not found"); return; }
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(data);
+    });
+  }
+  if (urlPath === "/billing") {
+    return fs.readFile(path.join(ROOT, "billing.html"), (err, data) => {
+      if (err) { res.writeHead(404); res.end("Not found"); return; }
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(data);
+    });
+  }
 
   // Static files
   let filePath = path.join(ROOT, urlPath === "/" ? "/index.html" : urlPath);
@@ -2595,161 +3099,6 @@ http.createServer((req, res) => {
 }).listen(PORT, () => {
   console.log(`eureach.eu running on http://localhost:${PORT}`);
 });
-
-
-
-// ── User profile / activity handler ──────────────────────────────────────────
-
-async function handleProfile(req, res) {
-  const cookies = parseCookies(req);
-  const user    = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: 'Not authenticated.' });
-
-  const users  = readJSON(USERS_FILE);
-  const fresh  = users.find(u => u.id === user.id);
-  if (!fresh) return json(res, 404, { error: 'User not found.' });
-
-  const limits = PLAN_LIMITS[fresh.plan] || PLAN_LIMITS.free;
-  const usage  = getUserUsage(fresh);
-
-  // Credit transaction log for this user (last 50)
-  const allLog = readJSON(CREDIT_LOG_FILE);
-  const myLog  = allLog.filter(e => e.userId === user.id).slice(-50).reverse();
-
-  // Lifetime stats
-  const stats = {
-    searchesDone:  fresh.searchesDone  || 0,
-    leadsFound:    fresh.leadsFound    || 0,
-    creditsUsed:   fresh.creditsUsed   || 0,
-    credits:       fresh.credits       || 0,
-  };
-
-  // Month usage
-  const month = {
-    leads:    usage.leads    || 0,
-    articles: usage.articles || 0,
-    audits:   usage.audits   || 0,
-    leadsMax:    limits.searches,
-    articlesMax: limits.articles,
-    auditsMax:   limits.audits,
-    resetDate:   resetDateLabel(),
-  };
-
-  json(res, 200, { stats, month, creditLog: myLog, plan: fresh.plan, role: fresh.role || 'user' });
-}
-
-// ── Admin backoffice handlers ──────────────────────────────────────────────────
-
-function requireAdmin(req, res) {
-  const cookies = parseCookies(req);
-  const user    = getSessionUser(cookies.session);
-  if (!user)                 { json(res, 401, { error: 'Not authenticated.' });     return null; }
-  if (user.role !== 'admin') { json(res, 403, { error: 'Admin access required.' }); return null; }
-  return user;
-}
-
-async function handleAdminListUsers(req, res) {
-  if (!requireAdmin(req, res)) return;
-  const users = readJSON(USERS_FILE).map(u => { const { passwordHash, ...s } = u; return s; });
-  json(res, 200, { users });
-}
-
-async function handleAdminCreateUser(req, res) {
-  if (!requireAdmin(req, res)) return;
-  const body = await readBody(req);
-  const { email, password, firstName, lastName, plan = 'free', role = 'user' } = body;
-  if (!email || !password || !firstName)
-    return json(res, 400, { error: 'email, password and firstName are required.' });
-  const users = readJSON(USERS_FILE);
-  if (users.find(u => u.email.toLowerCase() === email.toLowerCase()))
-    return json(res, 409, { error: 'Email already in use.' });
-  const passwordHash = await hashPassword(password);
-  const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
-  const user = {
-    id:           generateId(),
-    email:        email.toLowerCase().trim(),
-    firstName:    firstName.trim(),
-    lastName:     (lastName || '').trim(),
-    passwordHash,
-    role:         role === 'admin' ? 'admin' : 'user',
-    plan,
-    articlesLeft: limits.articles === -1 ? 99999 : limits.articles,
-    searchesLeft: limits.searches === -1 ? 99999 : limits.searches,
-    usage:        { month: currentMonth(), leads: 0, articles: 0, audits: 0 },
-    sites:        [],
-    suspended:    false,
-    restrictions: [],
-    createdAt:    new Date().toISOString(),
-  };
-  users.push(user);
-  writeJSON(USERS_FILE, users);
-  const { passwordHash: _ph, ...safe } = user;
-  json(res, 201, { user: safe });
-}
-
-async function handleAdminUpdateUser(req, res, userId) {
-  if (!requireAdmin(req, res)) return;
-  const users = readJSON(USERS_FILE);
-  const idx   = users.findIndex(u => u.id === userId);
-  if (idx === -1) return json(res, 404, { error: 'User not found.' });
-  const body = await readBody(req);
-  const { plan, role, suspended, restrictions, addArticles, addSearches, addAudits, firstName, lastName, email } = body;
-  if (plan !== undefined && Object.keys(PLAN_LIMITS).includes(plan)) users[idx].plan = plan;
-  if (role !== undefined)         users[idx].role         = role === 'admin' ? 'admin' : 'user';
-  if (suspended !== undefined)    users[idx].suspended    = !!suspended;
-  if (restrictions !== undefined) users[idx].restrictions = Array.isArray(restrictions) ? restrictions : [];
-  if (firstName !== undefined)    users[idx].firstName    = firstName.trim();
-  if (lastName  !== undefined)    users[idx].lastName     = lastName.trim();
-  if (email !== undefined) {
-    const el = email.toLowerCase().trim();
-    if (users.find(u => u.id !== userId && u.email === el))
-      return json(res, 409, { error: 'Email already in use.' });
-    users[idx].email = el;
-  }
-  if (addArticles) users[idx].articlesLeft = Math.max(0, (users[idx].articlesLeft || 0) + parseInt(addArticles));
-  if (addSearches) users[idx].searchesLeft = Math.max(0, (users[idx].searchesLeft || 0) + parseInt(addSearches));
-  if (addAudits)   users[idx].auditsLeft   = Math.max(0, (users[idx].auditsLeft   || 0) + parseInt(addAudits));
-  if (body.addCredits !== undefined) {
-    const _delta = parseInt(body.addCredits);
-    users[idx].credits = Math.max(0, (users[idx].credits || 0) + _delta);
-    if (_delta !== 0) logCreditTransaction(userId, _delta, 'Admin adjustment', users[idx].credits);
-  }
-  if (body.setCredits !== undefined) {
-    const _prev = users[idx].credits || 0;
-    users[idx].credits = Math.max(0, parseInt(body.setCredits));
-    const _delta2 = users[idx].credits - _prev;
-    if (_delta2 !== 0) logCreditTransaction(userId, _delta2, 'Admin set balance', users[idx].credits);
-  }
-  writeJSON(USERS_FILE, users);
-  const { passwordHash, ...safe } = users[idx];
-  json(res, 200, { user: safe });
-}
-
-async function handleAdminDeleteUser(req, res, userId) {
-  const admin = requireAdmin(req, res);
-  if (!admin) return;
-  if (admin.id === userId) return json(res, 400, { error: 'Cannot delete your own account.' });
-  const users = readJSON(USERS_FILE);
-  const idx   = users.findIndex(u => u.id === userId);
-  if (idx === -1) return json(res, 404, { error: 'User not found.' });
-  users.splice(idx, 1);
-  writeJSON(USERS_FILE, users);
-  json(res, 200, { ok: true });
-}
-
-async function handleAdminResetPassword(req, res, userId) {
-  if (!requireAdmin(req, res)) return;
-  const body = await readBody(req);
-  const { password } = body;
-  if (!password || password.length < 6)
-    return json(res, 400, { error: 'Password must be at least 6 characters.' });
-  const users = readJSON(USERS_FILE);
-  const idx   = users.findIndex(u => u.id === userId);
-  if (idx === -1) return json(res, 404, { error: 'User not found.' });
-  users[idx].passwordHash = await hashPassword(password);
-  writeJSON(USERS_FILE, users);
-  json(res, 200, { ok: true });
-}
 
 // ── 30-day competitor re-audit scheduler ──────────────────────────────────────
 // Runs every 24 hours; audits any competitor whose last snapshot is 30+ days old.
