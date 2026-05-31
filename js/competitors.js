@@ -681,7 +681,8 @@ runBtn.addEventListener("click", async () => {
   }
 
   runBtn.disabled    = true;
-  runBtn.textContent = "Running audit…";
+  runBtn.textContent = url ? "⏳ Crawling website…" : "⏳ Running audit…";
+  if (url) setTimeout(() => { if (runBtn.disabled) runBtn.textContent = "🤖 Analyzing with AI…"; }, 6000);
 
   try {
     const res = await fetch("/api/competitor/track", {

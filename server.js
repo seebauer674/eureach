@@ -1230,7 +1230,7 @@ async function crawlWebsite(rawUrl) {
       if (redirects > 5) return reject(new Error("Too many redirects"));
       const mod = pageUrl.startsWith("https") ? https : http;
       const req = mod.get(pageUrl, {
-        timeout: 8000,
+        timeout: 5000,
         headers: {
           "User-Agent": "Mozilla/5.0 (compatible; EureachBot/1.0; +https://eureach.eu)",
           "Accept": "text/html,application/xhtml+xml",
