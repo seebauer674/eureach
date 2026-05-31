@@ -1302,6 +1302,62 @@ async function crawlWebsite(rawUrl) {
   }
 }
 
+function scoreFromCrawl(crawl, url) {
+  // Compute realistic scores from actual crawl signals
+  const has = (v) => !!v;
+
+  // content_quality: title, desc, headings, OG
+  let cq = 10;
+  if (has(crawl.title) && crawl.title.length > 10)       cq += 20;
+  if (has(crawl.description) && crawl.description.length > 30) cq += 25;
+  if (crawl.h1s && crawl.h1s.length > 0)                 cq += 15;
+  if (crawl.h2s && crawl.h2s.length > 2)                 cq += 10;
+  if (has(crawl.ogTitle))                                 cq += 10;
+  if (has(crawl.ogDesc))                                  cq += 10;
+
+  // schema_markup: JSON-LD structured data
+  let sm = 5;
+  if (crawl.schemaTypes && crawl.schemaTypes.length > 0)  sm += 50;
+  if (crawl.schemaTypes && crawl.schemaTypes.length > 1)  sm += 25;
+  if (crawl.hasSitemap)                                   sm += 10;
+  if (crawl.hasRobots)                                    sm += 10;
+
+  // local_seo: phone, maps, address signals
+  let ls = 15;
+  if (crawl.hasPhone)       ls += 25;
+  if (crawl.hasGoogleMaps)  ls += 30;
+  if (crawl.hasEmail)       ls += 15;
+  if (has(url))             ls += 15;
+
+  // citation_readiness: social + contact completeness
+  let cr = 10;
+  if (crawl.hasFacebook)    cr += 20;
+  if (crawl.hasInstagram)   cr += 20;
+  if (crawl.hasLinkedIn)    cr += 20;
+  if (crawl.hasEmail)       cr += 15;
+  if (crawl.hasPhone)       cr += 15;
+
+  // ai_visibility: combination of content + schema
+  let av = Math.round((cq * 0.4) + (sm * 0.35) + (cr * 0.25));
+
+  const cap = (n) => Math.min(100, Math.max(5, Math.round(n)));
+  const breakdown = {
+    ai_visibility:      cap(av),
+    content_quality:    cap(cq),
+    local_seo:          cap(ls),
+    schema_markup:      cap(sm),
+    citation_readiness: cap(cr),
+  };
+  const overall = cap(Math.round(
+    breakdown.ai_visibility      * 0.25 +
+    breakdown.content_quality    * 0.25 +
+    breakdown.local_seo          * 0.20 +
+    breakdown.schema_markup      * 0.15 +
+    breakdown.citation_readiness * 0.15
+  ));
+  return { overall, breakdown };
+}
+
 async function runCompetitorAudit(apiKey, name, url, industry, model = "claude-sonnet-4-6") {
   // Crawl website for real data (hard 8s cap)
   const crawl = url ? await Promise.race([
@@ -1309,22 +1365,8 @@ async function runCompetitorAudit(apiKey, name, url, industry, model = "claude-s
     new Promise(r => setTimeout(() => r(null), 8000)),
   ]) : null;
 
-  const systemPrompt = `You are an expert AI search visibility analyst. You evaluate businesses for how well they appear in AI-powered search engines: ChatGPT, Perplexity, Google AI Overviews, and similar tools. You assess their digital footprint, content strategy, schema markup signals, local SEO, and citation potential. You produce realistic, differentiated scores — avoid clustering around 70-80. Use the full 0-100 range.
-
-Return ONLY a valid JSON object — no markdown, no explanation, no code fences:
-{
-  "overall_score": <number 0-100>,
-  "breakdown": {
-    "ai_visibility": <number 0-100>,
-    "content_quality": <number 0-100>,
-    "local_seo": <number 0-100>,
-    "schema_markup": <number 0-100>,
-    "citation_readiness": <number 0-100>
-  },
-  "strengths": [<2-4 specific strengths>],
-  "weaknesses": [<2-4 specific weaknesses>],
-  "recommendations": [<3-5 actionable improvements>]
-}`;
+  // Compute scores from crawl signals (avoids AI anchoring)
+  const computed = crawl ? scoreFromCrawl(crawl, url) : null;
 
   const crawlSection = crawl ? `
 REAL WEBSITE DATA (crawled from ${url}):
@@ -1333,25 +1375,44 @@ REAL WEBSITE DATA (crawled from ${url}):
 - H1 headings: ${crawl.h1s.length ? crawl.h1s.join(" | ") : "none found"}
 - H2 headings: ${crawl.h2s.length ? crawl.h2s.slice(0,5).join(" | ") : "none found"}
 - OG title: ${crawl.ogTitle || "missing"}
-- OG description: ${crawl.ogDesc || "missing"}
-- Schema.org types: ${crawl.schemaTypes.length ? crawl.schemaTypes.join(", ") : "none — no structured data"}
-- Has phone: ${crawl.hasPhone}
-- Has email/contact: ${crawl.hasEmail}
-- Has Facebook: ${crawl.hasFacebook}
-- Has Instagram: ${crawl.hasInstagram}
-- Has LinkedIn: ${crawl.hasLinkedIn}
+- Schema.org types: ${crawl.schemaTypes.length ? crawl.schemaTypes.join(", ") : "none"}
+- Has phone: ${crawl.hasPhone} | Has email: ${crawl.hasEmail}
+- Social: Facebook=${crawl.hasFacebook} Instagram=${crawl.hasInstagram} LinkedIn=${crawl.hasLinkedIn}
 - Has Google Maps link: ${crawl.hasGoogleMaps}
-- Has robots.txt: ${crawl.hasRobots}
-- Has sitemap.xml: ${crawl.hasSitemap}
+- Has robots.txt: ${crawl.hasRobots} | Has sitemap.xml: ${crawl.hasSitemap}
 
-Score based on this REAL data. Be critical where data is missing or weak.` : `
-No website crawl available — base analysis on what is publicly known or reasonably inferred about this business.`;
+PRE-COMPUTED SCORES (based on the real signals above — use these exact numbers):
+- overall_score: ${computed.overall}
+- ai_visibility: ${computed.breakdown.ai_visibility}
+- content_quality: ${computed.breakdown.content_quality}
+- local_seo: ${computed.breakdown.local_seo}
+- schema_markup: ${computed.breakdown.schema_markup}
+- citation_readiness: ${computed.breakdown.citation_readiness}` : `No website crawl available.`;
+
+  const systemPrompt = `You are an AI search visibility analyst. You write actionable analysis for businesses.
+
+Return ONLY a valid JSON object — no markdown, no explanation, no code fences:
+{
+  "overall_score": <use the pre-computed score if provided, otherwise estimate 0-100>,
+  "breakdown": {
+    "ai_visibility": <use pre-computed>,
+    "content_quality": <use pre-computed>,
+    "local_seo": <use pre-computed>,
+    "schema_markup": <use pre-computed>,
+    "citation_readiness": <use pre-computed>
+  },
+  "strengths": [<2-4 specific strengths based on the data>],
+  "weaknesses": [<2-4 specific weaknesses based on the data>],
+  "recommendations": [<3-5 actionable improvements>]
+}`;
 
   const userMessage = `Analyze this business for AI search visibility:
 - Name: ${name}
 - Website: ${url || "unknown"}
 - Industry: ${industry || "general business"}
-${crawlSection}`;
+${crawlSection}
+
+Write specific strengths, weaknesses and recommendations based on the data above.`;
 
   const groqKey = getGroqKey();
   let raw = "";
@@ -1373,6 +1434,11 @@ ${crawlSection}`;
     result = JSON.parse(match[0]);
   }
 
+  // Always trust computed scores over AI-generated ones
+  if (computed) {
+    result.overall_score = computed.overall;
+    result.breakdown     = computed.breakdown;
+  }
   if (typeof result.overall_score !== "number") throw new Error("Missing overall_score");
   return result;
 }
