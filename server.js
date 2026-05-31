@@ -1281,20 +1281,20 @@ async function crawlWebsite(rawUrl) {
     const hasGoogleMaps = /maps\.google|google\.com\/maps|goo\.gl\/maps/i.test(html);
 
     let hasRobots = false, hasSitemap = false;
-    try {
-      await new Promise(res2 => {
-        const rUrl = parsed.origin + "/robots.txt";
-        const mod2 = rUrl.startsWith("https") ? https : http;
-        mod2.get(rUrl, {timeout:3000}, r => { hasRobots = r.statusCode === 200; r.resume(); res2(); }).on("error", res2).on("timeout", res2);
-      });
-    } catch {}
-    try {
-      await new Promise(res3 => {
-        const sUrl = parsed.origin + "/sitemap.xml";
-        const mod3 = sUrl.startsWith("https") ? https : http;
-        mod3.get(sUrl, {timeout:3000}, r => { hasSitemap = r.statusCode === 200; r.resume(); res3(); }).on("error", res3).on("timeout", res3);
-      });
-    } catch {}
+    const headCheck = (checkUrl) => new Promise(resolve => {
+      try {
+        const mod2 = checkUrl.startsWith("https") ? https : http;
+        const r2 = mod2.get(checkUrl, {timeout:3000}, res2 => {
+          const ok = res2.statusCode === 200; res2.resume(); resolve(ok);
+        });
+        r2.on("error", () => resolve(false));
+        r2.on("timeout", () => { r2.destroy(); resolve(false); });
+      } catch { resolve(false); }
+    });
+    [hasRobots, hasSitemap] = await Promise.all([
+      headCheck(parsed.origin + "/robots.txt"),
+      headCheck(parsed.origin + "/sitemap.xml"),
+    ]);
 
     return { title, description, h1s, h2s, ogTitle, ogDesc, schemaTypes, hasPhone, hasEmail, hasFacebook, hasInstagram, hasLinkedIn, hasGoogleMaps, hasRobots, hasSitemap };
   } catch {
@@ -1303,8 +1303,11 @@ async function crawlWebsite(rawUrl) {
 }
 
 async function runCompetitorAudit(apiKey, name, url, industry, model = "claude-sonnet-4-6") {
-  // Crawl website for real data
-  const crawl = url ? await crawlWebsite(url) : null;
+  // Crawl website for real data (hard 8s cap)
+  const crawl = url ? await Promise.race([
+    crawlWebsite(url),
+    new Promise(r => setTimeout(() => r(null), 8000)),
+  ]) : null;
 
   const systemPrompt = `You are an expert AI search visibility analyst. You evaluate businesses for how well they appear in AI-powered search engines: ChatGPT, Perplexity, Google AI Overviews, and similar tools. You assess their digital footprint, content strategy, schema markup signals, local SEO, and citation potential. You produce realistic, differentiated scores — avoid clustering around 70-80. Use the full 0-100 range.
 
