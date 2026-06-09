@@ -367,6 +367,17 @@
 .bsc-row { display: flex; justify-content: space-between; font-size: 0.84rem; }
 .bsc-row-label { color: var(--muted); }
 .bsc-row-val { color: var(--white); font-weight: 600; }
+/* ── Billing usage meters ───────────────────────────── */
+.bsc-usage-section { margin-top: 20px; }
+.bsc-usage-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 12px; }
+.bsc-meter-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; margin-bottom: 10px; }
+.bsc-meter-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.bsc-meter-label { font-size: 0.88rem; font-weight: 600; color: var(--text); }
+.bsc-meter-val { font-size: 0.88rem; font-weight: 700; color: var(--white); }
+.bsc-bar-wrap { height: 6px; background: rgba(255,255,255,0.07); border-radius: 99px; overflow: hidden; }
+.bsc-bar-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--purple)); transition: width .5s ease; }
+.bsc-bar-fill.warn { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+.bsc-meter-note { font-size: 0.75rem; color: var(--muted); margin-top: 7px; }
 </style>
   <script src="/js/translations.js"></script>
   <script src="/js/i18n.js"></script>
@@ -573,6 +584,8 @@
 
   <!-- ── Tab: Billing ──────────────────────────────────── -->
   <div id="tab-billing" class="prf-tab-panel">
+
+    <!-- Status card -->
     <div class="billing-status-card" id="bsc-card">
       <div class="bsc-top">
         <span class="bsc-badge free" id="bsc-badge">Loading…</span>
@@ -581,8 +594,32 @@
       <div class="bsc-rows" id="bsc-rows"></div>
       <div id="bsc-actions"></div>
     </div>
-    <p style="font-size:0.84rem;color:var(--muted);margin-top:8px">
-      For full billing management — update card, cancel, or view invoice history — go to
+
+    <!-- Usage meters -->
+    <div class="bsc-usage-section" id="bsc-usage-section" style="display:none">
+      <div class="bsc-usage-title">Usage this month</div>
+
+      <div class="bsc-meter-card">
+        <div class="bsc-meter-row">
+          <span class="bsc-meter-label">⚡ Credits</span>
+          <span class="bsc-meter-val" id="bsc-credits-val">—</span>
+        </div>
+        <div class="bsc-bar-wrap"><div class="bsc-bar-fill" id="bsc-credits-bar" style="width:0%"></div></div>
+        <div class="bsc-meter-note" id="bsc-credits-note"></div>
+      </div>
+
+      <div class="bsc-meter-card" id="bsc-articles-card" style="display:none">
+        <div class="bsc-meter-row">
+          <span class="bsc-meter-label">✍️ Articles</span>
+          <span class="bsc-meter-val" id="bsc-articles-val">—</span>
+        </div>
+        <div class="bsc-bar-wrap"><div class="bsc-bar-fill" id="bsc-articles-bar" style="width:0%"></div></div>
+        <div class="bsc-meter-note" id="bsc-articles-note"></div>
+      </div>
+    </div>
+
+    <p style="font-size:0.84rem;color:var(--muted);margin-top:16px">
+      Full billing management — update card, cancel, view invoices:
       <a href="membership.html" style="color:var(--blue2)">Plan &amp; Billing →</a>
     </p>
   </div><!-- /tab-billing -->
@@ -859,9 +896,10 @@
   document.getElementById('prf-name').textContent   = [displayUser.firstName, displayUser.lastName].filter(Boolean).join(' ') || displayUser.email;
   document.getElementById('prf-email').textContent  = displayUser.email;
 
-  const PLAN_LABELS = { free:'Free', free_solo:'Free Solo', pro_solo:'Pro Solo', starter:'Starter', pro:'Pro', agency:'Agency' };
+  const PLAN_LABELS = { free:'Free', free_solo:'Free Solo', pro_solo:'Pro Solo', starter:'Starter', pro:'Pro', agency:'Agency', paid:'Solo Pro' };
   document.getElementById('prf-plan').textContent = PLAN_LABELS[displayUser.plan] || displayUser.plan;
   if (displayUser.role === 'admin') document.getElementById('prf-role').style.display = 'inline-block';
+  window._me = me; // expose for billing IIFE in separate script block
 
   // Show upgrade banner for free users
   const _trialEnd = me.trialEndsAt ? new Date(me.trialEndsAt) : null;
@@ -1299,52 +1337,112 @@ async function submitSupportEmail() {
 
     // ── Billing tab ──────────────────────────────────────────────────────────────
   (async () => {
-    const bscCard   = document.getElementById('bsc-card');
-    const bscBadge  = document.getElementById('bsc-badge');
-    const bscName   = document.getElementById('bsc-name');
-    const bscRows   = document.getElementById('bsc-rows');
-    const bscActions= document.getElementById('bsc-actions');
-    let billing = null;
-    try { const br = await fetch('/api/billing/status'); if (br.ok) billing = await br.json(); } catch {}
-    const now      = new Date();
-    const trialEnd = me.trialEndsAt ? new Date(me.trialEndsAt) : null;
-    const trialActive = trialEnd && trialEnd > now;
-    const isPaid = me.stripeStatus === 'active' || me.stripeStatus === 'trialing';
-    const trialExpired = !!me.trialStartedAt && trialEnd && trialEnd <= now && !isPaid;
-    let rows = '';
-    if (isPaid && !trialActive) {
-      bscCard.className = 'billing-status-card active';
-      bscBadge.className = 'bsc-badge active'; bscBadge.textContent = 'Active';
-      bscName.textContent = 'Solo Pro — €15 / month';
-      rows += `<div class="bsc-row"><span class="bsc-row-label">Email</span><span class="bsc-row-val">${me.email}</span></div>`;
-      if (billing?.nextBillingDate) {
-        const d = new Date(billing.nextBillingDate).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-        rows += `<div class="bsc-row"><span class="bsc-row-label">Next charge</span><span class="bsc-row-val">€15 on ${d}</span></div>`;
-      }
-      if (billing?.cardLast4) rows += `<div class="bsc-row"><span class="bsc-row-label">Card</span><span class="bsc-row-val">•••• ${billing.cardLast4}</span></div>`;
-      bscActions.innerHTML = `<a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem">Manage billing →</a>`;
-    } else if (trialActive) {
-      const days = Math.ceil((trialEnd - now) / 86400000);
-      const endStr = trialEnd.toLocaleDateString('en-GB',{day:'numeric',month:'long'});
-      bscCard.className = 'billing-status-card trial';
-      bscBadge.className = 'bsc-badge trial'; bscBadge.textContent = `Trial — ${days} day${days!==1?'s':''} left`;
-      bscName.textContent = 'Solo Pro — free trial';
-      rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ends</span><span class="bsc-row-val">${endStr}</span></div>`;
-      rows += `<div class="bsc-row"><span class="bsc-row-label">First charge</span><span class="bsc-row-val">€15 on ${endStr}</span></div>`;
-      bscActions.innerHTML = `<a href="upgrade.html" class="btn btn-primary" style="font-size:0.82rem">Activate now →</a> <a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem;margin-left:8px">Manage →</a>`;
-    } else if (trialExpired) {
-      bscCard.className = 'billing-status-card expired';
-      bscBadge.className = 'bsc-badge expired'; bscBadge.textContent = 'Trial expired';
-      bscName.textContent = 'No active plan';
-      rows += `<div class="bsc-row"><span class="bsc-row-label">Status</span><span class="bsc-row-val" style="color:#f87171">Access restricted</span></div>`;
-      bscActions.innerHTML = `<a href="upgrade.html" class="btn btn-primary" style="font-size:0.82rem">Reactivate — €15/month →</a>`;
-    } else {
-      bscBadge.textContent = 'Free'; bscName.textContent = 'Free plan';
-      rows += `<div class="bsc-row"><span class="bsc-row-label">Features</span><span class="bsc-row-val">Limited access</span></div>`;
-      rows += `<div class="bsc-row"><span class="bsc-row-label">Pro price</span><span class="bsc-row-val">From €29/month</span></div>`;
-      bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Upgrade to Pro →</a>`;
+  const me = window._me;
+  if (!me) return;
+
+  const bscCard    = document.getElementById('bsc-card');
+  const bscBadge   = document.getElementById('bsc-badge');
+  const bscName    = document.getElementById('bsc-name');
+  const bscRows    = document.getElementById('bsc-rows');
+  const bscActions = document.getElementById('bsc-actions');
+
+  let billing = null;
+  try { const br = await fetch('/api/billing/status'); if (br.ok) billing = await br.json(); } catch {}
+
+  const now          = new Date();
+  const trialEnd     = me.trialEndsAt ? new Date(me.trialEndsAt) : null;
+  const trialActive  = trialEnd && trialEnd > now;
+  const isPaid       = me.plan === 'paid' || me.plan === 'pro' || me.plan === 'starter' || me.plan === 'agency';
+  const trialExpired = !!me.trialStartedAt && trialEnd && trialEnd <= now && !isPaid;
+  const fmt          = d => new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+  const fmtShort     = d => new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'long' });
+  const daysUntil    = d => Math.ceil((new Date(d) - now) / 86400000);
+
+  let rows = '';
+
+  if (isPaid && !trialActive) {
+    bscCard.className = 'billing-status-card active';
+    bscBadge.className = 'bsc-badge active'; bscBadge.textContent = 'Active';
+    bscName.textContent = 'Solo Pro — €20 / month';
+    rows += `<div class="bsc-row"><span class="bsc-row-label">Member since</span><span class="bsc-row-val">${me.paidSince ? fmt(me.paidSince) : '—'}</span></div>`;
+    if (billing?.nextBillingDate) {
+      const days = daysUntil(billing.nextBillingDate);
+      rows += `<div class="bsc-row"><span class="bsc-row-label">Next charge</span><span class="bsc-row-val">€20 on ${fmtShort(billing.nextBillingDate)} <span style="color:var(--muted);font-weight:400">(${days} day${days!==1?'s':''})</span></span></div>`;
     }
-    bscRows.innerHTML = rows;
+    if (billing?.cardLast4) rows += `<div class="bsc-row"><span class="bsc-row-label">Card</span><span class="bsc-row-val">•••• ${billing.cardLast4}</span></div>`;
+    bscActions.innerHTML = `<a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem">Manage billing →</a>`;
+
+  } else if (trialActive) {
+    const days   = daysUntil(trialEnd);
+    bscCard.className = 'billing-status-card trial';
+    bscBadge.className = 'bsc-badge trial'; bscBadge.textContent = `Trial — ${days} day${days!==1?'s':''} left`;
+    bscName.textContent = 'Solo Pro — free trial';
+    rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ends</span><span class="bsc-row-val">${fmtShort(trialEnd)}</span></div>`;
+    rows += `<div class="bsc-row"><span class="bsc-row-label">Days remaining</span><span class="bsc-row-val" style="color:#fbbf24">${days} day${days!==1?'s':''}</span></div>`;
+    rows += `<div class="bsc-row"><span class="bsc-row-label">First charge</span><span class="bsc-row-val">€20 on ${fmtShort(trialEnd)}</span></div>`;
+    bscActions.innerHTML = `<a href="upgrade.html" class="btn btn-primary" style="font-size:0.82rem">Activate now →</a> <a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem;margin-left:8px">Manage →</a>`;
+
+  } else if (trialExpired) {
+    bscCard.className = 'billing-status-card expired';
+    bscBadge.className = 'bsc-badge expired'; bscBadge.textContent = 'Trial expired';
+    bscName.textContent = 'No active plan';
+    rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ended</span><span class="bsc-row-val">${fmtShort(trialEnd)}</span></div>`;
+    rows += `<div class="bsc-row"><span class="bsc-row-label">Status</span><span class="bsc-row-val" style="color:#f87171">Access restricted</span></div>`;
+    bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Reactivate — €20/month →</a>`;
+
+  } else {
+    bscCard.className = 'billing-status-card';
+    bscBadge.className = 'bsc-badge free'; bscBadge.textContent = 'Free plan';
+    bscName.textContent = 'Free — limited access';
+    rows += `<div class="bsc-row"><span class="bsc-row-label">Articles</span><span class="bsc-row-val">Greek only</span></div>`;
+    rows += `<div class="bsc-row"><span class="bsc-row-label">Lead finder</span><span class="bsc-row-val" style="color:var(--muted)">Not available</span></div>`;
+    rows += `<div class="bsc-row"><span class="bsc-row-label">Upgrade to unlock</span><span class="bsc-row-val">6 articles · 100 searches · all countries</span></div>`;
+    bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Upgrade — €20/month →</a>`;
+  }
+
+  bscRows.innerHTML = rows;
+
+  // ── Usage meters ─────────────────────────────────────────────────────────────
+  const usageSection  = document.getElementById('bsc-usage-section');
+  const creditsVal    = document.getElementById('bsc-credits-val');
+  const creditsBar    = document.getElementById('bsc-credits-bar');
+  const creditsNote   = document.getElementById('bsc-credits-note');
+  const articlesCard  = document.getElementById('bsc-articles-card');
+  const articlesVal   = document.getElementById('bsc-articles-val');
+  const articlesBar   = document.getElementById('bsc-articles-bar');
+  const articlesNote  = document.getElementById('bsc-articles-note');
+
+  const credLeft = me.creditsLeft ?? 0;
+  const credMax  = me.creditsMax  ?? 0;
+  const resetDate = me.resetDate  || 'next month';
+
+  if (credMax > 0 || credMax === -1) {
+    usageSection.style.display = '';
+    if (credMax === -1) {
+      creditsVal.textContent = 'Unlimited';
+      creditsBar.style.width = '100%';
+    } else {
+      const used = credMax - credLeft;
+      const pct  = Math.round((used / credMax) * 100);
+      creditsVal.textContent = `${credLeft} remaining of ${credMax}`;
+      creditsBar.style.width = pct + '%';
+      if (pct >= 80) creditsBar.classList.add('warn');
+      creditsNote.textContent = `${used} used · resets ${resetDate}`;
+    }
+  }
+
+  // Articles meter for paid/trial users
+  if (isPaid || trialActive) {
+    articlesCard.style.display = '';
+    const artUsed = me.monthArticles || 0;
+    const artMax  = isPaid ? 6 : 3;
+    const artLeft = Math.max(0, artMax - artUsed);
+    const artPct  = Math.round((artUsed / artMax) * 100);
+    articlesVal.textContent  = `${artLeft} remaining of ${artMax}`;
+    articlesBar.style.width  = artPct + '%';
+    if (artPct >= 80) articlesBar.classList.add('warn');
+    articlesNote.textContent = `${artUsed} used this month · resets ${resetDate}`;
+  }
   })();
 
 </script>
