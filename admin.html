@@ -718,12 +718,13 @@ async function saveUser() {
   const bizEditsVal = parseInt(document.getElementById("mc-bizedits").value);
   const credLeftVal = parseInt(document.getElementById("mc-left").value);
   const credMaxVal  = parseInt(document.getElementById("mc-max").value);
+  const csrf = (document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrf_token=')) || '').split('=')[1] || '';
 
   try {
     // Save main user fields
     const res = await fetch(`/api/admin/users/${currentUserId}`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
       body: JSON.stringify({
         firstName:   document.getElementById("m-first").value.trim(),
         lastName:    document.getElementById("m-last").value.trim(),
@@ -742,7 +743,7 @@ async function saveUser() {
     if (!isNaN(bizEditsVal)) {
       await fetch(`/api/admin/users/${currentUserId}/biz-edits`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
         body: JSON.stringify({ editCount: bizEditsVal }),
       });
     }
@@ -764,7 +765,8 @@ document.getElementById("modal-delete-btn").addEventListener("click", async () =
   const u = allUsers.find(x => x.id === currentUserId);
   if (!confirm(`Permanently delete "${u?.email}"? This cannot be undone.`)) return;
   try {
-    const res = await fetch(`/api/admin/users/${currentUserId}`, { method: "DELETE" });
+    const csrf_del = (document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrf_token=')) || '').split('=')[1] || '';
+    const res = await fetch(`/api/admin/users/${currentUserId}`, { method: "DELETE", headers: { "X-CSRF-Token": csrf_del } });
     const d   = await res.json();
     if (!res.ok) { toast(d.error || "Delete failed", false); return; }
     allUsers = allUsers.filter(x => x.id !== currentUserId);
@@ -828,21 +830,21 @@ async function loadArticles() {
       const statusColor = p.status === 'approved' ? '#16a34a' : p.status === 'pending' ? '#d97706' : '#6366f1';
       const card = document.createElement('div');
       card.style.cssText = 'background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:18px 20px;';
-      card.innerHTML = \`
+      card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
           <div style="flex:1;min-width:0;">
-            <div style="font-weight:600;font-size:0.97rem;margin-bottom:4px;">\${esc(p.title||'Untitled')}</div>
-            <div style="font-size:0.78rem;color:#8b9ab7;margin-bottom:6px;">by \${esc(p.author||'?')} · \${fmtDateTime(p.publishedAt||p.createdAt)} · \${(p.lang||'en').toUpperCase()}</div>
-            <div style="font-size:0.83rem;color:#94a3b8;">\${esc((p.excerpt||'').slice(0,120))}\${(p.excerpt||'').length>120?'…':''}</div>
+            <div style="font-weight:600;font-size:0.97rem;margin-bottom:4px;">${esc(p.title||'Untitled')}</div>
+            <div style="font-size:0.78rem;color:#8b9ab7;margin-bottom:6px;">by ${esc(p.author||'?')} · ${fmtDateTime(p.publishedAt||p.createdAt)} · ${(p.lang||'en').toUpperCase()}</div>
+            <div style="font-size:0.83rem;color:#94a3b8;">${esc((p.excerpt||'').slice(0,120))}${(p.excerpt||'').length>120?'…':''}</div>
           </div>
-          <span style="background:\${statusColor}22;color:\${statusColor};border:1px solid \${statusColor}44;border-radius:6px;padding:3px 10px;font-size:0.75rem;font-weight:700;white-space:nowrap;">\${(p.status||'').toUpperCase()}</span>
+          <span style="background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44;border-radius:6px;padding:3px 10px;font-size:0.75rem;font-weight:700;white-space:nowrap;">${(p.status||'').toUpperCase()}</span>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
-          <button onclick="previewArticle('\${p.slug}')" style="background:#1e293b;color:#e2e8f0;border:1px solid #2a3050;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">👁 Preview</button>
-          <button onclick="editArticle('\${p.slug}')" style="background:#1e3a5f;color:#93c5fd;border:1px solid #1e4a7f;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✏️ Edit</button>
-          \${p.status !== 'approved' ? \`<button onclick="approveArticle('\${p.slug}',this)" style="background:#14532d;color:#86efac;border:1px solid #166534;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Approve</button>\` : ''}
-          <button onclick="deleteArticle('\${p.slug}',this)" style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">🗑 Delete</button>
-        </div>\`;
+          <button onclick="previewArticle('${p.slug}')" style="background:#1e293b;color:#e2e8f0;border:1px solid #2a3050;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">👁 Preview</button>
+          <button onclick="editArticle('${p.slug}')" style="background:#1e3a5f;color:#93c5fd;border:1px solid #1e4a7f;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✏️ Edit</button>
+          ${p.status !== 'approved' ? `<button onclick="approveArticle('${p.slug}',this)" style="background:#14532d;color:#86efac;border:1px solid #166534;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Approve</button>` : ''}
+          <button onclick="deleteArticle('${p.slug}',this)" style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">🗑 Delete</button>
+        </div>`;
       wrap.appendChild(card);
     });
   } catch(e) {
@@ -855,10 +857,10 @@ async function previewArticle(slug) {
   if (!r.ok) { alert('Could not load article.'); return; }
   const { post } = await r.json();
   const modal = document.getElementById('art-modal');
-  document.getElementById('art-modal-body').innerHTML = \`
-    <h2 style="font-size:1.3rem;margin-bottom:8px;">\${esc(post.title)}</h2>
-    <div style="font-size:0.78rem;color:#8b9ab7;margin-bottom:20px;">by \${esc(post.author||'?')} · \${fmtDateTime(post.publishedAt)} · \${(post.lang||'en').toUpperCase()}</div>
-    <div style="font-size:0.9rem;line-height:1.7;color:#cbd5e1;">\${post.html||''}</div>\`;
+  document.getElementById('art-modal-body').innerHTML = `
+    <h2 style="font-size:1.3rem;margin-bottom:8px;">${esc(post.title)}</h2>
+    <div style="font-size:0.78rem;color:#8b9ab7;margin-bottom:20px;">by ${esc(post.author||'?')} · ${fmtDateTime(post.publishedAt)} · ${(post.lang||'en').toUpperCase()}</div>
+    <div style="font-size:0.9rem;line-height:1.7;color:#cbd5e1;">${post.html||''}</div>`;
   modal.style.display = 'block';
 }
 
@@ -867,31 +869,31 @@ async function editArticle(slug) {
   if (!r.ok) { alert('Could not load article.'); return; }
   const { post } = await r.json();
   const modal = document.getElementById('art-modal');
-  document.getElementById('art-modal-body').innerHTML = \`
+  document.getElementById('art-modal-body').innerHTML = `
     <h3 style="margin-bottom:20px;font-size:1.1rem;">Edit Article</h3>
     <div style="margin-bottom:14px;">
       <label style="display:block;font-size:0.8rem;color:#8b9ab7;margin-bottom:6px;">Title</label>
-      <input id="edit-title" value="\${esc(post.title||'')}" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
+      <input id="edit-title" value="${esc(post.title||'')}" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
     </div>
     <div style="margin-bottom:14px;">
       <label style="display:block;font-size:0.8rem;color:#8b9ab7;margin-bottom:6px;">Excerpt</label>
-      <textarea id="edit-excerpt" rows="3" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;resize:vertical;">\${esc(post.excerpt||'')}</textarea>
+      <textarea id="edit-excerpt" rows="3" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;resize:vertical;">${esc(post.excerpt||'')}</textarea>
     </div>
     <div style="margin-bottom:14px;">
       <label style="display:block;font-size:0.8rem;color:#8b9ab7;margin-bottom:6px;">Status</label>
       <select id="edit-status" style="background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.9rem;">
-        <option value="pending" \${post.status==='pending'?'selected':''}>Pending</option>
-        <option value="approved" \${post.status==='approved'?'selected':''}>Approved</option>
+        <option value="pending" ${post.status==='pending'?'selected':''}>Pending</option>
+        <option value="approved" ${post.status==='approved'?'selected':''}>Approved</option>
       </select>
     </div>
     <div style="margin-bottom:20px;">
       <label style="display:block;font-size:0.8rem;color:#8b9ab7;margin-bottom:6px;">HTML Content</label>
-      <textarea id="edit-html" rows="14" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.8rem;font-family:monospace;box-sizing:border-box;resize:vertical;">\${esc(post.html||'')}</textarea>
+      <textarea id="edit-html" rows="14" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.8rem;font-family:monospace;box-sizing:border-box;resize:vertical;">${esc(post.html||'')}</textarea>
     </div>
     <div style="display:flex;gap:10px;">
-      <button onclick="saveArticleEdit('\${slug}')" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-weight:600;">💾 Save</button>
+      <button onclick="saveArticleEdit('${slug}')" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-weight:600;">💾 Save</button>
       <button onclick="closeArtModal()" style="background:#1e293b;color:#e2e8f0;border:1px solid #2a3050;padding:10px 20px;border-radius:8px;cursor:pointer;">Cancel</button>
-    </div>\`;
+    </div>`;
   modal.style.display = 'block';
 }
 
