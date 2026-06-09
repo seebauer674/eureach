@@ -616,6 +616,32 @@
         <div class="bsc-bar-wrap"><div class="bsc-bar-fill" id="bsc-articles-bar" style="width:0%"></div></div>
         <div class="bsc-meter-note" id="bsc-articles-note"></div>
       </div>
+
+      <div class="bsc-meter-card" id="bsc-leads-card" style="display:none">
+        <div class="bsc-meter-row">
+          <span class="bsc-meter-label">🔍 Lead Finder</span>
+          <span class="bsc-meter-val" id="bsc-leads-val">—</span>
+        </div>
+        <div class="bsc-bar-wrap"><div class="bsc-bar-fill" id="bsc-leads-bar" style="width:0%"></div></div>
+        <div class="bsc-meter-note" id="bsc-leads-note"></div>
+      </div>
+
+      <div class="bsc-meter-card" id="bsc-audits-card" style="display:none">
+        <div class="bsc-meter-row">
+          <span class="bsc-meter-label">📊 AI Audit</span>
+          <span class="bsc-meter-val" id="bsc-audits-val">—</span>
+        </div>
+        <div class="bsc-bar-wrap"><div class="bsc-bar-fill" id="bsc-audits-bar" style="width:0%"></div></div>
+        <div class="bsc-meter-note" id="bsc-audits-note"></div>
+      </div>
+
+      <div class="bsc-meter-card" id="bsc-competitors-card" style="display:none">
+        <div class="bsc-meter-row">
+          <span class="bsc-meter-label">🏆 Competitors</span>
+          <span class="bsc-meter-val" id="bsc-competitors-val">—</span>
+        </div>
+        <div class="bsc-meter-note" id="bsc-competitors-note"></div>
+      </div>
     </div>
 
     <p style="font-size:0.84rem;color:var(--muted);margin-top:16px">
@@ -1195,13 +1221,22 @@
         bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Reactivate — €20/month →</a>`;
 
       } else {
+        // FREE PLAN
         bscCard.className = 'billing-status-card';
-        bscBadge.className = 'bsc-badge free'; bscBadge.textContent = 'Free plan';
-        bscName.textContent = 'Free — limited access';
-        rows += `<div class="bsc-row"><span class="bsc-row-label">Articles</span><span class="bsc-row-val">Greek only</span></div>`;
-        rows += `<div class="bsc-row"><span class="bsc-row-label">Lead finder</span><span class="bsc-row-val" style="color:var(--muted)">Not available</span></div>`;
-        rows += `<div class="bsc-row"><span class="bsc-row-label">Upgrade to unlock</span><span class="bsc-row-val">6 articles · 100 searches · all countries</span></div>`;
-        bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Upgrade — €20/month →</a>`;
+        bscBadge.className = 'bsc-badge free'; bscBadge.textContent = 'Free';
+        bscName.textContent = 'Free Plan';
+        const cmStr      = new Date().toISOString().slice(0, 7);
+        const leadsUsed  = me.leadSearchMonth === cmStr ? (me.monthLeadSearches || 0) : 0;
+        const auditsUsed = me.auditMonth      === cmStr ? (me.monthAudits       || 0) : 0;
+        const leadsLeft  = Math.max(0, 3 - leadsUsed);
+        const auditsLeft = Math.max(0, 1 - auditsUsed);
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Plan expires</span><span class="bsc-row-val" style="color:var(--muted)">—</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Articles</span><span class="bsc-row-val" style="color:var(--muted)">0 — not included</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Lead Finder</span><span class="bsc-row-val" style="${leadsLeft === 0 ? 'color:#f87171' : ''}">${leadsLeft} of 3 searches remaining</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">AI Audit</span><span class="bsc-row-val" style="${auditsLeft === 0 ? 'color:#f87171' : ''}">${auditsLeft} of 1 audit remaining</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Competitors</span><span class="bsc-row-val" style="color:var(--muted)">Not included</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Resets</span><span class="bsc-row-val">${me.resetDate || 'next month'}</span></div>`;
+        bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Upgrade to Pro — €20/month →</a>`;
       }
 
       bscRows.innerHTML = rows;
@@ -1212,24 +1247,25 @@
       const credMax      = me.creditsMax  ?? 0;
       const resetDate    = me.resetDate   || 'next month';
 
-      if (credMax > 0 || credMax === -1) {
-        usageSection.style.display = '';
-        const creditsVal  = document.getElementById('bsc-credits-val');
-        const creditsBar  = document.getElementById('bsc-credits-bar');
-        const creditsNote = document.getElementById('bsc-credits-note');
-        if (credMax === -1) {
-          creditsVal.textContent = 'Unlimited';
-          creditsBar.style.width = '100%';
-        } else {
-          const used = credMax - credLeft;
-          const pct  = Math.round((used / credMax) * 100);
-          creditsVal.textContent = `${credLeft} remaining of ${credMax}`;
-          creditsBar.style.width = pct + '%';
-          if (pct >= 80) creditsBar.classList.add('warn');
-          creditsNote.textContent = `${used} used · resets ${resetDate}`;
-        }
+      usageSection.style.display = '';
+
+      // Credits
+      const creditsVal  = document.getElementById('bsc-credits-val');
+      const creditsBar  = document.getElementById('bsc-credits-bar');
+      const creditsNote = document.getElementById('bsc-credits-note');
+      if (credMax === -1) {
+        creditsVal.textContent = 'Unlimited';
+        creditsBar.style.width = '100%';
+      } else if (credMax > 0) {
+        const used = credMax - credLeft;
+        const pct  = Math.round((used / credMax) * 100);
+        creditsVal.textContent = `${credLeft} remaining of ${credMax}`;
+        creditsBar.style.width = pct + '%';
+        if (pct >= 80) creditsBar.classList.add('warn');
+        creditsNote.textContent = `${used} used · resets ${resetDate}`;
       }
 
+      // Articles (paid + trial only)
       if (isPaid || trialActive) {
         const articlesCard = document.getElementById('bsc-articles-card');
         articlesCard.style.display = '';
@@ -1237,11 +1273,68 @@
         const artMax  = isPaid ? 6 : 3;
         const artLeft = Math.max(0, artMax - artUsed);
         const artPct  = Math.round((artUsed / artMax) * 100);
-        document.getElementById('bsc-articles-val').textContent  = `${artLeft} remaining of ${artMax}`;
+        document.getElementById('bsc-articles-val').textContent  = `${artLeft} of ${artMax} remaining`;
         const artBar = document.getElementById('bsc-articles-bar');
         artBar.style.width = artPct + '%';
         if (artPct >= 80) artBar.classList.add('warn');
-        document.getElementById('bsc-articles-note').textContent = `${artUsed} used this month · resets ${resetDate}`;
+        document.getElementById('bsc-articles-note').textContent = `${artUsed} used · resets ${resetDate}`;
+      }
+
+      // Lead Finder
+      const leadsCard = document.getElementById('bsc-leads-card');
+      leadsCard.style.display = '';
+      if (isPaid || trialActive) {
+        document.getElementById('bsc-leads-val').textContent  = 'Unlimited';
+        document.getElementById('bsc-leads-bar').style.width  = '100%';
+        document.getElementById('bsc-leads-note').textContent = `${me.monthLeads || 0} searches done this month`;
+      } else {
+        const cmStr2 = new Date().toISOString().slice(0, 7);
+        const lUsed  = me.leadSearchMonth === cmStr2 ? (me.monthLeadSearches || 0) : 0;
+        const lLeft  = Math.max(0, 3 - lUsed);
+        const lPct   = Math.round((lUsed / 3) * 100);
+        document.getElementById('bsc-leads-val').textContent  = `${lLeft} of 3 remaining`;
+        const lBar = document.getElementById('bsc-leads-bar');
+        lBar.style.width = lPct + '%';
+        if (lPct >= 100) lBar.classList.add('warn');
+        document.getElementById('bsc-leads-note').textContent = `${lUsed} used · resets ${resetDate} · Greece only`;
+      }
+
+      // AI Audit
+      const auditsCard = document.getElementById('bsc-audits-card');
+      auditsCard.style.display = '';
+      if (isPaid || trialActive) {
+        const aUsed = me.monthAudits || 0;
+        const aMax  = isPaid ? 10 : 1;
+        const aLeft = Math.max(0, aMax - aUsed);
+        const aPct  = Math.round((aUsed / aMax) * 100);
+        document.getElementById('bsc-audits-val').textContent  = `${aLeft} of ${aMax} remaining`;
+        const aBar = document.getElementById('bsc-audits-bar');
+        aBar.style.width = aPct + '%';
+        if (aPct >= 80) aBar.classList.add('warn');
+        document.getElementById('bsc-audits-note').textContent = `${aUsed} used · resets ${resetDate}`;
+      } else {
+        const cmStr3 = new Date().toISOString().slice(0, 7);
+        const aUsed  = me.auditMonth === cmStr3 ? (me.monthAudits || 0) : 0;
+        const aLeft  = Math.max(0, 1 - aUsed);
+        const aPct   = aUsed >= 1 ? 100 : 0;
+        document.getElementById('bsc-audits-val').textContent  = `${aLeft} of 1 remaining`;
+        const aBar = document.getElementById('bsc-audits-bar');
+        aBar.style.width = aPct + '%';
+        if (aPct >= 100) aBar.classList.add('warn');
+        document.getElementById('bsc-audits-note').textContent = `${aUsed} used · resets ${resetDate}`;
+      }
+
+      // Competitors
+      const compCard = document.getElementById('bsc-competitors-card');
+      compCard.style.display = '';
+      if (isPaid || trialActive) {
+        document.getElementById('bsc-competitors-val').textContent  = 'Up to 10 tracked';
+        document.getElementById('bsc-competitors-note').textContent = 'Track competitor AI visibility across search engines';
+      } else {
+        const compValEl = document.getElementById('bsc-competitors-val');
+        compValEl.textContent  = 'Not included';
+        compValEl.style.color  = 'var(--muted)';
+        document.getElementById('bsc-competitors-note').textContent = 'Upgrade to Pro to track up to 10 competitors';
       }
     });
   })();
