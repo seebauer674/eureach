@@ -28,6 +28,7 @@ const ROOT = __dirname;
 
 const USERS_FILE    = path.join(ROOT, "data/users.json");
 const SESSIONS_FILE = path.join(ROOT, "data/sessions.json");
+const BLOG_FILE     = path.join(ROOT, "data/blog_posts.json");
 const CRM_FILE       = path.join(ROOT, "data/crm.json");
 const SEQUENCES_FILE    = path.join(ROOT, "data/sequences.json");
 const WHATSAPP_FILE     = path.join(ROOT, "data/whatsapp_templates.json");
@@ -37,6 +38,9 @@ const LEAD_SAVED_SEARCHES_FILE = path.join(ROOT, "data/lead-saved-searches.json"
 const OUTREACH_SAVED_LISTS_FILE = path.join(ROOT, "data/outreach-saved-lists.json");
 const CRM_SAVED_LISTS_FILE       = path.join(ROOT, "data/crm-saved-lists.json");
 const ARTICLE_SAVED_LISTS_FILE = path.join(ROOT, "data/article-saved-lists.json");
+const ARTICLE_AUTOMATIONS_FILE = path.join(ROOT, "data/article-automations.json");
+const ARTICLE_REPUBLISH_FILE   = path.join(ROOT, "data/article-republish.json");
+const ARTICLE_VISIBILITY_FILE  = path.join(ROOT, "data/article-visibility.json");
 const LEAD_SCORES_FILE  = path.join(ROOT, "data/lead_scores.json");
 const AUDITS_FILE       = path.join(ROOT, "data/audits.json");
 const WP_FILE           = path.join(ROOT, "data/wordpress_connections.json");
@@ -45,6 +49,14 @@ const EMAIL_LOG_FILE         = path.join(ROOT, "data/email_log.json");
 const OUTREACH_QUEUE_FILE    = path.join(ROOT, "data/outreach-queue.json");
 const BUSINESS_PROFILE_FILE  = path.join(ROOT, "data/business-profiles.json");
 const SITES_FILE             = path.join(ROOT, "data/user-sites.json");
+const CITATION_PUBLISHERS_FILE = path.join(ROOT, "data/citation_publishers.json");
+const CITATION_CAMPAIGNS_FILE  = path.join(ROOT, "data/citation_campaigns.json");
+const CITATION_PLACEMENTS_FILE = path.join(ROOT, "data/citation_placements.json");
+const CITATION_SNAPSHOTS_FILE  = path.join(ROOT, "data/citation_snapshots.json");
+const CITATION_LEADS_FILE      = path.join(ROOT, "data/citation_leads.json");
+const YOUTUBER_PROFILES_FILE      = path.join(ROOT, "data/youtuber_profiles.json");
+const YOUTUBER_APPLICATIONS_FILE  = path.join(ROOT, "data/youtuber_applications.json");
+const YOUTUBER_ASSIGNMENTS_FILE = path.join(ROOT, "data/youtuber_assignments.json");
 
 // AES-256-CBC key derived from secret — set WP_ENCRYPT_SECRET env var in production
 const WP_ENCRYPT_KEY = crypto.createHash("sha256")
@@ -141,13 +153,18 @@ function getCredits(userRecord) {
 
 // Deducts `cost` credits from users[idx]. Mutates array in place — caller must writeJSON after.
 // Returns { ok, creditsLeft, creditsMax }.
-function deductCredits(users, idx, cost) {
+function deductCredits(users, idx, cost, reason) {
   const { creditsLeft, creditsMax } = getCredits(users[idx]);
   if (creditsMax === -1) return { ok: true, creditsLeft: -1, creditsMax: -1 };
   if (creditsLeft < cost) return { ok: false, creditsLeft, creditsMax };
   users[idx].creditsLeft = creditsLeft - cost;
   users[idx].creditsMax  = creditsMax;
   users[idx].creditMonth = currentMonth();
+  if (reason) {
+    if (!users[idx].creditLog) users[idx].creditLog = [];
+    users[idx].creditLog.unshift({ reason, delta: -cost, balance: users[idx].creditsLeft, createdAt: new Date().toISOString() });
+    if (users[idx].creditLog.length > 100) users[idx].creditLog.length = 100;
+  }
   return { ok: true, creditsLeft: users[idx].creditsLeft, creditsMax };
 }
 
@@ -316,9 +333,8 @@ function getDaysRemainingInTrial(user) {
 }
 
 function getModel(user) {
-  if (isTrialActive(user)) return "claude-haiku-4-5-20251001";
   if (isPaidUser(user)) return "claude-sonnet-4-6";
-  return "claude-sonnet-4-6"; // free plan users still get sonnet for now
+  return "claude-haiku-4-5-20251001"; // trial and free users use haiku
 }
 
 // Auto-expire trial if webhook was missed; mutates users array in place, returns updated user
@@ -484,10 +500,11 @@ async function handleLeadsSearch(req, res) {
   if (idx === -1) return json(res, 404, { error: "User not found." });
 
   const cost   = PLAN_LIMITS.costs.leadSearch;
-  const result = deductCredits(users, idx, cost);
+  const result = deductCredits(users, idx, cost, 'Lead Search');
   if (!result.ok) return insufficientCredits(res, result.creditsLeft, result.creditsMax, cost);
 
   users[idx].searchesDone = (users[idx].searchesDone || 0) + 1;
+  users[idx].monthLeads = (users[idx].monthLeads || 0) + 1;
   users[idx].leadsFound   = (users[idx].leadsFound   || 0) + leadsFound;
 
   writeJSON(USERS_FILE, users);
@@ -582,12 +599,14 @@ function handleProfileStats(req, res) {
       searchesDone: user.searchesDone || 0,
     },
     month: {
-      leads:       user.monthLeads    || 0,
+      leads:       user.monthLeads       || 0,
       leadsMax:    -1,
-      articles:    user.monthArticles || 0,
+      articles:    user.monthArticles    || 0,
       articlesMax: -1,
-      audits:      user.monthAudits   || 0,
+      audits:      user.monthAudits      || 0,
       auditsMax:   -1,
+      competitors: user.monthCompetitors || 0,
+      competitorsMax: -1,
       resetDate:   resetDateLabel(),
     },
     creditLog: user.creditLog || [],
@@ -777,7 +796,7 @@ async function handleOutreach(req, res) {
   const outIdx   = outUsers.findIndex(u => u.id === user.id);
   if (outIdx === -1) return json(res, 404, { error: "User not found." });
   const outCost   = PLAN_LIMITS.costs.outreach;
-  const outResult = deductCredits(outUsers, outIdx, outCost);
+  const outResult = deductCredits(outUsers, outIdx, outCost, 'Outreach Email');
   if (!outResult.ok) return insufficientCredits(res, outResult.creditsLeft, outResult.creditsMax, outCost);
   writeJSON(USERS_FILE, outUsers);
 
@@ -908,7 +927,7 @@ async function handleWhatsApp(req, res) {
   const waIdx   = waUsers.findIndex(u => u.id === user.id);
   if (waIdx === -1) return json(res, 404, { error: "User not found." });
   const waCost   = PLAN_LIMITS.costs.whatsapp;
-  const waResult = deductCredits(waUsers, waIdx, waCost);
+  const waResult = deductCredits(waUsers, waIdx, waCost, 'WhatsApp Message');
   if (!waResult.ok) return insufficientCredits(res, waResult.creditsLeft, waResult.creditsMax, waCost);
   writeJSON(USERS_FILE, waUsers);
 
@@ -1094,7 +1113,7 @@ async function handleLeadsScore(req, res) {
   const scoreIdx    = scoreUsers.findIndex(u => u.id === user.id);
   if (scoreIdx === -1) return json(res, 404, { error: "User not found." });
   const scoreCost   = PLAN_LIMITS.costs.leadScore;
-  const scoreResult = deductCredits(scoreUsers, scoreIdx, scoreCost);
+  const scoreResult = deductCredits(scoreUsers, scoreIdx, scoreCost, 'Lead Scoring');
   if (!scoreResult.ok) return insufficientCredits(res, scoreResult.creditsLeft, scoreResult.creditsMax, scoreCost);
   writeJSON(USERS_FILE, scoreUsers);
 
@@ -1180,6 +1199,423 @@ function handleLeadsScoreCache(req, res) {
   json(res, 200, { cache: mine });
 }
 
+// ── Blog ─────────────────────────────────────────────────────────────────────
+
+function slugify(text) {
+  return (text || "untitled")
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 80) + "-" + Date.now();
+}
+
+function handleBlogList(req, res) {
+  const params  = new URL("http://x" + req.url).searchParams;
+  const lang    = params.get("lang") || null;
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  const isAdmin = user && user.role === "admin";
+  const statusFilter = params.get("status") || null;
+
+  const posts = readJSON(BLOG_FILE) || [];
+  let filtered = posts;
+  if (statusFilter && isAdmin) {
+    filtered = filtered.filter(p => p.status === statusFilter);
+  } else if (!isAdmin) {
+    filtered = filtered.filter(p => p.status === "approved");
+  }
+  if (lang) filtered = filtered.filter(p => (p.lang || p.language) === lang);
+  const sorted = [...filtered].sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
+  return json(res, 200, { posts: sorted.map(p => ({ ...p, html: undefined, content: undefined })) });
+}
+
+function handleBlogGet(req, res, slug) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  const isAdmin = user && user.role === "admin";
+  const posts = readJSON(BLOG_FILE) || [];
+  const post  = posts.find(p => p.slug === slug);
+  if (!post) return json(res, 404, { error: "Post not found." });
+  if (post.status !== "approved" && !isAdmin) return json(res, 403, { error: "Post pending approval." });
+  return json(res, 200, { post });
+}
+
+async function handleBlogPublish(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const { title, excerpt, html, lang, category, metaDescription } = await readBody(req);
+  if (!title || !html) return json(res, 400, { error: "title and html are required." });
+
+  const posts = readJSON(BLOG_FILE) || [];
+  const post  = {
+    id:          Date.now(),
+    slug:        slugify(title),
+    title:       title.trim(),
+    excerpt:     excerpt || metaDescription || "",
+    html,
+    lang:        lang || "en",
+    category:    category || "General",
+    author:      (user.firstName ? user.firstName + " " + (user.lastName || "") : user.email).trim(),
+    publishedAt: new Date().toISOString(),
+    status:      "pending",
+    emoji:       "✍️",
+  };
+  posts.unshift(post);
+  writeJSON(BLOG_FILE, posts);
+  return json(res, 200, { post: { ...post, html: undefined }, slug: post.slug, pending: true });
+}
+
+function handleBlogApprove(req, res, slug) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const posts = readJSON(BLOG_FILE) || [];
+  const idx   = posts.findIndex(p => p.slug === slug);
+  if (idx === -1) return json(res, 404, { error: "Post not found." });
+  posts[idx].status = "approved";
+  posts[idx].approvedAt = new Date().toISOString();
+  writeJSON(BLOG_FILE, posts);
+  return json(res, 200, { ok: true });
+}
+
+function handleBlogReject(req, res, slug) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const posts = readJSON(BLOG_FILE) || [];
+  const idx   = posts.findIndex(p => p.slug === slug);
+  if (idx === -1) return json(res, 404, { error: "Post not found." });
+  posts.splice(idx, 1);
+  writeJSON(BLOG_FILE, posts);
+  return json(res, 200, { ok: true });
+}
+
+async function handleBlogUpdate(req, res, slug) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== 'admin') return json(res, 403, { error: 'Admin only.' });
+  const { title, excerpt, html, status } = await readBody(req);
+  const posts = readJSON(BLOG_FILE) || [];
+  const idx   = posts.findIndex(p => p.slug === slug);
+  if (idx === -1) return json(res, 404, { error: 'Post not found.' });
+  if (title)   posts[idx].title   = title.trim();
+  if (excerpt !== undefined) posts[idx].excerpt = excerpt;
+  if (html)    posts[idx].html    = html;
+  if (status)  posts[idx].status  = status;
+  posts[idx].updatedAt = new Date().toISOString();
+  writeJSON(BLOG_FILE, posts);
+  return json(res, 200, { ok: true, post: { ...posts[idx], html: undefined } });
+}
+
+// ── Article Automation ───────────────────────────────────────────────────────
+
+function claudeText(aiRes) {
+  if (aiRes && aiRes.type === "error") throw new Error((aiRes.error && aiRes.error.message) || "AI error");
+  return (aiRes && aiRes.content && aiRes.content[0] && aiRes.content[0].text) || "";
+}
+function claudeJSON(aiRes) {
+  const text = claudeText(aiRes);
+  const cleaned = text.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
+  return JSON.parse(cleaned);
+}
+
+async function handleArticleAutomate(req, res, articleId, action) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI not configured." });
+
+  const body = await readBody(req);
+  const { title, html, lang, platforms, language } = body;
+  const plainText = ((html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()).slice(0, 3000);
+
+  const automations = readJSON(ARTICLE_AUTOMATIONS_FILE) || {};
+  const key = user.id + "_" + articleId;
+  if (!automations[key]) automations[key] = { userId: user.id, articleId, title: title || "Untitled", lang: lang || "en", createdAt: new Date().toISOString(), results: {} };
+  if (title) automations[key].title = title;
+  if (lang)  automations[key].lang  = lang;
+
+  const haiku  = "claude-haiku-4-5-20251001";
+  const sonnet = "claude-sonnet-4-6";
+  let result;
+
+  try {
+    switch (action) {
+
+      case "social": {
+        const plat = (platforms || [])[0];
+        if (!plat) return json(res, 400, { error: "No platform specified." });
+        const prompts = {
+          linkedin:  { sys: "Adapt this article into a LinkedIn post. 150-300 words, professional tone, no hashtags in body (3-5 at end only), end with a question. Write in the same language as the article. Return ONLY the post text.", tokens: 600 },
+          facebook:  { sys: "Adapt this article into a Facebook post. 100-200 words, warm tone, question at end, 2-3 emojis max. Write in the same language as the article. Return ONLY the post text.", tokens: 400 },
+          twitter:   { sys: "Create a Twitter/X thread from this article. 4-6 tweets. Tweet 1: hook. Tweets 2-4: key points. Tweet 5: takeaway. Tweet 6: CTA. Each max 260 chars. Return numbered list: \"1. [tweet]\" etc. Same language as article.", tokens: 600 },
+          instagram: { sys: "Write an Instagram caption for this article. 100-150 words, energetic, line breaks, end with 8-12 hashtags. Same language as article. Return ONLY the caption text.", tokens: 400 }
+        };
+        const p = prompts[plat];
+        if (!p) return json(res, 400, { error: "Unknown platform: " + plat });
+        const aiRes = await callClaude(apiKey, p.sys, "Title: " + title + "\n\nContent: " + plainText, p.tokens, sonnet);
+        const text  = claudeText(aiRes);
+        if (plat === "twitter") {
+          const lines = text.split("\n").filter(l => /^\d+\./.test(l));
+          result = { tweets: lines.map(l => l.replace(/^\d+\.\s*/, "").trim()) };
+        } else {
+          result = { content: text };
+        }
+        automations[key].results[plat] = Object.assign({}, result, { createdAt: new Date().toISOString() });
+        break;
+      }
+
+      case "email": {
+        const sys = 'Convert this article into an email newsletter. Return ONLY valid JSON: {"subject":"","preview_text":"","body":"","cta_text":"","cta_note":""} subject: max 60 chars. preview_text: max 90 chars. body: 200-250 words teaser. Write in the same language as the article.';
+        const aiRes = await callClaude(apiKey, sys, "Title: " + title + "\n\nContent: " + plainText, 800, sonnet);
+        result = claudeJSON(aiRes);
+        automations[key].results.email = Object.assign({}, result, { createdAt: new Date().toISOString() });
+        break;
+      }
+
+      case "gmb": {
+        const sys = "Write a Google My Business post from this article. Max 1500 characters, plain text, no markdown, no hashtags, end with a call to action. Same language as the article. Return ONLY the post text.";
+        const aiRes = await callClaude(apiKey, sys, "Title: " + title + "\n\nContent: " + plainText, 300, haiku);
+        const gmbContent = claudeText(aiRes);
+        result = { content: gmbContent, char_count: gmbContent.length };
+        automations[key].results.gmb = Object.assign({}, result, { createdAt: new Date().toISOString() });
+        break;
+      }
+
+      case "meta": {
+        const sys = 'Generate SEO meta tags. Return ONLY valid JSON: {"meta_title":"","meta_description":"","og_title":"","og_description":""} meta_title: 50-60 chars with keyword. meta_description: 150-160 chars. Same language as article.';
+        const aiRes = await callClaude(apiKey, sys, "Title: " + title + "\n\nContent: " + plainText.slice(0, 500), 300, haiku);
+        result = claudeJSON(aiRes);
+        automations[key].results.meta = Object.assign({}, result, { createdAt: new Date().toISOString() });
+        break;
+      }
+
+      case "schema": {
+        const schema = { "@context": "https://schema.org", "@type": "Article", "headline": title, "author": { "@type": "Organization", "name": "eureach.eu", "url": "https://eureach.eu" }, "publisher": { "@type": "Organization", "name": "eureach.eu", "url": "https://eureach.eu" }, "datePublished": new Date().toISOString(), "dateModified": new Date().toISOString(), "inLanguage": lang || "en", "url": "" };
+        result = { schema: JSON.stringify(schema, null, 2), note: "Update the 'url' field after publishing this article." };
+        automations[key].results.schema = Object.assign({}, result, { createdAt: new Date().toISOString() });
+        break;
+      }
+
+      case "hashtags": {
+        const sys = 'Generate hashtags. Return ONLY valid JSON: {"linkedin":[],"instagram":[],"twitter":[]} linkedin: 3-5 (no #). instagram: 8-12 (no #). twitter: 2-3 (no #). Mix article language and English.';
+        const aiRes = await callClaude(apiKey, sys, "Title: \"" + title + "\"\nContent summary: " + plainText.slice(0, 300), 200, haiku);
+        result = claudeJSON(aiRes);
+        automations[key].results.hashtags = Object.assign({}, result, { createdAt: new Date().toISOString() });
+        break;
+      }
+
+      case "translate": {
+        const tLang    = language || "en";
+        const langName = tLang === "de" ? "German" : "English";
+        const sys = "You are a professional translator. Translate naturally, adapt idioms. Return ONLY valid JSON: {\"title\":\"\",\"content\":\"\"} No text outside JSON.";
+        const aiRes = await callClaude(apiKey, sys, "Translate to " + langName + ":\n\nTitle: " + title + "\n\nContent: " + plainText, 3000, sonnet);
+        const translated = claudeJSON(aiRes);
+        result = Object.assign({}, translated, { language: tLang });
+        const posts = readJSON(BLOG_FILE) || [];
+        posts.unshift({ id: Date.now(), slug: slugify(translated.title || title) + "-draft", title: translated.title || title, excerpt: "", html: "<p>" + (translated.content || "").replace(/\n/g, "</p><p>") + "</p>", lang: tLang, category: "article", author: ((user.firstName ? user.firstName + " " + (user.lastName || "") : user.email) || "").trim(), publishedAt: new Date().toISOString(), status: "draft", emoji: "🌐" });
+        writeJSON(BLOG_FILE, posts);
+        result.savedAsDraft = true;
+        automations[key].results["translate_" + tLang] = Object.assign({}, result, { createdAt: new Date().toISOString() });
+        break;
+      }
+
+      case "internal-links": {
+        const posts = (readJSON(BLOG_FILE) || []).filter(p => p.status === "approved" && p.title !== title).slice(0, 20);
+        if (!posts.length) {
+          result = { links: [] };
+        } else {
+          const articleList = posts.map(p => "SLUG:" + p.slug + " | Title: " + p.title).join("\n");
+          const sys = 'Identify internal linking opportunities. Return ONLY valid JSON array (max 3): [{"target_slug":"","anchor_text":"","reason":""}] anchor_text = exact phrase from current article. Return [] if none.';
+          const aiRes = await callClaude(apiKey, sys, 'Current article: "' + title + '"\n\nContent: ' + plainText.slice(0, 1000) + "\n\nAvailable articles:\n" + articleList, 400, sonnet);
+          const suggestions = claudeJSON(aiRes);
+          const links = (Array.isArray(suggestions) ? suggestions : []).map(s => {
+            const target = posts.find(p => p.slug === s.target_slug);
+            return Object.assign({}, s, { target_title: (target && target.title) || "", target_url: s.target_slug ? "/blog.html#" + s.target_slug : "" });
+          }).slice(0, 3);
+          result = { links };
+        }
+        automations[key].results.internal_links = Object.assign({}, result, { createdAt: new Date().toISOString() });
+        break;
+      }
+
+      case "track-visibility": {
+        const sys = 'Generate 3 natural AI search queries to find this article. Return ONLY valid JSON array: ["query 1","query 2","query 3"]';
+        const aiRes = await callClaude(apiKey, sys, 'Title: "' + title + '"\nFirst paragraph: ' + plainText.slice(0, 300), 200, haiku);
+        const queries = claudeJSON(aiRes);
+        const visibility = readJSON(ARTICLE_VISIBILITY_FILE) || [];
+        const trackingId = Date.now();
+        visibility.push({ id: trackingId, articleId, userId: user.id, title, queries: Array.isArray(queries) ? queries : [], appeared: false, createdAt: new Date().toISOString(), nextCheck: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() });
+        writeJSON(ARTICLE_VISIBILITY_FILE, visibility);
+        result = { tracking_id: trackingId, queries_to_track: Array.isArray(queries) ? queries : [], message: "Tracking started — you will be notified when this article appears in AI search results.", next_check: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() };
+        automations[key].results.track = Object.assign({}, result, { createdAt: new Date().toISOString() });
+        break;
+      }
+
+      case "schedule-republish": {
+        const intervalDays = body.interval_days || 90;
+        const rPlatforms   = body.platforms || [];
+        const schedule = readJSON(ARTICLE_REPUBLISH_FILE) || [];
+        const scheduleId  = Date.now();
+        const nextPublish = new Date(Date.now() + intervalDays * 24 * 60 * 60 * 1000).toISOString();
+        schedule.push({ id: scheduleId, articleId, userId: user.id, title, platforms: rPlatforms, interval_days: intervalDays, lastPublished: null, nextPublish, active: true, createdAt: new Date().toISOString() });
+        writeJSON(ARTICLE_REPUBLISH_FILE, schedule);
+        result = { ok: true, schedule_id: scheduleId, next_publish: nextPublish };
+        break;
+      }
+
+      default:
+        return json(res, 404, { error: "Unknown automation action: " + action });
+    }
+
+    writeJSON(ARTICLE_AUTOMATIONS_FILE, automations);
+    return json(res, 200, result);
+
+  } catch (err) {
+    console.error("[automate/" + action + "]", err.message);
+    return json(res, 500, { error: err.message || "Automation failed." });
+  }
+}
+
+function handleArticleAutomateResults(req, res, articleId) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const automations = readJSON(ARTICLE_AUTOMATIONS_FILE) || {};
+  const key = user.id + "_" + articleId;
+  const record = automations[key] || {};
+  return json(res, 200, { results: record.results || {}, title: record.title || "" });
+}
+
+// ── Publish to Agora proxy ────────────────────────────────────────────────────
+
+async function handlePublishToAgora(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const { title, html, excerpt, lang } = await readBody(req);
+  if (!title || !html) return json(res, 400, { error: "title and html are required." });
+
+  const secret = process.env.AGORA_PUBLISH_SECRET;
+  if (!secret) return json(res, 500, { error: "Agora integration not configured." });
+
+  try {
+    const https = require("https");
+    const body  = JSON.stringify({ title, html, excerpt: excerpt || "", lang: lang || "en", category: "gnomes" });
+    const result = await new Promise((resolve, reject) => {
+      const req2 = https.request({
+        hostname: "agora.sos.gr",
+        path: "/api/article/publish-from-eureach",
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-publish-secret": secret, "Content-Length": Buffer.byteLength(body) },
+      }, (r) => {
+        let data = "";
+        r.on("data", c => data += c);
+        r.on("end", () => { try { resolve({ status: r.statusCode, body: JSON.parse(data) }); } catch { resolve({ status: r.statusCode, body: {} }); } });
+      });
+      req2.on("error", reject);
+      req2.write(body);
+      req2.end();
+    });
+    if (result.status !== 200) return json(res, 502, { error: result.body.error || "Agora publish failed." });
+    return json(res, 200, result.body);
+  } catch (err) {
+    return json(res, 502, { error: "Could not reach Agora: " + err.message });
+  }
+}
+
+// ── Articles: analyze existing ────────────────────────────────────────────────
+
+async function handleArticleAnalyzeExisting(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const { articleText, siteContext, primaryKeyword, metaTitleHint, metaDescHint } = await readBody(req);
+  if (!articleText || articleText.trim().length < 100)
+    return json(res, 400, { error: "Article text too short (min 100 chars)." });
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI not configured." });
+
+  const model = isPaidUser(user) ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001";
+
+  const siteInfo = siteContext
+    ? `Site: ${siteContext.domain || ""}. Niche: ${siteContext.niche || "general"}. Audience: ${siteContext.audience || "general public"}. Geo: ${siteContext.geo || "Europe"}.`
+    : "";
+
+  const systemPrompt = `You are an expert SEO content editor. Follow the exact output format requested — no deviations.`;
+
+  const userMessage = `Analyze and improve this article. Keep it in its original language — do NOT translate. Respond in TWO clearly separated sections exactly as shown below.
+
+${siteInfo}
+Primary keyword: ${primaryKeyword || "auto-detect from article"}
+Requested meta title: ${metaTitleHint || "generate one"}
+Requested meta description: ${metaDescHint || "generate one"}
+
+ARTICLE TO IMPROVE:
+${articleText.slice(0, 8000)}
+
+---
+OUTPUT FORMAT — return exactly this, nothing else:
+
+METADATA_JSON
+{"metaTitle":"...","metaDescription":"...","primaryKeyword":"...","wordCount":0,"readingTime":0,"improvements":["...","...","..."]}
+END_METADATA
+
+ARTICLE_HTML
+<h1>...</h1><p>...</p>
+END_ARTICLE
+
+Rules:
+- METADATA_JSON must be a single-line minified JSON — absolutely no line breaks inside it
+- metaTitle: under 60 chars | metaDescription: 140-160 chars
+- ARTICLE_HTML contains clean semantic HTML: h1 (once), h2, h3, p, ul/li, strong, em — no divs, no classes, no inline styles
+- Keep the article in its original language — do NOT translate
+- Weave primary keyword naturally 3-5 times
+- Add compelling intro + clear conclusion`;
+
+  try {
+    const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 8000, model);
+    if (aiRes?.type === "error") {
+      const msg = aiRes?.error?.message || "AI request failed.";
+      const friendly = msg.includes("credit") ? "AI credits are depleted — please top up the Anthropic account to use this feature." : msg;
+      return json(res, 503, { error: friendly });
+    }
+    const rawText = (aiRes?.content?.[0]?.text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+    // AI may return multi-line JSON
+    const metaMatch = rawText.match(/METADATA_JSON\n([\s\S]+?)\nEND_METADATA/);
+    // Accept truncated HTML — use whatever was generated if END_ARTICLE is missing
+    const htmlMatch = rawText.match(/ARTICLE_HTML\n([\s\S]+?)(?:\nEND_ARTICLE|$)/);
+
+    if (!metaMatch || !htmlMatch) {
+      require("fs").writeFileSync("/tmp/ai_raw_debug.txt", rawText + "\n---LEN:" + rawText.length);
+      console.error("[analyze-existing] Format mismatch. metaMatch:", !!metaMatch, "htmlMatch:", !!htmlMatch);
+      return json(res, 500, { error: "AI returned an unexpected format. Please try again." });
+    }
+
+    let parsed;
+    const metaRaw = metaMatch[1].trim().split("\n").join(" ");
+    try { parsed = JSON.parse(metaRaw); }
+    catch (e) {
+      console.error("[analyze-existing] JSON parse error:", e.message, "raw meta:", metaMatch[1].slice(0, 200));
+      return json(res, 500, { error: "AI metadata could not be parsed. Please try again." });
+    }
+
+    parsed.html = htmlMatch[1].trim();
+    return json(res, 200, { result: parsed });
+  } catch (err) {
+    return json(res, 500, { error: "AI request failed: " + err.message });
+  }
+}
+
 // ── Articles deduct ───────────────────────────────────────────────────────────
 
 async function handleArticlesDeduct(req, res) {
@@ -1209,8 +1645,9 @@ async function handleArticlesDeduct(req, res) {
   }
 
   const artCost   = PLAN_LIMITS.costs.articleGenerate;
-  const artResult = deductCredits(users, idx, artCost);
+  const artResult = deductCredits(users, idx, artCost, 'Article Generated');
   if (!artResult.ok) return insufficientCredits(res, artResult.creditsLeft, artResult.creditsMax, artCost);
+  users[idx].monthArticles = (users[idx].monthArticles || 0) + 1;
 
   writeJSON(USERS_FILE, users);
   json(res, 200, { creditsLeft: artResult.creditsLeft, creditsMax: artResult.creditsMax, resetDate: resetDateLabel() });
@@ -1226,34 +1663,40 @@ async function crawlWebsite(rawUrl) {
     const parsed = new URL(target);
     if (isPrivateHost(parsed.hostname)) return null;
 
-    const fetchPage = (pageUrl, redirects = 0) => new Promise((resolve, reject) => {
-      if (redirects > 5) return reject(new Error("Too many redirects"));
-      const mod = pageUrl.startsWith("https") ? https : http;
-      const req = mod.get(pageUrl, {
-        timeout: 5000,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; EureachBot/1.0; +https://eureach.eu)",
-          "Accept": "text/html,application/xhtml+xml",
-          "Accept-Language": "en",
-        },
-      }, res => {
-        if ([301,302,303,307,308].includes(res.statusCode) && res.headers.location) {
-          const next = new URL(res.headers.location, pageUrl).href;
-          res.resume();
-          return fetchPage(next, redirects + 1).then(resolve).catch(reject);
+    // Use curl subprocess to avoid Node.js HTTPS connection pool exhaustion
+    const fetchPage = (pageUrl) => new Promise((resolve) => {
+      const { execFile } = require("child_process");
+      const hdrFile = "/tmp/crawl-hdr-" + process.pid + ".tmp";
+      execFile("curl", [
+        "-L", "-s", "--max-time", "6",
+        "-A", "Mozilla/5.0 (compatible; EureachBot/1.0; +https://eureach.eu)",
+        "-H", "Accept: text/html,application/xhtml+xml",
+        "-H", "Accept-Language: en",
+        "-D", hdrFile,   // dump headers to temp file, not stdout
+        "--", pageUrl
+      ], { maxBuffer: 3000000, timeout: 7000 }, (err, body) => {
+        let headers = "";
+        try { headers = require("fs").readFileSync(hdrFile, "utf8"); require("fs").unlinkSync(hdrFile); } catch {}
+        if (err && !body) return resolve(null);
+        const lastModifiedMatch = headers.match(/^last-modified:\s*(.+)$/im);
+        const lastModified = lastModifiedMatch ? lastModifiedMatch[1].trim() : null;
+        const locationMatches = [...headers.matchAll(/^location:\s*(.+)$/gim)];
+        let finalUrl = pageUrl;
+        if (locationMatches.length) {
+          const last = locationMatches[locationMatches.length - 1][1].trim();
+          try { finalUrl = new URL(last, pageUrl).href; } catch {}
         }
-        if (res.statusCode !== 200) { res.resume(); return resolve(null); }
-        const lastModified = res.headers["last-modified"] || null;
-        const chunks = [];
-        res.on("data", c => { chunks.push(c); if (Buffer.concat(chunks).length > 500000) res.destroy(); });
-        res.on("end",  () => resolve({ html: Buffer.concat(chunks).toString("utf8", 0, 500000), lastModified, finalUrl: pageUrl }));
-        res.on("error", reject);
+        const html = (body || "").slice(0, 500000);
+        if (!html) return resolve(null);
+        resolve({ html, lastModified, finalUrl });
       });
-      req.on("error", reject);
-      req.on("timeout", () => { req.destroy(); reject(new Error("timeout")); });
     });
 
+    require("fs").appendFileSync("/tmp/crawl-debug.log", new Date().toISOString()+" starting fetchPage: "+target+"\n");
+    console.log("[crawl] starting fetchPage:", target);
     const pageResult = await fetchPage(target);
+    require("fs").appendFileSync("/tmp/crawl-debug.log", new Date().toISOString()+" fetchPage done: "+(pageResult ? "finalUrl="+pageResult.finalUrl : "NULL")+"\n");
+    console.log("[crawl] fetchPage done:", pageResult ? ("finalUrl="+pageResult.finalUrl) : "NULL");
     if (!pageResult) return null;
     const { html, lastModified: pageLastModified, finalUrl } = pageResult;
     const origin = (() => { try { return new URL(finalUrl || target).origin; } catch { return parsed.origin; } })();
@@ -1348,7 +1791,8 @@ async function crawlWebsite(rawUrl) {
       : null;
 
     return { title, description, h1s, h2s, ogTitle, ogDesc, schemaTypes, hasPhone, hasEmail, hasFacebook, hasInstagram, hasLinkedIn, hasGoogleMaps, hasRobots, hasSitemap, lastUpdated, recentUpdates: sitemapDates };
-  } catch {
+  } catch (crawlErr) {
+    console.error("[crawlWebsite] ERROR:", crawlErr && crawlErr.message, rawUrl);
     return null;
   }
 }
@@ -1409,7 +1853,7 @@ function scoreFromCrawl(crawl, url) {
   return { overall, breakdown };
 }
 
-async function runCompetitorAudit(apiKey, name, url, industry, model = "claude-sonnet-4-6") {
+async function runCompetitorAudit(apiKey, name, url, industry, model = "claude-haiku-4-5-20251001") {
   // Crawl website for real data (hard 8s cap)
   const crawl = url ? await Promise.race([
     crawlWebsite(url),
@@ -1417,6 +1861,7 @@ async function runCompetitorAudit(apiKey, name, url, industry, model = "claude-s
   ]) : null;
 
   // Compute scores from crawl signals (avoids AI anchoring)
+  console.log("[audit] crawl result:", url, "->", crawl ? ("lastUpdated="+crawl.lastUpdated+" recentUpdates="+JSON.stringify(crawl.recentUpdates)) : "NULL (timed out or failed)");
   const computed = crawl ? scoreFromCrawl(crawl, url) : null;
 
   const crawlSection = crawl ? `
@@ -1541,8 +1986,9 @@ async function handleCompetitorCreate(req, res) {
   }
 
   const compCost   = PLAN_LIMITS.costs.competitorCreate;
-  const compResult = deductCredits(compUsers, compIdx, compCost);
+  const compResult = deductCredits(compUsers, compIdx, compCost, 'Competitor Added');
   if (!compResult.ok) return insufficientCredits(res, compResult.creditsLeft, compResult.creditsMax, compCost);
+  compUsers[compIdx].monthCompetitors = (compUsers[compIdx].monthCompetitors || 0) + 1;
   writeJSON(USERS_FILE, compUsers);
 
   const compModel = getModel(compUsers[compIdx]);
@@ -1582,9 +2028,10 @@ async function handleCompetitorCreate(req, res) {
 }
 
 async function handleCompetitorCheck(req, res, id) {
+  console.log("[check] handleCompetitorCheck called, id:", id);
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
-  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!user) { console.log("[check] not authenticated"); return json(res, 401, { error: "Not authenticated." }); }
 
   const apiKey = getAnthropicKey();
   if (!apiKey) return json(res, 500, { error: "AI service not configured." });
@@ -1593,8 +2040,9 @@ async function handleCompetitorCheck(req, res, id) {
   const recheckUidx   = recheckUsers.findIndex(u => u.id === user.id);
   if (recheckUidx === -1) return json(res, 404, { error: "User not found." });
   const recheckCost   = PLAN_LIMITS.costs.competitorCheck;
-  const recheckResult = deductCredits(recheckUsers, recheckUidx, recheckCost);
+  const recheckResult = deductCredits(recheckUsers, recheckUidx, recheckCost, 'Competitor Recheck');
   if (!recheckResult.ok) return insufficientCredits(res, recheckResult.creditsLeft, recheckResult.creditsMax, recheckCost);
+  recheckUsers[recheckUidx].monthCompetitors = (recheckUsers[recheckUidx].monthCompetitors || 0) + 1;
   writeJSON(USERS_FILE, recheckUsers);
 
   const all = readJSON(COMPETITOR_FILE);
@@ -2075,7 +2523,7 @@ async function handleAdminUpdateUser(req, res, targetUserId) {
   if (lastName   !== undefined) users[idx].lastName   = String(lastName).trim();
   if (email      !== undefined) users[idx].email      = String(email).trim().toLowerCase();
   if (suspended  !== undefined) users[idx].suspended  = Boolean(suspended);
-  if (role       !== undefined && (role === "admin" || role === "user")) users[idx].role = role;
+  if (role       !== undefined && (role === "admin" || role === "user" || role === "youtuber")) users[idx].role = role;
 
   if (plan !== undefined && PLANS.plans[plan]) {
     users[idx].plan       = plan;
@@ -2273,8 +2721,9 @@ async function handleAuditCreate(req, res) {
   }
 
   const auditCost   = PLAN_LIMITS.costs.auditCreate;
-  const auditResult = deductCredits(users, uidx, auditCost);
+  const auditResult = deductCredits(users, uidx, auditCost, 'AI Visibility Audit');
   if (!auditResult.ok) return insufficientCredits(res, auditResult.creditsLeft, auditResult.creditsMax, auditCost);
+  users[uidx].monthAudits = (users[uidx].monthAudits || 0) + 1;
 
   const apiKey = getAnthropicKey();
   if (!apiKey && !getGroqKey()) return json(res, 500, { error: "AI service not configured." });
@@ -2360,7 +2809,7 @@ async function handleAuditShareCreate(req, res, id) {
   const shareUidx   = shareUsers.findIndex(u => u.id === user.id);
   if (shareUidx === -1) return json(res, 404, { error: "User not found." });
   const shareCost   = PLAN_LIMITS.costs.auditShareCreate;
-  const shareResult = deductCredits(shareUsers, shareUidx, shareCost);
+  const shareResult = deductCredits(shareUsers, shareUidx, shareCost, 'Audit Share');
   if (!shareResult.ok) return insufficientCredits(res, shareResult.creditsLeft, shareResult.creditsMax, shareCost);
   writeJSON(USERS_FILE, shareUsers);
 
@@ -2691,7 +3140,7 @@ async function handleOutreachSendStep(req, res) {
   const sendUsers = readJSON(USERS_FILE);
   const sendIdx   = sendUsers.findIndex(u => u.id === user.id);
   if (sendIdx !== -1) {
-    const sendResult = deductCredits(sendUsers, sendIdx, sendCost);
+    const sendResult = deductCredits(sendUsers, sendIdx, sendCost, 'Outreach Email');
     if (!sendResult.ok) return insufficientCredits(res, sendResult.creditsLeft, sendResult.creditsMax, sendCost);
     writeJSON(USERS_FILE, sendUsers);
   }
@@ -3123,6 +3572,1258 @@ const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webho
 
 function generateCsrfToken() { return crypto.randomBytes(24).toString("hex"); }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI CITATION BUILDER — handlers (eureach.eu)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const CITATION_PACKAGES = {
+  starter:   { name: "Starter",   mentions: 5,  publishers: 5,  queries: 1, days: 60,  price: 299  },
+  growth:    { name: "Growth",    mentions: 15, publishers: 10, queries: 3, days: 60,  price: 699  },
+  authority: { name: "Authority", mentions: 30, publishers: 20, queries: 6, days: 90,  price: 1299 },
+};
+
+function citNextId(arr) {
+  return arr.length ? Math.max(...arr.map(x => x.id || 0)) + 1 : 1;
+}
+
+// GET /api/citations/packages
+async function handleCitationsPackages(req, res) {
+  return json(res, 200, { packages: CITATION_PACKAGES });
+}
+
+// POST /api/citations/campaigns
+async function handleCitationsCampaignCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const body = await readBody(req);
+  const pkg  = CITATION_PACKAGES[body.package];
+  if (!pkg) return json(res, 400, { error: "Invalid package." });
+
+  const queries = Array.isArray(body.target_queries) ? body.target_queries.slice(0, pkg.queries) : [];
+  if (!queries.length) return json(res, 400, { error: "At least one target query is required." });
+
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const campaign  = {
+    id:                   citNextId(campaigns),
+    user_id:              user.id,
+    package:              body.package,
+    status:               "pending",
+    target_queries:       queries,
+    business_description: (body.business_description || "").slice(0, 2000),
+    key_messages:         Array.isArray(body.key_messages) ? body.key_messages.slice(0, 5) : [],
+    target_language:      body.target_language || "el",
+    target_market:        body.target_market || "greece",
+    mentions_total:       pkg.mentions,
+    mentions_placed:      0,
+    mentions_live:        0,
+    youtube_addon:           (body.package === 'authority') || (body.package === 'growth' && body.youtube_addon === true),
+    youtube_status:          ((body.package === 'authority') || (body.package === 'growth' && body.youtube_addon === true)) ? 'pending' : 'not_included',
+    youtube_audience_type:   body.youtube_audience_type  || null,
+    youtube_natural_phrase:  body.youtube_natural_phrase || null,
+    youtube_restrictions:    body.youtube_restrictions   || null,
+    price_paid:           (body.package === 'growth' && body.youtube_addon === true) ? pkg.price + 199 : pkg.price,
+    stripe_payment_id:    null,
+    started_at:           null,
+    completed_at:         null,
+    created_at:           new Date().toISOString(),
+  };
+  campaigns.push(campaign);
+  writeJSON(CITATION_CAMPAIGNS_FILE, campaigns);
+
+  sendSystemEmail(
+    process.env.ADMIN_EMAIL || process.env.SYSTEM_EMAIL_USER,
+    "New Citation Campaign — action required",
+    "A new " + pkg.name + " campaign was created by user " + (user.email || user.id) + ". Campaign ID: " + campaign.id + ". Go to /citations-admin.html to assign publishers."
+  );
+
+  return json(res, 201, { campaign });
+}
+
+// GET /api/citations/campaigns
+async function handleCitationsCampaignsList(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  return json(res, 200, { campaigns: all.filter(c => c.user_id === user.id) });
+}
+
+// GET /api/citations/campaigns/:id
+async function handleCitationsCampaignGet(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all      = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const campaign = all.find(c => c.id === parseInt(id));
+  if (!campaign) return json(res, 404, { error: "Campaign not found." });
+  if (campaign.user_id !== user.id && user.role !== "admin") return json(res, 403, { error: "Access denied." });
+  return json(res, 200, { campaign });
+}
+
+// GET /api/citations/campaigns/:id/placements
+async function handleCitationsPlacementsGet(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const campaign  = campaigns.find(c => c.id === parseInt(id));
+  if (!campaign) return json(res, 404, { error: "Campaign not found." });
+  if (campaign.user_id !== user.id && user.role !== "admin") return json(res, 403, { error: "Access denied." });
+  const all = Array.isArray(readJSON(CITATION_PLACEMENTS_FILE)) ? readJSON(CITATION_PLACEMENTS_FILE) : [];
+  return json(res, 200, { placements: all.filter(p => p.campaign_id === parseInt(id)) });
+}
+
+// GET /api/citations/campaigns/:id/snapshots
+async function handleCitationsSnapshotsGet(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const campaign  = campaigns.find(c => c.id === parseInt(id));
+  if (!campaign) return json(res, 404, { error: "Campaign not found." });
+  if (campaign.user_id !== user.id && user.role !== "admin") return json(res, 403, { error: "Access denied." });
+  const all = Array.isArray(readJSON(CITATION_SNAPSHOTS_FILE)) ? readJSON(CITATION_SNAPSHOTS_FILE) : [];
+  return json(res, 200, { snapshots: all.filter(s => s.campaign_id === parseInt(id)) });
+}
+
+// POST /api/citations/campaigns/:id/snapshot
+async function handleCitationsSnapshotCreate(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const campaign  = campaigns.find(c => c.id === parseInt(id));
+  if (!campaign) return json(res, 404, { error: "Campaign not found." });
+  if (campaign.user_id !== user.id && user.role !== "admin") return json(res, 403, { error: "Access denied." });
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI not configured." });
+
+  const body         = await readBody(req);
+  const query        = (body.query || campaign.target_queries[0] || "").trim();
+  const businessName = (body.business_name || "").trim();
+  if (!query || !businessName) return json(res, 400, { error: "query and business_name are required." });
+
+  try {
+    const response = await callClaude(
+      apiKey,
+      "You answer questions as a knowledgeable assistant. Be honest — only mention businesses you actually know about. Do not invent information.",
+      query, 500
+    );
+    const answer   = (response.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+    const appeared = answer.toLowerCase().includes(businessName.toLowerCase());
+    const sentences = answer.split(/[.!?]+/);
+    const excerpt   = appeared ? sentences.filter(s => s.toLowerCase().includes(businessName.toLowerCase())).slice(0, 2).join(". ").trim() : null;
+
+    const snapshots = Array.isArray(readJSON(CITATION_SNAPSHOTS_FILE)) ? readJSON(CITATION_SNAPSHOTS_FILE) : [];
+    const snap = { id: citNextId(snapshots), campaign_id: parseInt(id), user_id: user.id, query, engine: "claude_proxy", appeared, snapshot_text: excerpt, taken_at: new Date().toISOString() };
+    snapshots.push(snap);
+    writeJSON(CITATION_SNAPSHOTS_FILE, snapshots);
+
+    if (appeared) {
+      const users  = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+      const client = users.find(u => u.id === campaign.user_id);
+      if (client) sendSystemEmail(client.email, "Εμφανιστήκατε στο AI για: " + query, 'Το AI engine εντόπισε την επιχείρησή σας για το ερώτημα: "' + query + '". Σχετικό απόσπασμα: ' + (excerpt || "-"));
+    }
+    return json(res, 200, { snap });
+  } catch (e) {
+    return json(res, 500, { error: "Visibility check failed: " + e.message });
+  }
+}
+
+// POST /api/citations/checkout
+async function handleCitationsCheckout(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const body = await readBody(req);
+  const pkg  = CITATION_PACKAGES[body.package];
+  if (!pkg) return json(res, 400, { error: "Invalid package." });
+
+  const stripe = getStripe();
+  if (!stripe) return json(res, 500, { error: "Billing not configured. Please contact support." });
+
+  const youtubeAddon = body.package === "growth" && !!body.youtube_addon;
+  const amountEur    = youtubeAddon ? pkg.price + 199 : pkg.price;
+  const label        = "AI Citation Builder — " + pkg.name + (youtubeAddon ? " + YouTube Mention" : "");
+  const campaignId   = String(body.campaign_id || "");
+  const origin       = process.env.SITE_URL || "https://eureach.eu";
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode:        "payment",
+      line_items:  [{ price_data: { currency: "eur", unit_amount: Math.round(amountEur * 100), product_data: { name: label } }, quantity: 1 }],
+      metadata:    { userId: String(user.id), package: body.package, campaignId, youtube_addon: String(youtubeAddon) },
+      customer_email: user.email,
+      success_url: origin + "/citations-campaign.html?id=" + campaignId + "&paid=1",
+      cancel_url:  origin + "/citations-wizard.html?package=" + body.package + (youtubeAddon ? "&youtube=1" : ""),
+    });
+    return json(res, 200, { url: session.url });
+  } catch (e) {
+    return json(res, 500, { error: e.message });
+  }
+}
+
+// POST /api/citations/webhook
+async function handleCitationsWebhook(req, res) {
+  const rawBody = req._rawBody;
+  const sig     = req.headers["stripe-signature"];
+  const secret  = process.env.STRIPE_CITATION_WEBHOOK_SECRET;
+  const stripe  = getStripe();
+  if (!stripe || !secret) return json(res, 200, { received: true }); // silently ok if not configured
+
+  let event;
+  try { event = stripe.webhooks.constructEvent(rawBody || Buffer.alloc(0), sig, secret); }
+  catch (e) { return json(res, 400, { error: "Webhook signature invalid." }); }
+
+  if (event.type === "checkout.session.completed") {
+    const session    = event.data.object;
+    const campaignId = parseInt(session.metadata.campaignId);
+    const userId     = parseInt(session.metadata.userId);
+    if (campaignId) {
+      const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+      const idx = campaigns.findIndex(c => c.id === campaignId);
+      if (idx !== -1) {
+        activateCitationCampaign(campaignId, userId, session.payment_intent || session.id);
+      }
+    }
+  }
+  return json(res, 200, { received: true });
+}
+
+
+// ── PayPal helpers ────────────────────────────────────────────────────────────
+async function getPayPalToken() {
+  const clientId     = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+  const base = process.env.PAYPAL_ENV === "live" ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+  const res = await fetch(base + "/v1/oauth2/token", {
+    method: "POST",
+    headers: { "Authorization": "Basic " + Buffer.from(clientId + ":" + clientSecret).toString("base64"), "Content-Type": "application/x-www-form-urlencoded" },
+    body: "grant_type=client_credentials",
+  });
+  const d = await res.json();
+  return d.access_token ? { token: d.access_token, base } : null;
+}
+
+function activateCitationCampaign(campaignId, userId, paymentId) {
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const idx = campaigns.findIndex(c => c.id === campaignId);
+  if (idx === -1) return false;
+  if (campaigns[idx].status === "active") return true;
+  campaigns[idx].status            = "active";
+  campaigns[idx].stripe_payment_id = paymentId;
+  campaigns[idx].started_at        = new Date().toISOString();
+  writeJSON(CITATION_CAMPAIGNS_FILE, campaigns);
+  const users  = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  const client = users.find(u => u.id === userId);
+  if (client) sendSystemEmail(client.email, "Your campaign has started", "Your AI Citation Builder campaign has started. Track progress at https://eureach.eu/citations-campaign.html?id=" + campaignId);
+  return true;
+}
+
+// POST /api/citations/paypal/create-order
+async function handlePayPalCreateOrder(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const body = await readBody(req);
+  const pkg  = CITATION_PACKAGES[body.package];
+  if (!pkg) return json(res, 400, { error: "Invalid package." });
+
+  const pp = await getPayPalToken();
+  if (!pp) return json(res, 500, { error: "PayPal not configured." });
+
+  const youtubeAddon = body.package === "growth" && !!body.youtube_addon;
+  const amountEur    = (youtubeAddon ? pkg.price + 199 : pkg.price).toFixed(2);
+  const label        = "AI Citation Builder — " + pkg.name + (youtubeAddon ? " + YouTube Mention" : "");
+
+  try {
+    const r = await fetch(pp.base + "/v2/checkout/orders", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + pp.token, "Content-Type": "application/json", "PayPal-Request-Id": "cit-" + body.campaign_id + "-" + Date.now() },
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [{ amount: { currency_code: "EUR", value: amountEur }, description: label, custom_id: String(body.campaign_id) + "|" + String(user.id) }],
+      }),
+    });
+    const order = await r.json();
+    if (!r.ok) return json(res, 500, { error: order.message || "PayPal error" });
+    return json(res, 200, { id: order.id });
+  } catch (e) {
+    return json(res, 500, { error: e.message });
+  }
+}
+
+// POST /api/citations/paypal/capture-order
+async function handlePayPalCaptureOrder(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const body = await readBody(req);
+  const { order_id } = body;
+  if (!order_id) return json(res, 400, { error: "order_id required." });
+
+  const pp = await getPayPalToken();
+  if (!pp) return json(res, 500, { error: "PayPal not configured." });
+
+  try {
+    const r = await fetch(pp.base + "/v2/checkout/orders/" + order_id + "/capture", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + pp.token, "Content-Type": "application/json" },
+    });
+    const capture = await r.json();
+    if (!r.ok || capture.status !== "COMPLETED") return json(res, 400, { error: "Payment not completed." });
+
+    const unit       = capture.purchase_units?.[0];
+    const customId   = unit?.custom_id || "";
+    const [campaignIdStr, userIdStr] = customId.split("|");
+    const campaignId = parseInt(campaignIdStr);
+    const userId     = parseInt(userIdStr);
+    const paymentId  = unit?.payments?.captures?.[0]?.id || order_id;
+
+    activateCitationCampaign(campaignId, userId, paymentId);
+    return json(res, 200, { ok: true, campaign_id: campaignId });
+  } catch (e) {
+    return json(res, 500, { error: e.message });
+  }
+}
+
+// POST /api/citations/publishers/apply  (public — no auth)
+async function handleCitationsPublisherApply(req, res) {
+  const body = await readBody(req);
+  const url  = (body.url || "").trim();
+  if (!url) return json(res, 400, { error: "Website URL is required." });
+
+  const publishers = Array.isArray(readJSON(CITATION_PUBLISHERS_FILE)) ? readJSON(CITATION_PUBLISHERS_FILE) : [];
+  const entry = {
+    id:                  citNextId(publishers),
+    name:                (body.name || url).trim(),
+    url,
+    domain_rating:       null,
+    monthly_traffic:     parseInt(body.monthly_traffic) || null,
+    language:            (body.language || "el").trim(),
+    categories:          (body.categories || "").split(",").map(s => s.trim()).filter(Boolean),
+    country:             (body.country || "Greece").trim(),
+    cost_per_placement:  null,
+    status:              "pending",
+    notes:               "",
+    contact_email:       (body.contact_email || "").trim(),
+    added_at:            new Date().toISOString(),
+  };
+  publishers.push(entry);
+  writeJSON(CITATION_PUBLISHERS_FILE, publishers);
+  sendSystemEmail(process.env.ADMIN_EMAIL || process.env.SYSTEM_EMAIL_USER, "New publisher application: " + url, "URL: " + url + "\nContact: " + entry.contact_email + "\nTraffic: " + (entry.monthly_traffic || "unknown") + "\nLanguage: " + entry.language);
+  return json(res, 200, { ok: true, message: "Application received. We will review and contact you within 48 hours." });
+}
+
+// ── Admin handlers ────────────────────────────────────────────────────────────
+
+// GET /api/admin/citations/campaigns
+async function handleAdminCitationsCampaigns(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const users     = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  return json(res, 200, { campaigns: campaigns.map(c => {
+    const u = users.find(u => u.id === c.user_id);
+    return { ...c, user_email: u ? u.email : "unknown", user_name: u ? ((u.firstName || "") + " " + (u.lastName || "")).trim() : "" };
+  })});
+}
+
+// GET /api/admin/citations/publishers
+async function handleAdminCitationsPublishers(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  return json(res, 200, { publishers: Array.isArray(readJSON(CITATION_PUBLISHERS_FILE)) ? readJSON(CITATION_PUBLISHERS_FILE) : [] });
+}
+
+// POST /api/admin/citations/publishers
+async function handleAdminCitationsPublisherCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const body = await readBody(req);
+  if (!body.name || !body.url) return json(res, 400, { error: "name and url are required." });
+  const publishers = Array.isArray(readJSON(CITATION_PUBLISHERS_FILE)) ? readJSON(CITATION_PUBLISHERS_FILE) : [];
+  const pub = {
+    id:                 citNextId(publishers),
+    name:               body.name.trim(),
+    url:                body.url.trim(),
+    domain_rating:      parseInt(body.domain_rating) || null,
+    monthly_traffic:    parseInt(body.monthly_traffic) || null,
+    language:           body.language || "el",
+    categories:         Array.isArray(body.categories) ? body.categories : (body.categories || "").split(",").map(s => s.trim()).filter(Boolean),
+    country:            body.country || "Greece",
+    cost_per_placement: parseFloat(body.cost_per_placement) || null,
+    status:             body.status || "active",
+    notes:              body.notes || "",
+    contact_email:      body.contact_email || "",
+    added_at:           new Date().toISOString(),
+  };
+  publishers.push(pub);
+  writeJSON(CITATION_PUBLISHERS_FILE, publishers);
+  return json(res, 201, { publisher: pub });
+}
+
+// PUT /api/admin/citations/publishers/:id
+async function handleAdminCitationsPublisherUpdate(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const body = await readBody(req);
+  const publishers = Array.isArray(readJSON(CITATION_PUBLISHERS_FILE)) ? readJSON(CITATION_PUBLISHERS_FILE) : [];
+  const idx = publishers.findIndex(p => p.id === parseInt(id));
+  if (idx === -1) return json(res, 404, { error: "Publisher not found." });
+  ["name","url","domain_rating","monthly_traffic","language","categories","country","cost_per_placement","status","notes","contact_email"].forEach(k => { if (body[k] !== undefined) publishers[idx][k] = body[k]; });
+  writeJSON(CITATION_PUBLISHERS_FILE, publishers);
+  return json(res, 200, { publisher: publishers[idx] });
+}
+
+// GET /api/admin/citations/placements
+async function handleAdminCitationsPlacementsList(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const placements = Array.isArray(readJSON(CITATION_PLACEMENTS_FILE)) ? readJSON(CITATION_PLACEMENTS_FILE) : [];
+  const publishers = Array.isArray(readJSON(CITATION_PUBLISHERS_FILE)) ? readJSON(CITATION_PUBLISHERS_FILE) : [];
+  const campaigns  = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  return json(res, 200, { placements: placements.map(p => {
+    const pub = publishers.find(pb => pb.id === p.publisher_id) || {};
+    const cam = campaigns.find(c => c.id === p.campaign_id) || {};
+    return { ...p, publisher_name: pub.name, publisher_url: pub.url, campaign_package: cam.package };
+  })});
+}
+
+// POST /api/admin/citations/placements
+async function handleAdminCitationsPlacementCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const body = await readBody(req);
+  if (!body.campaign_id || !body.publisher_id) return json(res, 400, { error: "campaign_id and publisher_id are required." });
+  const placements = Array.isArray(readJSON(CITATION_PLACEMENTS_FILE)) ? readJSON(CITATION_PLACEMENTS_FILE) : [];
+  const placement  = {
+    id: citNextId(placements), campaign_id: parseInt(body.campaign_id), publisher_id: parseInt(body.publisher_id),
+    status: "draft", article_title: "", article_content: "", article_url: null, mention_excerpt: "",
+    submitted_at: null, published_at: null, expires_at: null, admin_notes: body.admin_notes || "",
+    created_at: new Date().toISOString(),
+  };
+  placements.push(placement);
+  writeJSON(CITATION_PLACEMENTS_FILE, placements);
+  return json(res, 201, { placement });
+}
+
+// PUT /api/admin/citations/placements/:id
+async function handleAdminCitationsPlacementUpdate(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const body = await readBody(req);
+  const placements = Array.isArray(readJSON(CITATION_PLACEMENTS_FILE)) ? readJSON(CITATION_PLACEMENTS_FILE) : [];
+  const idx = placements.findIndex(p => p.id === parseInt(id));
+  if (idx === -1) return json(res, 404, { error: "Placement not found." });
+
+  const prev = { ...placements[idx] };
+  ["status","article_title","article_content","article_url","mention_excerpt","submitted_at","published_at","admin_notes"].forEach(k => { if (body[k] !== undefined) placements[idx][k] = body[k]; });
+
+  if (body.status === "published" && prev.status !== "published") {
+    const exp = new Date(); exp.setFullYear(exp.getFullYear() + 1);
+    placements[idx].published_at = placements[idx].published_at || new Date().toISOString();
+    placements[idx].expires_at   = exp.toISOString();
+
+    const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+    const cidx = campaigns.findIndex(c => c.id === placements[idx].campaign_id);
+    if (cidx !== -1) {
+      campaigns[cidx].mentions_live   = (campaigns[cidx].mentions_live || 0) + 1;
+      campaigns[cidx].mentions_placed = (campaigns[cidx].mentions_placed || 0) + 1;
+      const total = campaigns[cidx].mentions_total;
+      const live  = campaigns[cidx].mentions_live;
+      const users  = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+      const client = users.find(u => u.id === campaigns[cidx].user_id);
+      if (client && live === 1) sendSystemEmail(client.email, "Η πρώτη σας αναφορά είναι online", "Τίτλος: " + placements[idx].article_title + "\nURL: " + (placements[idx].article_url || "-") + "\nΔείτε την καμπάνια: eureach.eu/citations-campaign.html?id=" + campaigns[cidx].id);
+      if (client && total && live === Math.floor(total / 2)) sendSystemEmail(client.email, "Μέχρι τώρα: " + live + " αναφορές live", "Έχουμε τοποθετήσει " + live + " από " + total + " αναφορές. eureach.eu/citations-campaign.html?id=" + campaigns[cidx].id);
+      if (live >= total) {
+        campaigns[cidx].status = "completed"; campaigns[cidx].completed_at = new Date().toISOString();
+        if (client) sendSystemEmail(client.email, "Η καμπάνια ολοκληρώθηκε", "Όλες οι " + total + " αναφορές είναι live. eureach.eu/citations-campaign.html?id=" + campaigns[cidx].id);
+      }
+      writeJSON(CITATION_CAMPAIGNS_FILE, campaigns);
+    }
+  }
+  writeJSON(CITATION_PLACEMENTS_FILE, placements);
+  return json(res, 200, { placement: placements[idx] });
+}
+
+// POST /api/admin/citations/generate — AI article generation
+async function handleAdminCitationsGenerate(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const body = await readBody(req);
+  if (!body.placement_id) return json(res, 400, { error: "placement_id is required." });
+
+  const placements = Array.isArray(readJSON(CITATION_PLACEMENTS_FILE)) ? readJSON(CITATION_PLACEMENTS_FILE) : [];
+  const publishers = Array.isArray(readJSON(CITATION_PUBLISHERS_FILE)) ? readJSON(CITATION_PUBLISHERS_FILE) : [];
+  const campaigns  = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+
+  const pidx      = placements.findIndex(p => p.id === parseInt(body.placement_id));
+  if (pidx === -1) return json(res, 404, { error: "Placement not found." });
+  const placement = placements[pidx];
+  const publisher = publishers.find(p => p.id === placement.publisher_id);
+  const campaign  = campaigns.find(c => c.id === placement.campaign_id);
+  if (!publisher || !campaign) return json(res, 404, { error: "Publisher or campaign not found." });
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI not configured." });
+
+  const lang = publisher.language === "el" ? "Greek" : publisher.language === "de" ? "German" : "English";
+
+  try {
+    const response = await callClaude(
+      apiKey,
+      `You are an expert content writer specialising in business and technology articles. Write authoritative, natural-sounding articles that read as genuine editorial content. Never write promotional or advertorial copy. The article must read as if written by an independent journalist. Return ONLY valid JSON. No text outside JSON.`,
+      `Write an article for publication on ${publisher.name} (${publisher.url}).
+Publisher categories: ${(publisher.categories || []).join(", ")}
+Publisher language: ${publisher.language}
+Publisher country: ${publisher.country}
+
+Naturally mention this business in a credible, editorial context:
+Business description: ${campaign.business_description}
+Key messages: ${(campaign.key_messages || []).join(" | ")}
+Target queries: ${(campaign.target_queries || []).join(" | ")}
+
+RULES:
+- 500-700 words, editorial tone, independent voice
+- Business mention must feel natural — not forced
+- Include business in a list or comparison where appropriate
+- Do NOT use "leading", "best", "top" directly about the client
+- Write in ${lang}
+
+Return JSON: {"title":"...","content":"...","mention_excerpt":"...","topic_angle":"...","target_query_addressed":"..."}`,
+      1500
+    );
+    const text   = (response.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+    const result = JSON.parse(text);
+    placements[pidx].article_title   = result.title   || "";
+    placements[pidx].article_content = result.content || "";
+    placements[pidx].mention_excerpt = result.mention_excerpt || "";
+    writeJSON(CITATION_PLACEMENTS_FILE, placements);
+    return json(res, 200, { article: result });
+  } catch (e) {
+    return json(res, 500, { error: "Article generation failed: " + e.message });
+  }
+}
+
+// Weekly visibility snapshot — runs every hour, acts only on Monday 8am
+setInterval(async () => {
+  const now = new Date();
+  if (now.getDay() !== 1 || now.getHours() !== 8) return;
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return;
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const snapshots = Array.isArray(readJSON(CITATION_SNAPSHOTS_FILE)) ? readJSON(CITATION_SNAPSHOTS_FILE) : [];
+  const users     = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  let changed = false;
+  for (const campaign of campaigns.filter(c => c.status === "active" || c.status === "in_progress")) {
+    const query = campaign.target_queries[0];
+    if (!query) continue;
+    try {
+      const response = await callClaude(apiKey, "Answer questions as a knowledgeable assistant. Be honest.", query, 400);
+      const answer   = (response.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+      const client   = users.find(u => u.id === campaign.user_id);
+      const bname    = client ? (client.businessName || ((client.firstName || "") + " " + (client.lastName || "")).trim() || client.email) : "";
+      const appeared = bname ? answer.toLowerCase().includes(bname.toLowerCase()) : false;
+      const sentences = answer.split(/[.!?]+/);
+      const excerpt   = appeared ? sentences.filter(s => s.toLowerCase().includes(bname.toLowerCase())).slice(0, 2).join(". ").trim() : null;
+      snapshots.push({ id: citNextId(snapshots), campaign_id: campaign.id, user_id: campaign.user_id, query, engine: "claude_proxy_weekly", appeared, snapshot_text: excerpt, taken_at: new Date().toISOString() });
+      changed = true;
+    } catch {}
+  }
+  if (changed) writeJSON(CITATION_SNAPSHOTS_FILE, snapshots);
+}, 60 * 60 * 1000);
+
+
+// POST /api/admin/citations/youtube-brief — generate YouTuber brief for a campaign
+async function handleAdminCitationsYoutubeBrief(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const body = await readBody(req);
+  if (!body.campaign_id) return json(res, 400, { error: "campaign_id is required." });
+
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const campaign  = campaigns.find(c => c.id === parseInt(body.campaign_id));
+  if (!campaign) return json(res, 404, { error: "Campaign not found." });
+  if (!campaign.youtube_addon) return json(res, 400, { error: "This campaign does not include a YouTube placement." });
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI not configured." });
+
+  const restrictionsLine = campaign.youtube_restrictions
+    ? `\nHARD CONSTRAINTS — the YouTuber must avoid:\n- ${campaign.youtube_restrictions}`
+    : "";
+
+  const systemPrompt = `You are a talent manager briefing a YouTuber for a sponsored mention.
+Write a concise, friendly brief that a Greek YouTuber can read in under 2 minutes.
+The mention must feel 100% natural — not an ad, not a testimonial, just a genuine reference.
+Return ONLY valid JSON. No text outside JSON.`;
+
+  const userMsg = `Create a YouTube mention brief for this campaign:
+
+Business description: ${campaign.business_description}
+Key messages: ${(campaign.key_messages || []).join(" | ")}
+Target queries (what AI engines should return this business for): ${(campaign.target_queries || []).join(" | ")}
+Audience type: ${campaign.youtube_audience_type || "not specified"}
+Natural phrase anchor (how to mention the business): "${campaign.youtube_natural_phrase || ""}"
+${restrictionsLine}
+
+Write the brief in Greek (the YouTuber is Greek).
+
+Return this JSON:
+{
+  "channel_fit": "one sentence on what type of channel/video this suits best",
+  "suggested_context": "the scene or topic in a video where this mention fits naturally (2-3 sentences)",
+  "example_phrase": "the exact words the YouTuber could say — casual, spoken Greek, 1-3 sentences, using the natural phrase anchor as inspiration",
+  "talking_points": ["up to 3 bullet points the YouTuber can optionally expand on"],
+  "avoid": ["list of things to avoid — include any hard constraints plus general guidance"],
+  "duration": "suggested mention length in seconds (e.g. 15-20 seconds)"
+}`;
+
+  try {
+    const response = await callClaude(apiKey, systemPrompt, userMsg, 1000);
+    const text     = (response.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+    const brief    = JSON.parse(text);
+
+    // Store the brief on the campaign
+    const cidx = campaigns.findIndex(c => c.id === parseInt(body.campaign_id));
+    campaigns[cidx].youtube_brief      = brief;
+    campaigns[cidx].youtube_brief_at   = new Date().toISOString();
+    writeJSON(CITATION_CAMPAIGNS_FILE, campaigns);
+
+    return json(res, 200, { brief });
+  } catch (e) {
+    return json(res, 500, { error: "Brief generation failed: " + e.message });
+  }
+}
+
+
+// POST /api/citations/leads  — booking / strategy call request (public, no auth required)
+async function handleCitationsLeadCreate(req, res) {
+  const body  = await readBody(req);
+  const name  = (body.name  || "").trim();
+  const email = (body.email || "").trim().toLowerCase();
+  const phone = (body.phone || "").trim();
+  if (!name)  return json(res, 400, { error: "Name is required." });
+  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) return json(res, 400, { error: "Valid email is required." });
+  if (!phone) return json(res, 400, { error: "Phone is required." });
+
+  const leads = Array.isArray(readJSON(CITATION_LEADS_FILE)) ? readJSON(CITATION_LEADS_FILE) : [];
+  const lead  = {
+    id:               citNextId(leads),
+    name,
+    email,
+    phone,
+    message:          (body.message       || "").slice(0, 200),
+    package_interest: body.package_interest || "",
+    preferred_time:   body.preferred_time   || "",
+    status:           "new",
+    created_at:       new Date().toISOString(),
+  };
+  leads.push(lead);
+  writeJSON(CITATION_LEADS_FILE, leads);
+
+  const pkgLabels = { starter: "Starter (€299)", growth: "Growth (€699)", authority: "Authority (€1,299)" };
+  const pkgLabel  = pkgLabels[lead.package_interest] || lead.package_interest;
+
+  // Email admin
+  sendSystemEmail(
+    process.env.ADMIN_EMAIL || process.env.SYSTEM_EMAIL_USER,
+    "New Citation Builder lead — " + name + " interested in " + pkgLabel,
+    "Name: "    + name  + "\n" +
+    "Email: "   + email + "\n" +
+    "Phone: "   + phone + "\n" +
+    "Package: " + pkgLabel + "\n" +
+    "Preferred time: " + (lead.preferred_time || "—") + "\n" +
+    "Message: " + (lead.message || "—")
+  );
+
+  // Confirmation email to lead
+  sendSystemEmail(
+    email,
+    "Λάβαμε το αίτημά σας — eureach.eu",
+    "Γεια σας " + name + ",\n\n" +
+    "Λάβαμε το αίτημά σας για δωρεάν κλήση στρατηγικής για το πακέτο " + pkgLabel + ".\n\n" +
+    "Θα επικοινωνήσουμε εντός 24 ωρών για να κλείσουμε την κλήση μας.\n\n" +
+    "Ευχαριστούμε,\nΗ ομάδα του eureach.eu"
+  );
+
+  return json(res, 200, { ok: true });
+}
+
+
+// ── YouTuber Portal helpers ───────────────────────────────────────────────────
+
+function ytNextId(arr) {
+  return arr.length ? Math.max(...arr.map(x => x.id || 0)) + 1 : 1;
+}
+
+// POST /api/youtube/join  (public)
+async function handleYoutubeJoin(req, res) {
+  const body = await readBody(req);
+  const name  = (body.name  || "").trim();
+  const email = (body.email || "").trim().toLowerCase();
+  const channel_name = (body.channel_name || "").trim();
+  const channel_url  = (body.channel_url  || "").trim();
+  if (!name || !email || !channel_name || !channel_url)
+    return json(res, 400, { error: "Name, email, channel name and channel URL are required." });
+
+  const apps = Array.isArray(readJSON(YOUTUBER_APPLICATIONS_FILE)) ? readJSON(YOUTUBER_APPLICATIONS_FILE) : [];
+  if (apps.find(a => a.email === email))
+    return json(res, 400, { error: "An application from this email already exists." });
+
+  const app = {
+    id:           ytNextId(apps),
+    name, email, channel_name,
+    channel_url:  channel_url,
+    subscribers:  parseInt(body.subscribers) || 0,
+    language:     body.language   || "en",
+    categories:   Array.isArray(body.categories) ? body.categories : [],
+    why:          (body.why || "").trim(),
+    status:       "pending",
+    applied_at:   new Date().toISOString(),
+  };
+  apps.push(app);
+  writeJSON(YOUTUBER_APPLICATIONS_FILE, apps);
+
+  sendSystemEmail(
+    process.env.ADMIN_EMAIL || process.env.SYSTEM_EMAIL_USER,
+    "New YouTuber application: " + channel_name,
+    "Name: " + name + "\nEmail: " + email + "\nChannel: " + channel_name + "\n" + channel_url +
+    "\nSubscribers: " + app.subscribers + "\nLanguage: " + app.language +
+    "\nCategories: " + app.categories.join(", ") + "\nWhy: " + app.why +
+    "\n\nReview at eureach.eu/youtube-admin.html"
+  );
+  sendSystemEmail(
+    email,
+    "We received your application — eureach Creator Network",
+    "Hi " + name + ",\n\nThank you for applying to join the eureach Creator Network.\n" +
+    "We\'ll review your application and get back to you within 2-3 business days.\n\neureach.eu"
+  );
+  return json(res, 200, { ok: true });
+}
+
+// GET /api/admin/youtubers/applications
+async function handleAdminYoutuberApplicationsList(req, res) {
+  const cookies = parseCookies(req);
+  const admin   = getSessionUser(cookies.session);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const apps = Array.isArray(readJSON(YOUTUBER_APPLICATIONS_FILE)) ? readJSON(YOUTUBER_APPLICATIONS_FILE) : [];
+  return json(res, 200, { applications: apps.slice().reverse() });
+}
+
+// POST /api/admin/youtubers/applications/:id/approve
+async function handleAdminYoutuberApplicationApprove(req, res, id) {
+  const cookies = parseCookies(req);
+  const admin   = getSessionUser(cookies.session);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const apps = Array.isArray(readJSON(YOUTUBER_APPLICATIONS_FILE)) ? readJSON(YOUTUBER_APPLICATIONS_FILE) : [];
+  const idx  = apps.findIndex(a => a.id === parseInt(id));
+  if (idx === -1) return json(res, 404, { error: "Application not found." });
+  const app = apps[idx];
+
+  // Find or create user account
+  const users  = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  let userIdx  = users.findIndex(u => u.email === app.email);
+  let isNewUser = false;
+
+  if (userIdx === -1) {
+    // Create account with temp password
+    const tempPass = Math.random().toString(36).slice(2, 10);
+    const newUser  = {
+      id: users.length ? Math.max(...users.map(u => u.id || 0)) + 1 : 1,
+      email: app.email, firstName: app.name.split(" ")[0], lastName: app.name.split(" ").slice(1).join(" "),
+      password: tempPass, role: "youtuber", plan: "free",
+      credits: 0, creditsLeft: 0, createdAt: new Date().toISOString(),
+    };
+    users.push(newUser);
+    userIdx = users.length - 1;
+    isNewUser = true;
+  } else {
+    users[userIdx].role = "youtuber";
+  }
+  writeJSON(USERS_FILE, users);
+
+  // Create youtuber profile
+  const profiles = Array.isArray(readJSON(YOUTUBER_PROFILES_FILE)) ? readJSON(YOUTUBER_PROFILES_FILE) : [];
+  if (!profiles.find(p => p.user_id === users[userIdx].id)) {
+    profiles.push({
+      id: ytNextId(profiles), user_id: users[userIdx].id,
+      channel_name: app.channel_name, channel_url: app.channel_url,
+      channel_id: "", subscribers: app.subscribers, language: app.language,
+      categories: app.categories, status: "active",
+      total_assignments: 0, total_completed: 0, payment_info: null, notes: "",
+      approved_at: new Date().toISOString(), approved_by: admin.id,
+    });
+    writeJSON(YOUTUBER_PROFILES_FILE, profiles);
+  }
+
+  apps[idx].status      = "approved";
+  apps[idx].approved_at = new Date().toISOString();
+  apps[idx].approved_by = admin.id;
+  writeJSON(YOUTUBER_APPLICATIONS_FILE, apps);
+
+  const loginMsg = isNewUser
+    ? "We created an account for you.\nEmail: " + app.email + "\nPassword: " + users[userIdx].password + "\n\nPlease change your password after first login."
+    : "Log in with your existing eureach.eu account.";
+
+  sendSystemEmail(
+    app.email,
+    "Welcome to the eureach Creator Network!",
+    "Hi " + app.name + ",\n\nGreat news — your application has been approved!\n\n" +
+    loginMsg + "\n\nAccess your portal at:\neureach.eu/youtube\n\neureach.eu"
+  );
+
+  return json(res, 200, { ok: true, new_user: isNewUser });
+}
+
+// POST /api/admin/youtubers/applications/:id/reject
+async function handleAdminYoutuberApplicationReject(req, res, id) {
+  const cookies = parseCookies(req);
+  const admin   = getSessionUser(cookies.session);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const body = await readBody(req);
+  const apps = Array.isArray(readJSON(YOUTUBER_APPLICATIONS_FILE)) ? readJSON(YOUTUBER_APPLICATIONS_FILE) : [];
+  const idx  = apps.findIndex(a => a.id === parseInt(id));
+  if (idx === -1) return json(res, 404, { error: "Application not found." });
+
+  apps[idx].status      = "rejected";
+  apps[idx].rejected_at = new Date().toISOString();
+  apps[idx].reject_reason = (body.reason || "").trim();
+  writeJSON(YOUTUBER_APPLICATIONS_FILE, apps);
+
+  sendSystemEmail(
+    apps[idx].email,
+    "Update on your eureach Creator Network application",
+    "Hi " + apps[idx].name + ",\n\nThank you for applying to the eureach Creator Network.\n" +
+    "After reviewing your application, we\'re unable to approve it at this time." +
+    (apps[idx].reject_reason ? "\n\nFeedback: " + apps[idx].reject_reason : "") +
+    "\n\nYou\'re welcome to apply again in the future.\n\neureach.eu"
+  );
+  return json(res, 200, { ok: true });
+}
+
+function requireYoutuberUser(req) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return null;
+  if (user.role !== "youtuber" && user.role !== "admin") return null;
+  return user;
+}
+
+function stripClientContact(campaign) {
+  // Remove client contact info before exposing in brief_data
+  const { ...safe } = campaign;
+  delete safe.stripe_payment_id;
+  return safe;
+}
+
+// GET /api/youtube/me
+async function handleYoutubeMe(req, res) {
+  const user = requireYoutuberUser(req);
+  if (!user) return json(res, 403, { error: "YouTuber access required." });
+  const profiles    = Array.isArray(readJSON(YOUTUBER_PROFILES_FILE)) ? readJSON(YOUTUBER_PROFILES_FILE) : [];
+  const assignments = Array.isArray(readJSON(YOUTUBER_ASSIGNMENTS_FILE)) ? readJSON(YOUTUBER_ASSIGNMENTS_FILE) : [];
+  const profile     = profiles.find(p => p.user_id === user.id) || null;
+  const myAssignments = assignments.filter(a => a.youtuber_user_id === user.id);
+  return json(res, 200, { user: { id: user.id, firstName: user.firstName, lastName: user.lastName, email: user.email, role: user.role }, profile, assignments: myAssignments });
+}
+
+// GET /api/youtube/assignments
+async function handleYoutubeAssignmentsList(req, res) {
+  const user = requireYoutuberUser(req);
+  if (!user) return json(res, 403, { error: "YouTuber access required." });
+  const all = Array.isArray(readJSON(YOUTUBER_ASSIGNMENTS_FILE)) ? readJSON(YOUTUBER_ASSIGNMENTS_FILE) : [];
+  return json(res, 200, { assignments: all.filter(a => a.youtuber_user_id === user.id) });
+}
+
+// GET /api/youtube/assignments/:id
+async function handleYoutubeAssignmentGet(req, res, id) {
+  const user = requireYoutuberUser(req);
+  if (!user) return json(res, 403, { error: "YouTuber access required." });
+  const all = Array.isArray(readJSON(YOUTUBER_ASSIGNMENTS_FILE)) ? readJSON(YOUTUBER_ASSIGNMENTS_FILE) : [];
+  const a   = all.find(x => x.id === parseInt(id));
+  if (!a) return json(res, 404, { error: "Assignment not found." });
+  if (a.youtuber_user_id !== user.id && user.role !== "admin") return json(res, 403, { error: "Access denied." });
+  return json(res, 200, { assignment: a });
+}
+
+// PUT /api/youtube/assignments/:id  (auto-save + step advance)
+async function handleYoutubeAssignmentUpdate(req, res, id) {
+  const user = requireYoutuberUser(req);
+  if (!user) return json(res, 403, { error: "YouTuber access required." });
+  const body = await readBody(req);
+  const all  = Array.isArray(readJSON(YOUTUBER_ASSIGNMENTS_FILE)) ? readJSON(YOUTUBER_ASSIGNMENTS_FILE) : [];
+  const idx  = all.findIndex(x => x.id === parseInt(id));
+  if (idx === -1) return json(res, 404, { error: "Assignment not found." });
+  if (all[idx].youtuber_user_id !== user.id && user.role !== "admin") return json(res, 403, { error: "Access denied." });
+
+  const allowed = ["current_step","step_data","status"];
+  allowed.forEach(k => { if (body[k] !== undefined) all[idx][k] = body[k]; });
+
+  if (body.status === "in_progress" && all[idx].status === "new") {
+    all[idx].status = "in_progress";
+  }
+  writeJSON(YOUTUBER_ASSIGNMENTS_FILE, all);
+  return json(res, 200, { assignment: all[idx] });
+}
+
+// POST /api/youtube/assignments/:id/submit
+async function handleYoutubeAssignmentSubmit(req, res, id) {
+  const user = requireYoutuberUser(req);
+  if (!user) return json(res, 403, { error: "YouTuber access required." });
+  const body = await readBody(req);
+  const all  = Array.isArray(readJSON(YOUTUBER_ASSIGNMENTS_FILE)) ? readJSON(YOUTUBER_ASSIGNMENTS_FILE) : [];
+  const idx  = all.findIndex(x => x.id === parseInt(id));
+  if (idx === -1) return json(res, 404, { error: "Assignment not found." });
+  if (all[idx].youtuber_user_id !== user.id) return json(res, 403, { error: "Access denied." });
+  if (!body.video_url) return json(res, 400, { error: "Video URL is required." });
+
+  all[idx].video_url         = body.video_url;
+  all[idx].timestamp_mention = body.timestamp_mention || "";
+  all[idx].status            = "submitted";
+  all[idx].submitted_at      = new Date().toISOString();
+  writeJSON(YOUTUBER_ASSIGNMENTS_FILE, all);
+
+  const a = all[idx];
+
+  // Email admin
+  sendSystemEmail(
+    process.env.ADMIN_EMAIL || process.env.SYSTEM_EMAIL_USER,
+    "Νέο βίντεο προς έλεγχο — " + (user.firstName || user.email),
+    "YouTuber: " + (user.firstName || "") + " " + (user.lastName || "") + " <" + user.email + ">\n" +
+    "Campaign ID: " + a.campaign_id + "\n" +
+    "Video URL: " + a.video_url + "\n" +
+    "Timestamp: " + (a.timestamp_mention || "—") + "\n\n" +
+    "Review at: eureach.eu/youtube-admin.html"
+  );
+
+  // Email YouTuber
+  sendSystemEmail(
+    user.email,
+    "Submission received — eureach YouTuber Portal",
+    "Γεια σου " + (user.firstName || "") + ",\n\nΛάβαμε την υποβολή σου. Θα κάνουμε review εντός 24 ωρών.\n\neureach.eu/youtube"
+  );
+
+  return json(res, 200, { ok: true });
+}
+
+// GET /api/youtube/profile
+async function handleYoutubeProfileGet(req, res) {
+  const user = requireYoutuberUser(req);
+  if (!user) return json(res, 403, { error: "YouTuber access required." });
+  const profiles = Array.isArray(readJSON(YOUTUBER_PROFILES_FILE)) ? readJSON(YOUTUBER_PROFILES_FILE) : [];
+  const profile  = profiles.find(p => p.user_id === user.id) || null;
+  // Never expose payment_info plaintext — indicate presence only
+  if (profile && profile.payment_info) {
+    const safe = { ...profile };
+    safe.has_payment_info = true;
+    try { safe.payment_info_display = decryptStr(profile.payment_info).slice(0, 4) + "****"; } catch (e) { safe.payment_info_display = "****"; }
+    delete safe.payment_info;
+    return json(res, 200, { profile: safe });
+  }
+  return json(res, 200, { profile });
+}
+
+// PUT /api/youtube/profile
+async function handleYoutubeProfileUpdate(req, res) {
+  const user = requireYoutuberUser(req);
+  if (!user) return json(res, 403, { error: "YouTuber access required." });
+  const body     = await readBody(req);
+  const profiles = Array.isArray(readJSON(YOUTUBER_PROFILES_FILE)) ? readJSON(YOUTUBER_PROFILES_FILE) : [];
+  const idx      = profiles.findIndex(p => p.user_id === user.id);
+  if (idx === -1) return json(res, 404, { error: "Profile not found." });
+
+  const allowed = ["channel_name","channel_url","channel_id","subscribers","language","categories"];
+  allowed.forEach(k => { if (body[k] !== undefined) profiles[idx][k] = body[k]; });
+  if (body.payment_info && body.payment_info.trim()) {
+    profiles[idx].payment_info = encryptStr(body.payment_info.trim());
+  }
+  writeJSON(YOUTUBER_PROFILES_FILE, profiles);
+  return json(res, 200, { ok: true });
+}
+
+// ── Admin YouTuber management ─────────────────────────────────────────────────
+
+// GET /api/admin/youtubers
+async function handleAdminYoutubersList(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const users    = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  const profiles = Array.isArray(readJSON(YOUTUBER_PROFILES_FILE)) ? readJSON(YOUTUBER_PROFILES_FILE) : [];
+  const assignments = Array.isArray(readJSON(YOUTUBER_ASSIGNMENTS_FILE)) ? readJSON(YOUTUBER_ASSIGNMENTS_FILE) : [];
+
+  const youtubers = users
+    .filter(u => u.role === "youtuber")
+    .map(u => {
+      const profile = profiles.find(p => p.user_id === u.id) || {};
+      const myA     = assignments.filter(a => a.youtuber_user_id === u.id);
+      return {
+        id: u.id, firstName: u.firstName, lastName: u.lastName, email: u.email,
+        channel_name: profile.channel_name || "", channel_url: profile.channel_url || "",
+        subscribers: profile.subscribers || 0, status: profile.status || "active",
+        total_assignments: myA.length,
+        total_completed: myA.filter(a => a.status === "approved" || a.status === "paid").length,
+        approved_at: profile.approved_at || u.createdAt,
+      };
+    });
+  return json(res, 200, { youtubers });
+}
+
+// POST /api/admin/youtubers/grant-access
+async function handleAdminYoutubersGrantAccess(req, res) {
+  const cookies = parseCookies(req);
+  const admin   = getSessionUser(cookies.session);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const body  = await readBody(req);
+  const email = (body.email || "").trim().toLowerCase();
+  if (!email) return json(res, 400, { error: "Email is required." });
+
+  const users = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  const idx   = users.findIndex(u => u.email === email);
+
+  if (idx === -1) {
+    sendSystemEmail(
+      admin.email,
+      "Invitation needed — " + email,
+      "The email " + email + " is not registered on eureach.eu. Send them a registration link first."
+    );
+    return json(res, 404, { error: "User not found. This email is not registered. Send them an invitation first." });
+  }
+
+  const targetUser = users[idx];
+  if (targetUser.role === "youtuber") {
+    return json(res, 400, { error: "This user already has YouTuber access." });
+  }
+
+  users[idx].role = "youtuber";
+  writeJSON(USERS_FILE, users);
+
+  // Create youtuber_profile
+  const profiles = Array.isArray(readJSON(YOUTUBER_PROFILES_FILE)) ? readJSON(YOUTUBER_PROFILES_FILE) : [];
+  if (!profiles.find(p => p.user_id === targetUser.id)) {
+    profiles.push({
+      id: ytNextId(profiles), user_id: targetUser.id, channel_name: "", channel_url: "",
+      channel_id: "", subscribers: 0, language: "el", categories: [], status: "active",
+      total_assignments: 0, total_completed: 0, payment_info: null, notes: "",
+      approved_at: new Date().toISOString(), approved_by: admin.id,
+    });
+    writeJSON(YOUTUBER_PROFILES_FILE, profiles);
+  }
+
+  sendSystemEmail(
+    targetUser.email,
+    "Έχεις πρόσβαση στο eureach YouTuber Portal",
+    "Γεια σου " + (targetUser.firstName || targetUser.email) + ",\n\n" +
+    "Ο λογαριασμός σου στο eureach.eu έχει αναβαθμιστεί.\n" +
+    "Έχεις τώρα πρόσβαση στο YouTuber Portal.\n\n" +
+    "Σύνδεσε στον λογαριασμό σου και επισκέψου:\n" +
+    "eureach.eu/youtube\n\n" +
+    "για να δεις τα assignments σου.\n\neureach.eu"
+  );
+
+  return json(res, 200, { ok: true, user: { id: targetUser.id, email: targetUser.email, firstName: targetUser.firstName } });
+}
+
+// POST /api/admin/youtubers/revoke-access
+async function handleAdminYoutubersRevokeAccess(req, res) {
+  const cookies = parseCookies(req);
+  const admin   = getSessionUser(cookies.session);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const body = await readBody(req);
+  if (!body.userId) return json(res, 400, { error: "userId is required." });
+
+  const users = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  const idx   = users.findIndex(u => u.id === body.userId);
+  if (idx === -1) return json(res, 404, { error: "User not found." });
+
+  users[idx].role = "user";
+  writeJSON(USERS_FILE, users);
+
+  const profiles = Array.isArray(readJSON(YOUTUBER_PROFILES_FILE)) ? readJSON(YOUTUBER_PROFILES_FILE) : [];
+  const pidx = profiles.findIndex(p => p.user_id === body.userId);
+  if (pidx !== -1) { profiles[pidx].status = "suspended"; writeJSON(YOUTUBER_PROFILES_FILE, profiles); }
+
+  return json(res, 200, { ok: true });
+}
+
+// GET /api/admin/youtubers/assignments
+async function handleAdminYoutuberAssignmentsList(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const all       = Array.isArray(readJSON(YOUTUBER_ASSIGNMENTS_FILE)) ? readJSON(YOUTUBER_ASSIGNMENTS_FILE) : [];
+  const users     = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+
+  const url     = new URL("http://localhost" + req.url);
+  const fStatus = url.searchParams.get("status");
+  const filtered = fStatus && fStatus !== "all" ? all.filter(a => a.status === fStatus) : all;
+
+  return json(res, 200, { assignments: filtered.map(a => {
+    const u = users.find(u => u.id === a.youtuber_user_id) || {};
+    const c = campaigns.find(c => c.id === a.campaign_id) || {};
+    return { ...a, youtuber_name: ((u.firstName||"") + " " + (u.lastName||"")).trim() || u.email, youtuber_email: u.email, campaign_package: c.package };
+  })});
+}
+
+// POST /api/admin/youtubers/assignments  — create assignment
+async function handleAdminYoutuberAssignmentCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const body = await readBody(req);
+  if (!body.youtuber_user_id || !body.campaign_id) return json(res, 400, { error: "youtuber_user_id and campaign_id are required." });
+
+  const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
+  const campaign  = campaigns.find(c => c.id === parseInt(body.campaign_id));
+  if (!campaign) return json(res, 404, { error: "Campaign not found." });
+
+  const briefData = stripClientContact({ ...campaign });
+
+  const all = Array.isArray(readJSON(YOUTUBER_ASSIGNMENTS_FILE)) ? readJSON(YOUTUBER_ASSIGNMENTS_FILE) : [];
+  const assignment = {
+    id: ytNextId(all),
+    placement_id:      body.placement_id || null,
+    youtuber_user_id:  parseInt(body.youtuber_user_id),
+    campaign_id:       parseInt(body.campaign_id),
+    status:            "new",
+    brief_data:        briefData,
+    current_step:      1,
+    step_data: { topic: "", title: "", description: "", tags: [], mention_plan: "", transcript: "", chapters: "", checklist: [], video_url: "", timestamp_mention: "" },
+    video_url:         null,
+    timestamp_mention: null,
+    submitted_at:      null,
+    approved_at:       null,
+    paid_at:           null,
+    payment_amount:    parseFloat(body.payment_amount) || 80,
+    admin_feedback:    null,
+    created_at:        new Date().toISOString(),
+  };
+  all.push(assignment);
+  writeJSON(YOUTUBER_ASSIGNMENTS_FILE, all);
+
+  const users  = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  const ytUser = users.find(u => u.id === parseInt(body.youtuber_user_id));
+  if (ytUser) {
+    sendSystemEmail(
+      ytUser.email,
+      "Νέο assignment στο eureach YouTuber Portal",
+      "Γεια σου " + (ytUser.firstName || ytUser.email) + ",\n\n" +
+      "Έχεις νέο assignment!\n\n" +
+      "Πληρωμή: €" + assignment.payment_amount + " μετά την έγκριση\n\n" +
+      "Μπες στο portal για να δεις το brief:\n" +
+      "eureach.eu/youtube"
+    );
+  }
+
+  return json(res, 201, { assignment });
+}
+
+// PUT /api/admin/youtubers/assignments/:id  — approve / reject / mark paid
+async function handleAdminYoutuberAssignmentUpdate(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+
+  const body = await readBody(req);
+  const all  = Array.isArray(readJSON(YOUTUBER_ASSIGNMENTS_FILE)) ? readJSON(YOUTUBER_ASSIGNMENTS_FILE) : [];
+  const idx  = all.findIndex(x => x.id === parseInt(id));
+  if (idx === -1) return json(res, 404, { error: "Assignment not found." });
+
+  const prev = { ...all[idx] };
+  ["admin_feedback","payment_amount"].forEach(k => { if (body[k] !== undefined) all[idx][k] = body[k]; });
+
+  if (body.status) {
+    all[idx].status = body.status;
+    if (body.status === "approved" && prev.status !== "approved") {
+      all[idx].approved_at = new Date().toISOString();
+      const users  = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+      const ytUser = users.find(u => u.id === all[idx].youtuber_user_id);
+      if (ytUser) sendSystemEmail(ytUser.email, "Το βίντεό σου εγκρίθηκε — πληρωμή σε εξέλιξη", "Γεια σου " + (ytUser.firstName||ytUser.email) + ",\n\nΤο βίντεό σου εγκρίθηκε! Η πληρωμή €" + all[idx].payment_amount + " είναι σε εξέλιξη.\n\neureach.eu/youtube");
+    }
+    if (body.status === "rejected" && prev.status !== "rejected") {
+      const users  = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+      const ytUser = users.find(u => u.id === all[idx].youtuber_user_id);
+      if (ytUser) sendSystemEmail(ytUser.email, "Feedback για το βίντεό σου", "Γεια σου " + (ytUser.firstName||ytUser.email) + ",\n\n" + (all[idx].admin_feedback || "Παρακαλώ επανυποβάλε.") + "\n\neureach.eu/youtube/assignment/" + id);
+    }
+    if (body.status === "paid" && prev.status !== "paid") {
+      all[idx].paid_at = new Date().toISOString();
+      const profiles = Array.isArray(readJSON(YOUTUBER_PROFILES_FILE)) ? readJSON(YOUTUBER_PROFILES_FILE) : [];
+      const pidx = profiles.findIndex(p => p.user_id === all[idx].youtuber_user_id);
+      if (pidx !== -1) { profiles[pidx].total_completed = (profiles[pidx].total_completed || 0) + 1; writeJSON(YOUTUBER_PROFILES_FILE, profiles); }
+      const users2 = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+      const ytPaidUser = users2.find(u => u.id === all[idx].youtuber_user_id);
+      if (ytPaidUser) sendSystemEmail(
+        ytPaidUser.email,
+        "Πληρωμή στάλθηκε — eureach.eu",
+        "Γεια σου " + (ytPaidUser.firstName || ytPaidUser.email) + ",\n\n" +
+        "Η πληρωμή €" + (all[idx].payment_amount || "") + " για το assignment σου έχει σταλεί.\n" +
+        "Θα εμφανιστεί στον λογαριασμό σου εντός 1-3 εργάσιμων ημερών.\n\n" +
+        "Ευχαριστούμε,\nΗ ομάδα του eureach.eu"
+      );
+    }
+  }
+
+  writeJSON(YOUTUBER_ASSIGNMENTS_FILE, all);
+  return json(res, 200, { assignment: all[idx] });
+}
+
+// PUT /api/admin/youtubers/profiles/:id  — admin edit profile (no payment_info)
+async function handleAdminYoutuberProfileUpdate(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const body     = await readBody(req);
+  const profiles = Array.isArray(readJSON(YOUTUBER_PROFILES_FILE)) ? readJSON(YOUTUBER_PROFILES_FILE) : [];
+  const idx      = profiles.findIndex(p => p.id === parseInt(id));
+  if (idx === -1) return json(res, 404, { error: "Profile not found." });
+  ["channel_name","channel_url","subscribers","language","categories","status","notes"].forEach(k => {
+    if (body[k] !== undefined) profiles[idx][k] = body[k];
+  });
+  writeJSON(YOUTUBER_PROFILES_FILE, profiles);
+  return json(res, 200, { profile: profiles[idx] });
+}
+
+
+// GET /api/admin/citations/leads  — view Book-a-call leads
+async function handleAdminCitationsLeads(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const leads = Array.isArray(readJSON(CITATION_LEADS_FILE)) ? readJSON(CITATION_LEADS_FILE) : [];
+  return json(res, 200, { leads: leads.slice().reverse() });
+}
+
+// ── END Citation Builder handlers (eureach.eu) ────────────────────────────────
+
 async function handleRequest(req, res) {
   const urlPath = req.url.split("?")[0];
   const method  = req.method.toUpperCase();
@@ -3251,6 +4952,17 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/crm/saved-lists"              && method === "POST")   return handleCrmSavedListSave(req, res);
   if (urlPath === "/api/crm/saved-lists"              && method === "GET")    return handleCrmSavedListsGet(req, res);
   if (urlPath.startsWith("/api/crm/saved-lists/")     && method === "DELETE") return handleCrmSavedListDelete(req, res, urlPath.slice(21));
+  if (urlPath === "/api/blog"                               && method === "GET")    return handleBlogList(req, res);
+  if (urlPath === "/api/blog"                               && method === "POST")   return handleBlogPublish(req, res);
+  if (urlPath === "/api/publish-to-agora"                   && method === "POST")   return handlePublishToAgora(req, res);
+  if (urlPath.startsWith("/api/blog/")                      && method === "GET")    return handleBlogGet(req, res, decodeURIComponent(urlPath.slice(10)));
+  if (urlPath.startsWith("/api/blog/") && urlPath.endsWith("/approve") && method === "POST") return handleBlogApprove(req, res, decodeURIComponent(urlPath.slice(10, -8)));
+  if (urlPath.startsWith("/api/blog/") && urlPath.endsWith("/reject")  && method === "POST") return handleBlogReject(req, res, decodeURIComponent(urlPath.slice(10, -7)));
+  if (urlPath.startsWith("/api/blog/")                      && method === "PATCH")   return handleBlogUpdate(req, res, decodeURIComponent(urlPath.slice(10)));
+  if (urlPath === "/api/articles/analyze-existing"         && method === "POST")   return handleArticleAnalyzeExisting(req, res);
+  { const m = urlPath.match(/^\/api\/articles\/([^\/]+)\/automate\/([^\/]+)$/);
+    if (m && method === "POST") return handleArticleAutomate(req, res, m[1], m[2]);
+    if (m && method === "GET"  && m[2] === "results") return handleArticleAutomateResults(req, res, m[1]); }
   if (urlPath === "/api/articles/saved-lists"              && method === "POST")   return handleArticleSavedListSave(req, res);
   if (urlPath === "/api/articles/saved-lists"              && method === "GET")    return handleArticleSavedListsGet(req, res);
   if (urlPath.startsWith("/api/articles/saved-lists/")     && method === "DELETE") return handleArticleSavedListDelete(req, res, urlPath.slice(26));
@@ -3267,6 +4979,75 @@ async function handleRequest(req, res) {
   }
   if (urlPath.startsWith("/api/competitor/share/") && method === "GET")   return handleCompetitorShare(req, res, urlPath.slice(22));
 
+  // Citation Builder API routes (eureach.eu)
+  if (urlPath === "/api/admin/citations/leads"             && method === "GET")  return handleAdminCitationsLeads(req, res);
+  if (urlPath === "/api/citations/leads"   && method === "POST") return handleCitationsLeadCreate(req, res);
+  if (urlPath === "/api/citations/packages"                  && method === "GET")  return handleCitationsPackages(req, res);
+  if (urlPath === "/api/citations/campaigns"                 && method === "POST") return handleCitationsCampaignCreate(req, res);
+  if (urlPath === "/api/citations/campaigns"                 && method === "GET")  return handleCitationsCampaignsList(req, res);
+  if (urlPath === "/api/citations/checkout"                  && method === "POST") return handleCitationsCheckout(req, res);
+  if (urlPath === "/api/citations/webhook"                   && method === "POST") return handleCitationsWebhook(req, res);
+  if (urlPath === "/api/citations/paypal/create-order"       && method === "POST") return handlePayPalCreateOrder(req, res);
+  if (urlPath === "/api/citations/paypal/capture-order"      && method === "POST") return handlePayPalCaptureOrder(req, res);
+  if (urlPath === "/api/citations/publishers/apply"          && method === "POST") return handleCitationsPublisherApply(req, res);
+  if (urlPath.startsWith("/api/citations/campaigns/")) {
+    const citParts = urlPath.slice("/api/citations/campaigns/".length).split("/");
+    const citId = citParts[0]; const citSub = citParts[1];
+    if (method === "GET"  && !citSub)                  return handleCitationsCampaignGet(req, res, citId);
+    if (method === "GET"  && citSub === "placements")  return handleCitationsPlacementsGet(req, res, citId);
+    if (method === "GET"  && citSub === "snapshots")   return handleCitationsSnapshotsGet(req, res, citId);
+    if (method === "POST" && citSub === "snapshot")    return handleCitationsSnapshotCreate(req, res, citId);
+  }
+  if (urlPath === "/api/admin/citations/campaigns"           && method === "GET")  return handleAdminCitationsCampaigns(req, res);
+  if (urlPath === "/api/admin/citations/publishers"          && method === "GET")  return handleAdminCitationsPublishers(req, res);
+  if (urlPath === "/api/admin/citations/publishers"          && method === "POST") return handleAdminCitationsPublisherCreate(req, res);
+  if (urlPath === "/api/admin/citations/placements"          && method === "GET")  return handleAdminCitationsPlacementsList(req, res);
+  if (urlPath === "/api/admin/citations/placements"          && method === "POST") return handleAdminCitationsPlacementCreate(req, res);
+  if (urlPath === "/api/admin/citations/generate"            && method === "POST") return handleAdminCitationsGenerate(req, res);
+  if (urlPath === "/api/admin/citations/youtube-brief"       && method === "POST") return handleAdminCitationsYoutubeBrief(req, res);
+  if (urlPath.startsWith("/api/admin/citations/publishers/") && method === "PUT")  return handleAdminCitationsPublisherUpdate(req, res, urlPath.split("/").pop());
+  if (urlPath.startsWith("/api/admin/citations/placements/") && method === "PUT")  return handleAdminCitationsPlacementUpdate(req, res, urlPath.split("/").pop());
+
+  // YouTuber Portal API routes
+  if (urlPath === "/api/youtube/me"                              && method === "GET")  return handleYoutubeMe(req, res);
+  if (urlPath === "/api/youtube/assignments"                     && method === "GET")  return handleYoutubeAssignmentsList(req, res);
+  if (urlPath === "/api/youtube/profile"                         && method === "GET")  return handleYoutubeProfileGet(req, res);
+  if (urlPath === "/api/youtube/profile"                         && method === "PUT")  return handleYoutubeProfileUpdate(req, res);
+  if (urlPath.startsWith("/api/youtube/assignments/")) {
+    const ytParts = urlPath.slice("/api/youtube/assignments/".length).split("/");
+    const ytId = ytParts[0]; const ytSub = ytParts[1];
+    if (method === "GET"  && !ytSub)               return handleYoutubeAssignmentGet(req, res, ytId);
+    if (method === "PUT"  && !ytSub)               return handleYoutubeAssignmentUpdate(req, res, ytId);
+    if (method === "POST" && ytSub === "submit")   return handleYoutubeAssignmentSubmit(req, res, ytId);
+  }
+  // Admin YouTuber management
+  if (urlPath === "/api/admin/youtubers"                         && method === "GET")  return handleAdminYoutubersList(req, res);
+  if (urlPath === "/api/youtube/join"                              && method === "POST") return handleYoutubeJoin(req, res);
+  if (urlPath === "/api/admin/youtubers/applications"              && method === "GET")  return handleAdminYoutuberApplicationsList(req, res);
+  if (urlPath.startsWith("/api/admin/youtubers/applications/") && urlPath.endsWith("/approve") && method === "POST") return handleAdminYoutuberApplicationApprove(req, res, urlPath.split("/")[5]);
+  if (urlPath.startsWith("/api/admin/youtubers/applications/") && urlPath.endsWith("/reject")  && method === "POST") return handleAdminYoutuberApplicationReject(req, res, urlPath.split("/")[5]);
+  if (urlPath === "/api/admin/youtubers/grant-access"            && method === "POST") return handleAdminYoutubersGrantAccess(req, res);
+  if (urlPath === "/api/admin/youtubers/revoke-access"           && method === "POST") return handleAdminYoutubersRevokeAccess(req, res);
+  if (urlPath === "/api/admin/youtubers/assignments"             && method === "GET")  return handleAdminYoutuberAssignmentsList(req, res);
+  if (urlPath === "/api/admin/youtubers/assignments"             && method === "POST") return handleAdminYoutuberAssignmentCreate(req, res);
+  if (urlPath.startsWith("/api/admin/youtubers/assignments/")    && method === "PUT")  return handleAdminYoutuberAssignmentUpdate(req, res, urlPath.split("/").pop());
+  if (urlPath.startsWith("/api/admin/youtubers/profiles/")       && method === "PUT")  return handleAdminYoutuberProfileUpdate(req, res, urlPath.split("/").pop());
+  // YouTuber portal HTML pages
+  if (urlPath === "/youtube" || urlPath === "/youtube/") {
+    const cookies = parseCookies(req); const u = getSessionUser(cookies.session);
+    if (!u || (u.role !== "youtuber" && u.role !== "admin")) { res.writeHead(302, { Location: "/signin.html?next=/youtube" }); res.end(); return; }
+    return require("fs").readFile(require("path").join(ROOT, "youtube.html"), (e, d) => { if (e) { res.writeHead(404); res.end(); return; } res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(d); });
+  }
+  if (urlPath.startsWith("/youtube/assignment/")) {
+    const cookies = parseCookies(req); const u = getSessionUser(cookies.session);
+    if (!u || (u.role !== "youtuber" && u.role !== "admin")) { res.writeHead(302, { Location: "/signin.html?next=" + urlPath }); res.end(); return; }
+    return require("fs").readFile(require("path").join(ROOT, "youtube-assignment.html"), (e, d) => { if (e) { res.writeHead(404); res.end(); return; } res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(d); });
+  }
+  if (urlPath === "/youtube/profile") {
+    const cookies = parseCookies(req); const u = getSessionUser(cookies.session);
+    if (!u || (u.role !== "youtuber" && u.role !== "admin")) { res.writeHead(302, { Location: "/signin.html" }); res.end(); return; }
+    return require("fs").readFile(require("path").join(ROOT, "youtube-profile.html"), (e, d) => { if (e) { res.writeHead(404); res.end(); return; } res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(d); });
+  }
   // Standalone Audit API routes
   if (urlPath === "/api/audit"                         && method === "POST")   return handleAuditCreate(req, res);
   if (urlPath === "/api/audit"                         && method === "GET")    return handleAuditList(req, res);
@@ -3300,6 +5081,18 @@ async function handleRequest(req, res) {
       if (err) { res.writeHead(404); res.end("Not found"); return; }
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(data);
+    });
+  }
+
+  // Inject PayPal client ID into citations wizard
+  if (urlPath === "/citations-wizard.html") {
+    const wizPath = path.join(ROOT, "citations-wizard.html");
+    return fs.readFile(wizPath, "utf8", (err, html) => {
+      if (err) { res.writeHead(404); res.end("Not found"); return; }
+      const clientId = process.env.PAYPAL_CLIENT_ID || "NOT_SET";
+      html = html.replace('window.__PAYPAL_CLIENT_ID__ || "NOT_SET"', JSON.stringify(clientId));
+      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+      res.end(html);
     });
   }
 
