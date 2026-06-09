@@ -1243,13 +1243,12 @@
         const leadsLeft  = Math.max(0, 3 - leadsUsed);
         const auditsLeft = Math.max(0, 1 - auditsUsed);
         rows += `<div class="bsc-row"><span class="bsc-row-label">Days remaining</span><span class="bsc-row-val" style="color:var(--muted)">No expiry</span></div>`;
-        const artUsed0 = me.articleMonth === cmStr ? (me.monthArticles || 0) : 0;
+        const artUsed0 = me.monthArticles || 0;
         const artLeft0 = Math.max(0, 1 - artUsed0);
         rows += `<div class="bsc-row"><span class="bsc-row-label">Articles</span><span class="bsc-row-val" style="${artLeft0 === 0 ? 'color:#f87171' : ''}">${artLeft0} of 1 remaining · Greek only</span></div>`;
         rows += `<div class="bsc-row"><span class="bsc-row-label">Lead Finder</span><span class="bsc-row-val" style="${leadsLeft === 0 ? 'color:#f87171' : ''}">${leadsLeft} of 3 searches remaining</span></div>`;
         rows += `<div class="bsc-row"><span class="bsc-row-label">AI Audit</span><span class="bsc-row-val" style="${auditsLeft === 0 ? 'color:#f87171' : ''}">${auditsLeft} of 1 audit remaining</span></div>`;
         rows += `<div class="bsc-row"><span class="bsc-row-label">Competitors</span><span class="bsc-row-val" style="color:var(--muted)">Not included</span></div>`;
-        rows += `<div class="bsc-row"><span class="bsc-row-label">Resets</span><span class="bsc-row-val">${me.resetDate || 'next month'}</span></div>`;
         bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Upgrade to Pro — €20/month →</a>`;
       }
 
@@ -1291,8 +1290,8 @@
         const artBar = document.getElementById('bsc-articles-bar');
         artBar.style.width = artPct + '%';
         if (artPct >= 80) artBar.classList.add('warn');
-        const langNote = (!isPaid && !trialActive) ? ' · Greek only' : '';
-        document.getElementById('bsc-articles-note').textContent = `${artUsed} used · resets ${resetDate}${langNote}`;
+        const langNote = (!isPaid && !trialActive) ? ' · Greek only · no reset' : ` · resets ${resetDate}`;
+        document.getElementById('bsc-articles-note').textContent = `${artUsed} used${langNote}`;
       }
 
       // Lead Finder
@@ -1303,15 +1302,14 @@
         document.getElementById('bsc-leads-bar').style.width  = '100%';
         document.getElementById('bsc-leads-note').textContent = `${me.monthLeads || 0} searches done this month`;
       } else {
-        const cmStr2 = new Date().toISOString().slice(0, 7);
-        const lUsed  = me.leadSearchMonth === cmStr2 ? (me.monthLeadSearches || 0) : 0;
+        const lUsed  = me.monthLeadSearches || 0;
         const lLeft  = Math.max(0, 3 - lUsed);
         const lPct   = Math.round((lUsed / 3) * 100);
         document.getElementById('bsc-leads-val').textContent  = `${lLeft} of 3 remaining`;
         const lBar = document.getElementById('bsc-leads-bar');
         lBar.style.width = lPct + '%';
         if (lPct >= 100) lBar.classList.add('warn');
-        document.getElementById('bsc-leads-note').textContent = `${lUsed} used · resets ${resetDate} · Greece only`;
+        document.getElementById('bsc-leads-note').textContent = `${lUsed} used · Greece only · no reset`;
       }
 
       // AI Audit
@@ -1328,15 +1326,14 @@
         if (aPct >= 80) aBar.classList.add('warn');
         document.getElementById('bsc-audits-note').textContent = `${aUsed} used · resets ${resetDate}`;
       } else {
-        const cmStr3 = new Date().toISOString().slice(0, 7);
-        const aUsed  = me.auditMonth === cmStr3 ? (me.monthAudits || 0) : 0;
+        const aUsed  = me.monthAudits || 0;
         const aLeft  = Math.max(0, 1 - aUsed);
         const aPct   = aUsed >= 1 ? 100 : 0;
         document.getElementById('bsc-audits-val').textContent  = `${aLeft} of 1 remaining`;
         const aBar = document.getElementById('bsc-audits-bar');
         aBar.style.width = aPct + '%';
         if (aPct >= 100) aBar.classList.add('warn');
-        document.getElementById('bsc-audits-note').textContent = `${aUsed} used · resets ${resetDate}`;
+        document.getElementById('bsc-audits-note').textContent = `${aUsed} used · no reset`;
       }
 
       // Competitors

@@ -1658,7 +1658,6 @@ async function handleArticlesDeduct(req, res) {
 
   // Free plan: 1 article/month (Greek only — language check already above)
   if (!hasAccess(users[idx]) && !isTrialActive(users[idx])) {
-    if (users[idx].articleMonth !== currentMonth()) { users[idx].monthArticles = 0; users[idx].articleMonth = currentMonth(); }
     if ((users[idx].monthArticles || 0) >= 1) {
       return json(res, 403, {
         error: "monthly_article_limit",
@@ -2418,12 +2417,10 @@ async function handleLeadSearch(req, res) {
     const freeUsers = readJSON(USERS_FILE);
     const freeIdx = freeUsers.findIndex(u => u.id === user.id);
     if (freeIdx === -1) return json(res, 404, { error: "User not found." });
-    const cm = currentMonth();
-    if (freeUsers[freeIdx].leadSearchMonth !== cm) { freeUsers[freeIdx].monthLeadSearches = 0; freeUsers[freeIdx].leadSearchMonth = cm; }
     if ((freeUsers[freeIdx].monthLeadSearches || 0) >= 3) {
       return json(res, 403, {
         error: "free_lead_limit",
-        message: "Free plan includes 3 lead searches per month. Resets next month. Upgrade to Pro for unlimited searches.",
+        message: "Free plan includes 3 lead searches. Upgrade to Pro for unlimited searches.",
         upgradeUrl: "/membership",
       });
     }
@@ -2784,14 +2781,12 @@ async function handleAuditCreate(req, res) {
   // Auto-expire trial if needed
   autoExpireTrialIfNeeded(users, uidx);
 
-  // Free plan: 1 audit/month
+  // Free plan: 1 audit total (no reset)
   if (!hasAccess(users[uidx])) {
-    const cm = currentMonth();
-    if (users[uidx].auditMonth !== cm) { users[uidx].monthAudits = 0; users[uidx].auditMonth = cm; }
     if ((users[uidx].monthAudits || 0) >= 1) {
       return json(res, 403, {
         error: "free_audit_limit",
-        message: "Free plan includes 1 AI audit per month. Upgrade to Pro for 10 audits per month.",
+        message: "Free plan includes 1 AI audit. Upgrade to Pro for 10 audits per month.",
         upgradeUrl: "/membership",
       });
     }
