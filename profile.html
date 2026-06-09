@@ -1142,6 +1142,110 @@
       }
     });
   });
+
+  // ── Billing tab ──────────────────────────────────────────────────────────────
+  // Runs inside the main async IIFE so `me` is already defined.
+  (() => {
+    const bscCard    = document.getElementById('bsc-card');
+    const bscBadge   = document.getElementById('bsc-badge');
+    const bscName    = document.getElementById('bsc-name');
+    const bscRows    = document.getElementById('bsc-rows');
+    const bscActions = document.getElementById('bsc-actions');
+
+    fetch('/api/billing/status').then(r => r.ok ? r.json() : null).catch(() => null).then(billing => {
+      const now          = new Date();
+      const trialEnd     = me.trialEndsAt ? new Date(me.trialEndsAt) : null;
+      const trialActive  = trialEnd && trialEnd > now;
+      const isPaid       = me.plan === 'paid' || me.plan === 'pro' || me.plan === 'starter' || me.plan === 'agency';
+      const trialExpired = !!me.trialStartedAt && trialEnd && trialEnd <= now && !isPaid;
+      const fmt          = d => new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+      const fmtShort     = d => new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'long' });
+      const daysUntil    = d => Math.ceil((new Date(d) - now) / 86400000);
+
+      let rows = '';
+
+      if (isPaid && !trialActive) {
+        bscCard.className = 'billing-status-card active';
+        bscBadge.className = 'bsc-badge active'; bscBadge.textContent = 'Active';
+        bscName.textContent = 'Solo Pro — €20 / month';
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Member since</span><span class="bsc-row-val">${me.paidSince ? fmt(me.paidSince) : '—'}</span></div>`;
+        if (billing?.nextBillingDate) {
+          const days = daysUntil(billing.nextBillingDate);
+          rows += `<div class="bsc-row"><span class="bsc-row-label">Next charge</span><span class="bsc-row-val">€20 on ${fmtShort(billing.nextBillingDate)} <span style="color:var(--muted);font-weight:400">(${days} day${days!==1?'s':''})</span></span></div>`;
+        }
+        if (billing?.cardLast4) rows += `<div class="bsc-row"><span class="bsc-row-label">Card</span><span class="bsc-row-val">•••• ${billing.cardLast4}</span></div>`;
+        bscActions.innerHTML = `<a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem">Manage billing →</a>`;
+
+      } else if (trialActive) {
+        const days = daysUntil(trialEnd);
+        bscCard.className = 'billing-status-card trial';
+        bscBadge.className = 'bsc-badge trial'; bscBadge.textContent = `Trial — ${days} day${days!==1?'s':''} left`;
+        bscName.textContent = 'Solo Pro — free trial';
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ends</span><span class="bsc-row-val">${fmtShort(trialEnd)}</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Days remaining</span><span class="bsc-row-val" style="color:#fbbf24">${days} day${days!==1?'s':''}</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">First charge</span><span class="bsc-row-val">€20 on ${fmtShort(trialEnd)}</span></div>`;
+        bscActions.innerHTML = `<a href="upgrade.html" class="btn btn-primary" style="font-size:0.82rem">Activate now →</a> <a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem;margin-left:8px">Manage →</a>`;
+
+      } else if (trialExpired) {
+        bscCard.className = 'billing-status-card expired';
+        bscBadge.className = 'bsc-badge expired'; bscBadge.textContent = 'Trial expired';
+        bscName.textContent = 'No active plan';
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ended</span><span class="bsc-row-val">${fmtShort(trialEnd)}</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Status</span><span class="bsc-row-val" style="color:#f87171">Access restricted</span></div>`;
+        bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Reactivate — €20/month →</a>`;
+
+      } else {
+        bscCard.className = 'billing-status-card';
+        bscBadge.className = 'bsc-badge free'; bscBadge.textContent = 'Free plan';
+        bscName.textContent = 'Free — limited access';
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Articles</span><span class="bsc-row-val">Greek only</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Lead finder</span><span class="bsc-row-val" style="color:var(--muted)">Not available</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Upgrade to unlock</span><span class="bsc-row-val">6 articles · 100 searches · all countries</span></div>`;
+        bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Upgrade — €20/month →</a>`;
+      }
+
+      bscRows.innerHTML = rows;
+
+      // ── Usage meters ───────────────────────────────────────────────────────────
+      const usageSection = document.getElementById('bsc-usage-section');
+      const credLeft     = me.creditsLeft ?? 0;
+      const credMax      = me.creditsMax  ?? 0;
+      const resetDate    = me.resetDate   || 'next month';
+
+      if (credMax > 0 || credMax === -1) {
+        usageSection.style.display = '';
+        const creditsVal  = document.getElementById('bsc-credits-val');
+        const creditsBar  = document.getElementById('bsc-credits-bar');
+        const creditsNote = document.getElementById('bsc-credits-note');
+        if (credMax === -1) {
+          creditsVal.textContent = 'Unlimited';
+          creditsBar.style.width = '100%';
+        } else {
+          const used = credMax - credLeft;
+          const pct  = Math.round((used / credMax) * 100);
+          creditsVal.textContent = `${credLeft} remaining of ${credMax}`;
+          creditsBar.style.width = pct + '%';
+          if (pct >= 80) creditsBar.classList.add('warn');
+          creditsNote.textContent = `${used} used · resets ${resetDate}`;
+        }
+      }
+
+      if (isPaid || trialActive) {
+        const articlesCard = document.getElementById('bsc-articles-card');
+        articlesCard.style.display = '';
+        const artUsed = me.monthArticles || 0;
+        const artMax  = isPaid ? 6 : 3;
+        const artLeft = Math.max(0, artMax - artUsed);
+        const artPct  = Math.round((artUsed / artMax) * 100);
+        document.getElementById('bsc-articles-val').textContent  = `${artLeft} remaining of ${artMax}`;
+        const artBar = document.getElementById('bsc-articles-bar');
+        artBar.style.width = artPct + '%';
+        if (artPct >= 80) artBar.classList.add('warn');
+        document.getElementById('bsc-articles-note').textContent = `${artUsed} used this month · resets ${resetDate}`;
+      }
+    });
+  })();
+
 })();
 </script>
 
@@ -1335,115 +1439,6 @@ async function submitSupportEmail() {
 
 
 
-    // ── Billing tab ──────────────────────────────────────────────────────────────
-  (async () => {
-  const me = window._me;
-  if (!me) return;
-
-  const bscCard    = document.getElementById('bsc-card');
-  const bscBadge   = document.getElementById('bsc-badge');
-  const bscName    = document.getElementById('bsc-name');
-  const bscRows    = document.getElementById('bsc-rows');
-  const bscActions = document.getElementById('bsc-actions');
-
-  let billing = null;
-  try { const br = await fetch('/api/billing/status'); if (br.ok) billing = await br.json(); } catch {}
-
-  const now          = new Date();
-  const trialEnd     = me.trialEndsAt ? new Date(me.trialEndsAt) : null;
-  const trialActive  = trialEnd && trialEnd > now;
-  const isPaid       = me.plan === 'paid' || me.plan === 'pro' || me.plan === 'starter' || me.plan === 'agency';
-  const trialExpired = !!me.trialStartedAt && trialEnd && trialEnd <= now && !isPaid;
-  const fmt          = d => new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
-  const fmtShort     = d => new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'long' });
-  const daysUntil    = d => Math.ceil((new Date(d) - now) / 86400000);
-
-  let rows = '';
-
-  if (isPaid && !trialActive) {
-    bscCard.className = 'billing-status-card active';
-    bscBadge.className = 'bsc-badge active'; bscBadge.textContent = 'Active';
-    bscName.textContent = 'Solo Pro — €20 / month';
-    rows += `<div class="bsc-row"><span class="bsc-row-label">Member since</span><span class="bsc-row-val">${me.paidSince ? fmt(me.paidSince) : '—'}</span></div>`;
-    if (billing?.nextBillingDate) {
-      const days = daysUntil(billing.nextBillingDate);
-      rows += `<div class="bsc-row"><span class="bsc-row-label">Next charge</span><span class="bsc-row-val">€20 on ${fmtShort(billing.nextBillingDate)} <span style="color:var(--muted);font-weight:400">(${days} day${days!==1?'s':''})</span></span></div>`;
-    }
-    if (billing?.cardLast4) rows += `<div class="bsc-row"><span class="bsc-row-label">Card</span><span class="bsc-row-val">•••• ${billing.cardLast4}</span></div>`;
-    bscActions.innerHTML = `<a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem">Manage billing →</a>`;
-
-  } else if (trialActive) {
-    const days   = daysUntil(trialEnd);
-    bscCard.className = 'billing-status-card trial';
-    bscBadge.className = 'bsc-badge trial'; bscBadge.textContent = `Trial — ${days} day${days!==1?'s':''} left`;
-    bscName.textContent = 'Solo Pro — free trial';
-    rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ends</span><span class="bsc-row-val">${fmtShort(trialEnd)}</span></div>`;
-    rows += `<div class="bsc-row"><span class="bsc-row-label">Days remaining</span><span class="bsc-row-val" style="color:#fbbf24">${days} day${days!==1?'s':''}</span></div>`;
-    rows += `<div class="bsc-row"><span class="bsc-row-label">First charge</span><span class="bsc-row-val">€20 on ${fmtShort(trialEnd)}</span></div>`;
-    bscActions.innerHTML = `<a href="upgrade.html" class="btn btn-primary" style="font-size:0.82rem">Activate now →</a> <a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem;margin-left:8px">Manage →</a>`;
-
-  } else if (trialExpired) {
-    bscCard.className = 'billing-status-card expired';
-    bscBadge.className = 'bsc-badge expired'; bscBadge.textContent = 'Trial expired';
-    bscName.textContent = 'No active plan';
-    rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ended</span><span class="bsc-row-val">${fmtShort(trialEnd)}</span></div>`;
-    rows += `<div class="bsc-row"><span class="bsc-row-label">Status</span><span class="bsc-row-val" style="color:#f87171">Access restricted</span></div>`;
-    bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Reactivate — €20/month →</a>`;
-
-  } else {
-    bscCard.className = 'billing-status-card';
-    bscBadge.className = 'bsc-badge free'; bscBadge.textContent = 'Free plan';
-    bscName.textContent = 'Free — limited access';
-    rows += `<div class="bsc-row"><span class="bsc-row-label">Articles</span><span class="bsc-row-val">Greek only</span></div>`;
-    rows += `<div class="bsc-row"><span class="bsc-row-label">Lead finder</span><span class="bsc-row-val" style="color:var(--muted)">Not available</span></div>`;
-    rows += `<div class="bsc-row"><span class="bsc-row-label">Upgrade to unlock</span><span class="bsc-row-val">6 articles · 100 searches · all countries</span></div>`;
-    bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Upgrade — €20/month →</a>`;
-  }
-
-  bscRows.innerHTML = rows;
-
-  // ── Usage meters ─────────────────────────────────────────────────────────────
-  const usageSection  = document.getElementById('bsc-usage-section');
-  const creditsVal    = document.getElementById('bsc-credits-val');
-  const creditsBar    = document.getElementById('bsc-credits-bar');
-  const creditsNote   = document.getElementById('bsc-credits-note');
-  const articlesCard  = document.getElementById('bsc-articles-card');
-  const articlesVal   = document.getElementById('bsc-articles-val');
-  const articlesBar   = document.getElementById('bsc-articles-bar');
-  const articlesNote  = document.getElementById('bsc-articles-note');
-
-  const credLeft = me.creditsLeft ?? 0;
-  const credMax  = me.creditsMax  ?? 0;
-  const resetDate = me.resetDate  || 'next month';
-
-  if (credMax > 0 || credMax === -1) {
-    usageSection.style.display = '';
-    if (credMax === -1) {
-      creditsVal.textContent = 'Unlimited';
-      creditsBar.style.width = '100%';
-    } else {
-      const used = credMax - credLeft;
-      const pct  = Math.round((used / credMax) * 100);
-      creditsVal.textContent = `${credLeft} remaining of ${credMax}`;
-      creditsBar.style.width = pct + '%';
-      if (pct >= 80) creditsBar.classList.add('warn');
-      creditsNote.textContent = `${used} used · resets ${resetDate}`;
-    }
-  }
-
-  // Articles meter for paid/trial users
-  if (isPaid || trialActive) {
-    articlesCard.style.display = '';
-    const artUsed = me.monthArticles || 0;
-    const artMax  = isPaid ? 6 : 3;
-    const artLeft = Math.max(0, artMax - artUsed);
-    const artPct  = Math.round((artUsed / artMax) * 100);
-    articlesVal.textContent  = `${artLeft} remaining of ${artMax}`;
-    articlesBar.style.width  = artPct + '%';
-    if (artPct >= 80) articlesBar.classList.add('warn');
-    articlesNote.textContent = `${artUsed} used this month · resets ${resetDate}`;
-  }
-  })();
 
 </script>
 <script>
