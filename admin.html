@@ -1000,9 +1000,7 @@ function closeArtModal() {
 // keep old name working for nav handler
 function loadPendingArticles() { loadArticles(); }
 
-</script>
-</body>
-</html>
+
 /* ── New User modal ──────────────────────────────────── */
 function openNewUserModal() {
   ['nu-first','nu-last','nu-email','nu-password'].forEach(id => document.getElementById(id).value = '');
@@ -1055,5 +1053,8 @@ async function deleteUserDirect(uid, email) {
     toast('Deleted ✓');
   } catch { toast('Network error', false); }
 }
+</script>
+</body>
+</html>
 
 
