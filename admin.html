@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Backoffice — eureach.eu</title>
   <link rel="stylesheet" href="css/style.css?v=2">
-  <link rel="stylesheet" href="css/admin.css?v=4">
+  <link rel="stylesheet" href="css/admin.css?v=5">
 </head>
 <body class="admin-body" data-page="admin">
 
@@ -96,6 +96,7 @@
           <div class="adm-page-title">Users</div>
           <div class="adm-page-sub" id="users-count">Loading…</div>
         </div>
+        <button class="adm-btn-primary" onclick="openNewUserModal()">+ New User</button>
       </div>
 
       <div class="adm-search-row">
@@ -183,6 +184,47 @@
 
   </main>
 </div><!-- /adm-wrap -->
+
+<!-- ── New User Modal ────────────────────────── -->
+<div class="adm-modal-overlay" id="new-user-modal" style="display:none" onclick="if(event.target===this)closeNewUserModal()">
+  <div class="adm-modal" style="width:460px">
+    <div class="adm-modal-header">
+      <div class="adm-modal-title">New User</div>
+      <button class="adm-modal-close" onclick="closeNewUserModal()">✕</button>
+    </div>
+    <div class="adm-modal-body">
+      <div class="adm-form-row">
+        <div class="adm-field"><label>First name</label><input type="text" id="nu-first" placeholder="Jane"></div>
+        <div class="adm-field"><label>Last name</label><input type="text" id="nu-last" placeholder="Smith"></div>
+      </div>
+      <div class="adm-field"><label>Email *</label><input type="email" id="nu-email" placeholder="jane@example.com"></div>
+      <div class="adm-field"><label>Password * <span style="font-weight:400;color:var(--muted)">(min 6 chars)</span></label><input type="password" id="nu-password" placeholder="••••••••"></div>
+      <div class="adm-form-row">
+        <div class="adm-field">
+          <label>Plan</label>
+          <select id="nu-plan">
+            <option value="free">Free</option>
+            <option value="starter">Starter</option>
+            <option value="pro">Pro</option>
+            <option value="agency">Agency (Unlimited)</option>
+          </select>
+        </div>
+        <div class="adm-field">
+          <label>Role</label>
+          <select id="nu-role">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="adm-modal-footer">
+      <div class="adm-msg" id="nu-msg"></div>
+      <button class="adm-btn-edit" onclick="closeNewUserModal()">Cancel</button>
+      <button class="btn btn-primary" style="font-size:0.85rem;padding:8px 20px" id="nu-save-btn" onclick="createUser()">Create User</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── User Edit Modal ────────────────────────── -->
 <div class="adm-modal-overlay" id="user-modal" style="display:none" onclick="if(event.target===this)closeModal()">
@@ -593,6 +635,7 @@ function renderUsers(list) {
       <td>
         <div class="adm-actions">
           <button class="adm-btn-edit" onclick="openModal('${esc(u.id)}')">✏️ Edit</button>
+          <button class="adm-btn-delete-sm" onclick="deleteUserDirect('${esc(u.id)}','${esc(u.email)}')">🗑</button>
         </div>
       </td>
     </tr>`;
@@ -960,3 +1003,57 @@ function loadPendingArticles() { loadArticles(); }
 </script>
 </body>
 </html>
+/* ── New User modal ──────────────────────────────────── */
+function openNewUserModal() {
+  ['nu-first','nu-last','nu-email','nu-password'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('nu-plan').value = 'free';
+  document.getElementById('nu-role').value = 'user';
+  document.getElementById('nu-msg').textContent = '';
+  document.getElementById('nu-msg').className = 'adm-msg';
+  document.getElementById('new-user-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('nu-email').focus(), 50);
+}
+function closeNewUserModal() {
+  document.getElementById('new-user-modal').style.display = 'none';
+}
+async function createUser() {
+  const btn = document.getElementById('nu-save-btn');
+  const msg = document.getElementById('nu-msg');
+  btn.disabled = true; btn.textContent = 'Creating…';
+  try {
+    const res = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: document.getElementById('nu-first').value.trim(),
+        lastName:  document.getElementById('nu-last').value.trim(),
+        email:     document.getElementById('nu-email').value.trim(),
+        password:  document.getElementById('nu-password').value,
+        plan:      document.getElementById('nu-plan').value,
+        role:      document.getElementById('nu-role').value,
+      }),
+    });
+    const d = await res.json();
+    if (!res.ok) { msg.className = 'adm-msg adm-msg-error'; msg.textContent = d.error || 'Failed'; return; }
+    allUsers.unshift(d.user);
+    renderUsers(allUsers);
+    closeNewUserModal();
+    toast('User created ✓');
+  } catch { msg.className = 'adm-msg adm-msg-error'; msg.textContent = 'Network error'; }
+  finally { btn.disabled = false; btn.textContent = 'Create User'; }
+}
+
+/* ── Quick delete from row ───────────────────────────── */
+async function deleteUserDirect(uid, email) {
+  if (!confirm('Delete "' + email + '"? This cannot be undone.')) return;
+  try {
+    const res = await fetch('/api/admin/users/' + uid, { method: 'DELETE' });
+    const d = await res.json();
+    if (!res.ok) { toast(d.error || 'Delete failed', false); return; }
+    allUsers = allUsers.filter(u => u.id !== uid);
+    renderUsers(allUsers);
+    toast('Deleted ✓');
+  } catch { toast('Network error', false); }
+}
+
+

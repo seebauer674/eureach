@@ -2622,6 +2622,39 @@ async function handleAdminSetBizEdits(req, res, targetUserId) {
   json(res, 200, { ok: true, editsUsed: Number(editCount), editsLeft: BIZ_EDIT_LIMIT - Number(editCount) });
 }
 
+async function handleAdminCreateUser(req, res) {
+  const admin = requireAdmin(req);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const body = await readBody(req);
+  const { firstName, lastName, email, plan, role, password } = body;
+  if (!email || !email.trim()) return json(res, 400, { error: "Email is required." });
+  if (!password || password.length < 6) return json(res, 400, { error: "Password must be at least 6 characters." });
+  const users = readJSON(USERS_FILE);
+  if (users.find(u => u.email === email.trim().toLowerCase())) return json(res, 409, { error: "A user with this email already exists." });
+  const PLANS = require("./config/limits");
+  const planKey = plan || "free";
+  const cfg = PLANS.plans[planKey] || PLANS.plans["free"];
+  const passwordHash = await hashPassword(password);
+  const user = {
+    id:          generateId(),
+    firstName:   (firstName || "").trim(),
+    lastName:    (lastName  || "").trim(),
+    email:       email.trim().toLowerCase(),
+    passwordHash,
+    plan:        planKey,
+    role:        role === "admin" ? "admin" : "user",
+    creditsLeft: cfg.credits,
+    creditsMax:  cfg.credits,
+    creditsUsed: 0,
+    createdAt:   new Date().toISOString(),
+    suspended:   false,
+  };
+  users.push(user);
+  writeJSON(USERS_FILE, users);
+  const { passwordHash: _ph, ...safe } = user;
+  json(res, 201, { user: safe });
+}
+
 async function handleAdminUpdateUser(req, res, targetUserId) {
   const admin = requireAdmin(req);
   if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
@@ -5056,6 +5089,7 @@ async function handleRequest(req, res) {
   if (urlPath.startsWith("/api/sites/")              && method === "DELETE") return handleSiteDelete(req, res, urlPath.slice(11));
   if (urlPath === "/api/admin/stats"               && method === "GET")    return handleAdminStats(req, res);
   if (urlPath === "/api/admin/users"               && method === "GET")    return handleAdminUsers(req, res);
+  if (urlPath === "/api/admin/users"               && method === "POST")   return handleAdminCreateUser(req, res);
   if (urlPath.startsWith("/api/admin/users/")) {
     const parts = urlPath.slice("/api/admin/users/".length).split("/");
     const uid   = parts[0];
