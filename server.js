@@ -499,18 +499,30 @@ async function handleLeadsSearch(req, res) {
   const idx   = users.findIndex(u => u.id === user.id);
   if (idx === -1) return json(res, 404, { error: "User not found." });
 
-  const cost   = PLAN_LIMITS.costs.leadSearch;
-  const result = deductCredits(users, idx, cost, 'Lead Search');
-  if (!result.ok) return insufficientCredits(res, result.creditsLeft, result.creditsMax, cost);
-
   users[idx].searchesDone = (users[idx].searchesDone || 0) + 1;
-  users[idx].monthLeads = (users[idx].monthLeads || 0) + 1;
+  users[idx].monthLeads   = (users[idx].monthLeads   || 0) + 1;
   users[idx].leadsFound   = (users[idx].leadsFound   || 0) + leadsFound;
 
+  // Free users get 3 lead searches/month at no credit cost
+  if (hasAccess(users[idx])) {
+    const cost   = PLAN_LIMITS.costs.leadSearch;
+    const result = deductCredits(users, idx, cost, 'Lead Search');
+    if (!result.ok) return insufficientCredits(res, result.creditsLeft, result.creditsMax, cost);
+    writeJSON(USERS_FILE, users);
+    return json(res, 200, {
+      creditsLeft:  result.creditsLeft,
+      creditsMax:   result.creditsMax,
+      resetDate:    resetDateLabel(),
+      searchesDone: users[idx].searchesDone,
+      leadsFound:   users[idx].leadsFound,
+    });
+  }
+
   writeJSON(USERS_FILE, users);
+  const creds = getCredits(users[idx]);
   json(res, 200, {
-    creditsLeft:  result.creditsLeft,
-    creditsMax:   result.creditsMax,
+    creditsLeft:  creds.creditsLeft,
+    creditsMax:   creds.creditsMax,
     resetDate:    resetDateLabel(),
     searchesDone: users[idx].searchesDone,
     leadsFound:   users[idx].leadsFound,
@@ -2374,18 +2386,38 @@ async function handleLeadSearch(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
-  if (!hasAccess(user)) return json(res, 403, {
-    error: "trial_lead_limit",
-    message: "Lead Finder is not available during the free trial. Upgrade to unlock it.",
-    upgradeUrl: "/upgrade",
-  });
-
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) return json(res, 503, { error: "no_places_key", message: "Google Places API key not configured." });
 
   const body = await readBody(req);
   const { subcatLabel, city, country } = body;
   if (!subcatLabel || !city || !country) return json(res, 400, { error: "subcatLabel, city and country are required." });
+
+  // Access check: free users get 3 searches/month (Greece only)
+  if (!hasAccess(user)) {
+    const countryLower = (country || "").replace(/^\S+\s/, "").toLowerCase().trim();
+    if (countryLower !== "greece" && countryLower !== "ελλάδα" && countryLower !== "ελλάς") {
+      return json(res, 403, {
+        error: "free_plan_country",
+        message: "Free plan supports Greece only. Upgrade to Pro to search all 6 countries.",
+        upgradeUrl: "/membership",
+      });
+    }
+    const freeUsers = readJSON(USERS_FILE);
+    const freeIdx = freeUsers.findIndex(u => u.id === user.id);
+    if (freeIdx === -1) return json(res, 404, { error: "User not found." });
+    const cm = currentMonth();
+    if (freeUsers[freeIdx].leadSearchMonth !== cm) { freeUsers[freeIdx].monthLeadSearches = 0; freeUsers[freeIdx].leadSearchMonth = cm; }
+    if ((freeUsers[freeIdx].monthLeadSearches || 0) >= 3) {
+      return json(res, 403, {
+        error: "free_lead_limit",
+        message: "Free plan includes 3 lead searches per month. Resets next month. Upgrade to Pro for unlimited searches.",
+        upgradeUrl: "/membership",
+      });
+    }
+    freeUsers[freeIdx].monthLeadSearches = (freeUsers[freeIdx].monthLeadSearches || 0) + 1;
+    writeJSON(USERS_FILE, freeUsers);
+  }
 
   const cleanCountry = country.replace(/^\S+\s/, ""); // strip flag emoji
   const query = `${subcatLabel} in ${city}, ${cleanCountry}`;
@@ -2739,6 +2771,19 @@ async function handleAuditCreate(req, res) {
 
   // Auto-expire trial if needed
   autoExpireTrialIfNeeded(users, uidx);
+
+  // Free plan: 1 audit/month
+  if (!hasAccess(users[uidx])) {
+    const cm = currentMonth();
+    if (users[uidx].auditMonth !== cm) { users[uidx].monthAudits = 0; users[uidx].auditMonth = cm; }
+    if ((users[uidx].monthAudits || 0) >= 1) {
+      return json(res, 403, {
+        error: "free_audit_limit",
+        message: "Free plan includes 1 AI audit per month. Upgrade to Pro for 10 audits per month.",
+        upgradeUrl: "/membership",
+      });
+    }
+  }
 
   // Trial audit daily limit (1 per day)
   if (isTrialActive(users[uidx])) {
