@@ -863,6 +863,11 @@
   document.getElementById('prf-plan').textContent = PLAN_LABELS[displayUser.plan] || displayUser.plan;
   if (displayUser.role === 'admin') document.getElementById('prf-role').style.display = 'inline-block';
 
+  // Show upgrade banner for free users
+  const _trialEnd = me.trialEndsAt ? new Date(me.trialEndsAt) : null;
+  const _isFree = me.plan !== 'paid' && me.role !== 'admin' && !(_trialEnd && _trialEnd > new Date());
+  if (_isFree) document.getElementById('upgrade-banner').style.display = 'flex';
+
   const profileRes = await fetch('/api/profile').then(r => r.json()).catch(() => ({}));
   let stats = profileRes.stats || {};
   let month = profileRes.month || {};
@@ -1338,7 +1343,6 @@ async function submitSupportEmail() {
       rows += `<div class="bsc-row"><span class="bsc-row-label">Features</span><span class="bsc-row-val">Limited access</span></div>`;
       rows += `<div class="bsc-row"><span class="bsc-row-label">Pro price</span><span class="bsc-row-val">From €29/month</span></div>`;
       bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Upgrade to Pro →</a>`;
-      document.getElementById('upgrade-banner').style.display = 'flex';
     }
     bscRows.innerHTML = rows;
   })();
