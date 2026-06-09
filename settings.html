@@ -4,8 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings — eureach.eu</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/settings.css">
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/settings.css?v=2">
+  <script src="js/translations.js?v=2"></script>
+  <script src="js/i18n.js?v=2"></script>
+<style>
+.biz-audit-wrap{display:flex;gap:20px;align-items:flex-start}.biz-col-form{flex:1;min-width:0}#site-audit-panel{flex-shrink:0}.audit-panel{background:linear-gradient(145deg,rgba(37,99,235,.1),rgba(124,58,237,.06));border:1px solid rgba(99,102,241,.35);border-radius:16px;padding:24px}.audit-panel-title{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}.audit-score-ring{display:flex;align-items:center;gap:16px;margin-bottom:20px}.audit-score-circle{width:72px;height:72px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid #2563eb;flex-shrink:0}.audit-score-num{font-size:1.6rem;font-weight:800;line-height:1}.audit-score-label{font-size:.6rem;color:var(--muted);text-transform:uppercase}.audit-score-right{flex:1;min-width:0}.audit-score-grade{font-size:.78rem;color:var(--muted)}.audit-breakdown{margin-bottom:16px}.audit-bk-item{margin-bottom:10px}.audit-bk-top{display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:4px}.audit-bk-lbl{color:var(--muted)}.audit-bk-val{color:var(--white);font-weight:600}.audit-bk-bar{height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}.audit-bk-fill{height:100%;border-radius:4px;transition:width .6s}.audit-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 8px}.audit-list{list-style:none;display:flex;flex-direction:column;gap:6px}.audit-list li{font-size:.78rem;color:var(--text);display:flex;gap:7px;line-height:1.4}.audit-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 0;text-align:center}.audit-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.audit-loading-text{font-size:.82rem;color:var(--muted)}.audit-view-link{display:block;text-align:center;margin-top:14px;font-size:.78rem;color:#60a5fa;text-decoration:none}@media(max-width:900px){.biz-audit-wrap{flex-direction:column}#site-audit-panel{width:100%!important}}
+.adm-stab { background:#1e293b;border:1px solid #2a3050;color:#8b9ab7;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:0.83rem;font-weight:600;transition:all .15s; }
+.adm-stab.active,.adm-stab:hover { background:#7c3aed22;border-color:#7c3aed;color:#c4b5fd; }
+</style>
 </head>
 <body>
 
@@ -13,80 +20,66 @@
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
     <div class="nav-links">
-      <a href="leads.html">Lead Finder</a>
-      <a href="articles.html">Articles</a>
-      <a href="crm.html">CRM</a>
-      <a href="competitors.html">Competitors</a>
-      <a href="audit.html">AI Audit</a>
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span>Lead Finder</a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span>Articles</a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span>Competitors</a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span>Citations</a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span>Creator Portal</a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span>Become a Creator</a>
+          </div>
+        </div>
+      </div>
+      <a href="leads.html" data-i18n="navLeads">Lead Finder</a>
+      <a href="articles.html" data-i18n="navArticles">Articles</a>
+      <a href="crm.html" data-i18n="navCrm">CRM</a>
+      <a href="outreach.html" data-i18n="navOutreach">Outreach</a>
+      <a href="competitors.html" data-i18n="navCompetitors">Competitors</a>
+      <a href="audit.html" data-i18n="navAudit">AI Audit</a>
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+    </div>
+    <div class="nav-lang">
+      <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
     </div>
     <div class="nav-cta">
-      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="settings.html" class="nav-profile-btn" id="nav-profile-btn" title="Profile">?</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="navSignIn">Sign in</a>
       <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" aria-current="page">⚙ Settings</a>
-      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
     </div>
   </div>
 </nav>
 
 <div class="st-page">
 
-  <div class="st-sidebar">
-    <nav class="st-nav">
-      <a class="st-nav-item active" href="#sites">My Sites</a>
-      <a class="st-nav-item" href="#plan">Plan & Credits</a>
-      <a class="st-nav-item" href="#profile">Profile</a>
-      <a class="st-nav-item" href="#wordpress">WordPress</a>
-      <a class="st-nav-item" href="#email">Email / SMTP</a>
-      <a class="st-nav-item" href="#notifications">Notifications</a>
-    </nav>
+  <div class="st-header">
+    <h1 class="st-title">Settings</h1>
+    <div class="st-tabs">
+      <button class="st-tab active" data-tab="profile">Profile</button>
+      <button class="st-tab" data-tab="business">My Business</button>
+      <button class="st-tab" data-tab="sites">My Sites</button>
+      <button class="st-tab" data-tab="plan">Plan & Credits</button>
+      <button class="st-tab" data-tab="wordpress">WordPress</button>
+      <button class="st-tab" data-tab="email">Email / SMTP</button>
+      <button class="st-tab" data-tab="admin" id="tab-btn-admin" style="display:none;border-color:#7c3aed;color:#a78bfa;">⚙ Admin</button>
+    </div>
   </div>
 
-  <div class="st-main">
-
-    <!-- ── My Sites ──────────────────────────────────── -->
-    <section class="st-section" id="sites">
-      <div class="st-section-hdr">
-        <div>
-          <h2 class="st-section-title">My Sites</h2>
-          <p class="st-section-sub">Register up to 3 websites. The Article Generator uses site metadata to tailor content, language, and tone automatically.</p>
-        </div>
-        <button class="st-add-btn" id="st-add-btn" onclick="openModal()">+ Add Site</button>
-      </div>
-
-      <div class="st-sites-grid" id="st-sites-grid">
-        <!-- populated by JS -->
-      </div>
-
-      <div class="st-plan-note">
-        <span class="st-plan-badge">Pro</span>
-        Up to 3 sites · <a href="membership.html">Upgrade to Agency</a> for unlimited sites
-      </div>
-    </section>
-
-    <!-- ── Plan & Credits ────────────────────────────── -->
-    <section class="st-section" id="plan">
-      <h2 class="st-section-title">Plan & Credits</h2>
-      <div class="st-plan-card">
-        <div class="st-plan-name">Pro Plan</div>
-        <div class="st-plan-meta">€79 / month · renews Jun 11, 2026</div>
-        <div class="st-plan-stats">
-          <div class="st-stat"><div class="st-stat-val">12</div><div class="st-stat-lbl">Credits left</div></div>
-          <div class="st-stat"><div class="st-stat-val">38</div><div class="st-stat-lbl">Used this month</div></div>
-          <div class="st-stat"><div class="st-stat-val">3</div><div class="st-stat-lbl">Sites registered</div></div>
-        </div>
-        <button class="st-upgrade-btn" onclick="location.href='membership.html'">⚡ Upgrade to Agency — €199/mo</button>
-      </div>
-    </section>
+  <div class="st-body">
 
     <!-- ── Profile ───────────────────────────────────── -->
-    <section class="st-section" id="profile">
-      <div class="st-section-hdr">
-        <div>
-          <h2 class="st-section-title">Profile</h2>
-          <p class="st-section-sub">Your account details and activity summary.</p>
-        </div>
-      </div>
+    <section class="st-panel active" id="tab-profile">
 
-      <!-- Activity stats -->
       <div class="st-activity-grid">
         <div class="st-activity-card" style="--ac:#2563eb">
           <div class="st-activity-icon">✍️</div>
@@ -110,221 +103,374 @@
         </div>
       </div>
 
-      <!-- Profile form -->
-      <form class="st-profile-form" id="profile-form" onsubmit="saveProfile(event)">
-        <div class="st-form-row">
-          <div class="st-field">
-            <label>First name</label>
-            <input type="text" id="pf-first" placeholder="First name" autocomplete="given-name">
+      <div class="st-card">
+        <h2 class="st-card-title">Account details</h2>
+        <form class="st-profile-form" id="profile-form" onsubmit="saveProfile(event)">
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>First name</label>
+              <input type="text" id="pf-first" placeholder="First name" autocomplete="given-name">
+            </div>
+            <div class="st-field">
+              <label>Last name</label>
+              <input type="text" id="pf-last" placeholder="Last name" autocomplete="family-name">
+            </div>
           </div>
-          <div class="st-field">
-            <label>Last name</label>
-            <input type="text" id="pf-last" placeholder="Last name" autocomplete="family-name">
+          <div class="st-form-row">
+            <div class="st-field st-field-full">
+              <label>Email address</label>
+              <input type="email" id="pf-email" placeholder="you@example.com" autocomplete="email">
+            </div>
           </div>
-        </div>
-        <div class="st-form-row">
+
+          <div class="st-form-row">
           <div class="st-field st-field-full">
-            <label>Email address</label>
-            <input type="email" id="pf-email" placeholder="you@example.com" autocomplete="email">
+            <label>Preferred language</label>
+            <div class="st-lang-chips" id="pf-lang-chips">
+              <label class="st-chip-label"><input type="radio" name="pf-lang" value="el">  🇬🇷 Greek</label>
+              <label class="st-chip-label"><input type="radio" name="pf-lang" value="en"> 🇬🇧 English</label>
+              <label class="st-chip-label"><input type="radio" name="pf-lang" value="de"> 🇩🇪 German</label>
+            </div>
+            <div class="st-field-hint">Sets the default language for articles, outreach, and AI-generated content.</div>
           </div>
         </div>
 
         <div class="st-profile-divider">Change password <span>(leave blank to keep current)</span></div>
 
-        <div class="st-form-row">
-          <div class="st-field st-field-full">
-            <label>Current password</label>
-            <input type="password" id="pf-current-pw" placeholder="••••••••" autocomplete="current-password">
-          </div>
-        </div>
-        <div class="st-form-row">
-          <div class="st-field">
-            <label>New password</label>
-            <input type="password" id="pf-new-pw" placeholder="At least 8 characters" autocomplete="new-password">
-          </div>
-          <div class="st-field">
-            <label>Confirm new password</label>
-            <input type="password" id="pf-confirm-pw" placeholder="Repeat new password" autocomplete="new-password">
-          </div>
-        </div>
-
-        <div class="st-profile-error" id="pf-error"></div>
-
-        <div class="st-profile-actions">
-          <button type="submit" class="st-save-btn">Save changes</button>
-        </div>
-      </form>
-    </section>
-
-    <!-- ── WordPress Connection ────────────────────────── -->
-    <section class="st-section" id="wordpress">
-      <div class="st-section-hdr">
-        <div>
-          <h2 class="st-section-title">WordPress Connection</h2>
-          <p class="st-section-sub">Connect your WordPress site to publish articles directly from the Article Generator.</p>
-        </div>
-      </div>
-
-      <!-- Connected state -->
-      <div id="wp-connected-state" style="display:none">
-        <div class="wp-status-card">
-          <div class="wp-status-badge">
-            <span class="wp-dot"></span>
-            <div class="wp-status-info">
-              <div class="wp-status-name" id="wp-status-name">—</div>
-              <div class="wp-status-url" id="wp-status-url">—</div>
-            </div>
-          </div>
-          <div class="wp-status-meta" id="wp-status-meta"></div>
-          <button class="wp-disconnect-btn" onclick="disconnectWp()">Disconnect</button>
-        </div>
-      </div>
-
-      <!-- Connect form -->
-      <div id="wp-connect-state">
-        <div class="wp-plan-note" id="wp-plan-note" style="display:none">
-          🔒 WordPress publishing is available on <strong>Starter+</strong> plans.
-          <a href="membership.html">Upgrade →</a>
-        </div>
-        <form class="st-profile-form" id="wp-connect-form" onsubmit="connectWp(event)" autocomplete="off">
           <div class="st-form-row">
             <div class="st-field st-field-full">
-              <label>WordPress Site URL</label>
-              <input type="text" id="wp-site-url" placeholder="https://mysite.com" autocomplete="off">
-              <div class="st-field-hint">Full URL of your WordPress site</div>
+              <label>Current password</label>
+              <input type="password" id="pf-current-pw" placeholder="••••••••" autocomplete="current-password">
             </div>
           </div>
           <div class="st-form-row">
             <div class="st-field">
-              <label>WordPress Username</label>
-              <input type="text" id="wp-username" placeholder="admin" autocomplete="off">
+              <label>New password</label>
+              <input type="password" id="pf-new-pw" placeholder="At least 8 characters" autocomplete="new-password">
             </div>
             <div class="st-field">
-              <label>Application Password</label>
-              <input type="text" id="wp-app-password" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" autocomplete="off">
+              <label>Confirm new password</label>
+              <input type="password" id="pf-confirm-pw" placeholder="Repeat new password" autocomplete="new-password">
             </div>
           </div>
-          <div class="wp-howto">
-            <div class="wp-howto-title">How to generate an Application Password:</div>
-            <ol class="wp-howto-steps">
-              <li>In your WordPress admin, go to <strong>Users → Your Profile</strong></li>
-              <li>Scroll to <strong>Application Passwords</strong> at the bottom</li>
-              <li>Enter a name (e.g. "eureach") and click <strong>Add New Application Password</strong></li>
-              <li>Copy the generated password and paste it above</li>
-            </ol>
-          </div>
-          <div class="st-profile-error" id="wp-connect-err"></div>
+
+          <div class="st-profile-error" id="pf-error"></div>
+
           <div class="st-profile-actions">
-            <button type="submit" class="st-save-btn" id="wp-connect-btn">Connect WordPress</button>
+            <button type="submit" class="st-save-btn">Save changes</button>
           </div>
         </form>
       </div>
     </section>
 
-    <!-- ── Email ──────────────────────────────────────────── -->
-    <section class="st-section" id="email">
-      <div class="st-section-hdr">
-        <div>
-          <h2 class="st-section-title">Email</h2>
-          <p class="st-section-sub">Connect your email to send outreach sequences directly from the CRM.</p>
+    <!-- ── My Business ────────────────────────────────── -->
+    <section class="st-panel" id="tab-business">
+      <div class="st-card">
+        <h2 class="st-card-title">My Business</h2>
+        <p class="st-section-sub" style="margin-bottom:20px">Define your own business so the Competitor Tracker can automatically find competitors in your market.</p>
+        <div class="biz-edit-banner" id="biz-edit-banner" style="display:none"></div>
+        <form class="st-profile-form" id="biz-form" onsubmit="saveBusiness(event)">
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Business Name</label>
+              <input type="text" id="biz-name" placeholder="e.g. My Dental Clinic">
+            </div>
+            <div class="st-field">
+              <label>Website URL</label>
+              <input type="text" id="biz-url" placeholder="e.g. myclinic.gr">
+            </div>
+          </div>
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Country</label>
+              <select id="biz-country">
+                <option value="">— Select country —</option>
+                <option value="🇬🇷 Greece">🇬🇷 Greece</option>
+                <option value="🇩🇪 Germany">🇩🇪 Germany</option>
+                <option value="🇦🇹 Austria">🇦🇹 Austria</option>
+                <option value="🇨🇭 Switzerland">🇨🇭 Switzerland</option>
+                <option value="🇬🇧 United Kingdom">🇬🇧 United Kingdom</option>
+                <option value="🇨🇾 Cyprus">🇨🇾 Cyprus</option>
+              </select>
+            </div>
+            <div class="st-field">
+              <label>City</label>
+              <input type="text" id="biz-city" placeholder="e.g. Athens, Munich…">
+            </div>
+          </div>
+          <div class="st-form-row">
+            <div class="st-field st-field-full">
+              <label>Industry / Category</label>
+              <select id="biz-industry">
+                <option value="">— Select industry —</option>
+                <option value="doctor">Medical Services</option>
+                <option value="dentist">Dentists</option>
+                <option value="physiotherapist">Physiotherapy</option>
+                <option value="psychologist">Psychologists</option>
+                <option value="pharmacy">Pharmacies</option>
+                <option value="lawyer">Lawyers</option>
+                <option value="accountant">Accountants</option>
+                <option value="architect">Architects</option>
+                <option value="insurance">Insurance</option>
+                <option value="electrician">Electricians</option>
+                <option value="plumber">Plumbers</option>
+                <option value="carpenter">Carpenters</option>
+                <option value="painter">Painters</option>
+                <option value="cleaning">Cleaning Services</option>
+                <option value="moving">Moving Services</option>
+                <option value="car-mechanic">Car Mechanics</option>
+                <option value="hair-salon">Hair Salons</option>
+                <option value="beauty">Beauty & Wellness</option>
+                <option value="gym">Gyms & Fitness</option>
+                <option value="restaurant">Restaurants</option>
+                <option value="hotel">Hotels</option>
+                <option value="travel-agency">Travel Agencies</option>
+                <option value="real-estate">Real Estate</option>
+                <option value="construction-engineering">Construction</option>
+                <option value="education">Education</option>
+                <option value="language-school">Language Schools</option>
+                <option value="photographer">Photographers</option>
+                <option value="computer-tech">IT / Computer Repair</option>
+                <option value="retail">Retail</option>
+              </select>
+              <div class="st-field-hint">Used to pre-fill the Competitor Tracker search automatically.</div>
+            </div>
+          </div>
+          <div class="st-profile-error" id="biz-error"></div>
+          <div class="st-profile-actions">
+            <button type="submit" class="st-save-btn">Save Business Profile</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ── My Sites ──────────────────────────────────── -->
+    <section class="st-panel" id="tab-sites">
+      <div class="st-card">
+        <div class="st-section-hdr">
+          <div>
+            <h2 class="st-card-title">My Sites</h2>
+            <p class="st-section-sub">Register your websites. The Article Generator uses site metadata to tailor content, language, and tone automatically.</p>
+          </div>
+          <button class="st-add-btn" id="st-add-btn" onclick="openModal()">+ Add Site</button>
+        </div>
+
+        <div class="biz-audit-wrap" style="align-items:flex-start"><div class="biz-col-form"><div class="st-sites-grid" id="st-sites-grid">
+          <!-- populated by JS -->
+        </div>
+
+        </div></div><div id="site-audit-panel" style="display:none;width:340px;flex-shrink:0"><div class="audit-panel" style="position:sticky;top:80px"><div class="audit-panel-title" id="site-audit-title">Site Audit</div><div id="site-audit-content"></div></div></div></div><div class="st-plan-note" id="sites-plan-note">
+          <span class="st-plan-badge" id="sites-plan-badge">Free</span>
+          <span id="sites-plan-text">Up to 1 site</span> · <a href="membership.html">Upgrade for more</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Plan & Credits ────────────────────────────── -->
+    <section class="st-panel" id="tab-plan">
+      <div class="st-card">
+        <h2 class="st-card-title">Plan & Credits</h2>
+        <div class="st-plan-card">
+          <div class="st-plan-name" id="plan-name-label">—</div>
+          <div class="st-plan-meta" id="plan-meta-label">—</div>
+          <div class="st-plan-stats">
+            <div class="st-stat"><div class="st-stat-val" id="plan-credits-left">—</div><div class="st-stat-lbl">Credits left</div></div>
+            <div class="st-stat"><div class="st-stat-val" id="plan-credits-max">—</div><div class="st-stat-lbl">Monthly total</div></div>
+            <div class="st-stat"><div class="st-stat-val" id="plan-sites">—</div><div class="st-stat-lbl">Sites registered</div></div>
+          </div>
+          <button class="st-upgrade-btn" id="plan-upgrade-btn" onclick="location.href='membership.html'">⚡ View plans</button>
         </div>
       </div>
 
-      <!-- Gmail connected state -->
-      <div id="gmail-connected-state" style="display:none">
-        <div class="wp-status-card">
-          <div class="wp-status-badge">
-            <span class="wp-dot" style="background:#4ade80"></span>
-            <div class="wp-status-info">
-              <div class="wp-status-name" id="gmail-status-email">—</div>
-              <div class="wp-status-url">Gmail · OAuth (sends from your account)</div>
-            </div>
-          </div>
-          <div class="wp-status-meta" id="gmail-status-meta"></div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <a href="email_log.html" class="smtp-log-link">📋 Email Log</a>
-            <button class="wp-disconnect-btn" onclick="disconnectGmail()">Disconnect</button>
-          </div>
+      <div class="st-card" style="margin-top:20px">
+        <h2 class="st-card-title">Credit costs per action</h2>
+        <div class="st-cost-grid">
+          <div class="st-cost-row"><span>Lead Search</span><span class="st-cost-val">2 credits</span></div>
+          <div class="st-cost-row"><span>AI Lead Scoring (30 leads)</span><span class="st-cost-val">5 credits</span></div>
+          <div class="st-cost-row"><span>AI Visibility Audit</span><span class="st-cost-val">5 credits</span></div>
+          <div class="st-cost-row"><span>Outreach Sequence (3-step)</span><span class="st-cost-val">8 credits</span></div>
+          <div class="st-cost-row"><span>Article Generation (~1,800 words)</span><span class="st-cost-val">10 credits</span></div>
+          <div class="st-cost-row"><span>WhatsApp + SMS Generate</span><span class="st-cost-val">3 credits</span></div>
+          <div class="st-cost-row"><span>Add Competitor + Initial Audit</span><span class="st-cost-val">8 credits</span></div>
+          <div class="st-cost-row"><span>Re-audit Competitor</span><span class="st-cost-val">5 credits</span></div>
+          <div class="st-cost-row"><span>Audit Share Link</span><span class="st-cost-val">1 credit</span></div>
+          <div class="st-cost-row st-cost-free"><span>Send Email / Add to CRM / Pipeline</span><span class="st-cost-val">Free</span></div>
         </div>
       </div>
+    </section>
 
-      <!-- Gmail connect button (shown when no Gmail and no SMTP) -->
-      <div id="gmail-connect-state">
-        <a href="/api/auth/gmail/connect" class="gmail-connect-btn" id="gmail-connect-btn">
-          <svg width="20" height="20" viewBox="0 0 48 48" style="flex-shrink:0"><path fill="#EA4335" d="M24 5C13.5 5 5 13.5 5 24s8.5 19 19 19 19-8.5 19-19S34.5 5 24 5z"/><path fill="#FBBC05" d="M5 24C5 13.5 13.5 5 24 5v38C13.5 43 5 34.5 5 24z"/><path fill="#34A853" d="M24 5v38c10.5 0 19-8.5 19-19S34.5 5 24 5z"/><path fill="#4285F4" d="M5 24c0 10.5 8.5 19 19 19V5C13.5 5 5 13.5 5 24z"/></svg>
-          Connect Gmail
-        </a>
-        <div class="gmail-connect-sub">Emails will be sent directly from your Gmail account. eureach never stores your emails.</div>
-        <div id="gmail-connect-msg" class="st-profile-error" style="display:none"></div>
+    <!-- ── WordPress Connection ────────────────────────── -->
+    <section class="st-panel" id="tab-wordpress">
+      <div class="st-card">
+        <h2 class="st-card-title">WordPress Connection</h2>
+        <p class="st-section-sub" style="margin-bottom:20px">Connect your WordPress site to publish articles directly from the Article Generator.</p>
 
-        <div class="smtp-toggle-wrap">
-          <button class="smtp-toggle-btn" onclick="toggleSmtpForm()">Use SMTP instead ▾</button>
-        </div>
-
-        <!-- SMTP form (collapsed by default) -->
-        <div id="smtp-form-wrap" style="display:none">
-
-          <!-- SMTP connected state -->
-          <div id="smtp-connected-state" style="display:none">
-            <div class="wp-status-card" style="margin-top:12px">
-              <div class="wp-status-badge">
-                <span class="wp-dot" style="background:#4ade80"></span>
-                <div class="wp-status-info">
-                  <div class="wp-status-name" id="smtp-status-from">—</div>
-                  <div class="wp-status-url" id="smtp-status-host">—</div>
-                </div>
-              </div>
-              <div class="wp-status-meta" id="smtp-status-meta"></div>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <a href="email_log.html" class="smtp-log-link">📋 Email Log</a>
-                <button class="wp-disconnect-btn" onclick="disconnectSmtp()">Disconnect</button>
+        <div id="wp-connected-state" style="display:none">
+          <div class="wp-status-card">
+            <div class="wp-status-badge">
+              <span class="wp-dot"></span>
+              <div class="wp-status-info">
+                <div class="wp-status-name" id="wp-status-name">—</div>
+                <div class="wp-status-url" id="wp-status-url">—</div>
               </div>
             </div>
+            <div class="wp-status-meta" id="wp-status-meta"></div>
+            <button class="wp-disconnect-btn" onclick="disconnectWp()">Disconnect</button>
           </div>
+        </div>
 
-          <div id="smtp-connect-state">
-            <form class="st-profile-form" id="smtp-connect-form" onsubmit="connectSmtp(event)" autocomplete="off" style="margin-top:12px">
-              <div class="st-form-row">
-                <div class="st-field">
-                  <label>SMTP Host</label>
-                  <input type="text" id="smtp-host" placeholder="smtp.gmail.com" autocomplete="off">
-                  <div class="st-field-hint">Gmail: smtp.gmail.com · Outlook: smtp.office365.com</div>
-                </div>
-                <div class="st-field">
-                  <label>Port</label>
-                  <select id="smtp-port" class="st-select">
-                    <option value="587">587 — STARTTLS (recommended)</option>
-                    <option value="465">465 — SSL/TLS</option>
-                    <option value="25">25 — Plain (not recommended)</option>
-                  </select>
-                </div>
-              </div>
-              <div class="st-form-row">
-                <div class="st-field">
-                  <label>Username / Email</label>
-                  <input type="text" id="smtp-username" placeholder="you@gmail.com" autocomplete="off">
-                </div>
-                <div class="st-field">
-                  <label>Password / App Password</label>
-                  <input type="password" id="smtp-password" placeholder="••••••••" autocomplete="new-password">
-                </div>
-              </div>
-              <div class="st-form-row">
-                <div class="st-field">
-                  <label>From Email</label>
-                  <input type="email" id="smtp-from" placeholder="you@yourdomain.com" autocomplete="off">
-                </div>
-                <div class="st-field">
-                  <label>From Name <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-                  <input type="text" id="smtp-from-name" placeholder="Your Name or Business">
-                </div>
-              </div>
-              <div class="st-profile-error" id="smtp-connect-err"></div>
-              <div class="st-profile-actions">
-                <button type="submit" class="st-save-btn" id="smtp-connect-btn">Connect &amp; Test</button>
-              </div>
-            </form>
+        <div id="wp-connect-state">
+          <div class="wp-plan-note" id="wp-plan-note" style="display:none">
+            🔒 WordPress publishing is available on <strong>Starter+</strong> plans.
+            <a href="membership.html">Upgrade →</a>
           </div>
+          <form class="st-profile-form" id="wp-connect-form" onsubmit="connectWp(event)" autocomplete="off">
+            <div class="st-form-row">
+              <div class="st-field st-field-full">
+                <label>WordPress Site URL</label>
+                <input type="text" id="wp-site-url" placeholder="https://mysite.com" autocomplete="off">
+                <div class="st-field-hint">Full URL of your WordPress site</div>
+              </div>
+            </div>
+            <div class="st-form-row">
+              <div class="st-field">
+                <label>WordPress Username</label>
+                <input type="text" id="wp-username" placeholder="admin" autocomplete="off">
+              </div>
+              <div class="st-field">
+                <label>Application Password</label>
+                <input type="text" id="wp-app-password" placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" autocomplete="off">
+              </div>
+            </div>
+            <div class="wp-howto">
+              <div class="wp-howto-title">How to generate an Application Password:</div>
+              <ol class="wp-howto-steps">
+                <li>In your WordPress admin, go to <strong>Users → Your Profile</strong></li>
+                <li>Scroll to <strong>Application Passwords</strong> at the bottom</li>
+                <li>Enter a name (e.g. "eureach") and click <strong>Add New Application Password</strong></li>
+                <li>Copy the generated password and paste it above</li>
+              </ol>
+            </div>
+            <div class="st-profile-error" id="wp-connect-err"></div>
+            <div class="st-profile-actions">
+              <button type="submit" class="st-save-btn" id="wp-connect-btn">Connect WordPress</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Email / SMTP ──────────────────────────────────── -->
+    <section class="st-panel" id="tab-email">
+      <div class="st-card">
+        <h2 class="st-card-title">Email / SMTP</h2>
+        <p class="st-section-sub" style="margin-bottom:20px">Connect your email account to send outreach sequences directly from the CRM — no copy-pasting required.</p>
+
+        <div id="smtp-connected-state" style="display:none">
+          <div class="wp-status-card">
+            <div class="wp-status-badge">
+              <span class="wp-dot" style="background:#4ade80"></span>
+              <div class="wp-status-info">
+                <div class="wp-status-name" id="smtp-status-from">—</div>
+                <div class="wp-status-url" id="smtp-status-host">—</div>
+              </div>
+            </div>
+            <div class="wp-status-meta" id="smtp-status-meta"></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <a href="email_log.html" class="smtp-log-link">📋 Email Log</a>
+              <button class="wp-disconnect-btn" onclick="disconnectSmtp()">Disconnect</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="smtp-connect-state">
+          <form class="st-profile-form" id="smtp-connect-form" onsubmit="connectSmtp(event)" autocomplete="off">
+            <div class="st-form-row">
+              <div class="st-field">
+                <label>SMTP Host</label>
+                <input type="text" id="smtp-host" placeholder="smtp.gmail.com" autocomplete="off">
+                <div class="st-field-hint">Gmail: smtp.gmail.com · Outlook: smtp.office365.com</div>
+              </div>
+              <div class="st-field">
+                <label>Port</label>
+                <select id="smtp-port" class="st-select">
+                  <option value="587">587 — STARTTLS (recommended)</option>
+                  <option value="465">465 — SSL/TLS</option>
+                  <option value="25">25 — Plain (not recommended)</option>
+                </select>
+              </div>
+            </div>
+            <div class="st-form-row">
+              <div class="st-field">
+                <label>Username / Email</label>
+                <input type="text" id="smtp-username" placeholder="you@gmail.com" autocomplete="off">
+              </div>
+              <div class="st-field">
+                <label>Password / App Password</label>
+                <input type="password" id="smtp-password" placeholder="••••••••" autocomplete="new-password">
+              </div>
+            </div>
+            <div class="st-form-row">
+              <div class="st-field">
+                <label>From Email</label>
+                <input type="email" id="smtp-from" placeholder="you@yourdomain.com" autocomplete="off">
+              </div>
+              <div class="st-field">
+                <label>From Name <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+                <input type="text" id="smtp-from-name" placeholder="Your Name or Business">
+              </div>
+            </div>
+            <div class="smtp-howto">
+              <div class="smtp-howto-title">Gmail: use an App Password (not your regular password)</div>
+              <ol class="wp-howto-steps">
+                <li>Enable 2-Step Verification in your Google Account</li>
+                <li>Go to <strong>Google Account → Security → App Passwords</strong></li>
+                <li>Create a new App Password for "Mail"</li>
+                <li>Paste the 16-character password in the password field above</li>
+              </ol>
+            </div>
+            <div class="st-profile-error" id="smtp-connect-err"></div>
+            <div class="st-profile-actions">
+              <button type="submit" class="st-save-btn" id="smtp-connect-btn">Connect &amp; Test</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="st-panel" id="tab-admin">
+      <!-- Admin sub-tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:24px;border-bottom:1px solid #1e293b;padding-bottom:16px;flex-wrap:wrap;">
+        <button class="adm-stab active" onclick="setAdmTab(this,'adm-articles')">📝 Articles</button>
+        <button class="adm-stab" onclick="setAdmTab(this,'adm-users')">👥 Users</button>
+        <button class="adm-stab" onclick="setAdmTab(this,'adm-stats')">📊 Stats</button>
+      </div>
+
+      <!-- Articles sub-panel -->
+      <div id="adm-articles">
+        <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;">
+          <button class="art-tab active" onclick="setArtTab2(this,'all')">All</button>
+          <button class="art-tab" onclick="setArtTab2(this,'pending')">Pending</button>
+          <button class="art-tab" onclick="setArtTab2(this,'approved')">Approved</button>
+        </div>
+        <div id="adm-articles-list" style="display:flex;flex-direction:column;gap:14px;"></div>
+      </div>
+
+      <!-- Users sub-panel -->
+      <div id="adm-users" style="display:none;">
+        <div id="adm-users-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+      </div>
+
+      <!-- Stats sub-panel -->
+      <div id="adm-stats" style="display:none;">
+        <div id="adm-stats-body" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;"></div>
+      </div>
+
+      <!-- Article preview/edit modal (inside settings page) -->
+      <div id="adm-art-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;overflow-y:auto;padding:40px 20px;">
+        <div style="background:#0f172a;border:1px solid #2a3050;border-radius:16px;max-width:820px;margin:0 auto;padding:32px;position:relative;">
+          <button onclick="closeAdmArtModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#8b9ab7;font-size:1.4rem;cursor:pointer;">✕</button>
+          <div id="adm-art-modal-body"></div>
         </div>
       </div>
     </section>
@@ -334,7 +480,8 @@
 
 <!-- ── Site modal ──────────────────────────────────────── -->
 <div class="st-overlay" id="st-overlay" onclick="closeModal()"></div>
-<div class="st-modal" id="st-modal" role="dialog" aria-modal="true" aria-label="Add / Edit Site">
+
+    <div class="st-modal" id="st-modal" role="dialog" aria-modal="true" aria-label="Add / Edit Site">
   <div class="st-modal-hdr">
     <h3 class="st-modal-title" id="st-modal-title">Add Site</h3>
     <button class="st-modal-close" onclick="closeModal()">✕</button>
@@ -456,28 +603,24 @@
   </form>
 </div>
 
-<script src="js/settings.js"></script>
+<script src="js/settings.js?v=4"></script>
 <script>
-// ── Sidebar scroll spy ────────────────────────────────────
-const sections = document.querySelectorAll('.st-section');
-const navItems = document.querySelectorAll('.st-nav-item');
+// ── Tab switching ─────────────────────────────────────────
+const tabs    = document.querySelectorAll('.st-tab');
+const panels  = document.querySelectorAll('.st-panel');
 
-navItems.forEach(a => {
-  a.addEventListener('click', e => {
-    e.preventDefault();
-    const target = document.querySelector(a.getAttribute('href'));
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-});
+function activateTab(tabName) {
+  if (tabName === "admin") setTimeout(loadAdmArticles, 50);
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+  panels.forEach(p => p.classList.toggle('active', p.id === 'tab-' + tabName));
+  history.replaceState(null, '', '#' + tabName);
+}
 
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      navItems.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id));
-    }
-  });
-}, { rootMargin: '-30% 0px -60% 0px' });
-sections.forEach(s => observer.observe(s));
+tabs.forEach(t => t.addEventListener('click', () => activateTab(t.dataset.tab)));
+
+// Open tab from URL hash
+const hash = location.hash.replace('#', '');
+if (hash && document.getElementById('tab-' + hash)) activateTab(hash);
 
 // ── WordPress Connection ──────────────────────────────────
 async function loadWpStatus() {
@@ -485,11 +628,9 @@ async function loadWpStatus() {
     const res = await fetch('/api/wordpress/connect');
     if (!res.ok) return;
     const d = await res.json();
-    if (d.connected) showWpConnected(d);
-    else showWpForm();
+    if (d.connected) showWpConnected(d); else showWpForm();
   } catch {}
 }
-
 function showWpConnected(d) {
   document.getElementById('wp-connected-state').style.display = '';
   document.getElementById('wp-connect-state').style.display   = 'none';
@@ -498,29 +639,20 @@ function showWpConnected(d) {
   const connAt = d.connectedAt ? new Date(d.connectedAt).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }) : '';
   document.getElementById('wp-status-meta').textContent = connAt ? 'Connected ' + connAt : '';
 }
-
 function showWpForm() {
   document.getElementById('wp-connected-state').style.display = 'none';
   document.getElementById('wp-connect-state').style.display   = '';
 }
-
 async function connectWp(e) {
   e.preventDefault();
   const errEl = document.getElementById('wp-connect-err');
   const btn   = document.getElementById('wp-connect-btn');
   errEl.textContent = '';
-
   const siteUrl     = document.getElementById('wp-site-url').value.trim();
   const username    = document.getElementById('wp-username').value.trim();
   const appPassword = document.getElementById('wp-app-password').value.trim();
-
-  if (!siteUrl || !username || !appPassword) {
-    errEl.textContent = 'All fields are required.';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Connecting…';
+  if (!siteUrl || !username || !appPassword) { errEl.textContent = 'All fields are required.'; return; }
+  btn.disabled = true; btn.textContent = 'Connecting…';
   try {
     const res  = await fetch('/api/wordpress/connect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ siteUrl, username, appPassword }) });
     const data = await res.json();
@@ -528,9 +660,7 @@ async function connectWp(e) {
       if (res.status === 403 && data.error === 'limit_reached') {
         document.getElementById('wp-plan-note').style.display = '';
         errEl.textContent = '';
-      } else {
-        errEl.textContent = data.error || 'Connection failed.';
-      }
+      } else { errEl.textContent = data.error || 'Connection failed.'; }
       return;
     }
     document.getElementById('wp-site-url').value = '';
@@ -538,100 +668,37 @@ async function connectWp(e) {
     document.getElementById('wp-app-password').value = '';
     showWpConnected({ siteName: data.siteName, siteUrl: data.siteUrl, connectedAt: new Date().toISOString() });
     showToast('WordPress connected ✓');
-  } catch {
-    errEl.textContent = 'Network error. Please try again.';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Connect WordPress';
-  }
+  } catch { errEl.textContent = 'Network error. Please try again.'; }
+  finally { btn.disabled = false; btn.textContent = 'Connect WordPress'; }
 }
-
 async function disconnectWp() {
   if (!confirm('Disconnect WordPress? You can reconnect at any time.')) return;
-  try {
-    await fetch('/api/wordpress/connect', { method: 'DELETE' });
-    showWpForm();
-    showToast('WordPress disconnected');
-  } catch {}
+  try { await fetch('/api/wordpress/connect', { method: 'DELETE' }); showWpForm(); showToast('WordPress disconnected'); } catch {}
 }
-
 loadWpStatus();
 
-// ── Email Connection (Gmail OAuth + SMTP fallback) ───────────
-async function loadEmailStatus() {
-  // Check Gmail first
+// ── SMTP / Email Connection ───────────────────────────────
+async function loadSmtpStatus() {
   try {
-    const r = await fetch('/api/auth/gmail/status');
-    if (r.ok) {
-      const d = await r.json();
-      if (d.connected) { showGmailConnected(d); return; }
-    }
+    const res = await fetch('/api/email/smtp');
+    if (!res.ok) return;
+    const d = await res.json();
+    if (d.connected) showSmtpConnected(d); else showSmtpForm();
   } catch {}
-  // Then check SMTP
-  try {
-    const r = await fetch('/api/email/smtp');
-    if (r.ok) {
-      const d = await r.json();
-      if (d.connected) { showSmtpConnected(d); return; }
-    }
-  } catch {}
-  showConnectOptions();
 }
-
-function showGmailConnected(d) {
-  document.getElementById('gmail-connected-state').style.display  = '';
-  document.getElementById('gmail-connect-state').style.display    = 'none';
-  document.getElementById('gmail-status-email').textContent       = d.email || '—';
-  const meta = d.connectedAt ? 'Connected ' + new Date(d.connectedAt).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }) : '';
-  document.getElementById('gmail-status-meta').textContent = meta;
-  // Handle ?gmail= param in URL
-  const p = new URLSearchParams(location.search);
-  if (p.get('gmail') === 'connected') showToast('Gmail connected ✓');
-  if (p.get('gmail') === 'denied')  showToast('Gmail connection cancelled');
-  if (p.get('gmail') === 'error')   showToast('Gmail connection failed — please try again');
-}
-
 function showSmtpConnected(d) {
-  document.getElementById('gmail-connected-state').style.display  = 'none';
-  document.getElementById('gmail-connect-state').style.display    = '';
-  document.getElementById('smtp-form-wrap').style.display         = '';
-  document.getElementById('smtp-connected-state').style.display   = '';
-  document.getElementById('smtp-connect-state').style.display     = 'none';
+  document.getElementById('smtp-connected-state').style.display = '';
+  document.getElementById('smtp-connect-state').style.display = 'none';
   const fromLabel = d.fromName ? `"${d.fromName}" <${d.from}>` : (d.from || '—');
   document.getElementById('smtp-status-from').textContent = fromLabel;
   document.getElementById('smtp-status-host').textContent = (d.host || '') + (d.port ? ':' + d.port : '');
   const meta = d.connectedAt ? 'Connected ' + new Date(d.connectedAt).toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' }) : '';
   document.getElementById('smtp-status-meta').textContent = meta;
 }
-
-function showConnectOptions() {
-  document.getElementById('gmail-connected-state').style.display = 'none';
-  document.getElementById('gmail-connect-state').style.display   = '';
-  document.getElementById('smtp-connected-state').style.display  = 'none';
-  document.getElementById('smtp-connect-state').style.display    = '';
-  const p = new URLSearchParams(location.search);
-  const msgEl = document.getElementById('gmail-connect-msg');
-  if (p.get('gmail') === 'denied') { msgEl.textContent = 'Gmail connection was cancelled.'; msgEl.style.display = ''; }
-  if (p.get('gmail') === 'error')  { msgEl.textContent = 'Gmail connection failed. Please try again.'; msgEl.style.display = ''; }
+function showSmtpForm() {
+  document.getElementById('smtp-connected-state').style.display = 'none';
+  document.getElementById('smtp-connect-state').style.display = '';
 }
-
-function toggleSmtpForm() {
-  const wrap = document.getElementById('smtp-form-wrap');
-  const btn  = document.querySelector('.smtp-toggle-btn');
-  const open = wrap.style.display === 'none';
-  wrap.style.display = open ? '' : 'none';
-  btn.textContent    = open ? 'Use SMTP instead ▴' : 'Use SMTP instead ▾';
-}
-
-async function disconnectGmail() {
-  if (!confirm('Disconnect Gmail? You can reconnect at any time.')) return;
-  try {
-    await fetch('/api/auth/gmail/disconnect', { method: 'DELETE' });
-    showConnectOptions();
-    showToast('Gmail disconnected');
-  } catch {}
-}
-
 async function connectSmtp(e) {
   e.preventDefault();
   const errEl = document.getElementById('smtp-connect-err');
@@ -651,37 +718,166 @@ async function connectSmtp(e) {
     if (!res.ok) { errEl.textContent = data.error || 'Connection failed.'; return; }
     document.getElementById('smtp-password').value = '';
     showSmtpConnected({ host, port, username, from, fromName, connectedAt: new Date().toISOString() });
-    showToast('SMTP connected ✓');
+    showToast('Email connected ✓');
   } catch { errEl.textContent = 'Network error. Please try again.'; }
   finally { btn.disabled = false; btn.textContent = 'Connect & Test'; }
 }
-
 async function disconnectSmtp() {
-  if (!confirm('Disconnect SMTP? You can reconnect at any time.')) return;
-  try { await fetch('/api/email/smtp', { method:'DELETE' }); showConnectOptions(); showToast('SMTP disconnected'); } catch {}
+  if (!confirm('Disconnect email? You can reconnect at any time.')) return;
+  try { await fetch('/api/email/smtp', { method:'DELETE' }); showSmtpForm(); showToast('Email disconnected'); } catch {}
 }
+loadSmtpStatus();
 
-loadEmailStatus();
-
-// ── Load profile from /api/auth/me ────────────────────────
+// ── Load profile & plan stats ─────────────────────────────
 async function loadProfile() {
   try {
     const res = await fetch('/api/auth/me');
-    if (!res.ok) return;
+    if (!res.ok) { window.location.href = 'signin.html?next=settings.html'; return; }
     const { user } = await res.json();
-    if (!user) return;
+    if (!user) { window.location.href = 'signin.html?next=settings.html'; return; }
+
+    // Nav auth state
+    const signInBtn  = document.querySelector('a[href="signin.html"].btn-ghost');
+    const profileBtn = document.getElementById('nav-profile-btn');
+    if (signInBtn)  signInBtn.style.display  = 'none';
+    if (profileBtn) profileBtn.textContent   = (user.firstName?.[0] || user.email?.[0] || 'U').toUpperCase();
 
     document.getElementById('pf-first').value  = user.firstName || '';
     document.getElementById('pf-last').value   = user.lastName  || '';
     document.getElementById('pf-email').value  = user.email     || '';
 
+    const lang = user.preferredLang || 'en';
+    const rb = document.querySelector(`#pf-lang-chips input[value="${lang}"]`);
+    if (rb) rb.checked = true;
+    if (lang && ['el','en','de'].includes(lang)) localStorage.setItem('eureach_lang', lang);
+
     document.getElementById('stat-articles').textContent = user.articlesCreated || 0;
     document.getElementById('stat-credits').textContent  = user.creditsUsed     || 0;
     document.getElementById('stat-searches').textContent = user.searchesDone    || 0;
     document.getElementById('stat-leads').textContent    = user.leadsFound      || 0;
+
+    const left = user.creditsLeft;
+    const max  = user.creditsMax;
+    document.getElementById('plan-credits-left').textContent = left === -1 ? '∞' : (left ?? '—');
+    document.getElementById('plan-credits-max').textContent  = max  === -1 ? '∞' : (max  ?? '—');
+
+    // Dynamic plan name + meta
+    const PLAN_NAMES  = { free:'Free', starter:'Starter', pro:'Pro', agency:'Agency' };
+    const PLAN_PRICES = { free:0, starter:29, pro:79, agency:199 };
+    const PLAN_ORDER  = ['free','starter','pro','agency'];
+    const planKey  = user.plan || 'free';
+    const planName = PLAN_NAMES[planKey] || planKey;
+    const planPrice = PLAN_PRICES[planKey] || 0;
+    document.getElementById('plan-name-label').textContent = planName + ' Plan';
+    document.getElementById('plan-meta-label').textContent = planPrice === 0
+      ? 'Free forever — no credit card required'
+      : '€' + planPrice + ' / month · contact hello@eureach.eu to manage billing';
+
+    // Upgrade button
+    const upgradeBtn = document.getElementById('plan-upgrade-btn');
+    const curIdx = PLAN_ORDER.indexOf(planKey);
+    const nextPlan = PLAN_ORDER[curIdx + 1];
+    if (nextPlan) {
+      const nextName  = PLAN_NAMES[nextPlan];
+      const nextPrice = PLAN_PRICES[nextPlan];
+      upgradeBtn.textContent = '⚡ Upgrade to ' + nextName + ' — €' + nextPrice + '/mo';
+    } else {
+      upgradeBtn.textContent = '✓ You are on the top plan';
+      upgradeBtn.disabled = true;
+      upgradeBtn.style.opacity = '0.5';
+    }
+
+    // Sites plan note
+    const sitesMax = user.sitesMax;
+    const sitesBadge = document.getElementById('sites-plan-badge');
+    const sitesText  = document.getElementById('sites-plan-text');
+    if (sitesBadge) sitesBadge.textContent = planName;
+    if (sitesText)  sitesText.textContent  = sitesMax === -1 ? 'Unlimited sites' : 'Up to ' + sitesMax + ' site' + (sitesMax === 1 ? '' : 's');
+
+    // Activity stats — compute credits used
+    document.getElementById('stat-articles').textContent = user.articlesCreated || 0;
+    document.getElementById('stat-credits').textContent  = (max !== -1 && left !== undefined && max !== undefined)
+      ? Math.max(0, max - left) : (user.creditsUsed || 0);
+    document.getElementById('stat-searches').textContent = user.searchesDone || 0;
+    document.getElementById('stat-leads').textContent    = user.leadsFound   || 0;
+
   } catch {}
 }
 loadProfile();
+
+
+// ── Load sites count for plan tab ─────────────────────────
+function loadSitesCount() {
+  try {
+    const stored = localStorage.getItem('eureach_sites');
+    const sites  = stored ? JSON.parse(stored) : [];
+    document.getElementById('plan-sites').textContent = sites.length;
+  } catch {
+    document.getElementById('plan-sites').textContent = '0';
+  }
+}
+loadSitesCount();
+
+// ── My Business ───────────────────────────────────────────
+function applyBizEditState(editsLeft) {
+  const banner = document.getElementById('biz-edit-banner');
+  const btn    = document.querySelector('#biz-form button[type=submit]');
+  const inputs = document.querySelectorAll('#biz-form input, #biz-form select');
+  if (editsLeft <= 0) {
+    banner.style.display = '';
+    banner.className = 'biz-edit-banner biz-edit-locked';
+    banner.innerHTML = '🔒 You have used all 2 edits for this month. You can update again next month.';
+    btn.disabled = true;
+    inputs.forEach(el => el.disabled = true);
+  } else {
+    banner.style.display = '';
+    banner.className = 'biz-edit-banner biz-edit-ok';
+    banner.innerHTML = `✏️ <strong>${editsLeft} edit${editsLeft === 1 ? '' : 's'}</strong> remaining this month.`;
+    btn.disabled = false;
+    inputs.forEach(el => el.disabled = false);
+  }
+}
+async function loadBusiness() {
+  try {
+    const res = await fetch('/api/business/profile');
+    if (!res.ok) return;
+    const { profile, editsLeft } = await res.json();
+    applyBizEditState(editsLeft != null ? editsLeft : 2);
+    if (!profile) return;
+    document.getElementById('biz-name').value = profile.businessName || '';
+    document.getElementById('biz-url').value  = profile.businessUrl  || '';
+    document.getElementById('biz-city').value = profile.city         || '';
+    const csel = document.getElementById('biz-country');
+    if (profile.country) csel.value = profile.country;
+    const isel = document.getElementById('biz-industry');
+    if (profile.industry) isel.value = profile.industry;
+  } catch {}
+}
+async function saveBusiness(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('biz-error');
+  const btn   = e.target.querySelector('button[type=submit]');
+  errEl.textContent = '';
+  const payload = {
+    businessName: document.getElementById('biz-name').value.trim(),
+    businessUrl:  document.getElementById('biz-url').value.trim(),
+    country:      document.getElementById('biz-country').value,
+    city:         document.getElementById('biz-city').value.trim(),
+    industry:     document.getElementById('biz-industry').value,
+  };
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res  = await fetch('/api/business/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+    applyBizEditState(data.editsLeft);
+    showToast('Business profile saved ✓');
+  } catch (err) {
+    errEl.textContent = err.message;
+    btn.disabled = false; btn.textContent = 'Save Business Profile';
+  }
+}
+loadBusiness();
 
 // ── Save profile ──────────────────────────────────────────
 async function saveProfile(e) {
@@ -692,25 +888,20 @@ async function saveProfile(e) {
 
   const newPw     = document.getElementById('pf-new-pw').value;
   const confirmPw = document.getElementById('pf-confirm-pw').value;
-  if (newPw && newPw !== confirmPw) {
-    errEl.textContent = 'New passwords do not match.';
-    return;
-  }
-  if (newPw && newPw.length < 8) {
-    errEl.textContent = 'New password must be at least 8 characters.';
-    return;
-  }
+  if (newPw && newPw !== confirmPw) { errEl.textContent = 'New passwords do not match.'; return; }
+  if (newPw && newPw.length < 8)   { errEl.textContent = 'New password must be at least 8 characters.'; return; }
 
+  const selectedLang = document.querySelector('#pf-lang-chips input[name="pf-lang"]:checked');
   const payload = {
     firstName:       document.getElementById('pf-first').value.trim(),
     lastName:        document.getElementById('pf-last').value.trim(),
     email:           document.getElementById('pf-email').value.trim(),
     currentPassword: document.getElementById('pf-current-pw').value,
     newPassword:     newPw,
+    preferredLang:   selectedLang ? selectedLang.value : 'en',
   };
 
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
+  btn.disabled = true; btn.textContent = 'Saving…';
   try {
     const res  = await fetch('/api/auth/profile', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await res.json();
@@ -718,15 +909,315 @@ async function saveProfile(e) {
     document.getElementById('pf-current-pw').value = '';
     document.getElementById('pf-new-pw').value     = '';
     document.getElementById('pf-confirm-pw').value = '';
+    if (payload.preferredLang) localStorage.setItem('eureach_lang', payload.preferredLang);
     showToast('Profile saved ✓');
+    setTimeout(() => location.reload(), 900);
   } catch (err) {
     errEl.textContent = err.message;
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Save changes';
+    btn.disabled = false; btn.textContent = 'Save changes';
   }
 }
+/* ── Embedded Admin ──────────────────────────────────────── */
+function setAdmTab(btn, panelId) {
+  document.querySelectorAll('.adm-stab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  ['adm-articles','adm-users','adm-stats'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = id === panelId ? '' : 'none';
+  });
+  if (panelId === 'adm-articles') loadAdmArticles();
+  if (panelId === 'adm-users')    loadAdmUsers();
+  if (panelId === 'adm-stats')    loadAdmStats();
+}
+
+let admArtFilter = 'all';
+function setArtTab2(btn, status) {
+  document.querySelectorAll('#adm-articles .art-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  admArtFilter = status;
+  loadAdmArticles();
+}
+
+function escA(s) {
+  const d = document.createElement('div'); d.textContent = String(s||''); return d.innerHTML;
+}
+function fmtDT(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
+async function loadAdmArticles() {
+  const wrap = document.getElementById('adm-articles-list');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="color:#8b9ab7;padding:12px;">Loading…</div>';
+  try {
+    const url = admArtFilter === 'all' ? '/api/blog' : '/api/blog?status=' + admArtFilter;
+    const r = await fetch(url);
+    const d = await r.json();
+    const posts = d.posts || [];
+    if (!posts.length) { wrap.innerHTML = '<div style="color:#8b9ab7;padding:12px;">No articles found.</div>'; return; }
+    wrap.innerHTML = '';
+    posts.forEach(p => {
+      const sc = p.status === 'approved' ? '#16a34a' : p.status === 'pending' ? '#d97706' : '#6366f1';
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:16px 18px;';
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:0.93rem;margin-bottom:3px;">${escA(p.title||'Untitled')}</div>
+            <div style="font-size:0.75rem;color:#8b9ab7;">by ${escA(p.author||'?')} · ${fmtDT(p.publishedAt)} · ${(p.lang||'en').toUpperCase()}</div>
+          </div>
+          <span style="background:${sc}22;color:${sc};border:1px solid ${sc}44;border-radius:5px;padding:2px 9px;font-size:0.72rem;font-weight:700;white-space:nowrap;">${(p.status||'').toUpperCase()}</span>
+        </div>
+        <div style="font-size:0.82rem;color:#64748b;margin:8px 0 12px;">${escA((p.excerpt||'').slice(0,100))}${(p.excerpt||'').length>100?'…':''}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="admPreviewArt('${p.slug}')" style="background:#1e293b;color:#cbd5e1;border:1px solid #2a3050;padding:6px 13px;border-radius:7px;cursor:pointer;font-size:0.8rem;">👁 Preview</button>
+          <button onclick="admEditArt('${p.slug}')" style="background:#1e3a5f;color:#93c5fd;border:1px solid #1e4a7f;padding:6px 13px;border-radius:7px;cursor:pointer;font-size:0.8rem;">✏️ Edit</button>
+          ${p.status !== 'approved' ? `<button onclick="admApproveArt('${p.slug}',this)" style="background:#14532d;color:#86efac;border:1px solid #166534;padding:6px 13px;border-radius:7px;cursor:pointer;font-size:0.8rem;">✅ Approve</button>` : ''}
+          <button onclick="admDeleteArt('${p.slug}',this)" style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:6px 13px;border-radius:7px;cursor:pointer;font-size:0.8rem;">🗑 Delete</button>
+        </div>`;
+      wrap.appendChild(card);
+    });
+  } catch(e) {
+    wrap.innerHTML = '<div style="color:#f87171;">Error: ' + escA(e.message) + '</div>';
+  }
+}
+
+async function admPreviewArt(slug) {
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug));
+  if (!r.ok) { alert('Could not load.'); return; }
+  const { post } = await r.json();
+  document.getElementById('adm-art-modal-body').innerHTML = `
+    <h2 style="font-size:1.2rem;margin-bottom:6px;">${escA(post.title)}</h2>
+    <div style="font-size:0.75rem;color:#8b9ab7;margin-bottom:18px;">by ${escA(post.author||'?')} · ${fmtDT(post.publishedAt)} · ${(post.lang||'en').toUpperCase()}</div>
+    <div style="font-size:0.88rem;line-height:1.75;color:#cbd5e1;">${post.html||''}</div>`;
+  document.getElementById('adm-art-modal').style.display = 'block';
+}
+
+async function admEditArt(slug) {
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug));
+  if (!r.ok) { alert('Could not load.'); return; }
+  const { post } = await r.json();
+  document.getElementById('adm-art-modal-body').innerHTML = `
+    <h3 style="margin-bottom:20px;font-size:1.05rem;">✏️ Edit Article</h3>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:0.78rem;color:#8b9ab7;margin-bottom:5px;">Title</label>
+      <input id="adm-edit-title" value="${escA(post.title||'')}" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:0.88rem;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:0.78rem;color:#8b9ab7;margin-bottom:5px;">Excerpt</label>
+      <textarea id="adm-edit-excerpt" rows="3" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:0.83rem;box-sizing:border-box;resize:vertical;">${escA(post.excerpt||'')}</textarea>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="display:block;font-size:0.78rem;color:#8b9ab7;margin-bottom:5px;">Status</label>
+      <select id="adm-edit-status" style="background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:0.88rem;">
+        <option value="pending" ${post.status==='pending'?'selected':''}>Pending</option>
+        <option value="approved" ${post.status==='approved'?'selected':''}>Approved</option>
+      </select>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="display:block;font-size:0.78rem;color:#8b9ab7;margin-bottom:5px;">HTML Content</label>
+      <textarea id="adm-edit-html" rows="12" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:9px 12px;color:#e2e8f0;font-size:0.78rem;font-family:monospace;box-sizing:border-box;resize:vertical;">${escA(post.html||'')}</textarea>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="admSaveArt('${slug}')" style="background:#7c3aed;color:#fff;border:none;padding:10px 22px;border-radius:8px;cursor:pointer;font-weight:600;">💾 Save</button>
+      <button onclick="closeAdmArtModal()" style="background:#1e293b;color:#e2e8f0;border:1px solid #2a3050;padding:10px 18px;border-radius:8px;cursor:pointer;">Cancel</button>
+    </div>`;
+  document.getElementById('adm-art-modal').style.display = 'block';
+}
+
+async function admSaveArt(slug) {
+  const body = {
+    title:   document.getElementById('adm-edit-title').value,
+    excerpt: document.getElementById('adm-edit-excerpt').value,
+    html:    document.getElementById('adm-edit-html').value,
+    status:  document.getElementById('adm-edit-status').value,
+  };
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug), { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (r.ok) { closeAdmArtModal(); loadAdmArticles(); }
+  else { alert('Save failed.'); }
+}
+
+async function admApproveArt(slug, btn) {
+  btn.disabled = true; btn.textContent = '…';
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug) + '/approve', { method: 'POST' });
+  if (r.ok) loadAdmArticles();
+  else { btn.disabled = false; btn.textContent = '✅ Approve'; alert('Failed.'); }
+}
+
+async function admDeleteArt(slug, btn) {
+  if (!confirm('Delete this article permanently?')) return;
+  btn.disabled = true; btn.textContent = '…';
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug) + '/reject', { method: 'POST' });
+  if (r.ok) loadAdmArticles();
+  else { btn.disabled = false; btn.textContent = '🗑 Delete'; alert('Failed.'); }
+}
+
+function closeAdmArtModal() {
+  document.getElementById('adm-art-modal').style.display = 'none';
+}
+
+async function loadAdmUsers() {
+  const wrap = document.getElementById('adm-users-list');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="color:#8b9ab7;padding:12px;">Loading…</div>';
+  try {
+    const r = await fetch('/api/admin/users');
+    const d = await r.json();
+    const users = d.users || [];
+    if (!users.length) { wrap.innerHTML = '<div style="color:#8b9ab7;">No users.</div>'; return; }
+    wrap.innerHTML = '';
+    window._admUsersCache = {};
+    users.forEach(u => {
+      window._admUsersCache[u.id] = u;
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;';
+      card.innerHTML = `
+        <div>
+          <div style="font-weight:600;font-size:0.9rem;">${escA((u.firstName||'')+' '+(u.lastName||'')).trim()||escA(u.email)}</div>
+          <div style="font-size:0.75rem;color:#8b9ab7;">${escA(u.email)} · <span style="color:${u.role==='admin'?'#a78bfa':'#38bdf8'}">${u.role||'user'}</span> · ${u.plan||'free'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="font-size:0.75rem;color:#64748b;">Articles: ${u.articlesCreated||0} · Credits: ${u.creditsLeft===-1?'∞':(u.creditsLeft||0)}</div>
+          <button style="background:#1e293b;border:1px solid #2a3050;color:#e2e8f0;font-size:0.78rem;padding:5px 12px;border-radius:7px;cursor:pointer;" onclick="openAdmUserModal(window._admUsersCache['${escA(u.id)}'])">✏️ Edit</button>
+        </div>`;
+      wrap.appendChild(card);
+    });
+  } catch(e) {
+    wrap.innerHTML = '<div style="color:#f87171;">Error loading users.</div>';
+  }
+}
+
+async function loadAdmStats() {
+  const wrap = document.getElementById('adm-stats-body');
+  if (!wrap) return;
+  wrap.innerHTML = '<div style="color:#8b9ab7;padding:12px;">Loading…</div>';
+  try {
+    const r = await fetch('/api/admin/stats');
+    const d = await r.json();
+    const items = [
+      ['👥 Total Users',    d.totalUsers    || 0],
+      ['✍️ Articles',       d.totalArticles  || 0],
+      ['🔍 Searches',       d.totalSearches  || 0],
+      ['📋 Leads',          d.totalLeads     || 0],
+      ['📧 Emails Sent',    d.totalEmails    || 0],
+    ];
+    wrap.innerHTML = items.map(([label, val]) => `
+      <div style="background:#0a0f1e;border:1px solid #1e293b;border-radius:10px;padding:18px;text-align:center;">
+        <div style="font-size:1.5rem;font-weight:700;color:#e2e8f0;">${val}</div>
+        <div style="font-size:0.78rem;color:#8b9ab7;margin-top:4px;">${label}</div>
+      </div>`).join('');
+  } catch(e) {
+    wrap.innerHTML = '<div style="color:#f87171;">Error loading stats.</div>';
+  }
+}
+
+
+
+
+/* ── Admin user edit modal ─────────────────────────── */
+let _admUserId = null;
+function openAdmUserModal(u) {
+  _admUserId = u.id;
+  document.getElementById('adm-um-title').textContent = (u.firstName || u.email || 'User');
+  document.getElementById('adm-um-first').value = u.firstName || '';
+  document.getElementById('adm-um-last').value  = u.lastName  || '';
+  document.getElementById('adm-um-email').value = u.email     || '';
+  document.getElementById('adm-um-plan').value  = u.plan      || 'free';
+  document.getElementById('adm-um-role').value  = u.role      || 'user';
+  document.getElementById('adm-um-suspended').checked = !!u.suspended;
+  document.getElementById('adm-um-msg').textContent = '';
+  document.getElementById('adm-um-save-btn').disabled = false;
+  document.getElementById('adm-um-save-btn').textContent = 'Save';
+  document.getElementById('adm-user-modal').style.display = 'flex';
+}
+function closeAdmUserModal() {
+  document.getElementById('adm-user-modal').style.display = 'none';
+  _admUserId = null;
+}
+async function saveAdmUser() {
+  if (!_admUserId) return;
+  const btn = document.getElementById('adm-um-save-btn');
+  const msg = document.getElementById('adm-um-msg');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const r = await fetch('/api/admin/users/' + _admUserId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName:  document.getElementById('adm-um-first').value.trim(),
+        lastName:   document.getElementById('adm-um-last').value.trim(),
+        email:      document.getElementById('adm-um-email').value.trim(),
+        plan:       document.getElementById('adm-um-plan').value,
+        role:       document.getElementById('adm-um-role').value,
+        suspended:  document.getElementById('adm-um-suspended').checked,
+      }),
+    });
+    const d = await r.json();
+    if (!r.ok) { msg.style.color='#f87171'; msg.textContent = d.error || 'Save failed'; return; }
+    msg.style.color='#4ade80'; msg.textContent = 'Saved ✓';
+    setTimeout(() => { closeAdmUserModal(); loadAdmUsers(); }, 800);
+  } catch { msg.style.color='#f87171'; msg.textContent = 'Network error'; }
+  finally { btn.disabled = false; btn.textContent = 'Save'; }
+}
+
 </script>
-<script src="/js/api.js"></script>
+<script src="/js/api.js?v=4"></script>
+<script src="/js/trial-banner.js"></script>
+<script src="js/nav-init.js"></script>
+
+<!-- ── Admin User Edit Modal ──────────────────────────────── -->
+<div id="adm-user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:3000;display:none;align-items:center;justify-content:center;">
+  <div style="background:#0f172a;border:1px solid #2a3050;border-radius:16px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:28px 28px 24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-weight:700;font-size:1.05rem;color:#e2e8f0;" id="adm-um-title">Edit User</div>
+      <button onclick="closeAdmUserModal()" style="background:none;border:none;color:#8b9ab7;font-size:1.3rem;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:0.75rem;color:#8b9ab7;display:block;margin-bottom:4px;">First name</label>
+        <input id="adm-um-first" type="text" style="width:100%;background:#0a0f1e;border:1px solid #1e293b;border-radius:8px;padding:8px 10px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:0.75rem;color:#8b9ab7;display:block;margin-bottom:4px;">Last name</label>
+        <input id="adm-um-last" type="text" style="width:100%;background:#0a0f1e;border:1px solid #1e293b;border-radius:8px;padding:8px 10px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;">
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:0.75rem;color:#8b9ab7;display:block;margin-bottom:4px;">Email</label>
+      <input id="adm-um-email" type="email" style="width:100%;background:#0a0f1e;border:1px solid #1e293b;border-radius:8px;padding:8px 10px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:0.75rem;color:#8b9ab7;display:block;margin-bottom:4px;">Plan</label>
+        <select id="adm-um-plan" style="width:100%;background:#0a0f1e;border:1px solid #1e293b;border-radius:8px;padding:8px 10px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;">
+          <option value="free">Free</option>
+          <option value="starter">Starter</option>
+          <option value="pro">Pro</option>
+          <option value="agency">Agency (Unlimited)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:0.75rem;color:#8b9ab7;display:block;margin-bottom:4px;">Role</label>
+        <select id="adm-um-role" style="width:100%;background:#0a0f1e;border:1px solid #1e293b;border-radius:8px;padding:8px 10px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:#8b9ab7;cursor:pointer;margin-bottom:20px;">
+      <input id="adm-um-suspended" type="checkbox" style="accent-color:#7c3aed;width:16px;height:16px;">
+      Suspend account
+    </label>
+    <div id="adm-um-msg" style="font-size:0.82rem;margin-bottom:12px;min-height:18px;"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <a id="adm-um-full-link" href="admin.html" target="_blank" style="font-size:0.78rem;color:#8b9ab7;padding:8px 14px;border:1px solid #1e293b;border-radius:8px;text-decoration:none;display:flex;align-items:center;">Full admin ↗</a>
+      <button onclick="closeAdmUserModal()" style="background:transparent;border:1px solid #1e293b;color:#8b9ab7;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:0.85rem;">Cancel</button>
+      <button onclick="saveAdmUser()" style="background:#6d28d9;border:none;color:#fff;padding:8px 22px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;" id="adm-um-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
