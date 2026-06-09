@@ -1190,25 +1190,36 @@
 
       let rows = '';
 
+      // Helper: compute approximate next billing from paidSince (fallback when Stripe data absent)
+      const approxNextBilling = () => {
+        if (!me.paidSince) return null;
+        const since = new Date(me.paidSince);
+        const next  = new Date(since);
+        while (next <= now) next.setMonth(next.getMonth() + 1);
+        return next;
+      };
+
       if (isPaid && !trialActive) {
         bscCard.className = 'billing-status-card active';
         bscBadge.className = 'bsc-badge active'; bscBadge.textContent = 'Active';
         bscName.textContent = 'Solo Pro — €20 / month';
         rows += `<div class="bsc-row"><span class="bsc-row-label">Member since</span><span class="bsc-row-val">${me.paidSince ? fmt(me.paidSince) : '—'}</span></div>`;
-        if (billing?.nextBillingDate) {
-          const days = daysUntil(billing.nextBillingDate);
-          rows += `<div class="bsc-row"><span class="bsc-row-label">Next charge</span><span class="bsc-row-val">€20 on ${fmtShort(billing.nextBillingDate)} <span style="color:var(--muted);font-weight:400">(${days} day${days!==1?'s':''})</span></span></div>`;
+        const nextDate = billing?.nextBillingDate ? new Date(billing.nextBillingDate) : approxNextBilling();
+        if (nextDate) {
+          const days = daysUntil(nextDate);
+          rows += `<div class="bsc-row"><span class="bsc-row-label">Next renewal</span><span class="bsc-row-val">${fmtShort(nextDate)} <span style="color:var(--muted);font-weight:400">(${days} day${days!==1?'s':''} left)</span></span></div>`;
         }
         if (billing?.cardLast4) rows += `<div class="bsc-row"><span class="bsc-row-label">Card</span><span class="bsc-row-val">•••• ${billing.cardLast4}</span></div>`;
         bscActions.innerHTML = `<a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem">Manage billing →</a>`;
 
       } else if (trialActive) {
         const days = daysUntil(trialEnd);
+        const urgColor = days <= 3 ? '#f87171' : days <= 7 ? '#fbbf24' : '#4ade80';
         bscCard.className = 'billing-status-card trial';
         bscBadge.className = 'bsc-badge trial'; bscBadge.textContent = `Trial — ${days} day${days!==1?'s':''} left`;
         bscName.textContent = 'Solo Pro — free trial';
         rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ends</span><span class="bsc-row-val">${fmtShort(trialEnd)}</span></div>`;
-        rows += `<div class="bsc-row"><span class="bsc-row-label">Days remaining</span><span class="bsc-row-val" style="color:#fbbf24">${days} day${days!==1?'s':''}</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Days remaining</span><span class="bsc-row-val" style="color:${urgColor};font-size:1rem;font-weight:700">${days} day${days!==1?'s':''}</span></div>`;
         rows += `<div class="bsc-row"><span class="bsc-row-label">First charge</span><span class="bsc-row-val">€20 on ${fmtShort(trialEnd)}</span></div>`;
         bscActions.innerHTML = `<a href="upgrade.html" class="btn btn-primary" style="font-size:0.82rem">Activate now →</a> <a href="membership.html" class="btn btn-ghost" style="font-size:0.82rem;margin-left:8px">Manage →</a>`;
 
@@ -1217,6 +1228,7 @@
         bscBadge.className = 'bsc-badge expired'; bscBadge.textContent = 'Trial expired';
         bscName.textContent = 'No active plan';
         rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ended</span><span class="bsc-row-val">${fmtShort(trialEnd)}</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Days remaining</span><span class="bsc-row-val" style="color:#f87171">0 — expired</span></div>`;
         rows += `<div class="bsc-row"><span class="bsc-row-label">Status</span><span class="bsc-row-val" style="color:#f87171">Access restricted</span></div>`;
         bscActions.innerHTML = `<a href="membership.html" class="btn btn-primary" style="font-size:0.82rem">Reactivate — €20/month →</a>`;
 
@@ -1230,7 +1242,7 @@
         const auditsUsed = me.auditMonth      === cmStr ? (me.monthAudits       || 0) : 0;
         const leadsLeft  = Math.max(0, 3 - leadsUsed);
         const auditsLeft = Math.max(0, 1 - auditsUsed);
-        rows += `<div class="bsc-row"><span class="bsc-row-label">Plan expires</span><span class="bsc-row-val" style="color:var(--muted)">—</span></div>`;
+        rows += `<div class="bsc-row"><span class="bsc-row-label">Days remaining</span><span class="bsc-row-val" style="color:var(--muted)">No expiry</span></div>`;
         const artUsed0 = me.articleMonth === cmStr ? (me.monthArticles || 0) : 0;
         const artLeft0 = Math.max(0, 1 - artUsed0);
         rows += `<div class="bsc-row"><span class="bsc-row-label">Articles</span><span class="bsc-row-val" style="${artLeft0 === 0 ? 'color:#f87171' : ''}">${artLeft0} of 1 remaining · Greek only</span></div>`;
