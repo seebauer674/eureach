@@ -1656,6 +1656,18 @@ async function handleArticlesDeduct(req, res) {
     }
   }
 
+  // Free plan: 1 article/month (Greek only — language check already above)
+  if (!hasAccess(users[idx]) && !isTrialActive(users[idx])) {
+    if (users[idx].articleMonth !== currentMonth()) { users[idx].monthArticles = 0; users[idx].articleMonth = currentMonth(); }
+    if ((users[idx].monthArticles || 0) >= 1) {
+      return json(res, 403, {
+        error: "monthly_article_limit",
+        message: "Free plan includes 1 article per month (Greek only). Upgrade to Pro for 6 articles in Greek, English & German.",
+        upgradeUrl: "/membership",
+      });
+    }
+  }
+
   // Trial article limit (3 total during trial)
   if (isTrialActive(users[idx])) {
     const tu = getTrialUsage(users[idx]);
