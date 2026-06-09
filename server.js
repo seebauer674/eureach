@@ -2412,6 +2412,7 @@ async function handleLeadSearch(req, res) {
   const { subcatLabel, city, country } = body;
   if (!subcatLabel || !city || !country) return json(res, 400, { error: "subcatLabel, city and country are required." });
 
+  if (!hasAccess(user)) {
   // Access check: free users get 3 searches (Greece only); block if expired
     if (isFreeExpired(user)) return json(res, 403, { error: "free_expired", message: "Your free plan has expired. Upgrade to Pro to continue.", upgradeUrl: "/membership" });
 
