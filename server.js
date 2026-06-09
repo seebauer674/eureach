@@ -322,6 +322,12 @@ function isPaidUser(user) {
   return user.plan === "paid";
 }
 
+
+function isFreeExpired(user) {
+  if (isPaidUser(user) || isTrialActive(user) || user.role === "admin") return false;
+  if (!user.freeExpiresAt) return false;
+  return new Date() > new Date(user.freeExpiresAt);
+}
 function hasAccess(user) {
   return user.role === "admin" || isTrialActive(user) || isPaidUser(user);
 }
@@ -437,6 +443,7 @@ async function handleSignup(req, res) {
     creditMonth:  currentMonth(),
     sites:        [],
     createdAt:    new Date().toISOString(),
+    freeExpiresAt: chosenPlan === 'free' ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
   };
 
   users.push(user);
@@ -1645,8 +1652,9 @@ async function handleArticlesDeduct(req, res) {
   const body = await readBody(req);
   const articleLanguage = (body.language || "").toLowerCase();
 
-  // Free-plan language restriction — Greek only
+  // Free-plan: block if expired, language Greek only
   if (!hasAccess(users[idx])) {
+    if (isFreeExpired(users[idx])) return json(res, 403, { error: "free_expired", message: "Your free plan has expired. Upgrade to Pro to continue.", upgradeUrl: "/membership" });
     if (articleLanguage && articleLanguage !== "greek" && articleLanguage !== "el") {
       return json(res, 403, {
         error: "free_plan_language",
@@ -2404,8 +2412,9 @@ async function handleLeadSearch(req, res) {
   const { subcatLabel, city, country } = body;
   if (!subcatLabel || !city || !country) return json(res, 400, { error: "subcatLabel, city and country are required." });
 
-  // Access check: free users get 3 searches/month (Greece only)
-  if (!hasAccess(user)) {
+  // Access check: free users get 3 searches (Greece only); block if expired
+    if (isFreeExpired(user)) return json(res, 403, { error: "free_expired", message: "Your free plan has expired. Upgrade to Pro to continue.", upgradeUrl: "/membership" });
+
     const countryLower = (country || "").replace(/^\S+\s/, "").toLowerCase().trim();
     if (countryLower !== "greece" && countryLower !== "ελλάδα" && countryLower !== "ελλάς") {
       return json(res, 403, {
@@ -2781,8 +2790,9 @@ async function handleAuditCreate(req, res) {
   // Auto-expire trial if needed
   autoExpireTrialIfNeeded(users, uidx);
 
-  // Free plan: 1 audit total (no reset)
+  // Free plan: 1 audit total (no reset); block if expired
   if (!hasAccess(users[uidx])) {
+    if (isFreeExpired(users[uidx])) return json(res, 403, { error: "free_expired", message: "Your free plan has expired. Upgrade to Pro to continue.", upgradeUrl: "/membership" });
     if ((users[uidx].monthAudits || 0) >= 1) {
       return json(res, 403, {
         error: "free_audit_limit",
