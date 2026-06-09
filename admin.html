@@ -3,500 +3,932 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin — eureach.eu</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/admin.css">
+  <title>Admin Backoffice — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/admin.css?v=2">
 </head>
 <body class="admin-body">
 
-<div class="adm-layout">
+<div class="adm-layout" id="adm-layout">
 
-  <!-- Sidebar -->
+  <!-- ── Sidebar ──────────────────────────── -->
   <aside class="adm-sidebar">
     <div class="adm-logo">eureach<span>.</span>eu <span class="adm-badge">Admin</span></div>
-    <div class="adm-nav">
-      <a class="adm-nav-item active" data-page="users">
+    <nav class="adm-nav">
+      <a class="adm-nav-item active" data-section="dashboard" href="#dashboard">
+        <span class="adm-nav-icon">📊</span> Dashboard
+      </a>
+      <a class="adm-nav-item" data-section="users" href="#users">
         <span class="adm-nav-icon">👥</span> Users
       </a>
-    </div>
+      <a class="adm-nav-item" data-section="articles" href="#articles">
+        <span>📝</span> Articles
+      </a>
+      <a class="adm-nav-item" data-section="security" href="#security">
+        <span class="adm-nav-icon">🔒</span> Security Log
+      </a>
+    </nav>
     <div class="adm-sidebar-footer">
-      <a href="leads.html" class="adm-back-link">← Back to App</a>
-      <button class="adm-signout" id="adm-signout">Sign out</button>
+      <a href="index.html" class="adm-back-link">← Back to eureach.eu</a>
+      <button class="adm-signout" onclick="signOut()">Sign out</button>
     </div>
   </aside>
 
-  <!-- Main -->
+  <!-- ── Main area ─────────────────────────── -->
   <main class="adm-main">
 
-    <!-- Users Page -->
-    <div class="adm-page" id="page-users">
-
+    <!-- ── Dashboard ─── -->
+    <section id="section-dashboard" class="adm-section active">
       <div class="adm-page-header">
         <div>
-          <h1 class="adm-page-title">Users</h1>
-          <p class="adm-page-sub" id="adm-user-count">Loading…</p>
+          <div class="adm-page-title">Dashboard</div>
+          <div class="adm-page-sub">Platform overview — <span id="dash-date"></span></div>
         </div>
-        <button class="btn btn-primary" id="adm-add-user-btn">+ Add User</button>
+        <button class="adm-btn-edit" onclick="loadStats()">↺ Refresh</button>
       </div>
 
-      <!-- Search -->
+      <div id="dash-stats-grid" class="dash-grid">
+        <div class="adm-loading">Loading stats…</div>
+      </div>
+
+      <div class="dash-row" style="margin-top:28px">
+        <div class="dash-card" style="flex:1">
+          <div class="dash-card-title">Users by Plan</div>
+          <div id="dash-plan-breakdown"></div>
+        </div>
+        <div class="dash-card" style="flex:1">
+          <div class="dash-card-title">Recent Security Events</div>
+          <div id="dash-security-preview"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Users ─── -->
+    <section id="section-users" class="adm-section">
+      <div class="adm-page-header">
+        <div>
+          <div class="adm-page-title">Users</div>
+          <div class="adm-page-sub" id="users-count">Loading…</div>
+        </div>
+      </div>
+
       <div class="adm-search-row">
-        <input class="adm-search" type="text" id="adm-search" placeholder="Search by name or email…">
-        <select class="adm-filter-select" id="adm-filter-plan">
-          <option value="">All Plans</option>
+        <input type="search" class="adm-search" id="user-search" placeholder="Search by name, email, plan…">
+        <select class="adm-filter-select" id="user-plan-filter">
+          <option value="">All plans</option>
           <option value="free">Free</option>
-          <option value="free_solo">Free Solo</option>
-          <option value="pro_solo">Pro Solo</option>
           <option value="starter">Starter</option>
           <option value="pro">Pro</option>
           <option value="agency">Agency</option>
+          <option value="admin">Admin</option>
         </select>
-        <select class="adm-filter-select" id="adm-filter-status">
-          <option value="">All Status</option>
+        <select class="adm-filter-select" id="user-status-filter">
+          <option value="">All statuses</option>
           <option value="active">Active</option>
           <option value="suspended">Suspended</option>
-          <option value="admin">Admin</option>
         </select>
       </div>
 
-      <!-- Table -->
       <div class="adm-table-wrap">
-        <table class="adm-table" id="adm-users-table">
+        <table class="adm-table">
           <thead>
             <tr>
               <th>User</th>
               <th>Plan</th>
               <th>Credits</th>
-              <th>Articles</th>
-              <th>Searches</th>
+              <th>Days / Tasks</th>
+              <th>Activity</th>
               <th>Status</th>
               <th>Joined</th>
-              <th>Actions</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody id="adm-users-tbody">
-            <tr><td colspan="7" class="adm-loading">Loading users…</td></tr>
+          <tbody id="users-tbody">
+            <tr><td colspan="8" class="adm-loading">Loading…</td></tr>
           </tbody>
         </table>
       </div>
+    </section>
 
+    <!-- ── Pending Articles ─── -->
+    <section id="section-articles" class="adm-section">
+      <div class="adm-page-header">
+        <div>
+          <div class="adm-page-title">Articles</div>
+          <div class="adm-page-sub">Manage all articles submitted to Eureach Blog</div>
+        </div>
+      </div>
+      <!-- filter tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+        <button class="art-tab active" data-status="all"      onclick="setArtTab(this,'all')">All</button>
+        <button class="art-tab"        data-status="pending"  onclick="setArtTab(this,'pending')">Pending</button>
+        <button class="art-tab"        data-status="approved" onclick="setArtTab(this,'approved')">Approved</button>
+      </div>
+      <div id="articles-list" style="display:flex;flex-direction:column;gap:14px;"></div>
+    </section>
+
+    <!-- Article preview/edit modal -->
+    <div id="art-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;overflow-y:auto;padding:40px 20px;">
+      <div style="background:#0f172a;border:1px solid #2a3050;border-radius:16px;max-width:800px;margin:0 auto;padding:32px;position:relative;">
+        <button onclick="closeArtModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;color:#8b9ab7;font-size:1.4rem;cursor:pointer;">✕</button>
+        <div id="art-modal-body"></div>
+      </div>
     </div>
+
+    <!-- ── Security Log ─── -->
+    <section id="section-security" class="adm-section">
+      <div class="adm-page-header">
+        <div>
+          <div class="adm-page-title">Security Log</div>
+          <div class="adm-page-sub">Suspicious requests, CSRF mismatches, path traversal attempts</div>
+        </div>
+      </div>
+      <div class="adm-table-wrap">
+        <table class="adm-table">
+          <thead>
+            <tr><th>Type</th><th>Detail</th><th>IP</th><th>Time</th></tr>
+          </thead>
+          <tbody id="security-tbody">
+            <tr><td colspan="4" class="adm-loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </main>
 </div>
 
-<!-- ── Add / Edit Modal ────────────────────────────────────── -->
-<div class="adm-modal-overlay" id="adm-modal" style="display:none">
+<!-- ── User Edit Modal ────────────────────────── -->
+<div class="adm-modal-overlay" id="user-modal" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="adm-modal">
     <div class="adm-modal-header">
-      <h2 class="adm-modal-title" id="adm-modal-title">Add User</h2>
-      <button class="adm-modal-close" id="adm-modal-close">✕</button>
+      <div class="adm-modal-title" id="modal-title">Edit User</div>
+      <button class="adm-modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="adm-modal-body">
-
       <div class="adm-tabs">
-        <button class="adm-tab active" data-tab="basic">Basic Info</button>
-        <button class="adm-tab" data-tab="account">Account</button>
-        <button class="adm-tab" data-tab="credits">Credits</button>
-        <button class="adm-tab" data-tab="restrict">Restrictions</button>
-        <button class="adm-tab adm-tab-danger" data-tab="danger" id="adm-tab-danger" style="display:none">Danger</button>
+        <button class="adm-tab active" data-mtab="general">General</button>
+        <button class="adm-tab" data-mtab="credits">Credits</button>
+        <button class="adm-tab" data-mtab="usage">Usage</button>
+        <button class="adm-tab" data-mtab="bizedits">Biz Edits</button>
+        <button class="adm-tab adm-tab-danger" data-mtab="danger">Danger</button>
       </div>
 
-      <!-- Tab: Basic -->
-      <div class="adm-tab-content active" id="tab-basic">
+      <!-- General -->
+      <div class="adm-tab-content active" id="mtab-general">
         <div class="adm-form-row">
           <div class="adm-field">
-            <label>First Name *</label>
-            <input type="text" id="f-firstName" placeholder="First name">
+            <label>First name</label>
+            <input type="text" id="m-first">
           </div>
           <div class="adm-field">
-            <label>Last Name</label>
-            <input type="text" id="f-lastName" placeholder="Last name">
+            <label>Last name</label>
+            <input type="text" id="m-last">
           </div>
         </div>
         <div class="adm-field">
-          <label>Email *</label>
-          <input type="email" id="f-email" placeholder="user@example.com">
+          <label>Email</label>
+          <input type="email" id="m-email">
         </div>
-        <div class="adm-field" id="f-password-wrap">
-          <label>Password *</label>
-          <input type="password" id="f-password" placeholder="Min 6 characters">
-        </div>
-      </div>
-
-      <!-- Tab: Account -->
-      <div class="adm-tab-content" id="tab-account">
         <div class="adm-form-row">
           <div class="adm-field">
             <label>Plan</label>
-            <select id="f-plan">
+            <select id="m-plan">
               <option value="free">Free</option>
-              <option value="free_solo">Free Solo</option>
-              <option value="pro_solo">Pro Solo</option>
               <option value="starter">Starter</option>
               <option value="pro">Pro</option>
-              <option value="agency">Agency</option>
+              <option value="agency">Agency (Unlimited)</option>
             </select>
           </div>
           <div class="adm-field">
             <label>Role</label>
-            <select id="f-role">
+            <select id="m-role">
               <option value="user">User</option>
               <option value="admin">Admin</option>
             </select>
           </div>
         </div>
-        <div class="adm-field">
-          <label class="adm-toggle-label">
-            <span>Suspended</span>
-            <label class="adm-toggle">
-              <input type="checkbox" id="f-suspended">
-              <span class="adm-toggle-slider"></span>
-            </label>
+        <label class="adm-toggle-label">
+          Suspend account
+          <label class="adm-toggle">
+            <input type="checkbox" id="m-suspended">
+            <span class="adm-toggle-slider"></span>
           </label>
-          <p class="adm-field-hint">Suspended users cannot use any features.</p>
-        </div>
+        </label>
+        <div class="adm-field-hint" style="margin-top:8px">Suspended users cannot sign in or use any features.</div>
       </div>
 
-      <!-- Tab: Credits -->
-      <div class="adm-tab-content" id="tab-credits">
-        <p class="adm-credits-note">Current balances are shown below. Use the fields to <strong>add</strong> credits on top of existing balance.</p>
+      <!-- Credits -->
+      <div class="adm-tab-content" id="mtab-credits">
+        <div class="adm-credits-note">Adjust this user's current credit balance. Setting a plan above also resets their monthly allocation.</div>
         <div class="adm-credits-grid">
-          <div class="adm-credit-card" style="border-color:rgba(245,158,11,0.3)">
-            <div class="adm-credit-label" style="color:var(--gold)">⚡ Credits</div>
-            <div class="adm-credit-current" id="cr-credits-current">—</div>
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">Credits Left</div>
+            <div class="adm-credit-current" id="mc-left-display">—</div>
             <div class="adm-credit-add">
-              <input type="number" id="f-addCredits" min="0" value="0" placeholder="0">
-              <span>to add</span>
+              <span>Set to</span>
+              <input type="number" id="mc-left" min="0" placeholder="0">
             </div>
           </div>
           <div class="adm-credit-card">
-            <div class="adm-credit-label">Articles</div>
-            <div class="adm-credit-current" id="cr-articles-current">—</div>
+            <div class="adm-credit-label">Monthly Max</div>
+            <div class="adm-credit-current" id="mc-max-display">—</div>
             <div class="adm-credit-add">
-              <input type="number" id="f-addArticles" min="0" value="0" placeholder="0">
-              <span>to add</span>
+              <span>Set to</span>
+              <input type="number" id="mc-max" min="-1" placeholder="-1 = ∞">
             </div>
           </div>
           <div class="adm-credit-card">
-            <div class="adm-credit-label">Searches</div>
-            <div class="adm-credit-current" id="cr-searches-current">—</div>
-            <div class="adm-credit-add">
-              <input type="number" id="f-addSearches" min="0" value="0" placeholder="0">
-              <span>to add</span>
-            </div>
-          </div>
-          <div class="adm-credit-card">
-            <div class="adm-credit-label">Audits</div>
-            <div class="adm-credit-current" id="cr-audits-current">—</div>
-            <div class="adm-credit-add">
-              <input type="number" id="f-addAudits" min="0" value="0" placeholder="0">
-              <span>to add</span>
-            </div>
+            <div class="adm-credit-label">Total Used</div>
+            <div class="adm-credit-current" id="mc-used-display">—</div>
+            <div class="adm-field-hint" style="font-size:0.72rem;margin-top:4px">Lifetime total</div>
           </div>
         </div>
       </div>
 
-      <!-- Tab: Restrictions -->
-      <div class="adm-tab-content" id="tab-restrict">
-        <p class="adm-credits-note">Check features to <strong>block</strong> access. Admin role bypasses all restrictions.</p>
-        <div class="adm-restrict-grid">
-          <label class="adm-check-item"><input type="checkbox" name="restriction" value="leads"> Lead Finder</label>
-          <label class="adm-check-item"><input type="checkbox" name="restriction" value="articles"> Article Generator</label>
-          <label class="adm-check-item"><input type="checkbox" name="restriction" value="audits"> AI Audit</label>
-          <label class="adm-check-item"><input type="checkbox" name="restriction" value="outreach"> Outreach</label>
-          <label class="adm-check-item"><input type="checkbox" name="restriction" value="whatsapp"> WhatsApp</label>
-          <label class="adm-check-item"><input type="checkbox" name="restriction" value="crm"> CRM</label>
-          <label class="adm-check-item"><input type="checkbox" name="restriction" value="pipeline"> Pipeline</label>
-          <label class="adm-check-item"><input type="checkbox" name="restriction" value="competitors"> Competitors</label>
+      <!-- Usage -->
+      <div class="adm-tab-content" id="mtab-usage">
+        <div class="adm-credits-note" id="mu-plan-note" style="margin-bottom:16px"></div>
+        <div class="adm-credits-grid" style="grid-template-columns:repeat(2,1fr);gap:12px">
+
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">⏳ Days Remaining</div>
+            <div class="adm-credit-current" id="mu-days-display">—</div>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <button class="adm-btn-sm" onclick="adminUsageAction('extend7')">+7 days</button>
+              <button class="adm-btn-sm" onclick="adminUsageAction('extend30')">+30 days</button>
+              <button class="adm-btn-sm adm-btn-warn" onclick="adminUsageAction('resetExpiry')">Reset</button>
+            </div>
+          </div>
+
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">✍️ Articles Used</div>
+            <div class="adm-credit-current" id="mu-articles-display">—</div>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <button class="adm-btn-sm" onclick="adminUsageAction('resetArticles')">Reset to 0</button>
+              <button class="adm-btn-sm" onclick="adminUsageAction('addArticle')">+1</button>
+            </div>
+          </div>
+
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">🔍 Lead Searches Used</div>
+            <div class="adm-credit-current" id="mu-leads-display">—</div>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <button class="adm-btn-sm" onclick="adminUsageAction('resetLeads')">Reset to 0</button>
+              <button class="adm-btn-sm" onclick="adminUsageAction('addLead')">+1</button>
+            </div>
+          </div>
+
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">📊 Audits Used</div>
+            <div class="adm-credit-current" id="mu-audits-display">—</div>
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <button class="adm-btn-sm" onclick="adminUsageAction('resetAudits')">Reset to 0</button>
+              <button class="adm-btn-sm" onclick="adminUsageAction('addAudit')">+1</button>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <!-- Tab: Danger -->
-      <div class="adm-tab-content" id="tab-danger">
+      <!-- Biz Edits -->
+      <div class="adm-tab-content" id="mtab-bizedits">
+        <div class="adm-credits-note">Control how many times this user can update their business profile this month (limit: 2).</div>
+        <div class="adm-credits-grid" style="grid-template-columns:repeat(2,1fr)">
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">Edits Used This Month</div>
+            <div class="adm-credit-current" id="mc-bizedits-display">—</div>
+            <div class="adm-credit-add">
+              <span>Set to</span>
+              <input type="number" id="mc-bizedits" min="0" max="2" placeholder="0–2">
+            </div>
+          </div>
+          <div class="adm-credit-card">
+            <div class="adm-credit-label">Edits Remaining</div>
+            <div class="adm-credit-current" id="mc-bizleft-display">—</div>
+            <div class="adm-field-hint" style="font-size:0.72rem;margin-top:4px">Set edits used to 0 to fully reset</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danger -->
+      <div class="adm-tab-content" id="mtab-danger">
         <div class="adm-danger-zone">
-          <h3>Reset Password</h3>
-          <p>Set a new password for this user. They will be able to sign in with it immediately.</p>
-          <div class="adm-form-row">
-            <div class="adm-field" style="flex:1">
-              <input type="password" id="f-newPassword" placeholder="New password (min 6 chars)">
-            </div>
-            <button class="btn btn-ghost" id="adm-reset-pw-btn" style="height:42px;margin-top:20px">Reset Password</button>
-          </div>
-          <div id="adm-reset-pw-msg" class="adm-msg" style="display:none"></div>
+          <h3>Suspend / Unsuspend</h3>
+          <p>Toggle from the General tab. Suspended users see a locked screen on sign-in.</p>
         </div>
         <div class="adm-danger-zone adm-danger-delete">
-          <h3>Delete User</h3>
-          <p>Permanently delete this account. This action cannot be undone.</p>
-          <button class="btn adm-btn-delete" id="adm-delete-user-btn">🗑 Delete User</button>
+          <h3>Delete Account</h3>
+          <p>Permanently removes this user and all their data. This cannot be undone.</p>
+          <button class="adm-btn-delete" id="modal-delete-btn">🗑 Delete this user</button>
         </div>
       </div>
-
     </div>
+
     <div class="adm-modal-footer">
-      <div id="adm-modal-error" class="adm-msg adm-msg-error" style="display:none"></div>
-      <button class="btn btn-ghost" id="adm-modal-cancel">Cancel</button>
-      <button class="btn btn-primary" id="adm-modal-save">Save</button>
+      <div class="adm-msg" id="modal-msg"></div>
+      <button class="adm-btn-edit" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" style="font-size:0.85rem;padding:8px 20px" id="modal-save-btn" onclick="saveUser()">Save changes</button>
     </div>
   </div>
 </div>
 
+<style>
+/* ── Dashboard extras ─────────────────────────── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 16px;
+}
+.dash-stat {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+.dash-stat-val { font-size: 2rem; font-weight: 900; color: var(--white); line-height: 1; margin-bottom: 4px; }
+.dash-stat-lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.dash-stat-accent { border-top: 3px solid var(--blue); }
+
+.dash-row { display: flex; gap: 20px; flex-wrap: wrap; }
+.dash-card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 280px;
+}
+.dash-card-title {
+  font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--muted); margin-bottom: 14px;
+}
+.plan-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.plan-row:last-child { border-bottom: none; }
+.plan-row-count { font-weight: 700; color: var(--white); }
+.sec-event {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+  font-size: 0.78rem;
+}
+.sec-event:last-child { border-bottom: none; }
+.sec-type { font-weight: 700; color: #f87171; flex-shrink: 0; }
+.sec-detail { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec-ts { color: var(--muted); font-size: 0.7rem; flex-shrink: 0; }
+
+/* Section hide/show */
+.adm-section { display: none; }
+.adm-section.active { display: block; }
+/* Article tabs */
+.art-tab { background:#1e293b;border:1px solid #2a3050;color:#8b9ab7;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;transition:all .15s; }
+.art-tab.active,.art-tab:hover { background:#7c3aed22;border-color:#7c3aed;color:#c4b5fd; }
+</style>
+<script src="/js/api.js?v=4"></script>
+
 <script>
-(async () => {
-  // ── Auth guard ──────────────────────────────────────────────────────────────
-  const me = await fetch('/api/auth/me').then(r => r.json()).catch(() => ({}));
-  if (!me.user || me.user.role !== 'admin') {
-    window.location.href = '/signin.html';
+/* ── Utils ─────────────────────────────── */
+let allUsers = [], currentUserId = null;
+
+function esc(s) {
+  const d = document.createElement("div");
+  d.textContent = String(s || ""); return d.innerHTML;
+}
+function fmtDate(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" });
+}
+function fmtDateTime(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", { day:"numeric", month:"short" }) + " " + d.toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" });
+}
+function planColor(p, role) {
+  if (role === "admin") return "#fbbf24";
+  if (!p) return "#64748b";
+  if (p.includes("agency")) return "#a78bfa";
+  if (p.includes("pro"))    return "#60a5fa";
+  if (p.includes("starter")) return "#34d399";
+  return "#64748b";
+}
+function planLabel(p, role) {
+  if (role === "admin") return "Admin";
+  if (!p) return "Free";
+  return p.charAt(0).toUpperCase() + p.slice(1).replace(/_/g," ");
+}
+function toast(msg, ok = true) {
+  const el = document.getElementById("modal-msg");
+  if (!el) return;
+  el.textContent = msg;
+  el.className   = "adm-msg " + (ok ? "adm-msg-ok" : "adm-msg-error");
+  setTimeout(() => { el.textContent = ""; el.className = "adm-msg"; }, 3000);
+}
+
+/* ── Nav ───────────────────────────────── */
+document.querySelectorAll(".adm-nav-item").forEach(a => {
+  a.addEventListener("click", e => {
+    e.preventDefault();
+    const sec = a.dataset.section;
+    document.querySelectorAll(".adm-nav-item").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll(".adm-section").forEach(x => x.classList.remove("active"));
+    a.classList.add("active");
+    document.getElementById("section-" + sec).classList.add("active");
+    if (sec === "users" && allUsers.length === 0) loadUsers();
+    if (sec === "security") loadSecurity();
+    if (sec === "articles") loadPendingArticles();
+  });
+});
+
+/* ── Dashboard ─────────────────────────── */
+async function loadStats() {
+  try {
+    const res  = await fetch("/api/admin/stats");
+    if (!res.ok) { showAccessDenied(); return; }
+    const d    = await res.json();
+    document.getElementById("dash-date").textContent = new Date().toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" });
+
+    const g = document.getElementById("dash-stats-grid");
+    g.innerHTML = `
+      <div class="dash-stat dash-stat-accent"><div class="dash-stat-val">${d.totalUsers}</div><div class="dash-stat-lbl">Total users</div></div>
+      <div class="dash-stat"><div class="dash-stat-val">${d.activeToday}</div><div class="dash-stat-lbl">Active today</div></div>
+      <div class="dash-stat"><div class="dash-stat-val" style="color:#f87171">${d.suspended}</div><div class="dash-stat-lbl">Suspended</div></div>
+      <div class="dash-stat"><div class="dash-stat-val">${d.totalCrmLeads}</div><div class="dash-stat-lbl">CRM leads</div></div>
+      <div class="dash-stat"><div class="dash-stat-val">${d.totalAudits}</div><div class="dash-stat-lbl">AI audits</div></div>
+      <div class="dash-stat"><div class="dash-stat-val">${d.totalCreditsUsed.toLocaleString()}</div><div class="dash-stat-lbl">Credits used</div></div>`;
+
+    const planBox = document.getElementById("dash-plan-breakdown");
+    const plans   = d.byPlan || {};
+    planBox.innerHTML = Object.entries(plans).sort((a,b) => b[1]-a[1]).map(([plan, count]) => `
+      <div class="plan-row">
+        <span style="color:${planColor(plan)}">${planLabel(plan)}</span>
+        <span class="plan-row-count">${count}</span>
+      </div>`).join("") || "<div style='color:var(--muted);font-size:0.82rem'>No data</div>";
+
+    const secBox = document.getElementById("dash-security-preview");
+    secBox.innerHTML = (d.recentSecurity || []).slice(0, 6).map(e => `
+      <div class="sec-event">
+        <span class="sec-type">${esc(e.type)}</span>
+        <span class="sec-detail">${esc(e.detail || "")}</span>
+        <span class="sec-ts">${fmtDateTime(e.ts)}</span>
+      </div>`).join("") || "<div style='color:var(--muted);font-size:0.82rem'>No events</div>";
+
+  } catch { showAccessDenied(); }
+}
+
+/* ── Users ─────────────────────────────── */
+async function loadUsers() {
+  try {
+    const res = await fetch("/api/admin/users");
+    if (res.status === 401) { showSignIn(); return; }
+    if (res.status === 403) { showAccessDenied(); return; }
+    const d = await res.json();
+    allUsers = d.users || [];
+    renderUsers(allUsers);
+  } catch {}
+}
+
+function daysLeftLabel(u) {
+  const now = Date.now();
+  if (u.plan === 'paid' || u.plan === 'pro' || u.plan === 'starter' || u.plan === 'agency') {
+    if (u.paidSince) {
+      const since = new Date(u.paidSince); const next = new Date(since);
+      while (next <= new Date()) next.setMonth(next.getMonth() + 1);
+      const d = Math.ceil((next - now) / 86400000);
+      return `<span style="color:#4ade80">${d}d</span>`;
+    }
+    return `<span style="color:#4ade80">Active</span>`;
+  }
+  if (u.plan === 'trial' && u.trialEndsAt) {
+    const d = Math.max(0, Math.ceil((new Date(u.trialEndsAt) - now) / 86400000));
+    return d > 0 ? `<span style="color:#fbbf24">${d}d trial</span>` : `<span style="color:#f87171">Expired</span>`;
+  }
+  if (u.freeExpiresAt) {
+    const d = Math.max(0, Math.ceil((new Date(u.freeExpiresAt) - now) / 86400000));
+    return d > 0 ? `<span style="color:${d <= 2 ? '#f87171' : d <= 4 ? '#fbbf24' : '#8b9ab7'}">${d}d free</span>`
+                 : `<span style="color:#f87171">Expired</span>`;
+  }
+  return `<span style="color:#8b9ab7">—</span>`;
+}
+
+function tasksLabel(u) {
+  const cm = new Date().toISOString().slice(0,7);
+  const isFree = u.plan === 'free' && u.role !== 'admin';
+  const isPaid = ['paid','pro','starter','agency'].includes(u.plan);
+  const parts = [];
+  if (isFree) {
+    parts.push(`🔍 ${u.monthLeadSearches||0}/3`);
+    parts.push(`📊 ${u.monthAudits||0}/1`);
+    parts.push(`✍️ ${u.monthArticles||0}/1`);
+  } else if (isPaid) {
+    parts.push(`🔍 ${u.monthLeads||0}`);
+    parts.push(`✍️ ${u.monthArticles||0}/6`);
+    parts.push(`📊 ${u.monthAudits||0}/10`);
+  }
+  return parts.length ? parts.join(' &nbsp;') : '—';
+}
+
+function renderUsers(list) {
+  document.getElementById("users-count").textContent = `${list.length} user${list.length !== 1 ? "s" : ""}`;
+  const tbody = document.getElementById("users-tbody");
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="adm-loading">No users found</td></tr>`;
     return;
   }
+  tbody.innerHTML = list.map(u => {
+    const initials = ((u.firstName||"")[0]||(u.email||"")[0]||"?").toUpperCase() + ((u.lastName||"")[0]||"").toUpperCase();
+    const status   = u.suspended ? "suspended" : (u.role === "admin" ? "admin" : "active");
+    const statusLbl = u.suspended ? "Suspended" : (u.role === "admin" ? "Admin" : "Active");
+    const credLeft  = u.creditsLeft === -1 ? "∞" : (u.creditsLeft ?? "—");
+    const credMax   = u.creditsMax  === -1 ? "∞" : (u.creditsMax  ?? "—");
 
-  // ── CSRF ────────────────────────────────────────────────────────────────────
-  function getCsrf() {
-    return document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrf_token='))?.split('=')[1] || '';
-  }
-  async function api(method, url, body) {
-    const opts = { method, headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() } };
-    if (body) opts.body = JSON.stringify(body);
-    const r = await fetch(url, opts);
-    return r.json();
-  }
+    return `<tr data-uid="${esc(u.id)}">
+      <td>
+        <div class="adm-user-cell">
+          <div class="adm-avatar">${esc(initials)}</div>
+          <div>
+            <div class="adm-user-name">${esc(u.firstName||"")} ${esc(u.lastName||"")}</div>
+            <div class="adm-user-email">${esc(u.email)}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="adm-plan-badge" style="--pc:${planColor(u.plan, u.role)}">${esc(planLabel(u.plan, u.role))}</span></td>
+      <td class="adm-num">${credLeft} / ${credMax}</td>
+      <td class="adm-num" style="font-size:0.75rem;line-height:1.7">${daysLeftLabel(u)}<br>${tasksLabel(u)}</td>
+      <td class="adm-num" style="font-size:0.78rem">
+        ${u.leadsFound ? `🔍 ${u.leadsFound} leads<br>` : ""}
+        ${u.articlesCreated ? `✍️ ${u.articlesCreated} art.<br>` : ""}
+        ${u.creditsUsed ? `⚡ ${u.creditsUsed} cr.` : "—"}
+      </td>
+      <td><span class="adm-status adm-status-${status}">${statusLbl}</span></td>
+      <td class="adm-date">${fmtDate(u.createdAt)}</td>
+      <td>
+        <div class="adm-actions">
+          <button class="adm-btn-edit" onclick="openModal('${esc(u.id)}')">✏️ Edit</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
 
-  // ── State ────────────────────────────────────────────────────────────────────
-  let allUsers = [];
-  let editingId = null;
+function filterUsers() {
+  const q      = document.getElementById("user-search").value.toLowerCase();
+  const plan   = document.getElementById("user-plan-filter").value;
+  const status = document.getElementById("user-status-filter").value;
+  let list = allUsers;
+  if (q) list = list.filter(u => `${u.firstName} ${u.lastName} ${u.email} ${u.plan}`.toLowerCase().includes(q));
+  if (plan === "admin") list = list.filter(u => u.role === "admin");
+  else if (plan) list = list.filter(u => u.plan === plan);
+  if (status === "active")    list = list.filter(u => !u.suspended);
+  if (status === "suspended") list = list.filter(u => u.suspended);
+  renderUsers(list);
+}
 
-  // ── Load users ──────────────────────────────────────────────────────────────
-  async function loadUsers() {
-    const data = await fetch('/api/admin/users').then(r => r.json());
-    allUsers = data.users || [];
-    renderTable();
-  }
+document.getElementById("user-search").addEventListener("input", filterUsers);
+document.getElementById("user-plan-filter").addEventListener("change", filterUsers);
+document.getElementById("user-status-filter").addEventListener("change", filterUsers);
 
-  // ── Render ──────────────────────────────────────────────────────────────────
-  const PLAN_LABELS = {
-    free: 'Free', free_solo: 'Free Solo', pro_solo: 'Pro Solo',
-    starter: 'Starter', pro: 'Pro', agency: 'Agency',
-  };
-  const PLAN_COLORS = {
-    free: '#64748b', free_solo: '#64748b', pro_solo: '#7c3aed',
-    starter: '#2563eb', pro: '#059669', agency: '#d97706',
-  };
-
-  function renderTable() {
-    const q      = document.getElementById('adm-search').value.toLowerCase();
-    const fPlan  = document.getElementById('adm-filter-plan').value;
-    const fStatus= document.getElementById('adm-filter-status').value;
-
-    let filtered = allUsers.filter(u => {
-      const name = (u.firstName + ' ' + u.lastName + ' ' + u.email).toLowerCase();
-      if (q && !name.includes(q)) return false;
-      if (fPlan && u.plan !== fPlan) return false;
-      if (fStatus === 'active'    && (u.suspended || u.role === 'admin')) return false;
-      if (fStatus === 'suspended' && !u.suspended) return false;
-      if (fStatus === 'admin'     && u.role !== 'admin') return false;
-      return true;
-    });
-
-    document.getElementById('adm-user-count').textContent = `${filtered.length} of ${allUsers.length} users`;
-
-    const tbody = document.getElementById('adm-users-tbody');
-    if (!filtered.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="adm-loading">No users found</td></tr>';
+/* ── Security log ──────────────────────── */
+async function loadSecurity() {
+  try {
+    const res = await fetch("/api/admin/stats");
+    if (!res.ok) return;
+    const d = await res.json();
+    const events = d.recentSecurity || [];
+    const tbody  = document.getElementById("security-tbody");
+    if (!events.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="adm-loading">No security events</td></tr>`;
       return;
     }
+    tbody.innerHTML = events.map(e => `
+      <tr>
+        <td><span style="color:#f87171;font-weight:700;font-size:0.82rem">${esc(e.type)}</span></td>
+        <td style="font-size:0.82rem;color:var(--muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.detail||"")}</td>
+        <td style="font-size:0.78rem;color:var(--muted)">${esc(e.ip||"")}</td>
+        <td class="adm-date">${fmtDateTime(e.ts)}</td>
+      </tr>`).join("");
+  } catch {}
+}
 
-    tbody.innerHTML = filtered.map(u => {
-      const fullName = [u.firstName, u.lastName].filter(Boolean).join(' ');
-      const initials = (u.firstName?.[0] || '') + (u.lastName?.[0] || u.email[0] || '');
-      const planColor = PLAN_COLORS[u.plan] || '#64748b';
-      const statusBadge = u.suspended
-        ? '<span class="adm-status adm-status-suspended">Suspended</span>'
-        : u.role === 'admin'
-        ? '<span class="adm-status adm-status-admin">Admin</span>'
-        : '<span class="adm-status adm-status-active">Active</span>';
-      const joined = new Date(u.createdAt).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
-      const arts = u.articlesLeft === 99999 ? '∞' : (u.articlesLeft ?? '—');
-      const srch = u.searchesLeft === 99999 ? '∞' : (u.searchesLeft ?? '—');
-      const cred = u.credits ?? 0;
-      const credColor = cred === 0 ? '#ef4444' : cred < 10 ? '#f59e0b' : '#4ade80';
-      return `<tr>
-        <td>
-          <div class="adm-user-cell">
-            <div class="adm-avatar">${initials.toUpperCase()}</div>
-            <div>
-              <div class="adm-user-name">${fullName || '—'}</div>
-              <div class="adm-user-email">${u.email}</div>
-            </div>
-          </div>
-        </td>
-        <td><span class="adm-plan-badge" style="--pc:${planColor}">${PLAN_LABELS[u.plan] || u.plan}</span></td>
-        <td class="adm-num" style="color:${credColor};font-weight:700">${cred}</td>
-        <td class="adm-num">${arts}</td>
-        <td class="adm-num">${srch}</td>
-        <td>${statusBadge}</td>
-        <td class="adm-date">${joined}</td>
-        <td>
-          <div class="adm-actions">
-            <button class="adm-btn-edit" data-id="${u.id}">✏️ Edit</button>
-            <a class="adm-btn-edit" href="/profile.html?uid=${u.id}" target="_blank">👤</a>
-          </div>
-        </td>
-      </tr>`;
-    }).join('');
-
-    document.querySelectorAll('.adm-btn-edit').forEach(btn => {
-      btn.addEventListener('click', () => openEdit(btn.dataset.id));
-    });
-  }
-
-  // ── Modal ────────────────────────────────────────────────────────────────────
-  function openAdd() {
-    editingId = null;
-    document.getElementById('adm-modal-title').textContent = 'Add User';
-    document.getElementById('f-password-wrap').style.display = '';
-    document.getElementById('adm-tab-danger').style.display = 'none';
-    resetForm();
-    switchTab('basic');
-    showModal();
-  }
-
-  function openEdit(id) {
-    editingId = id;
-    const u = allUsers.find(x => x.id === id);
-    if (!u) return;
-    document.getElementById('adm-modal-title').textContent = `Edit — ${u.firstName} ${u.lastName}`;
-    document.getElementById('f-password-wrap').style.display = 'none';
-    document.getElementById('adm-tab-danger').style.display = '';
-    resetForm();
-    // Fill basic
-    document.getElementById('f-firstName').value = u.firstName || '';
-    document.getElementById('f-lastName').value  = u.lastName  || '';
-    document.getElementById('f-email').value     = u.email     || '';
-    // Fill account
-    document.getElementById('f-plan').value      = u.plan || 'free';
-    document.getElementById('f-role').value      = u.role || 'user';
-    document.getElementById('f-suspended').checked = !!u.suspended;
-    // Fill credits
-    document.getElementById('cr-credits-current').textContent  = u.credits      ?? 0;
-    document.getElementById('cr-articles-current').textContent = u.articlesLeft === 99999 ? '∞' : (u.articlesLeft ?? 0);
-    document.getElementById('cr-searches-current').textContent = u.searchesLeft === 99999 ? '∞' : (u.searchesLeft ?? 0);
-    document.getElementById('cr-audits-current').textContent   = u.auditsLeft   === 99999 ? '∞' : (u.auditsLeft   ?? 0);
-    // Fill restrictions
-    document.querySelectorAll('[name=restriction]').forEach(cb => {
-      cb.checked = (u.restrictions || []).includes(cb.value);
-    });
-    switchTab('basic');
-    showModal();
-  }
-
-  function resetForm() {
-    ['f-firstName','f-lastName','f-email','f-password','f-newPassword'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
-    document.getElementById('f-plan').value = 'free';
-    document.getElementById('f-role').value = 'user';
-    document.getElementById('f-suspended').checked = false;
-    document.getElementById('f-addCredits').value  = '0';
-    document.getElementById('f-addArticles').value = '0';
-    document.getElementById('f-addSearches').value = '0';
-    document.getElementById('f-addAudits').value   = '0';
-    document.querySelectorAll('[name=restriction]').forEach(cb => cb.checked = false);
-    hideError();
-  }
-
-  function showModal() { document.getElementById('adm-modal').style.display = 'flex'; }
-  function hideModal() { document.getElementById('adm-modal').style.display = 'none'; }
-  function showError(msg) {
-    const el = document.getElementById('adm-modal-error');
-    el.textContent = msg; el.style.display = 'block';
-  }
-  function hideError() {
-    document.getElementById('adm-modal-error').style.display = 'none';
-  }
-
-  // ── Tabs ─────────────────────────────────────────────────────────────────────
-  function switchTab(name) {
-    document.querySelectorAll('.adm-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
-    document.querySelectorAll('.adm-tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + name));
-  }
-  document.querySelectorAll('.adm-tab').forEach(t => {
-    t.addEventListener('click', () => switchTab(t.dataset.tab));
+/* ── Modal ─────────────────────────────── */
+document.querySelectorAll(".adm-tab[data-mtab]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".adm-tab[data-mtab]").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".adm-tab-content").forEach(c => c.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("mtab-" + btn.dataset.mtab).classList.add("active");
   });
+});
 
-  // ── Save ─────────────────────────────────────────────────────────────────────
-  document.getElementById('adm-modal-save').addEventListener('click', async () => {
-    hideError();
-    const body = {
-      firstName:    document.getElementById('f-firstName').value.trim(),
-      lastName:     document.getElementById('f-lastName').value.trim(),
-      email:        document.getElementById('f-email').value.trim(),
-      plan:         document.getElementById('f-plan').value,
-      role:         document.getElementById('f-role').value,
-      suspended:    document.getElementById('f-suspended').checked,
-      restrictions: [...document.querySelectorAll('[name=restriction]:checked')].map(c => c.value),
-      addCredits:   parseInt(document.getElementById('f-addCredits').value)  || 0,
-      addArticles:  parseInt(document.getElementById('f-addArticles').value) || 0,
-      addSearches:  parseInt(document.getElementById('f-addSearches').value) || 0,
-      addAudits:    parseInt(document.getElementById('f-addAudits').value)   || 0,
-    };
+function openModal(uid) {
+  const u = allUsers.find(x => x.id === uid);
+  if (!u) return;
+  currentUserId = uid;
 
-    let res;
-    if (editingId) {
-      res = await api('PATCH', `/api/admin/users/${editingId}`, body);
-    } else {
-      body.password = document.getElementById('f-password').value;
-      res = await api('POST', '/api/admin/users', body);
+  document.getElementById("modal-title").textContent = `Edit — ${u.firstName || ""} ${u.lastName || ""}`.trim() || u.email;
+  document.getElementById("m-first").value    = u.firstName || "";
+  document.getElementById("m-last").value     = u.lastName  || "";
+  document.getElementById("m-email").value    = u.email     || "";
+  document.getElementById("m-plan").value     = u.plan      || "free";
+  document.getElementById("m-role").value     = u.role      || "user";
+  document.getElementById("m-suspended").checked = !!u.suspended;
+
+  const credLeft = u.creditsLeft === -1 ? "∞" : (u.creditsLeft ?? 0);
+  const credMax  = u.creditsMax  === -1 ? "∞" : (u.creditsMax  ?? 0);
+  document.getElementById("mc-left-display").textContent = credLeft;
+  document.getElementById("mc-max-display").textContent  = credMax;
+  document.getElementById("mc-used-display").textContent = u.creditsUsed || 0;
+  document.getElementById("mc-left").value = u.creditsLeft === -1 ? -1 : (u.creditsLeft ?? 0);
+  document.getElementById("mc-max").value  = u.creditsMax  === -1 ? -1 : (u.creditsMax  ?? 0);
+
+  document.getElementById("mc-bizedits-display").textContent = u.bizEditsUsed ?? 0;
+  document.getElementById("mc-bizleft-display").textContent  = u.bizEditsLeft ?? 2;
+  document.getElementById("mc-bizedits").value = u.bizEditsUsed ?? 0;
+
+  // Usage tab
+  const now = Date.now();
+  const isPaid = ['paid','pro','starter','agency'].includes(u.plan);
+  const isFree = !isPaid && u.role !== 'admin';
+  let daysStr = '—';
+  if (isPaid && u.paidSince) {
+    const since = new Date(u.paidSince); const next = new Date(since);
+    while (next <= new Date()) next.setMonth(next.getMonth() + 1);
+    const d = Math.ceil((next - now) / 86400000);
+    daysStr = `${d} days until renewal`;
+  } else if (u.plan === 'trial' && u.trialEndsAt) {
+    const d = Math.max(0, Math.ceil((new Date(u.trialEndsAt) - now) / 86400000));
+    daysStr = `${d} trial days left`;
+  } else if (u.freeExpiresAt) {
+    const d = Math.max(0, Math.ceil((new Date(u.freeExpiresAt) - now) / 86400000));
+    daysStr = d > 0 ? `${d} days left (expires ${new Date(u.freeExpiresAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'})})` : 'Expired';
+  }
+  document.getElementById("mu-plan-note").textContent = `Plan: ${(u.plan||'free').toUpperCase()} — ${u.email}`;
+  document.getElementById("mu-days-display").textContent    = daysStr;
+  document.getElementById("mu-articles-display").textContent = `${u.monthArticles||0} used`;
+  document.getElementById("mu-leads-display").textContent    = `${u.monthLeadSearches||0} used`;
+  document.getElementById("mu-audits-display").textContent   = `${u.monthAudits||0} used`;
+
+  document.getElementById("modal-msg").textContent = "";
+  document.getElementById("modal-msg").className   = "adm-msg";
+
+  // Reset to general tab
+  document.querySelectorAll(".adm-tab[data-mtab]").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".adm-tab-content").forEach(c => c.classList.remove("active"));
+  document.querySelector(".adm-tab[data-mtab='general']").classList.add("active");
+  document.getElementById("mtab-general").classList.add("active");
+
+  document.getElementById("user-modal").style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById("user-modal").style.display = "none";
+  currentUserId = null;
+}
+
+async function adminUsageAction(action) {
+  if (!currentUserId) return;
+  const csrfMeta = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('csrf_token='));
+  const csrf = csrfMeta ? csrfMeta.split('=')[1] : '';
+  try {
+    const res = await fetch(`/api/admin/users/${currentUserId}/usage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      body: JSON.stringify({ action }),
+    });
+    const d = await res.json();
+    if (!res.ok) { toast(d.error || 'Failed', false); return; }
+    // Update local user and refresh display
+    const idx = allUsers.findIndex(u => u.id === currentUserId);
+    if (idx !== -1 && d.user) {
+      allUsers[idx] = { ...allUsers[idx], ...d.user };
+      openModal(currentUserId); // re-populate
+    }
+    renderUsers(allUsers);
+    toast('Updated ✓');
+  } catch { toast('Network error', false); }
+}
+
+async function saveUser() {
+  if (!currentUserId) return;
+  const btn = document.getElementById("modal-save-btn");
+  btn.disabled = true; btn.textContent = "Saving…";
+
+  const bizEditsVal = parseInt(document.getElementById("mc-bizedits").value);
+  const credLeftVal = parseInt(document.getElementById("mc-left").value);
+  const credMaxVal  = parseInt(document.getElementById("mc-max").value);
+
+  try {
+    // Save main user fields
+    const res = await fetch(`/api/admin/users/${currentUserId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        firstName:   document.getElementById("m-first").value.trim(),
+        lastName:    document.getElementById("m-last").value.trim(),
+        email:       document.getElementById("m-email").value.trim(),
+        plan:        document.getElementById("m-plan").value,
+        role:        document.getElementById("m-role").value,
+        suspended:   document.getElementById("m-suspended").checked,
+        creditsLeft: isNaN(credLeftVal) ? undefined : credLeftVal,
+        creditsMax:  isNaN(credMaxVal)  ? undefined : credMaxVal,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || "Save failed", false); return; }
+
+    // Save biz edits if changed
+    if (!isNaN(bizEditsVal)) {
+      await fetch(`/api/admin/users/${currentUserId}/biz-edits`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ editCount: bizEditsVal }),
+      });
     }
 
-    if (res.error) { showError(res.error); return; }
-    hideModal();
-    loadUsers();
-  });
-
-  // ── Reset password ────────────────────────────────────────────────────────────
-  document.getElementById('adm-reset-pw-btn').addEventListener('click', async () => {
-    const pw = document.getElementById('f-newPassword').value;
-    const msg = document.getElementById('adm-reset-pw-msg');
-    if (!pw) return;
-    const res = await api('POST', `/api/admin/users/${editingId}/reset-password`, { password: pw });
-    msg.style.display = 'block';
-    if (res.error) {
-      msg.className = 'adm-msg adm-msg-error'; msg.textContent = res.error;
-    } else {
-      msg.className = 'adm-msg adm-msg-ok'; msg.textContent = 'Password reset successfully.';
-      document.getElementById('f-newPassword').value = '';
+    // Refresh user in local list
+    const idx = allUsers.findIndex(u => u.id === currentUserId);
+    if (idx !== -1 && data.user) {
+      allUsers[idx] = { ...allUsers[idx], ...data.user, bizEditsUsed: bizEditsVal, bizEditsLeft: 2 - bizEditsVal };
     }
-  });
+    renderUsers(allUsers);
+    toast("Saved ✓");
+  } catch { toast("Network error", false); }
+  finally { btn.disabled = false; btn.textContent = "Save changes"; }
+}
 
-  // ── Delete user ───────────────────────────────────────────────────────────────
-  document.getElementById('adm-delete-user-btn').addEventListener('click', async () => {
-    const u = allUsers.find(x => x.id === editingId);
-    if (!u) return;
-    if (!confirm(`Delete ${u.firstName} ${u.lastName} (${u.email})?\nThis cannot be undone.`)) return;
-    const res = await api('DELETE', `/api/admin/users/${editingId}`);
-    if (res.error) { showError(res.error); return; }
-    hideModal();
-    loadUsers();
-  });
+// Delete button
+document.getElementById("modal-delete-btn").addEventListener("click", async () => {
+  if (!currentUserId) return;
+  const u = allUsers.find(x => x.id === currentUserId);
+  if (!confirm(`Permanently delete "${u?.email}"? This cannot be undone.`)) return;
+  try {
+    const res = await fetch(`/api/admin/users/${currentUserId}`, { method: "DELETE" });
+    const d   = await res.json();
+    if (!res.ok) { toast(d.error || "Delete failed", false); return; }
+    allUsers = allUsers.filter(x => x.id !== currentUserId);
+    renderUsers(allUsers);
+    closeModal();
+  } catch { toast("Network error", false); }
+});
 
-  // ── Wire up controls ──────────────────────────────────────────────────────────
-  document.getElementById('adm-add-user-btn').addEventListener('click', openAdd);
-  document.getElementById('adm-modal-close').addEventListener('click', hideModal);
-  document.getElementById('adm-modal-cancel').addEventListener('click', hideModal);
-  document.getElementById('adm-modal').addEventListener('click', e => {
-    if (e.target === document.getElementById('adm-modal')) hideModal();
-  });
-  document.getElementById('adm-search').addEventListener('input', renderTable);
-  document.getElementById('adm-filter-plan').addEventListener('change', renderTable);
-  document.getElementById('adm-filter-status').addEventListener('change', renderTable);
-  document.getElementById('adm-signout').addEventListener('click', async () => {
-    await api('POST', '/api/auth/signout');
-    window.location.href = '/signin.html';
-  });
+/* ── Access guards ─────────────────────── */
+function showAccessDenied() {
+  document.getElementById("adm-layout").innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;color:var(--muted)">
+      <div style="font-size:3rem">🚫</div>
+      <div style="font-size:1.2rem;font-weight:700;color:var(--white)">Admin access only</div>
+      <a href="index.html" style="color:var(--blue2)">← Back to eureach.eu</a>
+    </div>`;
+}
+function showSignIn() {
+  window.location.href = "signin.html";
+}
+async function signOut() {
+  await fetch("/api/auth/signout", { method: "POST" });
+  window.location.href = "signin.html";
+}
 
-  // ── Init ──────────────────────────────────────────────────────────────────────
+/* ── Init ──────────────────────────────── */
+async function init() {
+  // Check admin access
+  try {
+    const res = await fetch("/api/admin/stats");
+    if (res.status === 401) { showSignIn(); return; }
+    if (res.status === 403) { showAccessDenied(); return; }
+  } catch { return; }
+
+  loadStats();
   loadUsers();
-})();
+}
+init();
+
+/* ── Articles Admin ──────────────────── */
+let artStatusFilter = 'all';
+
+function setArtTab(btn, status) {
+  document.querySelectorAll('.art-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  artStatusFilter = status;
+  loadArticles();
+}
+
+async function loadArticles() {
+  const wrap = document.getElementById('articles-list');
+  wrap.innerHTML = '<div style="color:#8b9ab7;padding:16px;">Loading…</div>';
+  try {
+    const url = artStatusFilter === 'all' ? '/api/blog' : '/api/blog?status=' + artStatusFilter;
+    const res = await fetch(url);
+    const d   = await res.json();
+    const posts = d.posts || [];
+    if (!posts.length) { wrap.innerHTML = '<div style="color:#8b9ab7;padding:16px;">No articles found.</div>'; return; }
+    wrap.innerHTML = '';
+    posts.forEach(p => {
+      const statusColor = p.status === 'approved' ? '#16a34a' : p.status === 'pending' ? '#d97706' : '#6366f1';
+      const card = document.createElement('div');
+      card.style.cssText = 'background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:18px 20px;';
+      card.innerHTML = \`
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:0.97rem;margin-bottom:4px;">\${esc(p.title||'Untitled')}</div>
+            <div style="font-size:0.78rem;color:#8b9ab7;margin-bottom:6px;">by \${esc(p.author||'?')} · \${fmtDateTime(p.publishedAt||p.createdAt)} · \${(p.lang||'en').toUpperCase()}</div>
+            <div style="font-size:0.83rem;color:#94a3b8;">\${esc((p.excerpt||'').slice(0,120))}\${(p.excerpt||'').length>120?'…':''}</div>
+          </div>
+          <span style="background:\${statusColor}22;color:\${statusColor};border:1px solid \${statusColor}44;border-radius:6px;padding:3px 10px;font-size:0.75rem;font-weight:700;white-space:nowrap;">\${(p.status||'').toUpperCase()}</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+          <button onclick="previewArticle('\${p.slug}')" style="background:#1e293b;color:#e2e8f0;border:1px solid #2a3050;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">👁 Preview</button>
+          <button onclick="editArticle('\${p.slug}')" style="background:#1e3a5f;color:#93c5fd;border:1px solid #1e4a7f;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✏️ Edit</button>
+          \${p.status !== 'approved' ? \`<button onclick="approveArticle('\${p.slug}',this)" style="background:#14532d;color:#86efac;border:1px solid #166534;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">✅ Approve</button>\` : ''}
+          <button onclick="deleteArticle('\${p.slug}',this)" style="background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">🗑 Delete</button>
+        </div>\`;
+      wrap.appendChild(card);
+    });
+  } catch(e) {
+    wrap.innerHTML = '<div style="color:#f87171;">Error loading articles.</div>';
+  }
+}
+
+async function previewArticle(slug) {
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug));
+  if (!r.ok) { alert('Could not load article.'); return; }
+  const { post } = await r.json();
+  const modal = document.getElementById('art-modal');
+  document.getElementById('art-modal-body').innerHTML = \`
+    <h2 style="font-size:1.3rem;margin-bottom:8px;">\${esc(post.title)}</h2>
+    <div style="font-size:0.78rem;color:#8b9ab7;margin-bottom:20px;">by \${esc(post.author||'?')} · \${fmtDateTime(post.publishedAt)} · \${(post.lang||'en').toUpperCase()}</div>
+    <div style="font-size:0.9rem;line-height:1.7;color:#cbd5e1;">\${post.html||''}</div>\`;
+  modal.style.display = 'block';
+}
+
+async function editArticle(slug) {
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug));
+  if (!r.ok) { alert('Could not load article.'); return; }
+  const { post } = await r.json();
+  const modal = document.getElementById('art-modal');
+  document.getElementById('art-modal-body').innerHTML = \`
+    <h3 style="margin-bottom:20px;font-size:1.1rem;">Edit Article</h3>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:0.8rem;color:#8b9ab7;margin-bottom:6px;">Title</label>
+      <input id="edit-title" value="\${esc(post.title||'')}" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:0.8rem;color:#8b9ab7;margin-bottom:6px;">Excerpt</label>
+      <textarea id="edit-excerpt" rows="3" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;resize:vertical;">\${esc(post.excerpt||'')}</textarea>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:0.8rem;color:#8b9ab7;margin-bottom:6px;">Status</label>
+      <select id="edit-status" style="background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.9rem;">
+        <option value="pending" \${post.status==='pending'?'selected':''}>Pending</option>
+        <option value="approved" \${post.status==='approved'?'selected':''}>Approved</option>
+      </select>
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="display:block;font-size:0.8rem;color:#8b9ab7;margin-bottom:6px;">HTML Content</label>
+      <textarea id="edit-html" rows="14" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.8rem;font-family:monospace;box-sizing:border-box;resize:vertical;">\${esc(post.html||'')}</textarea>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button onclick="saveArticleEdit('\${slug}')" style="background:#7c3aed;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-weight:600;">💾 Save</button>
+      <button onclick="closeArtModal()" style="background:#1e293b;color:#e2e8f0;border:1px solid #2a3050;padding:10px 20px;border-radius:8px;cursor:pointer;">Cancel</button>
+    </div>\`;
+  modal.style.display = 'block';
+}
+
+async function saveArticleEdit(slug) {
+  const body = {
+    title:   document.getElementById('edit-title').value,
+    excerpt: document.getElementById('edit-excerpt').value,
+    html:    document.getElementById('edit-html').value,
+    status:  document.getElementById('edit-status').value,
+  };
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug), { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if (r.ok) { closeArtModal(); loadArticles(); }
+  else { alert('Save failed.'); }
+}
+
+async function approveArticle(slug, btn) {
+  btn.disabled = true; btn.textContent = 'Approving…';
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug) + '/approve', { method: 'POST' });
+  if (r.ok) loadArticles();
+  else { btn.disabled = false; btn.textContent = '✅ Approve'; alert('Failed to approve.'); }
+}
+
+async function deleteArticle(slug, btn) {
+  if (!confirm('Permanently delete this article?')) return;
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  const r = await fetch('/api/blog/' + encodeURIComponent(slug) + '/reject', { method: 'POST' });
+  if (r.ok) loadArticles();
+  else { btn.disabled = false; btn.textContent = '🗑 Delete'; alert('Delete failed.'); }
+}
+
+function closeArtModal() {
+  document.getElementById('art-modal').style.display = 'none';
+}
+
+// keep old name working for nav handler
+function loadPendingArticles() { loadArticles(); }
+
 </script>
 </body>
 </html>

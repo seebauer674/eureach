@@ -2573,6 +2573,35 @@ function handleAdminUsers(req, res) {
   json(res, 200, { users: result });
 }
 
+async function handleAdminUsage(req, res, targetUserId) {
+  const admin = requireAdmin(req);
+  if (!admin || admin.role !== "admin") return json(res, 403, { error: "Admin only." });
+  const body = await readBody(req);
+  const { action } = body;
+  const users = readJSON(USERS_FILE);
+  const idx   = users.findIndex(u => u.id === targetUserId);
+  if (idx === -1) return json(res, 404, { error: "User not found." });
+  const u = users[idx];
+  switch (action) {
+    case "extend7":
+      u.freeExpiresAt = new Date(Math.max(Date.now(), u.freeExpiresAt ? new Date(u.freeExpiresAt).getTime() : Date.now()) + 7 * 86400000).toISOString(); break;
+    case "extend30":
+      u.freeExpiresAt = new Date(Math.max(Date.now(), u.freeExpiresAt ? new Date(u.freeExpiresAt).getTime() : Date.now()) + 30 * 86400000).toISOString(); break;
+    case "resetExpiry":
+      u.freeExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString(); break;
+    case "resetArticles":  u.monthArticles     = 0; break;
+    case "addArticle":     u.monthArticles     = (u.monthArticles || 0) + 1; break;
+    case "resetLeads":     u.monthLeadSearches = 0; break;
+    case "addLead":        u.monthLeadSearches = (u.monthLeadSearches || 0) + 1; break;
+    case "resetAudits":    u.monthAudits       = 0; break;
+    case "addAudit":       u.monthAudits       = (u.monthAudits || 0) + 1; break;
+    default: return json(res, 400, { error: "Unknown action." });
+  }
+  writeJSON(USERS_FILE, users);
+  const { passwordHash, ...safe } = u;
+  json(res, 200, { user: safe });
+}
+
 async function handleAdminSetBizEdits(req, res, targetUserId) {
   const user = requireAdmin(req);
   if (!user || user.role !== "admin") return json(res, 403, { error: "Admin only." });
@@ -5034,6 +5063,7 @@ async function handleRequest(req, res) {
     if (method === "PATCH"  && !sub)            return handleAdminUpdateUser(req, res, uid);
     if (method === "DELETE" && !sub)            return handleAdminDeleteUser(req, res, uid);
     if (method === "POST"   && sub === "biz-edits") return handleAdminSetBizEdits(req, res, uid);
+    if (method === "POST"   && sub === "usage")     return handleAdminUsage(req, res, uid);
   }
   if (urlPath === "/api/leads/find"                 && method === "POST")   return handleLeadSearch(req, res);
   if (urlPath === "/api/competitor/search"          && method === "POST")   return handleCompetitorSearch(req, res);
