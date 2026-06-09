@@ -487,7 +487,7 @@ async function handleLeadsSearch(req, res) {
   if (isTrialActive(user)) {
     return json(res, 403, {
       success: false, error: "trial_lead_limit",
-      message: "Lead Finder is not available during the free trial. Upgrade to €15/month to unlock it.",
+      message: "Lead Finder is not available during the free trial. Upgrade to €20/month to unlock it.",
       upgradeUrl: "/upgrade",
     });
   }
@@ -1630,24 +1630,58 @@ async function handleArticlesDeduct(req, res) {
   // Auto-expire trial if needed
   autoExpireTrialIfNeeded(users, idx);
 
+  const body = await readBody(req);
+  const articleLanguage = (body.language || "").toLowerCase();
+
+  // Free-plan language restriction — Greek only
+  if (!hasAccess(users[idx])) {
+    if (articleLanguage && articleLanguage !== "greek" && articleLanguage !== "el") {
+      return json(res, 403, {
+        error: "free_plan_language",
+        message: "Free plan supports Greek language only. Upgrade to €20/month for English and German.",
+        upgradeUrl: "/membership",
+      });
+    }
+  }
+
   // Trial article limit (3 total during trial)
   if (isTrialActive(users[idx])) {
     const tu = getTrialUsage(users[idx]);
     if ((tu.articlesGenerated || 0) >= 3) {
       return json(res, 403, {
         success: false, error: "trial_article_limit",
-        message: "Your free trial includes 3 articles. Upgrade to €15/month for 6 articles per month.",
-        upgradeUrl: "/upgrade",
+        message: "Your free trial includes 3 articles. Upgrade to €20/month for 6 articles per month.",
+        upgradeUrl: "/membership",
       });
     }
     tu.articlesGenerated = (tu.articlesGenerated || 0) + 1;
     users[idx].trialUsage = tu;
   }
 
+  // Paid plan: enforce 6 articles/month cap
+  if (isPaidUser(users[idx])) {
+    const planCfg    = PLAN_LIMITS.plans[users[idx].plan] || PLAN_LIMITS.plans.paid;
+    const monthlyMax = planCfg.monthlyArticles ?? 6;
+    if (monthlyMax !== -1) {
+      if (users[idx].articleMonth !== currentMonth()) {
+        users[idx].monthArticles = 0;
+        users[idx].articleMonth  = currentMonth();
+      }
+      if ((users[idx].monthArticles || 0) >= monthlyMax) {
+        return json(res, 403, {
+          error: "monthly_article_limit",
+          message: `You've used all ${monthlyMax} articles for this month. Resets on ${resetDateLabel()}.`,
+          upgradeUrl: "/membership",
+        });
+      }
+    }
+  }
+
   const artCost   = PLAN_LIMITS.costs.articleGenerate;
   const artResult = deductCredits(users, idx, artCost, 'Article Generated');
   if (!artResult.ok) return insufficientCredits(res, artResult.creditsLeft, artResult.creditsMax, artCost);
   users[idx].monthArticles = (users[idx].monthArticles || 0) + 1;
+  users[idx].articleMonth  = currentMonth();
 
   writeJSON(USERS_FILE, users);
   json(res, 200, { creditsLeft: artResult.creditsLeft, creditsMax: artResult.creditsMax, resetDate: resetDateLabel() });
@@ -1979,7 +2013,7 @@ async function handleCompetitorCreate(req, res) {
     if (usage.competitorSearches >= 1) {
       return json(res, 403, {
         success: false, error: "trial_competitor_limit",
-        message: "Your free trial includes 1 competitor search. Upgrade to €15/month for unlimited searches.",
+        message: "Your free trial includes 1 competitor search. Upgrade to €20/month for unlimited searches.",
         upgradeUrl: "/upgrade",
       });
     }
@@ -2714,7 +2748,7 @@ async function handleAuditCreate(req, res) {
     if (auditsToday >= 1) {
       return json(res, 403, {
         success: false, error: "trial_audit_limit",
-        message: "Your free trial includes 1 AI audit per day. Upgrade to €15/month for 4 audits per month.",
+        message: "Your free trial includes 1 AI audit per day. Upgrade to €20/month for 4 audits per month.",
         upgradeUrl: "/upgrade",
       });
     }
@@ -3312,7 +3346,7 @@ async function handleTrialStart(req, res) {
     sendSystemEmail(
       user.email,
       "Your eureach trial has started — 7 days free",
-      `Hi ${user.firstName || "there"},\n\nYour 7-day free trial is now active.\n\nTrial ends: ${trialEndDate}\nIf you don't cancel before then, your card will be charged €15.\n\nWhat to do first:\n→ Run your AI Visibility Audit\n→ Search for your competitors\n→ Generate your first article\n\nCancel anytime at: https://eureach.eu/billing\n\n– The eureach team`
+      `Hi ${user.firstName || "there"},\n\nYour 7-day free trial is now active.\n\nTrial ends: ${trialEndDate}\nIf you don't cancel before then, your card will be charged €20.\n\nWhat to do first:\n→ Run your AI Visibility Audit\n→ Search for your competitors\n→ Generate your first article\n\nCancel anytime at: https://eureach.eu/billing\n\n– The eureach team`
     ).catch(() => {});
 
     json(res, 200, { success: true, trialEndsAt, daysRemaining: 7 });
@@ -3381,7 +3415,7 @@ async function handleBillingWebhook(req, res) {
       sendSystemEmail(
         userId.email,
         "3 days left in your eureach trial",
-        `Your trial ends on ${endDate}.\n\nIf you'd like to continue, no action needed — you'll be charged €15 automatically.\n\nTo cancel: https://eureach.eu/billing → Cancel trial\n\n– The eureach team`
+        `Your trial ends on ${endDate}.\n\nIf you'd like to continue, no action needed — you'll be charged €20 automatically.\n\nTo cancel: https://eureach.eu/billing → Cancel trial\n\n– The eureach team`
       ).catch(() => {});
     }
   }
@@ -3401,8 +3435,8 @@ async function handleBillingWebhook(req, res) {
         const last4 = invoice.payment_intent?.payment_method_details?.card?.last4 || "****";
         sendSystemEmail(
           u.email,
-          "Welcome to eureach — €15 charged",
-          `Your trial has ended and your subscription is now active.\n€15 has been charged to your card ending in ${last4}.\n\nYou now have:\n→ Unlimited competitor searches\n→ Upgraded AI analysis\n→ Full article generation\n\nManage your subscription: https://eureach.eu/billing\n\n– The eureach team`
+          "Welcome to eureach — €20 charged",
+          `Your trial has ended and your subscription is now active.\n€20 has been charged to your card ending in ${last4}.\n\nYou now have:\n→ Unlimited competitor searches\n→ Upgraded AI analysis\n→ Full article generation\n\nManage your subscription: https://eureach.eu/billing\n\n– The eureach team`
         ).catch(() => {});
       }
     }
@@ -3459,7 +3493,7 @@ function handleBillingStatus(req, res) {
     daysRemaining,
     trialEndsAt:      user.trialEndsAt || null,
     nextChargeDate,
-    nextChargeAmount: "€15",
+    nextChargeAmount: "€20",
     usage: {
       competitorSearches:      usage.competitorSearches || 0,
       competitorSearchesLimit: 1,
@@ -3521,7 +3555,7 @@ async function handleBillingUpgradeNow(req, res) {
 
   try {
     await stripe.subscriptions.update(user.stripeSubscriptionId, { trial_end: "now" });
-    json(res, 200, { success: true, message: "Upgrade initiated. Your card will be charged €15 shortly." });
+    json(res, 200, { success: true, message: "Upgrade initiated. Your card will be charged €20 shortly." });
   } catch (err) {
     console.error("Upgrade now error:", err);
     json(res, 500, { error: "Failed to upgrade: " + (err.message || "Unknown error") });
