@@ -2,97 +2,38 @@
 
 .admin-body { background: var(--navy); min-height: 100vh; overflow-y: auto; }
 
-.adm-layout {
-  display: block;
-  min-height: 100vh;
-}
-
-/* ── Sidebar ──────────────────────────────────────────── */
-.adm-sidebar {
-  background: var(--navy2);
-  border-right: 1px solid var(--border);
+/* ── Tab bar ──────────────────────────────────────────── */
+.adm-tabbar {
   display: flex;
-  flex-direction: column;
-  padding: 24px 0;
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
-  width: 220px;
-  z-index: 10;
-}
-
-.adm-logo {
-  font-size: 1.1rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  padding: 0 20px 24px;
+  align-items: center;
+  gap: 2px;
+  padding: 0 32px;
+  background: var(--navy2);
   border-bottom: 1px solid var(--border);
-  color: var(--white);
-}
-.adm-logo span { color: var(--gold); }
-.adm-badge {
-  display: inline-block;
-  background: rgba(245,158,11,0.15);
-  border: 1px solid rgba(245,158,11,0.3);
-  color: var(--gold);
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 100px;
-  margin-left: 6px;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  vertical-align: middle;
+  overflow-x: auto;
 }
 
-.adm-nav { padding: 16px 0; flex: 1; }
 .adm-nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
+  gap: 7px;
+  padding: 14px 18px;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--muted);
   cursor: pointer;
-  border-left: 3px solid transparent;
+  border-bottom: 2px solid transparent;
   transition: all 0.15s;
   text-decoration: none;
+  white-space: nowrap;
 }
-.adm-nav-item:hover { color: var(--white); background: var(--glass); }
-.adm-nav-item.active { color: var(--white); border-left-color: var(--blue); background: rgba(37,99,235,0.08); }
-.adm-nav-icon { font-size: 1rem; }
-
-.adm-sidebar-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.adm-back-link {
-  font-size: 0.8rem;
-  color: var(--muted);
-  text-decoration: none;
-}
-.adm-back-link:hover { color: var(--white); }
-.adm-signout {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.8rem;
-  padding: 6px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.adm-signout:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+.adm-nav-item:hover { color: var(--white); }
+.adm-nav-item.active { color: var(--white); border-bottom-color: var(--blue); }
 
 /* ── Main ─────────────────────────────────────────────── */
 .adm-main {
-  margin-left: 220px;
   padding: 32px;
-  min-height: 100vh;
-  overflow-y: auto;
+  min-height: calc(100vh - 120px);
 }
 
 .adm-page-header {
@@ -194,12 +135,11 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: rgba(var(--pc-r, 37), var(--pc-g, 99), var(--pc-b, 235), 0.15);
-  color: var(--pc, #60a5fa);
-  border: 1px solid rgba(var(--pc-r, 37), var(--pc-g, 99), var(--pc-b, 235), 0.3);
+  color: var(--pc);
+  border: 1px solid var(--pc);
+  background: transparent;
+  opacity: 0.9;
 }
-/* Override with inline style --pc */
-.adm-plan-badge { color: var(--pc); border-color: var(--pc); background: transparent; opacity: 0.9; }
 
 .adm-status {
   display: inline-block;
@@ -265,7 +205,7 @@
   display: flex; align-items: center; justify-content: flex-end; gap: 10px;
 }
 
-/* ── Tabs ─────────────────────────────────────────────── */
+/* ── Tabs (inside modals) ─────────────────────────────── */
 .adm-tabs {
   display: flex; gap: 2px;
   background: var(--glass);
@@ -339,13 +279,8 @@
 .adm-toggle input:checked + .adm-toggle-slider { background: rgba(239,68,68,0.3); border-color: #ef4444; }
 .adm-toggle input:checked + .adm-toggle-slider:before { transform: translateX(18px); background: #f87171; }
 
-/* ── Credits tab ──────────────────────────────────────── */
-.adm-credits-note {
-  font-size: 0.82rem;
-  color: var(--muted);
-  margin-bottom: 16px;
-  line-height: 1.5;
-}
+/* ── Credits ──────────────────────────────────────────── */
+.adm-credits-note { font-size: 0.82rem; color: var(--muted); margin-bottom: 16px; line-height: 1.5; }
 .adm-credits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .adm-credit-card {
   background: var(--glass);
@@ -370,28 +305,7 @@
 }
 .adm-credit-add input:focus { border-color: var(--blue); }
 
-/* ── Restrictions tab ─────────────────────────────────── */
-.adm-restrict-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.adm-check-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px;
-  background: var(--glass);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  font-size: 0.85rem;
-  color: var(--text);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.adm-check-item:hover { border-color: rgba(255,255,255,0.2); }
-.adm-check-item input { width: 15px; height: 15px; accent-color: var(--blue); cursor: pointer; }
-.adm-check-item:has(input:checked) { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.06); color: #fca5a5; }
-
-/* ── Danger tab ───────────────────────────────────────── */
+/* ── Danger zone ──────────────────────────────────────── */
 .adm-danger-zone {
   background: var(--glass);
   border: 1px solid var(--border);
@@ -416,16 +330,29 @@
 .adm-btn-delete:hover { background: rgba(239,68,68,0.2); border-color: #ef4444; }
 
 /* ── Messages ─────────────────────────────────────────── */
-.adm-msg {
-  font-size: 0.82rem;
-  padding: 8px 12px;
-  border-radius: 6px;
-  flex: 1;
-}
+.adm-msg { font-size: 0.82rem; padding: 8px 12px; border-radius: 6px; flex: 1; }
 .adm-msg-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
 .adm-msg-ok    { background: rgba(34,197,94,0.1);  border: 1px solid rgba(34,197,94,0.3);  color: #4ade80; }
 
-/* ── Blog CMS additions ─────────────────────────────── */
+/* ── Dashboard ────────────────────────────────────────── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 0;
+}
+.dash-stat { background: var(--glass); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; }
+.dash-stat-val { font-size: 2rem; font-weight: 700; color: var(--white); }
+.dash-stat-lbl { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.dash-card { background: var(--glass); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.dash-card-title { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+.dash-row { display: flex; gap: 20px; flex-wrap: wrap; }
+
+/* ── Sections ─────────────────────────────────────────── */
+.adm-section { display: none; }
+.adm-section.active { display: block; }
+
+/* ── Blog / Articles ──────────────────────────────────── */
 .adm-ai-gen-btn {
   background: linear-gradient(135deg, var(--blue, #2563eb), #7c3aed);
   border: none; border-radius: 7px; color: #fff;
@@ -443,7 +370,7 @@
 .adm-action-btn:hover { opacity: .75; }
 .adm-action-del { color: #f87171 !important; border-color: rgba(248,113,113,.25) !important; }
 
-/* ── Usage tab buttons ─────────────────────────────── */
+/* ── Usage tab small buttons ──────────────────────────── */
 .adm-btn-sm {
   background: var(--glass2);
   border: 1px solid var(--border);
@@ -458,3 +385,11 @@
 .adm-btn-sm:hover { color: var(--white); border-color: rgba(255,255,255,0.25); }
 .adm-btn-sm.adm-btn-warn { border-color: rgba(245,158,11,0.3); color: #fbbf24; }
 .adm-btn-sm.adm-btn-warn:hover { background: rgba(245,158,11,0.12); }
+
+/* ── Security ─────────────────────────────────────────── */
+.sec-event { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.sec-event:last-child { border-bottom: none; }
+.sec-type { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #f87171; flex-shrink: 0; }
+.sec-detail { color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sec-ip { font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
+.sec-time { font-size: 0.72rem; color: var(--muted); flex-shrink: 0; }

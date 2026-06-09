@@ -16,76 +16,100 @@
   };
 })();
 
-// Inactivity auto-logout — 5 min, hidden, with 1-min warning toast
+// Nav auth state — runs on every page
 (function () {
-  const SKIP = ['/signin.html', '/signup.html', '/', '/index.html', '/solo', '/audit-share.html'];
-  const p    = window.location.pathname;
-  if (SKIP.some(s => p === s || p.startsWith('/solo'))) return;
+  document.addEventListener("DOMContentLoaded", function () {
+    fetch("/api/auth/me").then(function (r) {
+      if (!r.ok) return null;
+      return r.json();
+    }).then(function (d) {
+      if (!d || !d.user) return;
+      const u = d.user;
 
-  const TIMEOUT_MS  = 5 * 60 * 1000;   // 5 minutes
-  const WARN_MS     = 1 * 60 * 1000;   // warn 1 min before expiry
+      // Update profile button
+      const btn = document.getElementById("nav-profile-btn");
+      if (btn) {
+        const initials = ((u.firstName || "")[0] || (u.email || "")[0] || "?").toUpperCase();
+        btn.textContent = initials;
+        btn.title = (u.firstName ? u.firstName + " " + (u.lastName || "") : u.email).trim();
+        btn.classList.add("logged-in");
+        btn.style.display = "";
+      }
 
-  let logoutTimer, warnTimer, toastEl;
+      // Hide sign-in and sign-up buttons when logged in
+      document.querySelectorAll('a[href="signin.html"]').forEach(function (el) {
+        el.style.display = "none";
+      });
+      document.querySelectorAll('#nav-signup-btn, a[href="signup.html"].btn-primary').forEach(function (el) {
+        el.style.display = "none";
+      });
 
-  function getCsrf() {
-    const m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
-    return m ? decodeURIComponent(m[1]) : '';
-  }
+      // Replace ⚙ gear btn text with user plan badge, add sign-out
+      document.querySelectorAll('.nav-cta a[href="settings.html"].btn-ghost').forEach(function (el) {
+        if (el.textContent.trim() === "⚙") el.style.display = "none";
+      });
 
-  function removeToast() {
-    if (toastEl) { toastEl.remove(); toastEl = null; }
-  }
+      // Show admin tab in settings if user is admin
+      const adminTab = document.getElementById('tab-btn-admin');
+      if (adminTab && u.role === 'admin') adminTab.style.display = '';
 
-  function doLogout() {
-    removeToast();
-    fetch('/api/auth/signout', { method: 'POST', headers: { 'X-CSRF-Token': getCsrf() } })
-      .finally(() => { window.location.href = '/signin.html?expired=1'; });
-  }
+      // Add Admin link in nav for admin users
+      if (u.role === 'admin' && !document.getElementById('nav-admin-link')) {
+        const cta = document.querySelector('.nav-cta');
+        if (cta) {
+          const a = document.createElement('a');
+          a.id = 'nav-admin-link';
+          a.href = 'admin.html';
+          a.className = 'btn btn-ghost';
+          a.style.cssText = 'font-size:0.78rem;padding:7px 14px;border-color:rgba(124,58,237,0.5);color:#a78bfa;';
+          a.textContent = '⚙ Admin';
+          cta.insertBefore(a, cta.firstChild);
+        }
+      }
 
-  function showWarning() {
-    removeToast();
-    toastEl = document.createElement('div');
-    toastEl.style.cssText = [
-      'position:fixed', 'bottom:24px', 'right:24px', 'z-index:99999',
-      'background:#0f172a', 'border:1px solid rgba(245,158,11,0.5)',
-      'color:#fbbf24', 'padding:14px 18px', 'border-radius:10px',
-      'font-size:0.84rem', 'box-shadow:0 8px 32px rgba(0,0,0,0.5)',
-      'display:flex', 'align-items:center', 'gap:12px', 'max-width:320px',
-      'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif'
-    ].join(';');
-    toastEl.innerHTML =
-      '<span>⏱ Session expires in <strong>1 minute</strong> due to inactivity.</span>' +
-      '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1.1rem;flex-shrink:0">✕</button>';
-    document.body.appendChild(toastEl);
-  }
-
-  function reset() {
-    clearTimeout(logoutTimer);
-    clearTimeout(warnTimer);
-    removeToast();
-    warnTimer   = setTimeout(showWarning, TIMEOUT_MS - WARN_MS);
-    logoutTimer = setTimeout(doLogout,    TIMEOUT_MS);
-  }
-
-  // Reset on any user interaction
-  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(ev => {
-    document.addEventListener(ev, reset, { passive: true });
+      // Inject sign-out button if not already there
+      const cta = document.querySelector(".nav-cta");
+      if (cta && !document.getElementById("nav-signout-btn")) {
+        const so = document.createElement("button");
+        so.id = "nav-signout-btn";
+        so.className = "btn btn-ghost";
+        so.style.cssText = "font-size:0.78rem;padding:7px 14px;cursor:pointer;";
+        so.textContent = "Sign out";
+        so.addEventListener("click", function () {
+          fetch("/api/auth/signout", { method: "POST" }).finally(function () {
+            window.location.href = "signin.html";
+          });
+        });
+        cta.insertBefore(so, cta.querySelector('a[href="membership.html"]') || null);
+      }
+    }).catch(function () {});
   });
-
-  // Show "session expired" notice on signin page if redirected here
-  if (p === '/signin.html' && new URLSearchParams(window.location.search).get('expired') === '1') {
-    document.addEventListener('DOMContentLoaded', function () {
-      const notice = document.createElement('div');
-      notice.style.cssText = 'background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;padding:10px 16px;border-radius:8px;font-size:0.84rem;margin-bottom:16px;text-align:center;';
-      notice.textContent = 'You were logged out due to 5 minutes of inactivity.';
-      const form = document.querySelector('form') || document.querySelector('.signin-form') || document.querySelector('.auth-box');
-      if (form) form.insertBefore(notice, form.firstChild);
-    });
-  }
-
-  // Only start timer for non-admin users
-  fetch('/api/auth/me').then(r => r.json()).then(d => {
-    if (d.user && d.user.role === 'admin') return;
-    reset();
-  }).catch(() => reset());
 })();
+
+// Simple API helper used by YouTuber portal pages
+window.api = {
+  async get(url) {
+    const r = await fetch(url);
+    const d = await r.json();
+    if (!r.ok) { const e = new Error(d.error || r.statusText); e.status = r.status; throw e; }
+    return d;
+  },
+  async post(url, body) {
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!r.ok) { const e = new Error(d.error || r.statusText); e.status = r.status; throw e; }
+    return d;
+  },
+  async patch(url, body) {
+    const r = await fetch(url, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!r.ok) { const e = new Error(d.error || r.statusText); e.status = r.status; throw e; }
+    return d;
+  },
+  async put(url, body) {
+    const r = await fetch(url, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (!r.ok) { const e = new Error(d.error || r.statusText); e.status = r.status; throw e; }
+    return d;
+  },
+};
