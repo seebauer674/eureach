@@ -53,8 +53,8 @@
       const adminTab = document.getElementById('tab-btn-admin');
       if (adminTab && u.role === 'admin') adminTab.style.display = '';
 
-      // Add Admin link in nav for admin users
-      if (u.role === 'admin' && !document.getElementById('nav-admin-link')) {
+      // Add Admin link in nav for admin users (skip on admin.html — it has its own nav)
+      if (u.role === 'admin' && !document.getElementById('nav-admin-link') && document.body.dataset.page !== 'admin') {
         const cta = document.querySelector('.nav-cta');
         if (cta) {
           const a = document.createElement('a');
@@ -67,9 +67,9 @@
         }
       }
 
-      // Inject sign-out button if not already there
+      // Inject sign-out button if not already there (skip on admin.html)
       const cta = document.querySelector(".nav-cta");
-      if (cta && !document.getElementById("nav-signout-btn")) {
+      if (cta && !document.getElementById("nav-signout-btn") && document.body.dataset.page !== 'admin') {
         const so = document.createElement("button");
         so.id = "nav-signout-btn";
         so.className = "btn btn-ghost";
