@@ -8,6 +8,11 @@ const fs     = require("fs");
 const path   = require("path");
 const crypto = require("crypto");
 
+// ── Agora PostgreSQL pool (newsletter) ───────────────────────────────────────
+const { Pool: PgPool } = require("pg");
+const agoraPool = new PgPool({ connectionString: process.env.AGORA_DB_URL });
+
+
 // Stripe — lazy-loaded so server starts without key configured
 let _stripe = null;
 function getStripe() {
@@ -22,6 +27,8 @@ const { applySecurityHeaders }                              = require("./securit
 const { checkRateLimit }                                    = require("./security/rateLimiter");
 const { sanitizeString, sanitizeEmail, sanitizeUrl, sanitizeInteger, isPrivateHost } = require("./security/sanitize");
 const { logEvent, logAudit, getIp, checkPathTraversal }    = require("./security/monitor");
+const { isoWeek, jobFiresOn, materialiseDays, dateStr } = require('./config/job-materialise');
+const { TEMPLATES, TEMPLATE_LABELS } = require('./config/job-seeds');
 
 const PORT = process.env.PORT || 3003;
 const ROOT = __dirname;
@@ -47,16 +54,29 @@ const WP_FILE           = path.join(ROOT, "data/wordpress_connections.json");
 const SMTP_FILE              = path.join(ROOT, "data/smtp_connections.json");
 const EMAIL_LOG_FILE         = path.join(ROOT, "data/email_log.json");
 const OUTREACH_QUEUE_FILE    = path.join(ROOT, "data/outreach-queue.json");
+const NL_CAMPAIGNS_FILE      = path.join(ROOT, "data/newsletter-campaigns.json");
 const BUSINESS_PROFILE_FILE  = path.join(ROOT, "data/business-profiles.json");
 const SITES_FILE             = path.join(ROOT, "data/user-sites.json");
 const CITATION_PUBLISHERS_FILE = path.join(ROOT, "data/citation_publishers.json");
 const CITATION_CAMPAIGNS_FILE  = path.join(ROOT, "data/citation_campaigns.json");
 const CITATION_PLACEMENTS_FILE = path.join(ROOT, "data/citation_placements.json");
 const CITATION_SNAPSHOTS_FILE  = path.join(ROOT, "data/citation_snapshots.json");
+const BRAND_KITS_FILE        = path.join(ROOT, "data/brand-kits.json");
+const MARKETING_ASSETS_FILE   = path.join(ROOT, "data/marketing-assets.json");
+const MARKETING_CAMPAIGNS_FILE = path.join(ROOT, "data/marketing-campaigns.json");
 const CITATION_LEADS_FILE      = path.join(ROOT, "data/citation_leads.json");
 const YOUTUBER_PROFILES_FILE      = path.join(ROOT, "data/youtuber_profiles.json");
 const YOUTUBER_APPLICATIONS_FILE  = path.join(ROOT, "data/youtuber_applications.json");
 const YOUTUBER_ASSIGNMENTS_FILE = path.join(ROOT, "data/youtuber_assignments.json");
+const COACH_COMPLETIONS_FILE = path.join(ROOT, "data/coach-completions.json");
+const COACH_CONTENT_FILE     = path.join(ROOT, "data/coach-weekly-content.json");
+const AUDIT_JOBS_FILE        = path.join(ROOT, "data/audit-jobs.json");
+const DASHBOARD_SITES_FILE     = path.join(ROOT, "data/dashboard-sites.json");
+const DASHBOARD_RECURRING_FILE = path.join(ROOT, "data/dashboard-recurring.json");
+const DASHBOARD_INSTANCES_FILE = path.join(ROOT, "data/dashboard-instances.json");
+const DASHBOARD_JOB_TYPES_FILE = path.join(ROOT, "data/dashboard-job-types.json");
+
+
 
 // AES-256-CBC key derived from secret — set WP_ENCRYPT_SECRET env var in production
 const WP_ENCRYPT_KEY = crypto.createHash("sha256")
@@ -450,6 +470,27 @@ async function handleSignup(req, res) {
   writeJSON(USERS_FILE, users);
 
   const token = createSession(user.id);
+
+  // Link any recent anonymous public audit to this new account
+  const auditSessId = parseCookies(req).auid_sess;
+  if (auditSessId) {
+    try {
+      const ajobs = Array.isArray(readJSON(AUDIT_JOBS_FILE)) ? readJSON(AUDIT_JOBS_FILE) : [];
+      const recentIdx = ajobs.findIndex(j => j.sessionId === auditSessId && j.status === "complete" && !j.userId && new Date() - new Date(j.createdAt) < 2 * 60 * 60 * 1000);
+      if (recentIdx !== -1) {
+        ajobs[recentIdx].userId    = user.id;
+        ajobs[recentIdx].expiresAt = null;
+        writeJSON(AUDIT_JOBS_FILE, ajobs);
+        // Save business info to profile
+        const profiles = Array.isArray(readJSON(BUSINESS_PROFILE_FILE)) ? readJSON(BUSINESS_PROFILE_FILE) : [];
+        const pidx = profiles.findIndex(p => p.userId === user.id);
+        const upd = { userId: user.id, businessName: ajobs[recentIdx].businessName, industry: ajobs[recentIdx].category, city: ajobs[recentIdx].city, updatedAt: new Date().toISOString() };
+        if (pidx !== -1) Object.assign(profiles[pidx], upd); else profiles.push(upd);
+        writeJSON(BUSINESS_PROFILE_FILE, profiles);
+      }
+    } catch (e) { console.error("[signup] audit link error", e.message); }
+  }
+
   json(res, 201, { user: safeUser(user) }, { "Set-Cookie": sessionCookie(token) });
 }
 
@@ -590,9 +631,11 @@ function handleMe(req, res) {
     canOutreach:  true,
     canWhatsApp:  true,
     canCompetitors: true,
-    crmLeadsMax:  plan.crmLeads,
-    canWordPress: plan.wordpress,
-    sitesMax:     plan.sites,
+    crmLeadsMax:           plan.crmLeads,
+    canWordPress:          plan.wordpress,
+    sitesMax:              plan.sites,
+    marketingPostsMax:     plan.marketingPosts     ?? 2,
+    marketingCampaignsMax: plan.marketingCampaigns ?? 0,
   };
   const profiles = Array.isArray(readJSON(BUSINESS_PROFILE_FILE)) ? readJSON(BUSINESS_PROFILE_FILE) : [];
   const bizProfile = profiles.find(p => p.userId === user.id) || null;
@@ -2399,6 +2442,381 @@ async function handleSiteDelete(req, res, siteId) {
 }
 
 
+/* ── Dashboard Jobs System ─────────────────────────────────────────────────── */
+
+function getDashboardSites() {
+  return Array.isArray(readJSON(DASHBOARD_SITES_FILE)) ? readJSON(DASHBOARD_SITES_FILE) : [];
+}
+function getDashboardRecurring() {
+  return Array.isArray(readJSON(DASHBOARD_RECURRING_FILE)) ? readJSON(DASHBOARD_RECURRING_FILE) : [];
+}
+function getDashboardInstances() {
+  return Array.isArray(readJSON(DASHBOARD_INSTANCES_FILE)) ? readJSON(DASHBOARD_INSTANCES_FILE) : [];
+}
+function getJobTypes() {
+  return Array.isArray(readJSON(DASHBOARD_JOB_TYPES_FILE)) ? readJSON(DASHBOARD_JOB_TYPES_FILE) : [];
+}
+
+const JOB_TYPE_FALLBACK = { key: 'generic', label: 'General task', action_kind: 'none', action_label: '', action_url_template: '', icon: '\u2705', sort_order: 99 };
+
+function getSitePlanLimit(user) {
+  const planCfg = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
+  return planCfg.sites !== undefined ? planCfg.sites : 1;
+}
+
+function resolveActionUrl(template, { site_id, domain, job_id, title }) {
+  if (!template) return '';
+  return template
+    .replace('{site_id}', encodeURIComponent(site_id || ''))
+    .replace('{domain}', encodeURIComponent(domain || ''))
+    .replace('{job_id}', encodeURIComponent(job_id || ''))
+    .replace('{title_encoded}', encodeURIComponent(title || ''));
+}
+
+function handleDashboardSitesGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const allSites = getDashboardSites().filter(s => s.user_id === user.id && !s.archived_at);
+  const limit = getSitePlanLimit(user);
+  json(res, 200, { sites: allSites, limit, used: allSites.length });
+}
+
+async function handleDashboardSitesCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const limit = getSitePlanLimit(user);
+  const allSites = getDashboardSites();
+  const userSites = allSites.filter(s => s.user_id === user.id && !s.archived_at);
+
+  if (limit !== -1 && userSites.length >= limit) {
+    return json(res, 403, { error: 'site_limit_reached', limit, used: userSites.length });
+  }
+
+  const body = await readBody(req);
+  const domain = sanitizeString(body.domain || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  const display_name = sanitizeString(body.display_name || '').trim();
+  const market = sanitizeString(body.market || '').trim().toUpperCase() || null;
+
+  if (!domain) return json(res, 400, { error: 'domain is required.' });
+  if (!display_name) return json(res, 400, { error: 'display_name is required.' });
+
+  const site = {
+    id: generateId(),
+    user_id: user.id,
+    domain,
+    display_name,
+    market,
+    created_at: new Date().toISOString(),
+    archived_at: null,
+  };
+  allSites.push(site);
+  writeJSON(DASHBOARD_SITES_FILE, allSites);
+  json(res, 201, { site });
+}
+
+async function handleDashboardSiteUpdate(req, res, siteId) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const allSites = getDashboardSites();
+  const idx = allSites.findIndex(s => s.id === siteId && s.user_id === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Site not found.' });
+
+  const body = await readBody(req);
+  if (body.domain !== undefined) allSites[idx].domain = sanitizeString(body.domain).trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  if (body.display_name !== undefined) allSites[idx].display_name = sanitizeString(body.display_name).trim();
+  if (body.market !== undefined) allSites[idx].market = body.market ? sanitizeString(body.market).trim().toUpperCase() : null;
+
+  writeJSON(DASHBOARD_SITES_FILE, allSites);
+  json(res, 200, { site: allSites[idx] });
+}
+
+async function handleDashboardSiteDelete(req, res, siteId) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const allSites = getDashboardSites();
+  const idx = allSites.findIndex(s => s.id === siteId && s.user_id === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Site not found.' });
+
+  allSites[idx].archived_at = new Date().toISOString();
+  writeJSON(DASHBOARD_SITES_FILE, allSites);
+  json(res, 200, { ok: true });
+}
+
+function handleJobsGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const qs = new URL('http://x' + req.url).searchParams;
+  const dateParam = qs.get('date') || dateStr(new Date());
+  const siteFilter = qs.get('site_id') || null;
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateParam)) return json(res, 400, { error: 'Invalid date format.' });
+
+  const today = new Date(dateParam + 'T00:00:00');
+  const days = [];
+  for (let i = 0; i < 15; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+
+  const allSites = getDashboardSites();
+  const allRecurring = getDashboardRecurring();
+  let allInstances = getDashboardInstances();
+
+  const newInstances = materialiseDays(user.id, days, allSites, allRecurring, allInstances);
+  if (newInstances.length > 0) {
+    allInstances = allInstances.concat(newInstances);
+    writeJSON(DASHBOARD_INSTANCES_FILE, allInstances);
+  }
+
+  let jobs = allInstances.filter(i => i.user_id === user.id && i.due_date === dateParam);
+  if (siteFilter) jobs = jobs.filter(i => i.site_id === siteFilter);
+
+  const jobTypesMap = {};
+  getJobTypes().forEach(jt => { jobTypesMap[jt.key] = jt; });
+  const siteMap = {};
+  allSites.forEach(s => { siteMap[s.id] = s; });
+
+  const resolved = jobs.map(job => {
+    const jt = jobTypesMap[job.job_type] || { ...JOB_TYPE_FALLBACK };
+    const site = siteMap[job.site_id] || {};
+    const action_url = resolveActionUrl(jt.action_url_template, {
+      site_id: job.site_id,
+      domain: site.domain || '',
+      job_id: job.id,
+      title: job.title,
+    });
+    return {
+      ...job,
+      site_name: site.display_name || site.domain || '',
+      site_domain: site.domain || '',
+      action_kind: jt.action_kind || 'none',
+      action_label: jt.action_label || '',
+      action_url,
+      job_type_icon: jt.icon || '',
+      job_type_label: jt.label || job.job_type,
+    };
+  });
+
+  resolved.sort((a, b) => {
+    if (a.site_id < b.site_id) return -1;
+    if (a.site_id > b.site_id) return 1;
+    return (a.channel || '').localeCompare(b.channel || '');
+  });
+
+  json(res, 200, { jobs: resolved, date: dateParam });
+}
+
+async function handleJobUpdate(req, res, jobId) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const allInstances = getDashboardInstances();
+  const idx = allInstances.findIndex(i => i.id === jobId && i.user_id === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Job not found.' });
+
+  const body = await readBody(req);
+  const VALID_STATUSES = ['pending', 'done', 'skipped'];
+
+  if (body.status !== undefined) {
+    if (!VALID_STATUSES.includes(body.status)) return json(res, 400, { error: 'Invalid status.' });
+    allInstances[idx].status = body.status;
+    allInstances[idx].completed_at = body.status === 'done' ? new Date().toISOString() : null;
+  }
+  if (body.notes !== undefined) {
+    allInstances[idx].notes = sanitizeString(String(body.notes || '')).slice(0, 2000);
+  }
+
+  writeJSON(DASHBOARD_INSTANCES_FILE, allInstances);
+  json(res, 200, { job: allInstances[idx] });
+}
+
+async function handleJobCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const body = await readBody(req);
+  const allSites = getDashboardSites();
+  const site = allSites.find(s => s.id === body.site_id && s.user_id === user.id && !s.archived_at);
+  if (!site) return json(res, 404, { error: 'Site not found.' });
+
+  const due_date = body.due_date || dateStr(new Date());
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(due_date)) return json(res, 400, { error: 'Invalid due_date.' });
+
+  const title = sanitizeString(body.title || '').trim();
+  if (!title) return json(res, 400, { error: 'title is required.' });
+
+  const jobTypesMap = {};
+  getJobTypes().forEach(jt => { jobTypesMap[jt.key] = jt; });
+  const job_type = body.job_type && jobTypesMap[body.job_type] ? body.job_type : 'generic';
+
+  const instance = {
+    id: generateId(),
+    user_id: user.id,
+    site_id: site.id,
+    recurring_job_id: null,
+    due_date,
+    title,
+    channel: sanitizeString(body.channel || '').trim() || 'General',
+    job_type,
+    est_minutes: Math.max(0, parseInt(body.est_minutes) || 30),
+    status: 'pending',
+    completed_at: null,
+    notes: null,
+    action_payload: body.action_payload || null,
+    created_at: new Date().toISOString(),
+  };
+
+  const allInstances = getDashboardInstances();
+  allInstances.push(instance);
+  writeJSON(DASHBOARD_INSTANCES_FILE, allInstances);
+  json(res, 201, { job: instance });
+}
+
+function handleRecurringJobsGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const siteId = new URL('http://x' + req.url).searchParams.get('site_id');
+  const allSites = getDashboardSites();
+  const userSiteIds = new Set(allSites.filter(s => s.user_id === user.id).map(s => s.id));
+
+  let jobs = getDashboardRecurring().filter(j => userSiteIds.has(j.site_id));
+  if (siteId) jobs = jobs.filter(j => j.site_id === siteId);
+  json(res, 200, { jobs });
+}
+
+async function handleRecurringJobCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const body = await readBody(req);
+  const allSites = getDashboardSites();
+  const site = allSites.find(s => s.id === body.site_id && s.user_id === user.id && !s.archived_at);
+  if (!site) return json(res, 404, { error: 'Site not found.' });
+
+  const VALID_FREQS = ['weekly', 'biweekly', 'monthly'];
+  const weekday = parseInt(body.weekday);
+  if (!weekday || weekday < 1 || weekday > 7) return json(res, 400, { error: 'weekday must be 1-7.' });
+  if (!VALID_FREQS.includes(body.frequency)) return json(res, 400, { error: 'frequency must be weekly, biweekly, or monthly.' });
+
+  const jobTypesMap = {};
+  getJobTypes().forEach(jt => { jobTypesMap[jt.key] = jt; });
+  const job_type = body.job_type && jobTypesMap[body.job_type] ? body.job_type : 'generic';
+  const title = sanitizeString(body.title || '').trim();
+  if (!title) return json(res, 400, { error: 'title is required.' });
+
+  const job = {
+    id: generateId(),
+    site_id: site.id,
+    channel: sanitizeString(body.channel || '').trim() || 'General',
+    job_type,
+    title,
+    weekday,
+    frequency: body.frequency,
+    est_minutes: Math.max(0, parseInt(body.est_minutes) || 30),
+    active: true,
+    created_at: new Date().toISOString(),
+  };
+
+  const allRecurring = getDashboardRecurring();
+  allRecurring.push(job);
+  writeJSON(DASHBOARD_RECURRING_FILE, allRecurring);
+  json(res, 201, { job });
+}
+
+async function handleRecurringJobUpdate(req, res, jobId) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const allSites = getDashboardSites();
+  const userSiteIds = new Set(allSites.filter(s => s.user_id === user.id).map(s => s.id));
+  const allRecurring = getDashboardRecurring();
+  const idx = allRecurring.findIndex(j => j.id === jobId && userSiteIds.has(j.site_id));
+  if (idx === -1) return json(res, 404, { error: 'Recurring job not found.' });
+
+  const body = await readBody(req);
+  const VALID_FREQS = ['weekly', 'biweekly', 'monthly'];
+  if (body.title !== undefined) allRecurring[idx].title = sanitizeString(body.title).trim();
+  if (body.channel !== undefined) allRecurring[idx].channel = sanitizeString(body.channel).trim();
+  if (body.weekday !== undefined) { const wd = parseInt(body.weekday); if (wd >= 1 && wd <= 7) allRecurring[idx].weekday = wd; }
+  if (body.frequency !== undefined && VALID_FREQS.includes(body.frequency)) allRecurring[idx].frequency = body.frequency;
+  if (body.est_minutes !== undefined) allRecurring[idx].est_minutes = Math.max(0, parseInt(body.est_minutes) || 30);
+  if (body.active !== undefined) allRecurring[idx].active = !!body.active;
+
+  writeJSON(DASHBOARD_RECURRING_FILE, allRecurring);
+  json(res, 200, { job: allRecurring[idx] });
+}
+
+function handleRecurringJobDelete(req, res, jobId) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const allSites = getDashboardSites();
+  const userSiteIds = new Set(allSites.filter(s => s.user_id === user.id).map(s => s.id));
+  const allRecurring = getDashboardRecurring();
+  const idx = allRecurring.findIndex(j => j.id === jobId && userSiteIds.has(j.site_id));
+  if (idx === -1) return json(res, 404, { error: 'Recurring job not found.' });
+
+  allRecurring.splice(idx, 1);
+  writeJSON(DASHBOARD_RECURRING_FILE, allRecurring);
+  json(res, 200, { ok: true });
+}
+
+async function handleDashboardSiteSeed(req, res, siteId) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const allSites = getDashboardSites();
+  const site = allSites.find(s => s.id === siteId && s.user_id === user.id && !s.archived_at);
+  if (!site) return json(res, 404, { error: 'Site not found.' });
+
+  const body = await readBody(req);
+  const template = TEMPLATES[body.template];
+  if (!template) return json(res, 400, { error: 'Unknown template. Valid: ' + Object.keys(TEMPLATES).join(', ') });
+
+  const now = new Date().toISOString();
+  const allRecurring = getDashboardRecurring();
+  const newJobs = template.map(t => ({
+    id: generateId(),
+    site_id: site.id,
+    channel: t.channel,
+    job_type: t.job_type,
+    title: t.title,
+    weekday: t.weekday,
+    frequency: t.frequency,
+    est_minutes: t.est_minutes,
+    active: true,
+    created_at: now,
+  }));
+  allRecurring.push(...newJobs);
+  writeJSON(DASHBOARD_RECURRING_FILE, allRecurring);
+  json(res, 201, { seeded: newJobs.length, jobs: newJobs, templates: TEMPLATE_LABELS });
+}
+
+function handleJobTypesGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  json(res, 200, { job_types: getJobTypes(), templates: TEMPLATE_LABELS });
+}
+
 /* ── Lead Finder Search ────────────────────────────────── */
 
 async function handleLeadSearch(req, res) {
@@ -2507,7 +2925,8 @@ async function handleBusinessProfileSave(req, res) {
   const body    = await readBody(req);
   const { businessName, businessUrl, businessWebsite, country, city, businessCountry, businessCity,
           industry, businessDescription, yearsInBusiness, mainKeyword, uniqueStrength,
-          knownCompetitors, businessType, customerType, pricePositioning, searchScope } = body;
+          knownCompetitors, businessType, customerType, pricePositioning, searchScope,
+          phone, services, address, openingHours } = body;
   const resolvedUrl     = (businessUrl || businessWebsite || "").trim();
   const resolvedCountry = (country || businessCountry || "").trim();
   const resolvedCity    = (city || businessCity || "").trim();
@@ -2539,6 +2958,10 @@ async function handleBusinessProfileSave(req, res) {
     customerType:        (customerType        || "").trim(),
     pricePositioning:    (pricePositioning    || "").trim(),
     searchScope:         (searchScope         || "").trim(),
+    phone:               (phone               || "").trim(),
+    services:            (services            || "").trim(),
+    address:             (address             || "").trim(),
+    openingHours:        (openingHours        || "").trim(),
     updatedAt:           now.toISOString(),
     editMonth:           ym,
     editCount:           editsUsed + 1,
@@ -3017,7 +3440,7 @@ function handleAuditShareDelete(req, res, id) {
 }
 
 // ── Raw SMTP sender (no external libraries) ───────────────────────────────────
-function smtpSend({ host, port, username, password, from, fromName, to, subject, body, testOnly = false }) {
+function smtpSend({ host, port, username, password, from, fromName, to, subject, body, html = null, testOnly = false }) {
   const useSSL = (port === 465);
   return new Promise((resolve, reject) => {
     let socket = null;
@@ -3094,18 +3517,35 @@ function smtpSend({ host, port, username, password, from, fromName, to, subject,
         write("DATA");                await expect(354);
 
         const displayFrom = fromName ? `"${fromName}" <${from}>` : from;
-        const msgParts = [
-          `From: ${displayFrom}`,
-          `To: ${to}`,
-          `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
-          `Date: ${new Date().toUTCString()}`,
-          `MIME-Version: 1.0`,
-          `Content-Type: text/plain; charset=UTF-8`,
-          `Content-Transfer-Encoding: 8bit`,
-          "",
-          ...body.split("\n").map(l => l.startsWith(".") ? "." + l : l),
-        ];
-        active.write(msgParts.join("\r\n") + "\r\n.\r\n");
+        let msgData;
+        if (html) {
+          const boundary = `----_Part_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+          const plainFallback = body || html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+          const parts = [
+            `From: ${displayFrom}`,`To: ${to}`,
+            `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
+            `Date: ${new Date().toUTCString()}`,`MIME-Version: 1.0`,
+            `Content-Type: multipart/alternative; boundary="${boundary}"`,
+            "",`--${boundary}`,
+            `Content-Type: text/plain; charset=UTF-8`,`Content-Transfer-Encoding: 8bit`,"",
+            ...plainFallback.split("\n").map(l => l.startsWith(".") ? "." + l : l),
+            "",`--${boundary}`,
+            `Content-Type: text/html; charset=UTF-8`,`Content-Transfer-Encoding: 8bit`,"",
+            ...html.split("\n").map(l => l.startsWith(".") ? "." + l : l),
+            "",`--${boundary}--`,
+          ];
+          msgData = parts.join("\r\n") + "\r\n.\r\n";
+        } else {
+          const msgParts = [
+            `From: ${displayFrom}`,`To: ${to}`,
+            `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
+            `Date: ${new Date().toUTCString()}`,`MIME-Version: 1.0`,
+            `Content-Type: text/plain; charset=UTF-8`,`Content-Transfer-Encoding: 8bit`,"",
+            ...body.split("\n").map(l => l.startsWith(".") ? "." + l : l),
+          ];
+          msgData = msgParts.join("\r\n") + "\r\n.\r\n";
+        }
+        active.write(msgData);
         await expect(250);
         write("QUIT"); finish();
       } catch (err) { abort(err); }
@@ -3720,6 +4160,27 @@ async function handleBillingUpgradeNow(req, res) {
   }
 })();
 
+
+(function migrateDashboard() {
+  try {
+    const ensureArray = (file) => {
+      try {
+        const d = readJSON(file);
+        if (!Array.isArray(d)) { writeJSON(file, []); return []; }
+        return d;
+      } catch (e) { writeJSON(file, []); return []; }
+    };
+    ensureArray(DASHBOARD_SITES_FILE);
+    ensureArray(DASHBOARD_RECURRING_FILE);
+    ensureArray(DASHBOARD_INSTANCES_FILE);
+    const jt = ensureArray(DASHBOARD_JOB_TYPES_FILE);
+    if (jt.length === 0) {
+      console.log('[migration] dashboard-job-types.json is empty — seed it manually from data/dashboard-job-types.json');
+    }
+  } catch (err) {
+    console.error('[migration] migrateDashboard failed:', err.message);
+  }
+})();
 // ── Router ────────────────────────────────────────────────────────────────────
 
 // Paths that must never be served as static files
@@ -3727,7 +4188,7 @@ const BLOCKED_STATIC_PREFIXES = ["/data/", "/config/", "/security/", "/."];
 const BLOCKED_STATIC_FILES    = ["/server.js", "/package.json", "/package-lock.json", "/.env"];
 
 // CSRF-exempt endpoints (before session exists)
-const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook"];
+const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook", "/api/audit-public/start", "/api/audit-public/save", "/api/audit-public/email-save", "/api/newsletter/subscribe"];
 
 function generateCsrfToken() { return crypto.randomBytes(24).toString("hex"); }
 
@@ -4983,6 +5444,1045 @@ async function handleAdminCitationsLeads(req, res) {
 
 // ── END Citation Builder handlers (eureach.eu) ────────────────────────────────
 
+
+
+// ── Public Free Audit (no auth required) ─────────────────────────────────────
+
+function auditGenerateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+async function runPublicAudit(jobId, businessName, category, city) {
+  const jobs = Array.isArray(readJSON(AUDIT_JOBS_FILE)) ? readJSON(AUDIT_JOBS_FILE) : [];
+  const idx  = jobs.findIndex(j => j.id === jobId);
+  if (idx === -1) return;
+
+  const query  = category + " " + city;
+  jobs[idx].status = "running";
+  jobs[idx].query  = query;
+  writeJSON(AUDIT_JOBS_FILE, jobs);
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) {
+    jobs[idx].status = "failed";
+    writeJSON(AUDIT_JOBS_FILE, jobs);
+    return;
+  }
+
+  const engines = [
+    { name: "ChatGPT",    key: "chatgpt"    },
+    { name: "Perplexity", key: "perplexity" },
+    { name: "Google AI",  key: "google_ai"  },
+  ];
+
+  const results = {};
+
+  await Promise.all(engines.map(async engine => {
+    try {
+      const sys = "You simulate how " + engine.name + " answers local business search queries in Greek. Be realistic — only mention businesses that would genuinely appear. Answer naturally in Greek as " + engine.name + " would respond. Return ONLY valid JSON.";
+      const msg = "Query: \"" + query + "\". Does the business \"" + businessName + "\" appear in your results?\n\nReturn this JSON exactly:\n{\n  \"appeared\": true or false,\n  \"confidence\": \"high\" or \"low\",\n  \"competitors\": [\"name1\", \"name2\"],\n  \"excerpt\": \"brief excerpt of your answer (50 words max)\"\n}";
+      const raw = await callClaude(apiKey, sys, msg, 400, "claude-haiku-4-5-20251001");
+      const data = claudeJSON(raw);
+      const appeared = !!data.appeared;
+      const score = appeared
+        ? Math.min(95, Math.floor(Math.random() * 20) + 68)
+        : Math.max(5,  Math.floor(Math.random() * 18) + 5);
+      results[engine.key] = {
+        appeared,
+        score,
+        competitors: Array.isArray(data.competitors) ? data.competitors.slice(0, 3) : [],
+        excerpt: data.excerpt || "",
+      };
+    } catch (e) {
+      results[engine.key] = { appeared: false, score: 8, competitors: [], excerpt: "" };
+    }
+  }));
+
+  const scores     = Object.values(results).map(r => r.score);
+  const overall    = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  const allComps   = [...new Set(Object.values(results).flatMap(r => r.competitors))].slice(0, 4);
+
+  const freshJobs  = Array.isArray(readJSON(AUDIT_JOBS_FILE)) ? readJSON(AUDIT_JOBS_FILE) : [];
+  const fi         = freshJobs.findIndex(j => j.id === jobId);
+  if (fi !== -1) {
+    freshJobs[fi].status       = "complete";
+    freshJobs[fi].results      = results;
+    freshJobs[fi].overall      = overall;
+    freshJobs[fi].competitors  = allComps;
+    freshJobs[fi].completedAt  = new Date().toISOString();
+    freshJobs[fi].expiresAt    = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    writeJSON(AUDIT_JOBS_FILE, freshJobs);
+  }
+}
+
+function parseCookieValue(req, name) {
+  const cookies = parseCookies(req);
+  return cookies[name] || null;
+}
+
+async function handlePublicAuditStart(req, res) {
+  const body = await readBody(req);
+  const { businessName, category, city, customCategory, utmSource, utmCampaign } = body;
+  const cat = category === "Άλλο" ? (customCategory || "Άλλο") : category;
+
+  if (!businessName || !cat || !city) {
+    return json(res, 400, { error: "Συμπλήρωσε όλα τα πεδία" });
+  }
+
+  // Check if logged-in user
+  const cookies  = parseCookies(req);
+  const authUser = getSessionUser(cookies.session);
+
+  const jobId    = auditGenerateId();
+  const sessId   = cookies.auid_sess || auditGenerateId();
+
+  const jobs = Array.isArray(readJSON(AUDIT_JOBS_FILE)) ? readJSON(AUDIT_JOBS_FILE) : [];
+  jobs.push({
+    id:             jobId,
+    userId:         authUser ? authUser.id : null,
+    sessionId:      sessId,
+    businessName:   businessName.trim(),
+    category:       cat,
+    city:           city.trim(),
+    status:         "pending",
+    query:          null,
+    results:        null,
+    overall:        null,
+    competitors:    [],
+    createdAt:      new Date().toISOString(),
+    completedAt:    null,
+    expiresAt:      null,
+    utmSource:      utmSource || null,
+    utmCampaign:    utmCampaign || null,
+  });
+  writeJSON(AUDIT_JOBS_FILE, jobs);
+
+  // Fire async — do not await
+  runPublicAudit(jobId, businessName.trim(), cat, city.trim())
+    .catch(e => console.error("[public-audit] error", e.message));
+
+  const headers = {};
+  if (!cookies.auid_sess) {
+    headers["Set-Cookie"] = "auid_sess=" + sessId + "; Path=/; Max-Age=86400; SameSite=Lax";
+  }
+  return json(res, 200, { jobId }, headers);
+}
+
+async function handlePublicAuditStatus(req, res, jobId) {
+  const jobs = Array.isArray(readJSON(AUDIT_JOBS_FILE)) ? readJSON(AUDIT_JOBS_FILE) : [];
+  const job  = jobs.find(j => j.id === jobId);
+  if (!job) return json(res, 404, { error: "Job not found" });
+  return json(res, 200, { status: job.status, jobId });
+}
+
+async function handlePublicAuditResults(req, res, jobId) {
+  const cookies  = parseCookies(req);
+  const authUser = getSessionUser(cookies.session);
+  const jobs     = Array.isArray(readJSON(AUDIT_JOBS_FILE)) ? readJSON(AUDIT_JOBS_FILE) : [];
+  const job      = jobs.find(j => j.id === jobId);
+  if (!job) return json(res, 404, { error: "Job not found" });
+  if (job.status !== "complete" && job.status !== "failed") return json(res, 200, { status: job.status });
+  const isOwner = authUser ? (job.userId === authUser.id || job.sessionId === cookies.auid_sess) : (job.sessionId === cookies.auid_sess);
+  if (!isOwner && !authUser?.role === "admin") return json(res, 403, { error: "Not authorized" });
+  return json(res, 200, {
+    status:       job.status,
+    jobId:        job.id,
+    businessName: job.businessName,
+    category:     job.category,
+    city:         job.city,
+    query:        job.query,
+    results:      job.results,
+    overall:      job.overall,
+    competitors:  job.competitors,
+    isLoggedIn:   !!authUser,
+  });
+}
+
+async function handlePublicAuditSave(req, res) {
+  const cookies  = parseCookies(req);
+  const authUser = getSessionUser(cookies.session);
+  if (!authUser) return json(res, 401, { error: "Not authenticated" });
+
+  const body  = await readBody(req);
+  const jobId = body.jobId;
+  if (!jobId) return json(res, 400, { error: "jobId required" });
+
+  const jobs = Array.isArray(readJSON(AUDIT_JOBS_FILE)) ? readJSON(AUDIT_JOBS_FILE) : [];
+  const idx  = jobs.findIndex(j => j.id === jobId);
+  if (idx === -1) return json(res, 404, { error: "Job not found" });
+
+  jobs[idx].userId    = authUser.id;
+  jobs[idx].expiresAt = null;
+  writeJSON(AUDIT_JOBS_FILE, jobs);
+
+  // Save business info to user profile
+  const profiles = Array.isArray(readJSON(BUSINESS_PROFILE_FILE)) ? readJSON(BUSINESS_PROFILE_FILE) : [];
+  const pidx = profiles.findIndex(p => p.userId === authUser.id);
+  const update = { userId: authUser.id, businessName: jobs[idx].businessName, industry: jobs[idx].category, city: jobs[idx].city, updatedAt: new Date().toISOString() };
+  if (pidx !== -1) Object.assign(profiles[pidx], update);
+  else profiles.push(update);
+  writeJSON(BUSINESS_PROFILE_FILE, profiles);
+
+  return json(res, 200, { ok: true });
+}
+
+// Email-only save (captures leads without password)
+async function handlePublicAuditEmailSave(req, res) {
+  const body = await readBody(req);
+  const { email, jobId } = body;
+  if (!email || !jobId) return json(res, 400, { error: "email and jobId required" });
+
+  const sanitized = sanitizeEmail(email);
+  if (!sanitized) return json(res, 400, { error: "Invalid email" });
+
+  const users = readJSON(USERS_FILE);
+  let user = users.find(u => u.email.toLowerCase() === sanitized.toLowerCase());
+
+  if (!user) {
+    // Create minimal account (no password — just email capture)
+    const planCfg = PLAN_LIMITS.plans.free;
+    user = {
+      id:           generateId(),
+      email:        sanitized.toLowerCase(),
+      firstName:    "",
+      lastName:     "",
+      passwordHash: null,
+      plan:         "free",
+      creditsLeft:  planCfg.credits,
+      creditsMax:   planCfg.credits,
+      creditMonth:  currentMonth(),
+      sites:        [],
+      createdAt:    new Date().toISOString(),
+      freeExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      emailOnly:    true,
+    };
+    users.push(user);
+    writeJSON(USERS_FILE, users);
+  }
+
+  // Link audit to this user
+  const jobs = Array.isArray(readJSON(AUDIT_JOBS_FILE)) ? readJSON(AUDIT_JOBS_FILE) : [];
+  const idx  = jobs.findIndex(j => j.id === jobId);
+  if (idx !== -1) {
+    jobs[idx].userId    = user.id;
+    jobs[idx].expiresAt = null;
+    writeJSON(AUDIT_JOBS_FILE, jobs);
+  }
+
+  return json(res, 200, { ok: true, message: "Τα αποτελέσματα αποθηκεύτηκαν στο email σου." });
+}
+
+// ── Weekly Action Coach ───────────────────────────────────────────────────────
+
+function coachGetMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  d.setDate(diff);
+  return d.toISOString().split("T")[0];
+}
+
+function coachGetBusinessInfo(userId) {
+  const profiles = Array.isArray(readJSON(BUSINESS_PROFILE_FILE)) ? readJSON(BUSINESS_PROFILE_FILE) : [];
+  const users    = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
+  const user     = users.find(u => u.id === userId) || {};
+  const profile  = profiles.find(p => p.userId === userId) || {};
+  return {
+    name:        profile.businessName || user.businessName || ((user.firstName || "") + " " + (user.lastName || "")).trim() || "η επιχείρησή σου",
+    category:    profile.industry || "επιχείρηση",
+    location:    profile.city || "Ελλάδα",
+    description: profile.businessDescription || "",
+    url:         profile.businessUrl || "",
+  };
+}
+
+async function coachGenerateDayContent(day, businessInfo, apiKey, user) {
+  const model = getModel(user);
+  const bName = businessInfo.name;
+  const bCat  = businessInfo.category;
+  const bLoc  = businessInfo.location;
+  const bDesc = businessInfo.description || "local business";
+
+  if (day === "monday") {
+    const sys = 'You are a marketing coach for Greek businesses. Return ONLY valid JSON. No text outside JSON.';
+    const msg = "Business: " + bName + "\nCategory: " + bCat + "\nLocation: " + bLoc + "\nDescription: " + bDesc + "\n\nGenerate 5 article topic suggestions (specific questions Greek customers ask AI engines) AND 1 Facebook post.\nReturn this exact JSON:\n{\n  \"suggestions\": [\n    {\"title\": \"article title as a question in Greek\", \"why\": \"one sentence in Greek why this helps AI visibility\", \"angle\": \"e.g. Πρακτικός οδηγός\", \"estimated_read_time\": \"3 λεπτά\"},\n    {\"title\": \"...\", \"why\": \"...\", \"angle\": \"...\", \"estimated_read_time\": \"4 λεπτά\"},\n    {\"title\": \"...\", \"why\": \"...\", \"angle\": \"...\", \"estimated_read_time\": \"3 λεπτά\"},\n    {\"title\": \"...\", \"why\": \"...\", \"angle\": \"...\", \"estimated_read_time\": \"5 λεπτά\"},\n    {\"title\": \"...\", \"why\": \"...\", \"angle\": \"...\", \"estimated_read_time\": \"4 λεπτά\"}\n  ],\n  \"facebook_post\": \"natural Facebook post in Greek 80-120 words, genuine business owner voice, ends with a question\"\n}";
+    const raw = await callClaude(apiKey, sys, msg, 1400, model);
+    return claudeJSON(raw);
+  }
+
+  if (day === "wednesday") {
+    const sys = 'You are a marketing coach for Greek businesses. Return ONLY valid JSON. No text outside JSON.';
+    const msg = "Business: " + bName + "\nCategory: " + bCat + "\nLocation: " + bLoc + "\n\nGenerate:\n1. WhatsApp/Messenger message asking for a Google review (personal, warm, 60-80 words in Greek, includes [GOOGLE BUSINESS LINK] placeholder)\n2. FAQ Facebook post in Greek 100-140 words (format: \"Η πιο συχνή ερώτηση που μας κάνουν: [QUESTION]\", answer in 3-4 sentences, end with \"Έχεις κι εσύ ερώτηση; Γράψε στα σχόλια.\")\n\nReturn this exact JSON:\n{\n  \"review_message\": \"...\",\n  \"faq_post\": \"...\"\n}";
+    const raw = await callClaude(apiKey, sys, msg, 900, model);
+    return claudeJSON(raw);
+  }
+
+  if (day === "friday") {
+    const sys = 'You are a marketing coach for Greek businesses. Return ONLY valid JSON. No text outside JSON.';
+    const msg = "Business: " + bName + "\nCategory: " + bCat + "\nLocation: " + bLoc + "\nDescription: " + bDesc + "\n\nGenerate a LinkedIn post in BOTH Greek and English.\nGreek: professional tone, educational angle, 120-180 words, ends with a question, 3-4 hashtags.\nEnglish: same structure, same quality.\n\nReturn this exact JSON:\n{\n  \"linkedin_post_el\": \"...\",\n  \"linkedin_post_en\": \"...\"\n}";
+    const raw = await callClaude(apiKey, sys, msg, 1000, model);
+    return claudeJSON(raw);
+  }
+
+  return null;
+}
+
+async function handleCoachPage(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) { res.writeHead(302, { Location: "/signin.html?next=/coach" }); res.end(); return; }
+  return fs.readFile(path.join(ROOT, "coach.html"), (err, data) => {
+    if (err) { res.writeHead(404); res.end("Not found"); return; }
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(data);
+  });
+}
+
+async function handleCoachWeek(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated" });
+
+  const weekStart   = coachGetMonday(new Date());
+  const completions = Array.isArray(readJSON(COACH_COMPLETIONS_FILE)) ? readJSON(COACH_COMPLETIONS_FILE) : [];
+  const allContent  = Array.isArray(readJSON(COACH_CONTENT_FILE))     ? readJSON(COACH_CONTENT_FILE) : [];
+  const paid        = isPaidUser(user) || user.role === "admin";
+
+  const weekContent   = allContent.filter(c => c.userId === user.id && c.weekStart === weekStart);
+  const weekCompleted = completions.filter(c => c.userId === user.id && c.weekStart === weekStart);
+
+  const daysNeeded  = ["monday"];
+  if (paid) daysNeeded.push("wednesday", "friday");
+  const missingDays = daysNeeded.filter(d => !weekContent.find(c => c.day === d));
+
+  if (missingDays.length > 0) {
+    const apiKey = getAnthropicKey();
+    if (!apiKey) return json(res, 500, { error: "AI not configured" });
+    const biz = coachGetBusinessInfo(user.id);
+    for (const day of missingDays) {
+      try {
+        const content = await coachGenerateDayContent(day, biz, apiKey, user);
+        if (content) {
+          allContent.push({ id: Date.now() + "_" + day, userId: user.id, weekStart, day, content, createdAt: new Date().toISOString(), regenerateCount: 0 });
+        }
+      } catch (e) { console.error("[coach] gen error", day, e.message); }
+    }
+    writeJSON(COACH_CONTENT_FILE, allContent);
+  }
+
+  const fresh   = Array.isArray(readJSON(COACH_CONTENT_FILE)) ? readJSON(COACH_CONTENT_FILE) : [];
+  const content = fresh.filter(c => c.userId === user.id && c.weekStart === weekStart);
+  return json(res, 200, { weekStart, isPaid: paid, completions: weekCompleted, content });
+}
+
+async function handleCoachComplete(req, res, day) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated" });
+  if (!["monday", "wednesday", "friday"].includes(day)) return json(res, 400, { error: "Invalid day" });
+
+  const paid = isPaidUser(user) || user.role === "admin";
+  if ((day === "wednesday" || day === "friday") && !paid) return json(res, 403, { error: "Members only" });
+
+  const weekStart   = coachGetMonday(new Date());
+  const completions = Array.isArray(readJSON(COACH_COMPLETIONS_FILE)) ? readJSON(COACH_COMPLETIONS_FILE) : [];
+  const already     = completions.find(c => c.userId === user.id && c.weekStart === weekStart && c.day === day);
+  if (!already) {
+    completions.push({ id: Date.now(), userId: user.id, weekStart, day, completedAt: new Date().toISOString() });
+    writeJSON(COACH_COMPLETIONS_FILE, completions);
+  }
+  const weekDone = completions.filter(c => c.userId === user.id && c.weekStart === weekStart).length;
+  return json(res, 200, { ok: true, weekDone });
+}
+
+async function handleCoachRegenerate(req, res, day) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated" });
+  if (!["monday", "wednesday", "friday"].includes(day)) return json(res, 400, { error: "Invalid day" });
+
+  const paid = isPaidUser(user) || user.role === "admin";
+  if ((day === "wednesday" || day === "friday") && !paid) return json(res, 403, { error: "Members only" });
+
+  const body       = await readBody(req);
+  const weekStart  = coachGetMonday(new Date());
+  const allContent = Array.isArray(readJSON(COACH_CONTENT_FILE)) ? readJSON(COACH_CONTENT_FILE) : [];
+  const idx        = allContent.findIndex(c => c.userId === user.id && c.weekStart === weekStart && c.day === day);
+
+  if (idx !== -1 && (allContent[idx].regenerateCount || 0) >= 3) {
+    return json(res, 429, { error: "Max regenerations reached for this week" });
+  }
+
+  if (day === "friday" && (body.language === "en" || body.language === "el")) {
+    const existing = idx !== -1 ? allContent[idx].content : null;
+    const key = body.language === "en" ? "linkedin_post_en" : "linkedin_post_el";
+    if (existing && existing[key]) return json(res, 200, { linkedin_post: existing[key] });
+  }
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI not configured" });
+  const biz = coachGetBusinessInfo(user.id);
+  try {
+    const content = await coachGenerateDayContent(day, biz, apiKey, user);
+    if (idx !== -1) { allContent[idx].content = content; allContent[idx].regenerateCount = (allContent[idx].regenerateCount || 0) + 1; }
+    else allContent.push({ id: Date.now() + "_" + day, userId: user.id, weekStart, day, content, createdAt: new Date().toISOString(), regenerateCount: 1 });
+    writeJSON(COACH_CONTENT_FILE, allContent);
+    return json(res, 200, { content });
+  } catch (e) {
+    return json(res, 500, { error: "Generation failed: " + e.message });
+  }
+}
+
+async function handleCoachStreak(req, res) {
+  const cookies     = parseCookies(req);
+  const user        = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated" });
+
+  const completions = Array.isArray(readJSON(COACH_COMPLETIONS_FILE)) ? readJSON(COACH_COMPLETIONS_FILE) : [];
+  const mine        = completions.filter(c => c.userId === user.id);
+  const byWeek      = {};
+  for (const c of mine) { byWeek[c.weekStart] = (byWeek[c.weekStart] || 0) + 1; }
+
+  const weeks     = Object.keys(byWeek).sort().reverse();
+  let streak      = 0;
+  const checkDate = new Date(coachGetMonday(new Date()));
+  for (let i = 0; i < weeks.length; i++) {
+    const wDate = new Date(weeks[i]);
+    const diffW = Math.round((checkDate - wDate) / (7 * 24 * 60 * 60 * 1000));
+    if (diffW !== i) break;
+    if (byWeek[weeks[i]] >= 2) streak++;
+    else break;
+  }
+
+  const thisWeek = coachGetMonday(new Date());
+  return json(res, 200, { streak, totalActions: mine.length, thisWeekDone: byWeek[thisWeek] || 0 });
+}
+
+async function handleCoachVisibility(req, res) {
+  const cookies    = parseCookies(req);
+  const user       = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated" });
+
+  const audits     = Array.isArray(readJSON(AUDITS_FILE)) ? readJSON(AUDITS_FILE) : [];
+  const userAudits = audits.filter(a => a.userId === user.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  if (userAudits.length === 0) return json(res, 200, { hasData: false });
+
+  const latest   = userAudits[0];
+  const previous = userAudits[1] || null;
+  const scores   = { ai_visibility: latest.breakdown?.ai_visibility || 0, local_seo: latest.breakdown?.local_seo || 0, content_quality: latest.breakdown?.content_quality || 0, overall: latest.score || 0 };
+  const deltas   = previous ? {
+    ai_visibility:   scores.ai_visibility   - (previous.breakdown?.ai_visibility   || 0),
+    local_seo:       scores.local_seo       - (previous.breakdown?.local_seo       || 0),
+    content_quality: scores.content_quality - (previous.breakdown?.content_quality || 0),
+    overall:         scores.overall         - (previous.score || 0)
+  } : null;
+  return json(res, 200, { hasData: true, scores, deltas, auditId: latest.id, updatedAt: latest.createdAt });
+}
+
+// ── Newsletter handlers ──────────────────────────────────────────────────────
+
+// ── Newsletter Campaign & Growth Plan handlers ──────────────────────────────
+
+const EUREACH_FOOTER_HTML = '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:40px;"><tr><td align="center" style="border-top:2px solid #e2e8f0;padding:28px 24px 0;font-family:Arial,Helvetica,sans-serif;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;letter-spacing:0.8px;text-transform:uppercase;">This newsletter was created with</p><a href="https://eureach.eu?ref=nl-footer" style="display:inline-block;margin-bottom:12px;font-size:20px;font-weight:700;color:#4f46e5;text-decoration:none;">eureach<span style="color:#6366f1">.</span>eu</a><p style="margin:0;font-size:12px;color:#64748b;line-height:1.7;">Need help with your business marketing?<br><a href="https://eureach.eu?ref=nl-footer-cta" style="color:#4f46e5;font-weight:600;text-decoration:none;">Discover EUREACH →</a></p></td></tr></table>';
+
+const EUREACH_FOOTER_TEXT = ['','','---','This newsletter was created with eureach.eu','Need help with your business marketing? Discover EUREACH → https://eureach.eu'].join('\n');
+
+function getGrowthPlan(user) {
+  const gp = user.growthPlan;
+  if (!gp || !gp.active) return { active: false };
+  if (gp.expiresAt && new Date(gp.expiresAt) < new Date()) return { active: false, expired: true };
+  return { active: true, activatedAt: gp.activatedAt, expiresAt: gp.expiresAt, emailsSent: gp.emailsSent || 0 };
+}
+
+function injectEureachFooter(html, plainText) {
+  const htmlOut = /<\/body>/i.test(html)
+    ? html.replace(/<\/body>/i, EUREACH_FOOTER_HTML + '</body>')
+    : html + EUREACH_FOOTER_HTML;
+  return { html: htmlOut, text: (plainText || '') + EUREACH_FOOTER_TEXT };
+}
+
+async function handleGrowthPlanStatus(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  return json(res, 200, { growthPlan: getGrowthPlan(user) });
+}
+
+async function handleGrowthPlanActivate(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const days = parseInt(process.env.GROWTH_PLAN_DAYS || '90', 10);
+  const users = readJSON(USERS_FILE);
+  const idx = users.findIndex(u => u.id === user.id);
+  if (idx === -1) return json(res, 404, { error: 'User not found.' });
+  const prev = users[idx].growthPlan || {};
+  users[idx].growthPlan = {
+    active: true,
+    activatedAt: prev.activatedAt || new Date().toISOString(),
+    expiresAt: new Date(Date.now() + days * 86400000).toISOString(),
+    emailsSent: prev.emailsSent || 0,
+  };
+  writeJSON(USERS_FILE, users);
+  return json(res, 200, { ok: true, growthPlan: users[idx].growthPlan });
+}
+
+async function handleNLCampaignList(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const campaigns = readJSON(NL_CAMPAIGNS_FILE)
+    .filter(c => c.userId === user.id)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return json(res, 200, { campaigns });
+}
+
+async function handleNLCampaignSave(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const gp = getGrowthPlan(user);
+  if (!gp.active && !hasAccess(user)) return json(res, 402, { error: 'trial_expired', upgradeUrl: '/membership' });
+  const raw = await readBody(req);
+  const campaigns = readJSON(NL_CAMPAIGNS_FILE);
+  if (id) {
+    const idx = campaigns.findIndex(c => c.id === id && c.userId === user.id);
+    if (idx === -1) return json(res, 404, { error: 'Campaign not found.' });
+    if (campaigns[idx].status === 'sent') return json(res, 400, { error: 'Cannot edit a sent campaign.' });
+    if (raw.name     !== undefined) campaigns[idx].name     = sanitizeString(raw.name, 200);
+    if (raw.subject  !== undefined) campaigns[idx].subject  = sanitizeString(raw.subject, 200);
+    if (raw.bodyHtml !== undefined) campaigns[idx].bodyHtml = sanitizeString(raw.bodyHtml, 200000);
+    if (raw.bodyText !== undefined) campaigns[idx].bodyText = sanitizeString(raw.bodyText, 50000);
+    if (Array.isArray(raw.recipients)) campaigns[idx].recipients = raw.recipients.map(e => sanitizeEmail(String(e))).filter(Boolean);
+    campaigns[idx].updatedAt = new Date().toISOString();
+    writeJSON(NL_CAMPAIGNS_FILE, campaigns);
+    return json(res, 200, { campaign: campaigns[idx] });
+  } else {
+    const campaign = {
+      id: generateId(), userId: user.id,
+      name:       sanitizeString(raw.name || 'Untitled Campaign', 200),
+      subject:    sanitizeString(raw.subject || '', 200),
+      bodyHtml:   sanitizeString(raw.bodyHtml || '', 200000),
+      bodyText:   sanitizeString(raw.bodyText || '', 50000),
+      recipients: Array.isArray(raw.recipients) ? raw.recipients.map(e => sanitizeEmail(String(e))).filter(Boolean) : [],
+      status: 'draft', footerEnabled: true,
+      createdAt: new Date().toISOString(), sentAt: null, sentCount: 0, errorCount: 0,
+    };
+    campaigns.push(campaign);
+    writeJSON(NL_CAMPAIGNS_FILE, campaigns);
+    return json(res, 200, { campaign });
+  }
+}
+
+async function handleNLCampaignDelete(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const campaigns = readJSON(NL_CAMPAIGNS_FILE);
+  const idx = campaigns.findIndex(c => c.id === id && c.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Campaign not found.' });
+  campaigns.splice(idx, 1);
+  writeJSON(NL_CAMPAIGNS_FILE, campaigns);
+  return json(res, 200, { ok: true });
+}
+
+async function handleNLCampaignSend(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const campaigns = readJSON(NL_CAMPAIGNS_FILE);
+  const idx = campaigns.findIndex(c => c.id === id && c.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Campaign not found.' });
+  const campaign = campaigns[idx];
+  if (campaign.status === 'sent')    return json(res, 400, { error: 'Campaign already sent.' });
+  if (campaign.status === 'sending') return json(res, 400, { error: 'Campaign is currently sending.' });
+  if (!campaign.subject)  return json(res, 400, { error: 'Subject is required before sending.' });
+  if (!campaign.bodyHtml && !campaign.bodyText) return json(res, 400, { error: 'Email body is required.' });
+  if (!campaign.recipients || campaign.recipients.length === 0) return json(res, 400, { error: 'No recipients added.' });
+  const conn = readJSON(SMTP_FILE).find(c => c.userId === user.id);
+  if (!conn) return json(res, 400, { error: 'No SMTP connection. Go to Settings → Email.' });
+  let smtpPwd;
+  try { smtpPwd = decryptStr(conn.passwordEnc); } catch { return json(res, 500, { error: 'Failed to decrypt SMTP credentials.' }); }
+  const gp = getGrowthPlan(user);
+  if (!gp.active && !hasAccess(user)) return json(res, 402, { error: 'trial_expired', upgradeUrl: '/membership' });
+  if (!gp.active) {
+    const cost = campaign.recipients.length;
+    const uu = readJSON(USERS_FILE);
+    const ui = uu.findIndex(u => u.id === user.id);
+    if (ui !== -1) {
+      const dr = deductCredits(uu, ui, cost, 'Newsletter Campaign');
+      if (!dr.ok) return insufficientCredits(res, dr.creditsLeft, dr.creditsMax, cost);
+      writeJSON(USERS_FILE, uu);
+    }
+  }
+  let finalHtml = campaign.bodyHtml || null;
+  let finalText = campaign.bodyText || null;
+  if (campaign.footerEnabled) {
+    const inj = injectEureachFooter(finalHtml || '<div></div>', finalText || '');
+    finalHtml = inj.html; finalText = inj.text;
+  }
+  campaigns[idx].status = 'sending';
+  writeJSON(NL_CAMPAIGNS_FILE, campaigns);
+  json(res, 200, { ok: true, started: true, total: campaign.recipients.length, campaignId: id });
+  (async () => {
+    let sentCount = 0, errorCount = 0;
+    const log = readJSON(EMAIL_LOG_FILE);
+    for (const toEmail of campaign.recipients) {
+      try {
+        await smtpSend({ host: conn.host, port: conn.port, username: conn.username,
+          password: smtpPwd, from: conn.from, fromName: conn.fromName || '',
+          to: toEmail, subject: campaign.subject, body: finalText || '', html: finalHtml });
+        log.push({ id: generateId(), userId: user.id, leadId: null, to: toEmail,
+          subject: campaign.subject, sentAt: new Date().toISOString(),
+          sequenceStep: null, opened: false, clicked: false, campaignId: id });
+        sentCount++;
+      } catch (e) { errorCount++; console.error('[nl-campaign] failed:', toEmail, e.message); }
+      await new Promise(r => setTimeout(r, 150));
+    }
+    writeJSON(EMAIL_LOG_FILE, log);
+    const cff = readJSON(NL_CAMPAIGNS_FILE);
+    const ci  = cff.findIndex(c => c.id === id);
+    if (ci !== -1) {
+      cff[ci].status = 'sent'; cff[ci].sentAt = new Date().toISOString();
+      cff[ci].sentCount = sentCount; cff[ci].errorCount = errorCount;
+      writeJSON(NL_CAMPAIGNS_FILE, cff);
+    }
+    if (gp.active) {
+      const gu = readJSON(USERS_FILE); const gi = gu.findIndex(u => u.id === user.id);
+      if (gi !== -1) {
+        if (!gu[gi].growthPlan) gu[gi].growthPlan = {};
+        gu[gi].growthPlan.emailsSent = (gu[gi].growthPlan.emailsSent || 0) + sentCount;
+        writeJSON(USERS_FILE, gu);
+      }
+    }
+  })();
+}
+
+async function handleNewsletterSubscribe(req, res) {
+  const data = await readBody(req);
+  const email = sanitizeEmail((data.email || "").trim().toLowerCase());
+  const name  = sanitizeString((data.name  || "").trim()).slice(0, 120);
+  const freq  = ["daily","weekly","monthly"].includes(data.frequency) ? data.frequency : "weekly";
+  if (!email) return json(res, 400, { error: "Valid email required." });
+  const ip = getIp(req);
+  const ua = req.headers["user-agent"] || "";
+  try {
+    const r = await agoraPool.query(
+      `INSERT INTO newsletter_subscribers
+         (email, name, frequency, source_site, source_page, status, confirmed, confirm_token,
+          gdpr_consent, gdpr_ip, gdpr_ua, gdpr_at)
+       VALUES ($1,$2,$3,'eureach.eu',$4,'pending',false,
+               md5(random()::text||clock_timestamp()::text),
+               true,$5,$6,now())
+       ON CONFLICT (email) DO UPDATE SET
+         name=COALESCE(EXCLUDED.name, newsletter_subscribers.name),
+         source_site='eureach.eu', status='pending', confirmed=false,
+         confirm_token=md5(random()::text||clock_timestamp()::text),
+         gdpr_consent=true, gdpr_ip=$5, gdpr_ua=$6, gdpr_at=now()
+       RETURNING confirm_token`,
+      [email, name || null, freq, req.headers.referer || null, ip, ua]
+    );
+    const { confirm_token } = r.rows[0];
+    const confirmUrl = process.env.SITE_URL + "/newsletter/confirm/" + confirm_token;
+    await sendSystemEmail(email, "Confirm your subscription — eureach.eu",
+      `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff;">
+        <div style="margin-bottom:20px;font-size:1.2rem;font-weight:900;color:#1a1a2e;">eureach<span style="color:#c9a227;">.</span>eu</div>
+        <h2 style="color:#1a1a2e;margin:0 0 12px;font-size:1.1rem;">Please confirm your subscription</h2>
+        <p style="color:#555;line-height:1.6;margin:0 0 20px;">Click the button below to confirm you'd like to receive updates and insights from eureach.eu.</p>
+        <a href="${confirmUrl}" style="display:inline-block;background:#c9a227;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:700;font-size:.95rem;">Confirm subscription &#x2192;</a>
+        <p style="color:#aaa;font-size:.78rem;margin-top:28px;border-top:1px solid #eee;padding-top:14px;">If you didn't sign up, just ignore this email.</p>
+      </div>`
+    );
+    return json(res, 200, { success: true });
+  } catch (e) {
+    console.error("[newsletter subscribe]", e.message);
+    return json(res, 500, { error: "Something went wrong. Please try again." });
+  }
+}
+
+async function handleNewsletterConfirm(req, res, token) {
+  try {
+    const r = await agoraPool.query(
+      `UPDATE newsletter_subscribers SET confirmed=true, confirmed_at=now(), status='active'
+       WHERE confirm_token=$1 AND deleted_at IS NULL RETURNING email`,
+      [token]
+    );
+    res.writeHead(302, { Location: r.rowCount ? "/newsletter-confirm.html?status=ok" : "/newsletter-confirm.html?status=invalid" });
+    res.end();
+  } catch (e) {
+    console.error("[newsletter confirm]", e.message);
+    res.writeHead(302, { Location: "/newsletter-confirm.html?status=error" }); res.end();
+  }
+}
+
+async function handleNewsletterUnsubscribe(req, res, token) {
+  try {
+    const r = await agoraPool.query(
+      `UPDATE newsletter_subscribers SET status='unsubscribed', unsubscribed_at=now()
+       WHERE unsubscribe_token=$1 AND deleted_at IS NULL RETURNING email`,
+      [token]
+    );
+    res.writeHead(302, { Location: r.rowCount ? "/newsletter-unsubscribe.html?status=ok" : "/newsletter-unsubscribe.html?status=invalid" });
+    res.end();
+  } catch (e) {
+    console.error("[newsletter unsubscribe]", e.message);
+    res.writeHead(302, { Location: "/newsletter-unsubscribe.html?status=error" }); res.end();
+  }
+}
+
+
+// ── Marketing Creator ─────────────────────────────────────────────────────────
+
+function handleBrandKitGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const kits = readJSON(BRAND_KITS_FILE) || [];
+  const kit  = kits.find(k => k.userId === user.id) || {};
+  return json(res, 200, { kit });
+}
+
+async function handleBrandKitSave(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const kits = readJSON(BRAND_KITS_FILE) || [];
+  const idx  = kits.findIndex(k => k.userId === user.id);
+  const kit  = {
+    userId:         user.id,
+    slogan:         (body.slogan         || "").slice(0, 200),
+    tone:           (body.tone           || "").slice(0, 100),
+    targetAudience: (body.targetAudience || "").slice(0, 500),
+    colors:         Array.isArray(body.colors) ? body.colors.slice(0, 5) : [],
+    logo:           (body.logo           || "").slice(0, 500),
+    socialAccounts: body.socialAccounts && typeof body.socialAccounts === "object" ? body.socialAccounts : {},
+    updatedAt:      new Date().toISOString(),
+  };
+  if (idx === -1) kits.push(kit);
+  else kits[idx] = kit;
+  writeJSON(BRAND_KITS_FILE, kits);
+  return json(res, 200, { kit });
+}
+
+async function handleMarketingGenerateFacebook(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!checkAiRateLimit(res, user.id)) return;
+
+  const body = await readBody(req);
+  const { brief = {}, saveToAssets = false, campaignId = null } = body;
+
+  // Credit check
+  const users = readJSON(USERS_FILE) || [];
+  const idx   = users.findIndex(u => u.id === user.id);
+  if (idx === -1) return json(res, 401, { error: "User not found." });
+
+  const cost      = PLAN_LIMITS.costs.socialPost || 5;
+  const artResult = deductCredits(users, idx, cost, "Facebook Post Generated");
+  if (!artResult.ok) return insufficientCredits(res, artResult.creditsLeft, artResult.creditsMax, cost);
+  writeJSON(USERS_FILE, users);
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI service not configured." });
+
+  // Load business profile and brand kit for this user
+  const profiles = readJSON(BUSINESS_PROFILE_FILE) || [];
+  const business = profiles.find(p => p.userId === user.id) || {};
+  const kits     = readJSON(BRAND_KITS_FILE) || [];
+  const brand    = kits.find(k => k.userId === user.id) || {};
+
+  try {
+    const { generateFacebookPost } = require("./marketing/generators/facebook");
+    const result = await generateFacebookPost({ business, brand, brief, apiKey });
+
+    if (saveToAssets) {
+      const assets = readJSON(MARKETING_ASSETS_FILE) || [];
+      const asset  = {
+        id:         Date.now().toString(),
+        userId:     user.id,
+        campaignId: campaignId,
+        platform:   "facebook",
+        type:       "post",
+        content:    result,
+        brief:      brief,
+        createdAt:  new Date().toISOString(),
+      };
+      assets.unshift(asset);
+      writeJSON(MARKETING_ASSETS_FILE, assets);
+      result._assetId = asset.id;
+    }
+
+    return json(res, 200, {
+      result,
+      creditsLeft: artResult.creditsLeft,
+      creditsMax:  artResult.creditsMax,
+    });
+  } catch (err) {
+    console.error("[marketing/facebook] error:", err.message);
+    return json(res, 502, { error: err.message || "Η δημιουργία απέτυχε. Παρακαλούμε δοκιμάστε ξανά." });
+  }
+}
+
+
+// ── Marketing Creator — generic generate handler ────────────────────────────
+const MARKETING_GENERATORS = {
+  instagram:    { mod: "./marketing/generators/instagram",     fn: "generateInstagramPost",   cost: "socialPost" },
+  tiktok:       { mod: "./marketing/generators/tiktok",        fn: "generateTikTokScript",    cost: "socialPost" },
+  linkedin:     { mod: "./marketing/generators/linkedin",      fn: "generateLinkedInPost",    cost: "socialPost" },
+  "google-ads": { mod: "./marketing/generators/google-ads",    fn: "generateGoogleAd",        cost: "adGenerate" },
+  "meta-ads":   { mod: "./marketing/generators/meta-ads",      fn: "generateMetaAd",          cost: "adGenerate" },
+  "youtube-short": { mod: "./marketing/generators/youtube-short", fn: "generateYouTubeShort", cost: "videoScript" },
+  "video-script":  { mod: "./marketing/generators/video-script",  fn: "generateVideoScript",  cost: "videoScript" },
+  "image-concept": { mod: "./marketing/generators/image-concept", fn: "generateImageConcept", cost: "imageConcept" },
+  campaign:     { mod: "./marketing/generators/campaign",      fn: "generateCampaignStrategy",cost: "campaignGenerate" },
+};
+
+async function handleMarketingGenerate(req, res, platform) {
+  const cfg = MARKETING_GENERATORS[platform];
+  if (!cfg) return json(res, 404, { error: "Unknown platform: " + platform });
+
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!checkAiRateLimit(res, user.id)) return;
+
+  const body = await readBody(req);
+  const { brief = {}, saveToAssets = false, campaignId = null } = body;
+
+  const users = readJSON(USERS_FILE) || [];
+  const idx   = users.findIndex(u => u.id === user.id);
+  if (idx === -1) return json(res, 401, { error: "User not found." });
+
+  const cost      = PLAN_LIMITS.costs[cfg.cost] || 5;
+  const artResult = deductCredits(users, idx, cost, platform + " generated");
+  if (!artResult.ok) return insufficientCredits(res, artResult.creditsLeft, artResult.creditsMax, cost);
+  writeJSON(USERS_FILE, users);
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI service not configured." });
+
+  const profiles = readJSON(BUSINESS_PROFILE_FILE) || [];
+  const business = profiles.find(p => p.userId === user.id) || {};
+  const kits     = readJSON(BRAND_KITS_FILE) || [];
+  const brand    = kits.find(k => k.userId === user.id) || {};
+
+  try {
+    const generator = require(cfg.mod);
+    const result    = await generator[cfg.fn]({ business, brand, brief, apiKey });
+
+    if (saveToAssets) {
+      const assets = readJSON(MARKETING_ASSETS_FILE) || [];
+      assets.unshift({
+        id:         Date.now().toString(),
+        userId:     user.id,
+        campaignId: campaignId || null,
+        platform,
+        type:       platform,
+        content:    result,
+        brief,
+        createdAt:  new Date().toISOString(),
+      });
+      writeJSON(MARKETING_ASSETS_FILE, assets);
+      result._assetId = assets[0].id;
+    }
+
+    return json(res, 200, { result, creditsLeft: artResult.creditsLeft, creditsMax: artResult.creditsMax });
+  } catch (err) {
+    console.error("[marketing/" + platform + "] error:", err.message);
+    return json(res, 502, { error: err.message || "Η δημιουργία απέτυχε. Παρακαλούμε δοκιμάστε ξανά." });
+  }
+}
+
+// ── Article → Campaign ───────────────────────────────────────────────────────
+async function handleMarketingArticleToCampaign(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  if (!checkAiRateLimit(res, user.id)) return;
+
+  const body = await readBody(req);
+  const { articleTitle = "", articleContent = "", articleSlug = "", brief = {}, saveToAssets = false } = body;
+  if (!articleContent || articleContent.trim().length < 50)
+    return json(res, 400, { error: "Article content is required." });
+
+  const users = readJSON(USERS_FILE) || [];
+  const idx   = users.findIndex(u => u.id === user.id);
+  if (idx === -1) return json(res, 401, { error: "User not found." });
+
+  const cost      = PLAN_LIMITS.costs.campaignGenerate || 20;
+  const artResult = deductCredits(users, idx, cost, "Article → Campaign");
+  if (!artResult.ok) return insufficientCredits(res, artResult.creditsLeft, artResult.creditsMax, cost);
+  writeJSON(USERS_FILE, users);
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI service not configured." });
+
+  try {
+    const { generateArticleToCampaign } = require("./marketing/generators/article-to-campaign");
+    const result = await generateArticleToCampaign({ article: articleContent, title: articleTitle, brief, apiKey });
+
+    if (saveToAssets) {
+      const assets = readJSON(MARKETING_ASSETS_FILE) || [];
+      assets.unshift({
+        id:         Date.now().toString(),
+        userId:     user.id,
+        campaignId: null,
+        platform:   "article_to_campaign",
+        type:       "campaign_brief",
+        content:    result,
+        brief:      { articleSlug, ...brief },
+        createdAt:  new Date().toISOString(),
+      });
+      writeJSON(MARKETING_ASSETS_FILE, assets);
+      result._assetId = assets[0].id;
+    }
+
+    return json(res, 200, { result, creditsLeft: artResult.creditsLeft, creditsMax: artResult.creditsMax });
+  } catch (err) {
+    console.error("[marketing/article-to-campaign] error:", err.message);
+    return json(res, 502, { error: err.message || "Η δημιουργία απέτυχε. Παρακαλούμε δοκιμάστε ξανά." });
+  }
+}
+
+// ── Marketing Campaign CRUD ──────────────────────────────────────────────────
+function handleMarketingCampaignsList(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = (readJSON(MARKETING_CAMPAIGNS_FILE) || []).filter(c => c.userId === user.id);
+  return json(res, 200, { campaigns: all });
+}
+
+async function handleMarketingCampaignCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const { name = "Νέα Καμπάνια", objective = "", brief = {} } = body;
+  const all = readJSON(MARKETING_CAMPAIGNS_FILE) || [];
+  const profiles = readJSON(BUSINESS_PROFILE_FILE) || [];
+  const kits     = readJSON(BRAND_KITS_FILE) || [];
+  const campaign = {
+    id:               Date.now().toString(),
+    userId:           user.id,
+    name:             sanitizeString(name).slice(0, 200),
+    objective:        sanitizeString(objective).slice(0, 100),
+    brief,
+    businessSnapshot: profiles.find(p => p.userId === user.id) || {},
+    brandSnapshot:    kits.find(k => k.userId === user.id) || {},
+    assets:           [],
+    status:           "draft",
+    createdAt:        new Date().toISOString(),
+    updatedAt:        new Date().toISOString(),
+  };
+  all.unshift(campaign);
+  writeJSON(MARKETING_CAMPAIGNS_FILE, all);
+  return json(res, 201, { campaign });
+}
+
+function handleMarketingCampaignGet(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all      = readJSON(MARKETING_CAMPAIGNS_FILE) || [];
+  const campaign = all.find(c => c.id === id && c.userId === user.id);
+  if (!campaign) return json(res, 404, { error: "Campaign not found." });
+  const assets   = (readJSON(MARKETING_ASSETS_FILE) || []).filter(a => a.userId === user.id && a.campaignId === id);
+  return json(res, 200, { campaign, assets });
+}
+
+async function handleMarketingCampaignDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = readJSON(MARKETING_CAMPAIGNS_FILE) || [];
+  const idx = all.findIndex(c => c.id === id && c.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: "Campaign not found." });
+  all.splice(idx, 1);
+  writeJSON(MARKETING_CAMPAIGNS_FILE, all);
+  return json(res, 200, { ok: true });
+}
+
+// ── Marketing Asset CRUD ─────────────────────────────────────────────────────
+function handleMarketingAssetsList(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const url    = new URL("http://x" + req.url);
+  const platform   = url.searchParams.get("platform") || "";
+  const campaignId = url.searchParams.get("campaignId") || "";
+  let assets = (readJSON(MARKETING_ASSETS_FILE) || []).filter(a => a.userId === user.id);
+  if (platform)   assets = assets.filter(a => a.platform === platform);
+  if (campaignId) assets = assets.filter(a => a.campaignId === campaignId);
+  return json(res, 200, { assets });
+}
+
+async function handleMarketingAssetDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const assets = readJSON(MARKETING_ASSETS_FILE) || [];
+  const idx    = assets.findIndex(a => a.id === id && a.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: "Asset not found." });
+  assets.splice(idx, 1);
+  writeJSON(MARKETING_ASSETS_FILE, assets);
+  return json(res, 200, { ok: true });
+}
+
+// ── Internal Marketing API — AGORA access (no credits, secret header) ────────
+async function handleInternalMarketingGenerate(req, res, platform) {
+  const secret = process.env.MARKETING_INTERNAL_SECRET;
+  if (!secret || req.headers["x-internal-secret"] !== secret)
+    return json(res, 403, { error: "Forbidden." });
+
+  // article-to-campaign is handled separately
+  if (platform === "article-to-campaign") {
+    const body = await readBody(req);
+    const { articleTitle = "", articleContent = "", brief = {} } = body;
+    if (!articleContent || articleContent.trim().length < 10)
+      return json(res, 400, { error: "articleContent is required." });
+    const apiKey = getAnthropicKey();
+    if (!apiKey) return json(res, 500, { error: "AI service not configured." });
+    try {
+      const { generateArticleToCampaign } = require("./marketing/generators/article-to-campaign");
+      const result = await generateArticleToCampaign({ article: articleContent, title: articleTitle, brief, apiKey });
+      return json(res, 200, { result });
+    } catch (err) {
+      return json(res, 502, { error: err.message || "Generation failed." });
+    }
+  }
+
+  const cfg = MARKETING_GENERATORS[platform];
+  if (!cfg) return json(res, 404, { error: "Unknown platform: " + platform });
+
+  const body = await readBody(req);
+  const { business = {}, brand = {}, brief = {}, callerApiKey = null, callerProvider = null } = body;
+
+  // Caller (e.g. AGORA) can supply its own key; otherwise use eureach keys with Groq fallback
+  const anthropicKey = callerApiKey || getAnthropicKey();
+  const groqKey      = getGroqKey();
+  const preferredProvider = callerProvider || 'anthropic';
+
+  if (!anthropicKey && !groqKey) return json(res, 500, { error: "AI service not configured." });
+
+  try {
+    const generator = require(cfg.mod);
+    let result;
+    if (preferredProvider === 'groq' || !anthropicKey) {
+      result = await generator[cfg.fn]({ business, brand, brief, apiKey: groqKey, provider: 'groq' });
+    } else {
+      try {
+        result = await generator[cfg.fn]({ business, brand, brief, apiKey: anthropicKey, provider: 'anthropic' });
+      } catch (e) {
+        if (groqKey && (e.message.includes('credit') || e.message.includes('billing') || e.message.includes('quota') || e.message.includes('insufficient'))) {
+          console.warn("[internal/marketing] Anthropic quota, falling back to Groq:", e.message.substring(0,80));
+          result = await generator[cfg.fn]({ business, brand, brief, apiKey: groqKey, provider: 'groq' });
+        } else { throw e; }
+      }
+    }
+    return json(res, 200, { result });
+  } catch (err) {
+    console.error("[internal/marketing/" + platform + "] error:", err.message);
+    return json(res, 502, { error: err.message || "Generation failed." });
+  }
+}
+
 async function handleRequest(req, res) {
   const urlPath = req.url.split("?")[0];
   const method  = req.method.toUpperCase();
@@ -5012,7 +6512,8 @@ async function handleRequest(req, res) {
 
   // ── CSRF validation for mutating API requests ─────────────────────────────────
   if (urlPath.startsWith("/api/") && ["POST", "PATCH", "PUT", "DELETE"].includes(method) &&
-      !CSRF_EXEMPT.includes(urlPath)) {
+      !CSRF_EXEMPT.includes(urlPath) &&
+      !urlPath.startsWith("/api/internal/")) {
     const tokenHeader = req.headers["x-csrf-token"];
     if (!tokenHeader || tokenHeader !== csrfToken) {
       logEvent("csrf_mismatch", urlPath, ip);
@@ -5112,6 +6613,25 @@ async function handleRequest(req, res) {
   if (urlPath.startsWith("/api/outreach/saved-lists/")     && method === "DELETE") return handleOutreachSavedListDelete(req, res, urlPath.slice(26));
   if (urlPath === "/api/crm/saved-lists"              && method === "POST")   return handleCrmSavedListSave(req, res);
   if (urlPath === "/api/crm/saved-lists"              && method === "GET")    return handleCrmSavedListsGet(req, res);
+  // Dashboard Jobs System
+  if (urlPath === '/api/dashboard/sites'                       && method === 'GET')    return handleDashboardSitesGet(req, res);
+  if (urlPath === '/api/dashboard/sites'                       && method === 'POST')   return handleDashboardSitesCreate(req, res);
+  if (urlPath === '/api/dashboard/job-types'                   && method === 'GET')    return handleJobTypesGet(req, res);
+  if (urlPath === '/api/jobs'                                  && method === 'GET')    return handleJobsGet(req, res);
+  if (urlPath === '/api/jobs'                                  && method === 'POST')   return handleJobCreate(req, res);
+  if (urlPath === '/api/recurring-jobs'                        && method === 'GET')    return handleRecurringJobsGet(req, res);
+  if (urlPath === '/api/recurring-jobs'                        && method === 'POST')   return handleRecurringJobCreate(req, res);
+  { const _m = urlPath.match(/^\/api\/dashboard\/sites\/([^\/]+)\/seed$/);
+    if (_m && method === 'POST') return handleDashboardSiteSeed(req, res, _m[1]); }
+  { const _m = urlPath.match(/^\/api\/dashboard\/sites\/([^\/]+)$/);
+    if (_m && method === 'PATCH')  return handleDashboardSiteUpdate(req, res, _m[1]);
+    if (_m && method === 'DELETE') return handleDashboardSiteDelete(req, res, _m[1]); }
+  { const _m = urlPath.match(/^\/api\/jobs\/([^\/]+)$/);
+    if (_m && method === 'PATCH')  return handleJobUpdate(req, res, _m[1]); }
+  { const _m = urlPath.match(/^\/api\/recurring-jobs\/([^\/]+)$/);
+    if (_m && method === 'PATCH')  return handleRecurringJobUpdate(req, res, _m[1]);
+    if (_m && method === 'DELETE') return handleRecurringJobDelete(req, res, _m[1]); }
+
   if (urlPath.startsWith("/api/crm/saved-lists/")     && method === "DELETE") return handleCrmSavedListDelete(req, res, urlPath.slice(21));
   if (urlPath === "/api/blog"                               && method === "GET")    return handleBlogList(req, res);
   if (urlPath === "/api/blog"                               && method === "POST")   return handleBlogPublish(req, res);
@@ -5209,6 +6729,16 @@ async function handleRequest(req, res) {
     if (!u || (u.role !== "youtuber" && u.role !== "admin")) { res.writeHead(302, { Location: "/signin.html" }); res.end(); return; }
     return require("fs").readFile(require("path").join(ROOT, "youtube-profile.html"), (e, d) => { if (e) { res.writeHead(404); res.end(); return; } res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(d); });
   }
+  // Public Free Audit (no auth)
+  if (urlPath === "/audit" || urlPath === "/audit/")   { return fs.readFile(path.join(ROOT, "audit-landing.html"), (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
+  if (urlPath === "/audit/running")                    { return fs.readFile(path.join(ROOT, "audit-running.html"),  (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
+  if (urlPath === "/audit/results")                    { return fs.readFile(path.join(ROOT, "audit-results.html"), (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
+  if (urlPath === "/api/audit-public/start"            && method === "POST") return handlePublicAuditStart(req, res);
+  if (urlPath.startsWith("/api/audit-public/status/")  && method === "GET")  return handlePublicAuditStatus(req, res, urlPath.slice(25));
+  if (urlPath.startsWith("/api/audit-public/results/") && method === "GET")  return handlePublicAuditResults(req, res, urlPath.slice(26));
+  if (urlPath === "/api/audit-public/save"             && method === "POST") return handlePublicAuditSave(req, res);
+  if (urlPath === "/api/audit-public/email-save"       && method === "POST") return handlePublicAuditEmailSave(req, res);
+
   // Standalone Audit API routes
   if (urlPath === "/api/audit"                         && method === "POST")   return handleAuditCreate(req, res);
   if (urlPath === "/api/audit"                         && method === "GET")    return handleAuditList(req, res);
@@ -5255,6 +6785,59 @@ async function handleRequest(req, res) {
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       res.end(html);
     });
+  }
+
+  // Weekly Action Coach
+  if (urlPath === "/coach")                                              return handleCoachPage(req, res);
+  if (urlPath === "/api/coach/week"              && method === "GET")    return handleCoachWeek(req, res);
+  if (urlPath.startsWith("/api/coach/complete/")  && method === "POST")  return handleCoachComplete(req, res, urlPath.slice(21));
+  if (urlPath.startsWith("/api/coach/regenerate/") && method === "POST") return handleCoachRegenerate(req, res, urlPath.slice(23));
+  if (urlPath === "/api/coach/streak"            && method === "GET")    return handleCoachStreak(req, res);
+  if (urlPath === "/api/coach/visibility"        && method === "GET")    return handleCoachVisibility(req, res);
+
+  // Newsletter
+  // Newsletter Campaigns (user outbound newsletters)
+  if (urlPath === '/api/newsletter-campaign'                                        && method === 'GET')    return handleNLCampaignList(req, res);
+  if (urlPath === '/api/newsletter-campaign'                                        && method === 'POST')   return handleNLCampaignSave(req, res, null);
+  if (urlPath.startsWith('/api/newsletter-campaign/') && urlPath.endsWith('/send') && method === 'POST')   return handleNLCampaignSend(req, res, urlPath.slice(25, -5));
+  if (urlPath.startsWith('/api/newsletter-campaign/')                               && method === 'PUT')    return handleNLCampaignSave(req, res, urlPath.slice(25));
+  if (urlPath.startsWith('/api/newsletter-campaign/')                               && method === 'DELETE') return handleNLCampaignDelete(req, res, urlPath.slice(25));
+  // Growth Plan
+  if (urlPath === '/api/growth-plan/status'   && method === 'GET')  return handleGrowthPlanStatus(req, res);
+  if (urlPath === '/api/growth-plan/activate' && method === 'POST') return handleGrowthPlanActivate(req, res);
+
+    if (urlPath === "/api/newsletter/subscribe"        && method === "POST") return handleNewsletterSubscribe(req, res);
+  if (urlPath.startsWith("/newsletter/confirm/")     && method === "GET")  return handleNewsletterConfirm(req, res, urlPath.slice(20));
+  if (urlPath.startsWith("/newsletter/unsubscribe/") && method === "GET")  return handleNewsletterUnsubscribe(req, res, urlPath.slice(24));
+
+  // ── Marketing Creator routes ────────────────────────────────────────────────
+  if (urlPath === "/api/marketing/brand-kit"            && method === "GET")  return handleBrandKitGet(req, res);
+  if (urlPath === "/api/marketing/brand-kit"            && method === "POST") return handleBrandKitSave(req, res);
+  if (urlPath === "/api/marketing/generate/facebook"    && method === "POST") return handleMarketingGenerateFacebook(req, res);
+
+  // ── Marketing Creator — all generators ──────────────────────────────────────
+  if (urlPath.startsWith("/api/marketing/generate/") && method === "POST") {
+    const platform = urlPath.slice("/api/marketing/generate/".length);
+    return handleMarketingGenerate(req, res, platform);
+  }
+  if (urlPath === "/api/marketing/article-to-campaign" && method === "POST") return handleMarketingArticleToCampaign(req, res);
+  if (urlPath === "/api/marketing/campaigns"           && method === "GET")  return handleMarketingCampaignsList(req, res);
+  if (urlPath === "/api/marketing/campaigns"           && method === "POST") return handleMarketingCampaignCreate(req, res);
+  if (urlPath === "/api/marketing/assets"              && method === "GET")  return handleMarketingAssetsList(req, res);
+  if (urlPath.startsWith("/api/marketing/campaigns/") && method === "GET") {
+    return handleMarketingCampaignGet(req, res, urlPath.slice("/api/marketing/campaigns/".length));
+  }
+  if (urlPath.startsWith("/api/marketing/campaigns/") && method === "DELETE") {
+    return handleMarketingCampaignDelete(req, res, urlPath.slice("/api/marketing/campaigns/".length));
+  }
+  if (urlPath.startsWith("/api/marketing/assets/") && method === "DELETE") {
+    return handleMarketingAssetDelete(req, res, urlPath.slice("/api/marketing/assets/".length));
+  }
+
+  // ── Internal Marketing API (for AGORA) ──────────────────────────────────────
+  if (urlPath.startsWith("/api/internal/marketing/generate/") && method === "POST") {
+    const platform = urlPath.slice("/api/internal/marketing/generate/".length);
+    return handleInternalMarketingGenerate(req, res, platform);
   }
 
   // Static files

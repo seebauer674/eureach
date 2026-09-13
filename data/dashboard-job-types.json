@@ -1,0 +1,119 @@
+[
+  {
+    "key": "article",
+    "label": "Article",
+    "action_kind": "internal",
+    "action_label": "Write article",
+    "action_url_template": "/articles.html?topic={title_encoded}&job_id={job_id}",
+    "icon": "✍️",
+    "sort_order": 1
+  },
+  {
+    "key": "aeo_check",
+    "label": "AI visibility check",
+    "action_kind": "internal",
+    "action_label": "Run check",
+    "action_url_template": "/audit.html?domain={domain}&job_id={job_id}",
+    "icon": "🔍",
+    "sort_order": 2
+  },
+  {
+    "key": "citation",
+    "label": "Citation building",
+    "action_kind": "internal",
+    "action_label": "Open citation builder",
+    "action_url_template": "/citations-wizard.html?package=growth&job_id={job_id}",
+    "icon": "🔗",
+    "sort_order": 3
+  },
+  {
+    "key": "facebook_ad",
+    "label": "Facebook ad",
+    "action_kind": "external",
+    "action_label": "Open Ads Manager",
+    "action_url_template": "https://adsmanager.facebook.com/adsmanager/manage/campaigns",
+    "icon": "📘",
+    "sort_order": 4
+  },
+  {
+    "key": "instagram_post",
+    "label": "Instagram post",
+    "action_kind": "external",
+    "action_label": "Open Instagram",
+    "action_url_template": "https://business.facebook.com/latest/posts",
+    "icon": "📸",
+    "sort_order": 5
+  },
+  {
+    "key": "google_ad",
+    "label": "Google ad",
+    "action_kind": "external",
+    "action_label": "Open Google Ads",
+    "action_url_template": "https://ads.google.com/aw/campaigns",
+    "icon": "🎯",
+    "sort_order": 6
+  },
+  {
+    "key": "linkedin_post",
+    "label": "LinkedIn post",
+    "action_kind": "external",
+    "action_label": "Open LinkedIn",
+    "action_url_template": "https://www.linkedin.com/feed/",
+    "icon": "💼",
+    "sort_order": 7
+  },
+  {
+    "key": "linkedin_ad",
+    "label": "LinkedIn ad",
+    "action_kind": "external",
+    "action_label": "Open Campaign Manager",
+    "action_url_template": "https://www.linkedin.com/campaignmanager/",
+    "icon": "📊",
+    "sort_order": 8
+  },
+  {
+    "key": "email_campaign",
+    "label": "Email campaign",
+    "action_kind": "internal",
+    "action_label": "Open composer",
+    "action_url_template": "/newsletter-campaigns.html?job_id={job_id}",
+    "icon": "📧",
+    "sort_order": 9
+  },
+  {
+    "key": "outreach",
+    "label": "Outreach",
+    "action_kind": "internal",
+    "action_label": "Open pipeline",
+    "action_url_template": "/outreach.html?job_id={job_id}",
+    "icon": "🤝",
+    "sort_order": 10
+  },
+  {
+    "key": "analytics",
+    "label": "Analytics review",
+    "action_kind": "external",
+    "action_label": "Open GA4",
+    "action_url_template": "https://analytics.google.com/",
+    "icon": "📈",
+    "sort_order": 11
+  },
+  {
+    "key": "search_console",
+    "label": "Search Console",
+    "action_kind": "external",
+    "action_label": "Open GSC",
+    "action_url_template": "https://search.google.com/search-console?resource_id={domain}",
+    "icon": "🔎",
+    "sort_order": 12
+  },
+  {
+    "key": "generic",
+    "label": "General task",
+    "action_kind": "none",
+    "action_label": "",
+    "action_url_template": "",
+    "icon": "✅",
+    "sort_order": 13
+  }
+]

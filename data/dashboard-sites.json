@@ -1,0 +1,65 @@
+[
+  {
+    "id": "8ada5262e9dc5d1e75c939f8",
+    "user_id": "669c87088f8594eb7a72398c",
+    "domain": "test-seed.example.com",
+    "display_name": "Test Seed Site",
+    "market": "GR",
+    "created_at": "2026-09-13T09:05:15.833Z",
+    "archived_at": "2026-09-13T09:05:15.884Z"
+  },
+  {
+    "id": "0817fe6df47dfb687093cac8",
+    "user_id": "669c87088f8594eb7a72398c",
+    "domain": "ac-pro-0.com",
+    "display_name": "Pro Test 0",
+    "market": null,
+    "created_at": "2026-09-13T09:08:35.779Z",
+    "archived_at": "2026-09-13T09:08:35.785Z"
+  },
+  {
+    "id": "589bc15175e7b669ce40aee8",
+    "user_id": "669c87088f8594eb7a72398c",
+    "domain": "ac-pro-1.com",
+    "display_name": "Pro Test 1",
+    "market": null,
+    "created_at": "2026-09-13T09:08:35.781Z",
+    "archived_at": "2026-09-13T09:08:35.786Z"
+  },
+  {
+    "id": "c646195a94ef434435f76d05",
+    "user_id": "669c87088f8594eb7a72398c",
+    "domain": "ac-pro-2.com",
+    "display_name": "Pro Test 2",
+    "market": null,
+    "created_at": "2026-09-13T09:08:35.782Z",
+    "archived_at": "2026-09-13T09:08:35.788Z"
+  },
+  {
+    "id": "7c5b2e58393b970ae5e07e61",
+    "user_id": "669c87088f8594eb7a72398c",
+    "domain": "ac-idem.com",
+    "display_name": "Idem Test",
+    "market": null,
+    "created_at": "2026-09-13T09:08:35.864Z",
+    "archived_at": "2026-09-13T09:08:35.875Z"
+  },
+  {
+    "id": "fe2315cc54fff107565e299a",
+    "user_id": "669c87088f8594eb7a72398c",
+    "domain": "ac-done.com",
+    "display_name": "Done Test",
+    "market": null,
+    "created_at": "2026-09-13T09:08:35.877Z",
+    "archived_at": "2026-09-13T09:08:35.888Z"
+  },
+  {
+    "id": "6e2d55b79d207995dad930ef",
+    "user_id": "669c87088f8594eb7a72398c",
+    "domain": "ac-missing.com",
+    "display_name": "Missing Type",
+    "market": null,
+    "created_at": "2026-09-13T09:08:35.890Z",
+    "archived_at": "2026-09-13T09:08:35.897Z"
+  }
+]
