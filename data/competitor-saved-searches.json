@@ -1,0 +1,178 @@
+[
+  {
+    "id": "mpr7pezzdmff",
+    "userId": "669c87088f8594eb7a72398c",
+    "label": "Digital Marketing in Athens, Greece",
+    "results": [
+      {
+        "name": "DMSS",
+        "address": "Frearion 6-8, Athina 118 54, Greece",
+        "website": "www.digitalspecialist.gr",
+        "phone": "21 1412 0454",
+        "rating": 5,
+        "reviews": 373
+      },
+      {
+        "name": "Relevance Digital",
+        "address": "Karagiorgi Servias 4, Athina 105 62, Greece",
+        "website": "relevancedigital.com",
+        "phone": "21 0321 0577",
+        "rating": 4.9,
+        "reviews": 59
+      },
+      {
+        "name": "IT DEV",
+        "address": "Argous 139, Athina 104 41, Greece",
+        "website": "itdev.gr",
+        "phone": "21 0260 3414",
+        "rating": 4.9,
+        "reviews": 138
+      },
+      {
+        "name": "NextLevelBros O.E. | Digital Marketing Agency in Athens Greece",
+        "address": "El. Venizelou 19, Pefki 151 21, Greece",
+        "website": "nextlevelbros.com",
+        "phone": "",
+        "rating": 5,
+        "reviews": 81
+      },
+      {
+        "name": "Mozaik Digital Marketing Agency",
+        "address": "Kalamida 12, Athina 105 54, Greece",
+        "website": "www.mozaik.com",
+        "phone": "21 0322 7400",
+        "rating": 4.9,
+        "reviews": 27
+      },
+      {
+        "name": "Wizard Digital Marketing Agency",
+        "address": "Σαμπάγ - Χούρι 3, Athina 151 25, Greece",
+        "website": "www.sem-wizard.com",
+        "phone": "21 0610 9063",
+        "rating": 4.9,
+        "reviews": 29
+      },
+      {
+        "name": "kovald Digital Marketing Strategies",
+        "address": "Paraschou 98, Athina 114 75, Greece",
+        "website": "kovald.com",
+        "phone": "21 0779 7682",
+        "rating": 4.9,
+        "reviews": 52
+      },
+      {
+        "name": "NEXT Digital | Κατασκευή Site & Eshop | Social Media & Google Ads | Σεμινάρια Digital Marketing",
+        "address": "Iakovidou 52, Athina 111 43, Greece",
+        "website": "nextdigital.gr",
+        "phone": "694 424 6382",
+        "rating": 4.8,
+        "reviews": 103
+      },
+      {
+        "name": "Artfull Media Greece | Digital Marketing Agency",
+        "address": "Dafnomili 41, Athina 114 71, Greece",
+        "website": "artfullmedia.com",
+        "phone": "698 453 6978",
+        "rating": 5,
+        "reviews": 12
+      },
+      {
+        "name": "BrainWave™ Digital Agency | Digital Marketing & Advertising",
+        "address": "Ermou 56, Athina 105 63, Greece",
+        "website": "brainwave.gr",
+        "phone": "21 0440 2979",
+        "rating": 5,
+        "reviews": 14
+      }
+    ],
+    "savedAt": "2026-05-29T17:44:58.415Z"
+  },
+  {
+    "id": "mps8f7o3bvss",
+    "userId": "669c87088f8594eb7a72398c",
+    "label": "Digital Marketing in Athens, Greece",
+    "results": [
+      {
+        "name": "DMSS",
+        "address": "Frearion 6-8, Athina 118 54, Greece",
+        "website": "www.digitalspecialist.gr",
+        "phone": "21 1412 0454",
+        "rating": 5,
+        "reviews": 373
+      },
+      {
+        "name": "Relevance Digital",
+        "address": "Karagiorgi Servias 4, Athina 105 62, Greece",
+        "website": "relevancedigital.com",
+        "phone": "21 0321 0577",
+        "rating": 4.9,
+        "reviews": 59
+      },
+      {
+        "name": "IT DEV",
+        "address": "Argous 139, Athina 104 41, Greece",
+        "website": "itdev.gr",
+        "phone": "21 0260 3414",
+        "rating": 4.9,
+        "reviews": 138
+      },
+      {
+        "name": "Mozaik Digital Marketing Agency",
+        "address": "Kalamida 12, Athina 105 54, Greece",
+        "website": "www.mozaik.com",
+        "phone": "21 0322 7400",
+        "rating": 4.9,
+        "reviews": 27
+      },
+      {
+        "name": "Wizard Digital Marketing Agency",
+        "address": "Σαμπάγ - Χούρι 3, Athina 151 25, Greece",
+        "website": "www.sem-wizard.com",
+        "phone": "21 0610 9063",
+        "rating": 4.9,
+        "reviews": 29
+      },
+      {
+        "name": "BrainWave™ Digital Agency | Digital Marketing & Advertising",
+        "address": "Ermou 56, Athina 105 63, Greece",
+        "website": "brainwave.gr",
+        "phone": "21 0440 2979",
+        "rating": 5,
+        "reviews": 14
+      },
+      {
+        "name": "kovald Digital Marketing Strategies",
+        "address": "Paraschou 98, Athina 114 75, Greece",
+        "website": "kovald.com",
+        "phone": "21 0779 7682",
+        "rating": 4.9,
+        "reviews": 52
+      },
+      {
+        "name": "NEXT Digital | Κατασκευή Site & Eshop | Social Media & Google Ads | Σεμινάρια Digital Marketing",
+        "address": "Iakovidou 52, Athina 111 43, Greece",
+        "website": "nextdigital.gr",
+        "phone": "694 424 6382",
+        "rating": 4.8,
+        "reviews": 103
+      },
+      {
+        "name": "NextLevelBros O.E. | Digital Marketing Agency in Athens Greece",
+        "address": "El. Venizelou 19, Pefki 151 21, Greece",
+        "website": "nextlevelbros.com",
+        "phone": "",
+        "rating": 5,
+        "reviews": 81
+      },
+      {
+        "name": "Artfull Media Greece | Digital Marketing Agency",
+        "address": "Dafnomili 41, Athina 114 71, Greece",
+        "website": "artfullmedia.com",
+        "phone": "698 453 6978",
+        "rating": 5,
+        "reviews": 12
+      }
+    ],
+    "savedAt": "2026-05-30T10:52:48.147Z"
+  }
+]

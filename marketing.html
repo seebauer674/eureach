@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketing Creator — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/marketing.css?v=1">
+  <script src="js/translations.js?v=5"></script>
+  <script src="js/i18n.js?v=5"></script>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
+            <a href="marketing.html"><span class="ndm-icon">🚀</span><span>Marketing Creator</span></a>
+            <a href="newsletter-campaigns.html"><span class="ndm-icon">📧</span><span>Newsletter</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
+          </div>
+        </div>
+      </div>
+      <a href="marketing.html" style="color:var(--white)">Marketing</a>
+      <a href="articles.html" data-i18n="navArticles">Articles</a>
+      <a href="competitors.html" data-i18n="navCompetitors">Competitors</a>
+      <a href="/coach" class="nav-coach-link" style="font-size:0.8rem;color:var(--accent)">Coach<span class="coach-nav-dot" id="coach-nav-dot" style="display:none"></span></a>
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-lang">
+      <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
+    </div>
+    <div class="nav-cta">
+      <div class="ag-credits-badge">
+        Credits: <strong id="nav-credits-val">—</strong>
+      </div>
+      <a href="settings.html" class="nav-profile-btn" id="nav-profile-btn" title="Profile">?</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="navSignIn">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── PAGE ─────────────────────────────────────────────── -->
+<div class="ag-page">
+
+  <!-- Header -->
+  <div class="ag-page-header">
+    <div class="ag-page-header-inner">
+      <div>
+        <div class="ag-page-title" data-i18n="mc.title">🚀 AI Marketing Creator</div>
+        <div class="ag-page-subtitle" data-i18n="mc.subtitle">Δημιουργία marketing υλικού για όλες τις πλατφόρμες</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="ag-page-body">
+
+    <!-- Auth gate -->
+    <div id="mc-auth-gate" class="mc-auth-gate" style="display:none">
+      <div class="ag-gate">
+        <div class="ag-gate-icon">🔒</div>
+        <div class="ag-gate-title" data-i18n="mc.authTitle">Απαιτείται σύνδεση</div>
+        <div class="ag-gate-sub" data-i18n="mc.authSub">Συνδεθείτε για να χρησιμοποιήσετε το AI Marketing Creator.</div>
+        <a href="signin.html" class="ag-gate-btn"<span data-i18n="mc.authBtn">Σύνδεση →</span></a>
+      </div>
+    </div>
+
+    <!-- Main app -->
+    <div id="mc-app" style="display:none">
+
+      <!-- 2-column layout -->
+      <div class="mc-layout">
+
+        <!-- Sidebar -->
+        <aside class="mc-sidebar">
+
+          <!-- Business Profile card -->
+          <div class="mc-sidebar-card mc-profile-card">
+            <div class="mc-sidebar-card-title">🏢 Επιχείρηση</div>
+            <div id="mc-business-info">
+              <div class="mc-skeleton-line"></div>
+              <div class="mc-skeleton-line" style="width:70%"></div>
+            </div>
+          </div>
+
+          <!-- Brand Kit card -->
+          <div class="mc-sidebar-card mc-brand-card">
+            <div class="mc-sidebar-card-title">🎨 Brand Kit</div>
+            <div id="mc-brand-info">
+              <div class="mc-skeleton-line"></div>
+              <div class="mc-skeleton-line" style="width:60%"></div>
+            </div>
+          </div>
+
+          <!-- Credits -->
+          <div class="mc-sidebar-card mc-credits-card">
+            <div class="mc-sidebar-card-title">⚡ Credits</div>
+            <div class="mc-credits-display">
+              <div class="mc-credits-bar-wrap">
+                <div class="mc-credits-bar" id="mc-credits-bar"></div>
+              </div>
+              <div class="mc-credits-text"><span id="mc-credits-left">—</span> / <span id="mc-credits-max">—</span></div>
+            </div>
+            <div id="mc-plan-badge" class="mc-plan-badge"></div>
+            <a href="/membership" class="mc-upgrade-link" id="mc-upgrade-link" style="display:none">⬆️ Αναβάθμιση πλάνου</a>
+          </div>
+
+        </aside>
+
+        <!-- Main panel -->
+        <div class="mc-main">
+
+          <!-- Tab bar -->
+          <div class="mc-tabs">
+            <button class="mc-tab-btn active" data-tab="social" onclick="MC.switchTab('social')">📱 Social Media</button>
+            <button class="mc-tab-btn" data-tab="ads" onclick="MC.switchTab('ads')">📢 Διαφημίσεις</button>
+            <button class="mc-tab-btn" data-tab="video" onclick="MC.switchTab('video')">🎬 Video / Scripts</button>
+            <button class="mc-tab-btn" data-tab="image" onclick="MC.switchTab('image')">🖼️ Image Concepts</button>
+            <button class="mc-tab-btn" data-tab="campaign" onclick="MC.switchTab('campaign')">🗺️ Καμπάνια</button>
+            <button class="mc-tab-btn" data-tab="article" onclick="MC.switchTab('article')">📝 Άρθρο→Καμπάνια</button>
+            <button class="mc-tab-btn" data-tab="orchestrator" onclick="MC.switchTab('orchestrator')">🎯 Full Campaign</button>
+          </div>
+
+          <!-- Platform selector -->
+          <div class="mc-platform-section" id="mc-platform-section">
+            <div class="mc-platform-label">Επιλογή πλατφόρμας</div>
+            <div class="mc-platform-grid" id="mc-platform-grid"></div>
+          </div>
+
+          <!-- Brief form -->
+          <div class="mc-brief-card">
+            <div class="mc-brief-card-title">✏️ Brief</div>
+
+            <!-- Article-to-campaign inputs (hidden by default) -->
+            <div id="mc-article-fields" style="display:none">
+              <div class="mc-field-row">
+                <div class="mc-field">
+                  <label>Τίτλος άρθρου</label>
+                  <input type="text" id="brief-article-title" placeholder="Τίτλος του άρθρου σας...">
+                </div>
+              </div>
+              <div class="mc-field">
+                <label>Περιεχόμενο άρθρου</label>
+                <textarea id="brief-article-content" rows="5" placeholder="Επικολλήστε το περιεχόμενο του άρθρου..."></textarea>
+              </div>
+              <div style="height:12px"></div>
+            </div>
+
+            <div class="mc-brief-grid" id="mc-brief-form">
+              <div class="mc-field">
+                <label>Τι προωθείτε; <span class="mc-req">*</span></label>
+                <input type="text" id="brief-what" placeholder="π.χ. Υπηρεσία SEO, προϊόν, εκδήλωση...">
+              </div>
+              <div class="mc-field">
+                <label>Προϊόν / υπηρεσία</label>
+                <input type="text" id="brief-product" placeholder="Ονομασία προϊόντος ή υπηρεσίας">
+              </div>
+              <div class="mc-field">
+                <label>Κύριο όφελος</label>
+                <input type="text" id="brief-benefit" placeholder="π.χ. Εξοικονομείτε 3 ώρες την εβδομάδα">
+              </div>
+              <div class="mc-field">
+                <label>Πρόβλημα που λύνει</label>
+                <input type="text" id="brief-problem" placeholder="Τι πρόβλημα αντιμετωπίζει ο πελάτης;">
+              </div>
+              <div class="mc-field">
+                <label>Στόχος καμπάνιας</label>
+                <select id="brief-objective">
+                  <option value="">Επιλέξτε στόχο...</option>
+                  <option value="Περισσότεροι leads">Περισσότεροι leads</option>
+                  <option value="Πωλήσεις">Πωλήσεις</option>
+                  <option value="Τηλεφωνικές κλήσεις">Τηλεφωνικές κλήσεις</option>
+                  <option value="Επισκέψεις ιστοσελίδας">Επισκέψεις ιστοσελίδας</option>
+                  <option value="Γνωστοποίηση">Γνωστοποίηση</option>
+                  <option value="Κρατήσεις">Κρατήσεις</option>
+                </select>
+              </div>
+              <div class="mc-field">
+                <label>Κοινό-στόχος</label>
+                <input type="text" id="brief-audience" placeholder="π.χ. Μικρές επιχειρήσεις, 25-45 ετών">
+              </div>
+              <div class="mc-field">
+                <label>Τοποθεσία</label>
+                <input type="text" id="brief-location" placeholder="π.χ. Αθήνα, Ελλάδα, Κύπρος">
+              </div>
+              <div class="mc-field">
+                <label>Προσφορά / deal</label>
+                <input type="text" id="brief-offer" placeholder="π.χ. Δωρεάν δοκιμή 14 ημερών">
+              </div>
+              <div class="mc-field">
+                <label>Τιμή</label>
+                <input type="text" id="brief-price" placeholder="π.χ. Από €49/μήνα">
+              </div>
+              <div class="mc-field">
+                <label>CTA (Κάλεσμα δράσης)</label>
+                <input type="text" id="brief-cta" placeholder="π.χ. Κάντε κλικ, Καλέστε μας">
+              </div>
+              <div class="mc-field">
+                <label>Τόνος επικοινωνίας</label>
+                <select id="brief-tone">
+                  <option value="Professional">Επαγγελματικός</option>
+                  <option value="Friendly">Φιλικός</option>
+                  <option value="Urgent">Επείγον</option>
+                  <option value="Emotional">Συναισθηματικός</option>
+                </select>
+              </div>
+              <div class="mc-field">
+                <label>Γλώσσα περιεχομένου</label>
+                <select id="brief-language">
+                  <option value="Greek">Ελληνικά</option>
+                  <option value="English">Αγγλικά</option>
+                  <option value="German">Γερμανικά</option>
+                </select>
+              </div>
+              <div class="mc-field mc-field-full">
+                <label>Επιπλέον οδηγίες</label>
+                <textarea id="brief-instructions" rows="2" placeholder="Οποιεσδήποτε ειδικές οδηγίες, λέξεις-κλειδιά, hashtags..."></textarea>
+              </div>
+            </div>
+
+            <!-- Generate button -->
+            <div class="mc-generate-wrap">
+              <button class="mc-generate-btn" id="mc-generate-btn" onclick="MC.generate()">
+                <span id="mc-generate-label">✨ Δημιουργία</span>
+                <span id="mc-generate-spinner" class="mc-spinner" style="display:none"></span>
+              </button>
+              <div id="mc-error-msg" class="mc-error" style="display:none"></div>
+            </div>
+          </div>
+
+          <!-- Result area -->
+          <div id="mc-result-area"></div>
+
+          <!-- ── Orchestrator panel ────────────────────── -->
+          <div id="mc-orchestrator-panel" style="display:none">
+            <div class="mc-orch-intro">
+              <div class="mc-orch-title">🎯 Πλήρης Καμπάνια</div>
+              <div class="mc-orch-sub">Δημιουργεί marketing υλικό για 10 πλατφόρμες σε ένα κλικ. Η διαδικασία διαρκεί 2–5 λεπτά ανάλογα με το πλάνο σας.</div>
+              <div id="mc-orch-error" class="mc-error" style="display:none"></div>
+              <button class="mc-orch-start-btn" id="mc-orch-start-btn" onclick="MC.orchestrate()">
+                <span id="mc-orch-start-label">🎯 Δημιουργία Πλήρους Καμπάνιας</span>
+                <span id="mc-orch-spinner" class="mc-spinner" style="display:none"></span>
+              </button>
+            </div>
+            <div id="mc-orch-progress" style="display:none">
+              <div class="mc-orch-progress-title">Πρόοδος</div>
+              <div class="mc-orch-steps" id="mc-orch-steps"></div>
+            </div>
+            <div id="mc-orch-results"></div>
+            <div id="mc-orch-download-wrap" class="mc-orch-download-wrap" style="display:none">
+              <button class="mc-orch-download-btn" onclick="MC.downloadCampaign()">⬇️ Λήψη Πλήρους Καμπάνιας (.txt)</button>
+              <button class="mc-orch-download-btn" style="background:rgba(124,58,237,0.15)" onclick="MC.saveAllAssets()">💾 Αποθήκευση Όλων</button>
+            </div>
+          </div>
+
+        </div><!-- /mc-main -->
+      </div><!-- /mc-layout -->
+
+      <!-- Upgrade modal -->
+      <div id="mc-upgrade-modal" class="mc-upgrade-modal" style="display:none" onclick="if(event.target===this)MC.closeUpgradeModal()">
+        <div class="mc-upgrade-box">
+          <button class="mc-upgrade-close" onclick="MC.closeUpgradeModal()">✕</button>
+          <div class="mc-upgrade-icon">🚀</div>
+          <div class="mc-upgrade-title" id="mc-upgrade-title">Αναβαθμίστε το πλάνο σας</div>
+          <div class="mc-upgrade-reason" id="mc-upgrade-reason"></div>
+          <div class="mc-upgrade-plans">
+            <div class="mc-upgrade-plan">
+              <div class="mc-upgrade-plan-name">Free</div>
+              <div class="mc-upgrade-plan-price">€0</div>
+              <div class="mc-upgrade-plan-features">
+                <div>150 credits/μήνα</div>
+                <div>2 posts AI</div>
+                <div>0 full campaigns</div>
+                <div>1 site</div>
+              </div>
+            </div>
+            <div class="mc-upgrade-plan featured">
+              <div class="mc-upgrade-plan-badge">Δημοφιλές</div>
+              <div class="mc-upgrade-plan-name">Pro</div>
+              <div class="mc-upgrade-plan-price">€79<span>/μήνα</span></div>
+              <div class="mc-upgrade-plan-features">
+                <div>800 credits/μήνα</div>
+                <div>20 posts AI</div>
+                <div>3 full campaigns</div>
+                <div>3 sites · WordPress</div>
+              </div>
+            </div>
+            <div class="mc-upgrade-plan">
+              <div class="mc-upgrade-plan-name">Agency</div>
+              <div class="mc-upgrade-plan-price">€199<span>/μήνα</span></div>
+              <div class="mc-upgrade-plan-features">
+                <div>Απεριόριστα credits</div>
+                <div>Απεριόριστα posts</div>
+                <div>Απεριόριστες campaigns</div>
+                <div>Απεριόριστα sites</div>
+              </div>
+            </div>
+          </div>
+          <a href="/membership" class="mc-upgrade-cta">Δείτε όλα τα πλάνα →</a>
+        </div>
+      </div>
+
+      <!-- Asset Library -->
+      <div class="mc-asset-section">
+        <div class="mc-asset-section-header" onclick="MC.toggleAssetLibrary()">
+          <span>📦 Βιβλιοθήκη Assets</span>
+          <span id="mc-asset-count" class="mc-asset-badge">0</span>
+          <span class="mc-asset-toggle" id="mc-asset-toggle">▾</span>
+        </div>
+        <div id="mc-asset-body" class="mc-asset-body">
+          <div id="mc-asset-grid" class="mc-asset-grid"></div>
+        </div>
+      </div>
+
+    </div><!-- /mc-app -->
+  </div><!-- /ag-page-body -->
+</div><!-- /ag-page -->
+
+<script src="/js/api.js?v=5"></script>
+<script src="js/marketing.js?v=1"></script>
+<script src="/js/trial-banner.js"></script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

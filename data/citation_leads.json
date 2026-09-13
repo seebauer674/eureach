@@ -1,0 +1,13 @@
+[
+  {
+    "id": 1,
+    "name": "Test Business",
+    "email": "test@example.com",
+    "phone": "+30210123456",
+    "message": "",
+    "package_interest": "",
+    "preferred_time": "",
+    "status": "new",
+    "created_at": "2026-06-09T10:29:21.493Z"
+  }
+]

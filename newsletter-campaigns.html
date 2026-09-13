@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newsletter Campaigns — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/translations.js?v=5"></script>
+  <script src="js/i18n.js?v=5"></script>
+  <style>
+    :root { --accent:#4f46e5; --accent2:#6366f1; --bg:#0f1117; --surface:#181c27; --surface2:#1e2333; --border:#2a3047; --text:#e2e8f0; --muted:#8892a4; --danger:#ef4444; --success:#22c55e; --warn:#f59e0b; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:14px;min-height:100vh}
+    a{color:var(--accent);text-decoration:none}
+    .app-nav{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+    .nav-inner{max-width:1200px;margin:0 auto;padding:0 20px;height:52px;display:flex;align-items:center;gap:16px}
+    .nav-logo{font-size:1.1rem;font-weight:700;color:#fff}.nav-logo .dot{color:var(--accent2)}
+    .nav-links{display:flex;align-items:center;gap:14px;flex:1}
+    .nav-links a{color:var(--muted);font-size:0.82rem;transition:color .2s}.nav-links a:hover,.nav-links a.active{color:#fff}
+    .nav-dropdown{position:relative}
+    .nav-dropdown-toggle{background:none;border:none;color:var(--muted);font-size:0.82rem;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0}
+    .nav-dropdown-toggle:hover{color:#fff}
+    .nav-dropdown-toggle svg{width:10px;height:10px;transition:transform .2s}
+    .nav-dropdown:hover .nav-dropdown-toggle svg{transform:rotate(180deg)}
+    .nav-dropdown-menu{display:none;position:absolute;top:100%;left:0;background:var(--surface2);border:1px solid var(--border);border-radius:8px;min-width:200px;padding:6px;z-index:200;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+    .nav-dropdown:hover .nav-dropdown-menu{display:block}
+    .nav-dropdown-menu a{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;color:var(--muted);font-size:0.82rem;white-space:nowrap}
+    .nav-dropdown-menu a:hover{background:rgba(255,255,255,.05);color:#fff}
+    .ndm-icon{width:20px;text-align:center;font-size:0.9rem}
+    .nav-dropdown-divider{height:1px;background:var(--border);margin:5px 0}
+    .nav-cta{margin-left:auto;display:flex;align-items:center;gap:8px}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-size:0.82rem;font-weight:500;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+    .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#4338ca}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}.btn-danger:hover{background:var(--danger);color:#fff}
+    .btn-sm{padding:5px 12px;font-size:0.78rem}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .lang-btn{background:none;border:none;font-size:1rem;cursor:pointer;padding:2px;border-radius:4px;opacity:.6;transition:opacity .2s}.lang-btn:hover{opacity:1}
+
+    /* Layout */
+    .page{max-width:1100px;margin:0 auto;padding:32px 20px}
+    .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+    .page-title{font-size:1.5rem;font-weight:700}
+    .page-sub{color:var(--muted);font-size:0.85rem;margin-top:4px}
+
+    /* Growth Plan Banner */
+    .growth-banner{background:linear-gradient(135deg,#1e1b4b 0%,#1e293b 100%);border:1px solid #4f46e5;border-radius:12px;padding:24px 28px;margin-bottom:28px;display:flex;align-items:center;gap:24px}
+    .growth-banner.active{background:linear-gradient(135deg,#052e16 0%,#1e293b 100%);border-color:#22c55e}
+    .growth-banner-icon{font-size:2.4rem;flex-shrink:0}
+    .growth-banner-content{flex:1}
+    .growth-banner-title{font-size:1rem;font-weight:700;margin-bottom:4px}
+    .growth-banner-sub{font-size:0.83rem;color:var(--muted);line-height:1.5}
+    .growth-badge{display:inline-flex;align-items:center;gap:5px;background:#22c55e22;color:#22c55e;border:1px solid #22c55e44;border-radius:20px;padding:3px 10px;font-size:0.75rem;font-weight:600;margin-top:8px}
+    .growth-days{font-weight:700;color:#fff}
+
+    /* Campaign Table */
+    .campaign-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .campaign-table{width:100%;border-collapse:collapse}
+    .campaign-table th{background:var(--surface2);padding:10px 16px;text-align:left;font-size:0.75rem;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+    .campaign-table td{padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .campaign-table tr:last-child td{border-bottom:none}
+    .campaign-table tr:hover td{background:rgba(255,255,255,.02)}
+    .campaign-name{font-weight:600;color:#fff;font-size:0.9rem}
+    .campaign-subject{color:var(--muted);font-size:0.8rem;margin-top:2px}
+    .status-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+    .status-draft{background:#1e293b;color:#94a3b8;border:1px solid #334155}
+    .status-sending{background:#451a03;color:#fb923c;border:1px solid #7c2d12}
+    .status-sent{background:#052e16;color:#4ade80;border:1px solid #166534}
+    .table-actions{display:flex;gap:8px;justify-content:flex-end}
+    .empty-state{padding:60px 20px;text-align:center;color:var(--muted)}
+    .empty-state-icon{font-size:3rem;margin-bottom:12px}
+    .empty-state-title{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:6px}
+
+    /* Editor Panel */
+    .editor-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:28px;display:none}
+    .editor-panel.visible{display:block}
+    .editor-title{font-size:1.1rem;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:10px}
+    .editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    @media(max-width:768px){.editor-grid{grid-template-columns:1fr}}
+    .form-group{margin-bottom:16px}
+    .form-group label{display:block;font-size:0.78rem;color:var(--muted);margin-bottom:6px;font-weight:500}
+    .form-group input,.form-group textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;transition:border-color .2s;resize:vertical}
+    .form-group input:focus,.form-group textarea:focus{outline:none;border-color:var(--accent)}
+    .form-group .hint{font-size:0.75rem;color:var(--muted);margin-top:4px}
+    textarea.body-editor{height:320px;font-family:'Courier New',monospace;font-size:0.82rem}
+    textarea.recipients-box{height:100px}
+
+    /* Preview */
+    .preview-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff}
+    .preview-header{background:var(--surface2);padding:8px 14px;font-size:0.75rem;color:var(--muted);border-bottom:1px solid var(--border)}
+    .preview-frame{width:100%;height:420px;border:none}
+
+    /* Footer preview */
+    .footer-toggle-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--border);margin-top:16px}
+    .toggle-label{font-size:0.82rem;color:var(--muted)}
+    .toggle{position:relative;width:38px;height:20px;cursor:pointer}
+    .toggle input{opacity:0;width:0;height:0}
+    .toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:20px;transition:.2s}
+    .toggle input:checked + .toggle-slider{background:var(--accent)}
+    .toggle-slider::before{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;left:3px;transition:.2s}
+    .toggle input:checked + .toggle-slider::before{transform:translateX(18px)}
+
+    /* Progress */
+    .send-progress{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:16px;display:none}
+    .send-progress.visible{display:block}
+    .progress-bar-wrap{background:var(--border);border-radius:4px;height:6px;margin:10px 0}
+    .progress-bar{background:var(--accent);height:6px;border-radius:4px;width:0%;transition:width .3s}
+    .progress-text{font-size:0.8rem;color:var(--muted)}
+
+    /* Toast */
+    #toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 18px;font-size:0.85rem;color:var(--text);z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+    #toast.show{opacity:1;transform:translateY(0)}
+    #toast.ok{border-color:var(--success);color:var(--success)}
+    #toast.err{border-color:var(--danger);color:var(--danger)}
+
+    /* Recipient count */
+    .recipient-count{font-size:0.78rem;color:var(--muted);margin-top:4px}
+    .recipient-count span{color:#fff;font-weight:600}
+  </style>
+</head>
+<body>
+
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span>Lead Finder</a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span>Articles</a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span>Competitors</a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span>Citations</a>
+            <a href="marketing.html"><span class="ndm-icon">🚀</span>Marketing Creator</a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="newsletter-campaigns.html" style="color:var(--accent)"><span class="ndm-icon">📧</span>Newsletter Campaigns</a>
+          </div>
+        </div>
+      </div>
+      <a href="leads.html">Leads</a>
+      <span style="color:var(--border);font-size:.7rem">|</span>
+      <a href="crm.html" style="font-size:0.8rem">CRM</a>
+      <a href="outreach.html" style="font-size:0.8rem">Outreach</a>
+      <a href="newsletter-campaigns.html" class="active" style="font-size:0.8rem;color:var(--accent)">Newsletter</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-lang">
+      <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
+    </div>
+    <div class="nav-cta">
+      <a href="settings.html" class="nav-profile-btn" id="nav-profile-btn" title="Settings">⚙</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-header">
+    <div>
+      <div class="page-title" data-i18n="nl.pageTitle">📧 Newsletter Campaigns</div>
+      <div class="page-sub" data-i18n="nl.pageSub">Create and send newsletters to your audience — with a built-in growth engine.</div>
+    </div>
+    <button class="btn btn-primary" id="btn-new" onclick="openEditor()" data-i18n="nl.newBtn">+ New Campaign</button>
+  </div>
+
+  <!-- Growth Plan Banner -->
+  <div class="growth-banner" id="growth-banner">
+    <div class="growth-banner-icon">🚀</div>
+    <div class="growth-banner-content">
+      <div class="growth-banner-title" id="gp-title">Send newsletters for free — grow EUREACH together</div>
+      <div class="growth-banner-sub" id="gp-sub">Activate the <strong>Growth Plan</strong>: send unlimited newsletters at no cost. In return, EUREACH adds a small, professional footer to your emails promoting itself. You help EUREACH grow, EUREACH gives you free access.</div>
+      <div id="gp-action" style="margin-top:14px">
+        <button class="btn btn-primary btn-sm" id="btn-activate" onclick="activateGrowthPlan()">
+          Activate Free Growth Plan — 90 days free
+        </button>
+        <span style="font-size:0.75rem;color:var(--muted);margin-left:12px">No credit card needed</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Campaign Editor -->
+  <div class="editor-panel" id="editor-panel">
+    <div class="editor-title">
+      <span id="editor-title-text">New Campaign</span>
+      <button class="btn btn-ghost btn-sm" onclick="closeEditor()" style="margin-left:auto" data-i18n="nl.cancel">Cancel</button>
+    </div>
+
+    <div class="editor-grid">
+      <!-- Left: Fields -->
+      <div>
+        <div class="form-group">
+          <label data-i18n="nl.campName">Campaign name (internal)</label>
+          <input type="text" id="field-name" placeholder="e.g. July Newsletter" oninput="markDirty()">
+        </div>
+        <div class="form-group">
+          <label data-i18n="nl.subject">Email subject line</label>
+          <input type="text" id="field-subject" placeholder="What's new at [Your Business]" oninput="markDirty();updatePreview()">
+        </div>
+        <div class="form-group">
+          <label data-i18n="nl.body">Email body (HTML supported)</label>
+          <textarea class="body-editor" id="field-body" placeholder="<h2>Hello!</h2>&#10;<p>Your newsletter content here...</p>" oninput="markDirty();updatePreview()"></textarea>
+          <div class="hint">You can paste plain text or HTML. Use &lt;h2&gt;, &lt;p&gt;, &lt;b&gt;, &lt;a href=&quot;...&quot;&gt; etc.</div>
+        </div>
+        <div class="footer-toggle-row">
+          <label class="toggle">
+            <input type="checkbox" id="field-footer" checked onchange="updatePreview()">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">Include EUREACH growth footer <span style="color:var(--accent);font-size:0.75rem">(required for Growth Plan)</span></span>
+        </div>
+      </div>
+
+      <!-- Right: Recipients + Preview -->
+      <div>
+        <div class="form-group">
+          <label data-i18n="nl.recipients">Recipients (one email per line or comma-separated)</label>
+          <textarea class="recipients-box" id="field-recipients" placeholder="customer1@email.com&#10;customer2@email.com&#10;..." oninput="markDirty();countRecipients()"></textarea>
+          <div class="recipient-count">Recipients: <span id="recipient-count">0</span></div>
+        </div>
+        <div class="form-group">
+          <label data-i18n="nl.preview">Email preview</label>
+          <div class="preview-wrap">
+            <div class="preview-header">Preview — as your recipients will see it</div>
+            <iframe class="preview-frame" id="preview-frame" srcdoc="<div style='padding:20px;color:#94a3b8;font-size:13px'>Start typing to see a preview...</div>"></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:8px;align-items:center">
+      <button class="btn btn-ghost" id="btn-save-draft" onclick="saveDraft()" data-i18n="nl.saveDraft">Save Draft</button>
+      <button class="btn btn-primary" id="btn-send" onclick="sendCampaign()" data-i18n="nl.send">Send Campaign →</button>
+      <span id="editor-status" style="font-size:0.8rem;color:var(--muted);margin-left:8px"></span>
+    </div>
+
+    <div class="send-progress" id="send-progress">
+      <div class="progress-text" id="progress-label">Sending...</div>
+      <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+      <div class="progress-text" id="progress-detail"></div>
+    </div>
+  </div>
+
+  <!-- Campaigns List -->
+  <div class="campaign-table-wrap" id="campaign-table-wrap">
+    <table class="campaign-table">
+      <thead>
+        <tr>
+          <th data-i18n="nl.colCampaign">Campaign</th>
+          <th data-i18n="nl.colRec">Recipients</th>
+          <th data-i18n="nl.colStatus">Status</th>
+          <th data-i18n="nl.colSent">Sent</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="campaigns-body">
+        <tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No campaigns yet</div><div>Create your first newsletter campaign above.</div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="js/nav-init.js"></script>
+<script>
+const EUREACH_FOOTER_HTML = '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:40px;"><tr><td align="center" style="border-top:2px solid #e2e8f0;padding:28px 24px 0;font-family:Arial,Helvetica,sans-serif;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;letter-spacing:0.8px;text-transform:uppercase;">This newsletter was created with</p><a href="https://eureach.eu?ref=nl-footer" style="display:inline-block;margin-bottom:12px;font-size:20px;font-weight:700;color:#4f46e5;text-decoration:none;">eureach<span style="color:#6366f1">.</span>eu</a><p style="margin:0;font-size:12px;color:#64748b;line-height:1.7;">Need help with your business marketing?<br><a href="https://eureach.eu?ref=nl-footer-cta" style="color:#4f46e5;font-weight:600;text-decoration:none;">Discover EUREACH \u2192</a></p></td></tr></table>';
+
+let editingId = null;
+let isDirty = false;
+let growthActive = false;
+let campaigns = [];
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  await Promise.all([loadGrowthPlan(), loadCampaigns()]);
+}
+
+async function loadGrowthPlan() {
+  try {
+    const r = await fetch('/api/growth-plan/status');
+    const d = await r.json();
+    const gp = d.growthPlan;
+    growthActive = gp.active;
+    const banner = document.getElementById('growth-banner');
+    if (gp.active) {
+      banner.classList.add('active');
+      document.getElementById('gp-title').textContent = 'Growth Plan Active';
+      const exp = new Date(gp.expiresAt).toLocaleDateString();
+      document.getElementById('gp-sub').innerHTML =
+        `EUREACH footer is automatically added to your newsletters. You have <strong>free access</strong> until <strong>${exp}</strong>. Emails sent with footer: <strong>${(gp.emailsSent||0).toLocaleString()}</strong>.`;
+      document.getElementById('gp-action').innerHTML =
+        '<span class="growth-badge">✓ Growth Plan Active</span>';
+    }
+  } catch(e) { console.warn('growth plan load failed', e); }
+}
+
+async function loadCampaigns() {
+  try {
+    const r = await fetch('/api/newsletter-campaign');
+    if (!r.ok) return;
+    const d = await r.json();
+    campaigns = d.campaigns || [];
+    renderCampaigns();
+  } catch(e) { console.warn('campaigns load failed', e); }
+}
+
+function renderCampaigns() {
+  const tbody = document.getElementById('campaigns-body');
+  if (!campaigns.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No campaigns yet</div><div>Create your first newsletter campaign above.</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = campaigns.map(c => {
+    const statusClass = { draft:'status-draft', sending:'status-sending', sent:'status-sent' }[c.status] || 'status-draft';
+    const sentInfo = c.status === 'sent' ? `${c.sentCount} sent${c.errorCount ? ', <span style="color:var(--danger)">' + c.errorCount + ' failed</span>' : ''}` : '—';
+    const sentDate = c.sentAt ? new Date(c.sentAt).toLocaleDateString() : '—';
+    return `<tr>
+      <td>
+        <div class="campaign-name">${esc(c.name)}</div>
+        <div class="campaign-subject">${esc(c.subject || '(no subject)')}</div>
+      </td>
+      <td>${(c.recipients||[]).length}</td>
+      <td><span class="status-badge ${statusClass}">${c.status}</span></td>
+      <td><div style="font-size:0.8rem">${sentDate}</div><div style="font-size:0.78rem;color:var(--muted)">${sentInfo}</div></td>
+      <td>
+        <div class="table-actions">
+          ${c.status !== 'sent' && c.status !== 'sending' ? `<button class="btn btn-ghost btn-sm" onclick="editCampaign('${c.id}')">Edit</button>` : ''}
+          ${c.status === 'draft' ? `<button class="btn btn-primary btn-sm" onclick="quickSend('${c.id}')">Send</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="deleteCampaign('${c.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Growth Plan ───────────────────────────────────────────────────────────────
+async function activateGrowthPlan() {
+  const btn = document.getElementById('btn-activate');
+  btn.disabled = true; btn.textContent = 'Activating...';
+  try {
+    const r = await fetch('/api/growth-plan/activate', { method:'POST', headers:{'Content-Type':'application/json'} });
+    const d = await r.json();
+    if (d.ok) {
+      showToast('Growth Plan activated! You now have 90 days of free newsletter sending.', 'ok');
+      await loadGrowthPlan();
+    } else {
+      showToast(d.error || 'Activation failed', 'err');
+      btn.disabled = false; btn.textContent = 'Activate Free Growth Plan — 90 days free';
+    }
+  } catch(e) { showToast('Network error', 'err'); btn.disabled = false; btn.textContent = 'Activate Free Growth Plan — 90 days free'; }
+}
+
+// ── Editor ────────────────────────────────────────────────────────────────────
+function openEditor(id) {
+  editingId = id || null;
+  isDirty = false;
+  const panel = document.getElementById('editor-panel');
+  document.getElementById('editor-title-text').textContent = id ? 'Edit Campaign' : 'New Campaign';
+  document.getElementById('field-name').value = '';
+  document.getElementById('field-subject').value = '';
+  document.getElementById('field-body').value = '';
+  document.getElementById('field-recipients').value = '';
+  document.getElementById('field-footer').checked = true;
+  document.getElementById('recipient-count').textContent = '0';
+  document.getElementById('editor-status').textContent = '';
+  document.getElementById('send-progress').classList.remove('visible');
+
+  if (id) {
+    const c = campaigns.find(x => x.id === id);
+    if (c) {
+      document.getElementById('field-name').value = c.name || '';
+      document.getElementById('field-subject').value = c.subject || '';
+      document.getElementById('field-body').value = c.bodyHtml || '';
+      document.getElementById('field-recipients').value = (c.recipients || []).join('\n');
+      document.getElementById('field-footer').checked = c.footerEnabled !== false;
+      countRecipients();
+      updatePreview();
+    }
+  }
+
+  panel.classList.add('visible');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  updatePreview();
+}
+
+function closeEditor() {
+  if (isDirty && !confirm('Discard unsaved changes?')) return;
+  document.getElementById('editor-panel').classList.remove('visible');
+  editingId = null; isDirty = false;
+}
+
+function editCampaign(id) { openEditor(id); }
+
+function markDirty() { isDirty = true; }
+
+function countRecipients() {
+  const raw = document.getElementById('field-recipients').value;
+  const emails = parseRecipients(raw);
+  document.getElementById('recipient-count').textContent = emails.length;
+}
+
+function parseRecipients(raw) {
+  return raw.split(/[\n,;]+/).map(e => e.trim().toLowerCase()).filter(e => e.includes('@') && e.includes('.'));
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+function updatePreview() {
+  const body = document.getElementById('field-body').value;
+  const footer = document.getElementById('field-footer').checked;
+  const fullHtml = buildEmailHtml(body, footer);
+  document.getElementById('preview-frame').srcdoc = fullHtml;
+}
+
+function buildEmailHtml(bodyHtml, withFooter) {
+  const content = bodyHtml || '<p style="color:#94a3b8">Start typing your email content...</p>';
+  const footer = withFooter ? EUREACH_FOOTER_HTML : '';
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f8fafc;margin:0;padding:20px}
+    .wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+    h1,h2,h3{color:#1e293b}p{color:#334155;line-height:1.7}
+    a{color:#4f46e5}img{max-width:100%}
+  </style></head><body><div class="wrap">${content}${footer}</div></body></html>`;
+}
+
+// ── Save Draft ────────────────────────────────────────────────────────────────
+async function saveDraft() {
+  const payload = getEditorPayload();
+  const status = document.getElementById('editor-status');
+  status.textContent = 'Saving...';
+  try {
+    const url = editingId ? `/api/newsletter-campaign/${editingId}` : '/api/newsletter-campaign';
+    const method = editingId ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    const d = await r.json();
+    if (d.campaign) {
+      editingId = d.campaign.id;
+      isDirty = false;
+      status.textContent = 'Saved ✓';
+      await loadCampaigns();
+      setTimeout(() => { status.textContent = ''; }, 2000);
+    } else { status.textContent = d.error || 'Save failed'; }
+  } catch(e) { status.textContent = 'Network error'; }
+}
+
+// ── Send Campaign ─────────────────────────────────────────────────────────────
+async function sendCampaign() {
+  if (!editingId) {
+    await saveDraft();
+    if (!editingId) { showToast('Please save the campaign first.', 'err'); return; }
+  }
+  const recipients = parseRecipients(document.getElementById('field-recipients').value);
+  if (!recipients.length) { showToast('Add at least one recipient.', 'err'); return; }
+  if (!document.getElementById('field-subject').value.trim()) { showToast('Subject is required.', 'err'); return; }
+  if (!document.getElementById('field-body').value.trim()) { showToast('Email body is required.', 'err'); return; }
+  if (!confirm(`Send this campaign to ${recipients.length} recipient(s)? This cannot be undone.`)) return;
+
+  await saveDraft();
+  await doSend(editingId, recipients.length);
+}
+
+async function quickSend(id) {
+  const c = campaigns.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(`Send "${c.name}" to ${(c.recipients||[]).length} recipient(s)?`)) return;
+  await doSend(id, (c.recipients||[]).length);
+}
+
+async function doSend(id, total) {
+  const progress = document.getElementById('send-progress');
+  const bar = document.getElementById('progress-bar');
+  const label = document.getElementById('progress-label');
+  const detail = document.getElementById('progress-detail');
+  progress.classList.add('visible');
+  label.textContent = `Sending to ${total} recipients...`;
+  detail.textContent = 'Please wait — do not close this tab.';
+  bar.style.width = '5%';
+
+  try {
+    const r = await fetch(`/api/newsletter-campaign/${id}/send`, { method: 'POST', headers: {'Content-Type':'application/json'} });
+    const d = await r.json();
+    if (d.ok && d.started) {
+      // Poll for completion
+      bar.style.width = '20%';
+      label.textContent = 'Campaign is sending in the background...';
+      detail.textContent = `${total} emails queued. Status will update when done.`;
+      // Poll every 3 seconds for up to 5 minutes
+      let polls = 0;
+      const interval = setInterval(async () => {
+        polls++;
+        const pr = await fetch('/api/newsletter-campaign');
+        const pd = await pr.json();
+        campaigns = pd.campaigns || [];
+        renderCampaigns();
+        const found = campaigns.find(x => x.id === id);
+        if (found && found.status === 'sent') {
+          clearInterval(interval);
+          bar.style.width = '100%';
+          label.textContent = 'Campaign sent!';
+          detail.textContent = `${found.sentCount} delivered${found.errorCount ? ', ' + found.errorCount + ' failed' : ''}.`;
+          showToast('Campaign sent successfully!', 'ok');
+          setTimeout(() => { progress.classList.remove('visible'); closeEditor(); }, 3000);
+        } else if (polls > 100) { clearInterval(interval); }
+        else { bar.style.width = Math.min(20 + polls * 2, 90) + '%'; }
+      }, 3000);
+    } else {
+      progress.classList.remove('visible');
+      showToast(d.error || 'Send failed. Check your SMTP settings.', 'err');
+    }
+  } catch(e) {
+    progress.classList.remove('visible');
+    showToast('Network error', 'err');
+  }
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteCampaign(id) {
+  if (!confirm('Delete this campaign?')) return;
+  try {
+    const r = await fetch(`/api/newsletter-campaign/${id}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.ok) {
+      campaigns = campaigns.filter(c => c.id !== id);
+      renderCampaigns();
+      showToast('Campaign deleted.', 'ok');
+      if (editingId === id) closeEditor();
+    } else { showToast(d.error || 'Delete failed', 'err'); }
+  } catch(e) { showToast('Network error', 'err'); }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function getEditorPayload() {
+  return {
+    name:       document.getElementById('field-name').value.trim(),
+    subject:    document.getElementById('field-subject').value.trim(),
+    bodyHtml:   document.getElementById('field-body').value,
+    recipients: parseRecipients(document.getElementById('field-recipients').value),
+    footerEnabled: document.getElementById('field-footer').checked,
+  };
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let _toastTimer;
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + (type || '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.className = '', 3500);
+}
+
+init();
+</script>
+</body>
+</html>

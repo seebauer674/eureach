@@ -185,3 +185,124 @@
 @media (max-width: 420px) {
   .prf-cards { grid-template-columns: 1fr; }
 }
+
+/* ── Support buttons in header ─────────────────────── */
+.prf-header-info { flex: 1; min-width: 0; }
+
+.prf-header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.prf-support-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  text-decoration: none;
+  transition: opacity .15s, transform .15s;
+  white-space: nowrap;
+}
+.prf-support-btn:hover { opacity: .85; transform: translateY(-1px); }
+.prf-livechat-btn {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(37,99,235,.3);
+}
+.prf-email-btn {
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.prf-email-btn:hover { background: rgba(255,255,255,0.1); }
+.prf-support-icon { font-size: 1rem; }
+.prf-pro-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  background: rgba(255,255,255,.2);
+  padding: 2px 6px;
+  border-radius: 20px;
+  letter-spacing: .05em;
+}
+
+/* ── Support Email Modal ───────────────────────────── */
+.sup-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+}
+.sup-overlay.active { display: flex; }
+.sup-modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 480px;
+  margin: 16px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+}
+.sup-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.sup-close {
+  background: none; border: none; color: var(--muted);
+  font-size: 1.1rem; cursor: pointer; padding: 4px 8px;
+  border-radius: 6px; font-family: inherit;
+}
+.sup-close:hover { color: var(--text); background: rgba(255,255,255,.06); }
+.sup-modal-body { padding: 20px 24px 24px; }
+.sup-desc { font-size: 0.83rem; color: var(--muted); margin: 0 0 18px; line-height: 1.5; }
+.sup-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.sup-field label {
+  font-size: 0.72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+}
+.sup-field input, .sup-field textarea {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  font-size: 0.88rem;
+  padding: 10px 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+.sup-field input:focus, .sup-field textarea:focus {
+  outline: none; border-color: var(--blue);
+}
+.sup-footer {
+  display: flex; align-items: center;
+  justify-content: flex-end; gap: 12px; margin-top: 20px;
+}
+.sup-msg { font-size: 0.8rem; margin-right: auto; }
+.sup-send-btn {
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  border: none; border-radius: 9px;
+  color: #fff; font-size: 0.85rem; font-weight: 600;
+  padding: 10px 22px; cursor: pointer; font-family: inherit;
+  transition: opacity .15s;
+}
+.sup-send-btn:hover { opacity: .88; }
+.sup-send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+@media (max-width: 600px) {
+  .prf-header-actions { flex-direction: row; margin-left: 0; width: 100%; justify-content: center; }
+}

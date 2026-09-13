@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Εμφανίζεται η επιχείρησή σου στο ChatGPT; — eureach.eu</title>
+  <meta name="description" content="Δες σε 60 δευτερόλεπτα αν η επιχείρησή σου εμφανίζεται στο ChatGPT, Perplexity και Google AI — εντελώς δωρεάν.">
+  <link rel="stylesheet" href="/css/style.css?v=2">
+  <link rel="stylesheet" href="/css/audit-public.css?v=1">
+</head>
+<body class="audit-public-body">
+
+<div class="ap-landing">
+
+  <!-- Logo -->
+  <div class="ap-logo-wrap">
+    <a href="/" class="ap-logo">eureach<span class="ap-dot">.</span>eu</a>
+  </div>
+
+  <!-- Hero -->
+  <div class="ap-hero">
+    <h1 class="ap-headline">Εμφανίζεται η επιχείρησή σου στο ChatGPT;</h1>
+
+    <div class="ap-engine-logos">
+      <div class="ap-engine-pill">
+        <span class="ap-engine-icon">🤖</span>
+        <span>ChatGPT</span>
+      </div>
+      <div class="ap-engine-pill">
+        <span class="ap-engine-icon">🔷</span>
+        <span>Perplexity</span>
+      </div>
+      <div class="ap-engine-pill">
+        <span class="ap-engine-icon">✦</span>
+        <span>Google AI</span>
+      </div>
+    </div>
+
+    <p class="ap-subline">Μάθε σε 60 δευτερόλεπτα — εντελώς δωρεάν</p>
+  </div>
+
+  <!-- Form -->
+  <div class="ap-form-card">
+    <form id="audit-form" onsubmit="startAudit(event)" autocomplete="off" novalidate>
+
+      <div class="ap-field">
+        <label class="ap-label" for="ap-business">Όνομα επιχείρησης</label>
+        <input class="ap-input" type="text" id="ap-business" name="businessName"
+          placeholder="π.χ. Καφετέρια Νίκος Αθήνα" required autocomplete="off">
+      </div>
+
+      <div class="ap-field">
+        <label class="ap-label" for="ap-category">Κατηγορία</label>
+        <select class="ap-input ap-select" id="ap-category" name="category" required>
+          <option value="" disabled selected>— Επίλεξε κατηγορία —</option>
+          <option>Εστιατόριο / Καφέ</option>
+          <option>Ξενοδοχείο</option>
+          <option>Λογιστής / Φοροτεχνικός</option>
+          <option>Δικηγόρος</option>
+          <option>Γιατρός / Κλινική</option>
+          <option>Κατασκευές / Ανακαινίσεις</option>
+          <option>Ομορφιά / Αισθητική</option>
+          <option>IT / Τεχνολογία</option>
+          <option>Εκπαίδευση</option>
+          <option>E-commerce</option>
+          <option>Μεσίτης / Ακίνητα</option>
+          <option value="Άλλο">Άλλο</option>
+        </select>
+      </div>
+
+      <div class="ap-field" id="custom-cat-wrap" style="display:none">
+        <label class="ap-label" for="ap-custom-cat">Περιγράψτε την κατηγορία</label>
+        <input class="ap-input" type="text" id="ap-custom-cat" name="customCategory"
+          placeholder="π.χ. Φωτογραφία γάμων">
+      </div>
+
+      <div class="ap-field">
+        <label class="ap-label" for="ap-city">Πόλη</label>
+        <input class="ap-input" type="text" id="ap-city" name="city"
+          placeholder="π.χ. Αθήνα" required autocomplete="off">
+        <span class="ap-geo-hint" id="geo-hint" style="display:none">📍 Εντοπίστηκε αυτόματα</span>
+      </div>
+
+      <div id="ap-error" class="ap-error-msg" style="display:none"></div>
+
+      <button class="ap-submit-btn" type="submit" id="ap-submit">
+        Δες αμέσως αν σε βρίσκει το ChatGPT →
+      </button>
+
+    </form>
+
+    <p class="ap-privacy">Χωρίς εγγραφή. Χωρίς κάρτα. 100% δωρεάν.</p>
+  </div>
+
+  <!-- Social proof -->
+  <div class="ap-social-proof">
+    <span>✓ 2.400+ επιχειρήσεις το έχουν δει</span>
+    <span>✓ Αποτελέσματα σε &lt;60 δευτερόλεπτα</span>
+    <span>✓ Πραγματικά δεδομένα από AI engines</span>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  // Geolocation auto-fill
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      fetch('https://nominatim.openstreetmap.org/reverse?lat=' + pos.coords.latitude + '&lon=' + pos.coords.longitude + '&format=json')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var city = data.address && (data.address.city || data.address.town || data.address.village || data.address.municipality);
+          if (city) {
+            var el = document.getElementById('ap-city');
+            if (!el.value) {
+              el.value = city;
+              document.getElementById('geo-hint').style.display = 'block';
+            }
+          }
+        }).catch(function() {});
+    }, function() {}, { timeout: 5000 });
+  }
+
+  // Show custom category input
+  document.getElementById('ap-category').addEventListener('change', function() {
+    document.getElementById('custom-cat-wrap').style.display = this.value === 'Άλλο' ? 'block' : 'none';
+  });
+
+  // Pre-fill from URL params (retry flow)
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('business')) document.getElementById('ap-business').value = params.get('business');
+  if (params.get('city'))     document.getElementById('ap-city').value = params.get('city');
+  if (params.get('category')) {
+    var sel = document.getElementById('ap-category');
+    for (var i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === params.get('category')) { sel.selectedIndex = i; break; }
+    }
+  }
+
+  window.startAudit = function(e) {
+    e.preventDefault();
+    var btn = document.getElementById('ap-submit');
+    var errEl = document.getElementById('ap-error');
+    errEl.style.display = 'none';
+
+    var businessName   = document.getElementById('ap-business').value.trim();
+    var category       = document.getElementById('ap-category').value;
+    var city           = document.getElementById('ap-city').value.trim();
+    var customCategory = document.getElementById('ap-custom-cat').value.trim();
+
+    if (!businessName || !category || !city) {
+      errEl.textContent = 'Παρακαλώ συμπλήρωσε όλα τα πεδία.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Ξεκινάμε…';
+
+    // Read UTM params
+    var utmParams  = new URLSearchParams(window.location.search);
+
+    fetch('/api/audit-public/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        businessName: businessName,
+        category:     category,
+        city:         city,
+        customCategory: category === 'Άλλο' ? customCategory : '',
+        utmSource:    utmParams.get('utm_source') || '',
+        utmCampaign:  utmParams.get('utm_campaign') || '',
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.jobId) {
+        // Store business name for the running page
+        sessionStorage.setItem('audit_business', businessName);
+        sessionStorage.setItem('audit_category', category);
+        sessionStorage.setItem('audit_city', city);
+        window.location.href = '/audit/running?job=' + encodeURIComponent(data.jobId);
+      } else {
+        throw new Error(data.error || 'Σφάλμα');
+      }
+    })
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Δες αμέσως αν σε βρίσκει το ChatGPT →';
+      errEl.textContent = err.message || 'Κάτι πήγε στραβά. Δοκίμασε ξανά.';
+      errEl.style.display = 'block';
+    });
+  };
+})();
+</script>
+
+</body>
+</html>

@@ -53,6 +53,18 @@
       const adminTab = document.getElementById('tab-btn-admin');
       if (adminTab && u.role === 'admin') adminTab.style.display = '';
 
+      // Inject Management dropdown into nav-links when logged in
+      if (!document.getElementById("nav-management-dropdown")) {
+        const _navLinks = document.querySelector(".nav-links");
+        if (_navLinks) {
+          const _mgmt = document.createElement("div");
+          _mgmt.id = "nav-management-dropdown";
+          _mgmt.className = "nav-dropdown";
+          _mgmt.innerHTML = '<button class="nav-dropdown-toggle">Management<svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></button><div class="nav-dropdown-menu"><div class="nav-dropdown-menu-inner"><a href="/dashboard.html"><span class="ndm-icon">📋</span><span>Dashboard</span></a></div></div>';
+          _navLinks.appendChild(_mgmt);
+        }
+      }
+
       // Add Admin link in nav for admin users (skip on admin.html — it has its own nav)
       if (u.role === 'admin' && !document.getElementById('nav-admin-link') && document.body.dataset.page !== 'admin') {
         const cta = document.querySelector('.nav-cta');

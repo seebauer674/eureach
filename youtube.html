@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTuber Portal — eureach.eu</title>
+<link rel="stylesheet" href="/css/style.css?v=2">
+<link rel="stylesheet" href="/css/youtube-portal.css?v=1">
+<script src="/js/translations.js?v=5"></script>
+<script src="/js/i18n.js?v=5"></script>
+</head>
+<body class="yt-page">
+
+<nav class="yt-nav">
+  <a href="/" class="yt-nav-logo">eureach.eu</a>
+  <a href="/" class="yt-nav-back" data-i18n="yt.back">← Πίσω</a>
+  <div class="yt-nav-right">
+    <a href="/youtube/profile" class="yt-btn yt-btn-ghost" data-i18n="yt.profile">Προφίλ καναλιού</a>
+  </div>
+</nav>
+
+<main class="yt-main">
+  <div class="yt-header">
+    <div>
+      <h1 id="portalTitle">YouTuber Portal</h1>
+      <p id="portalSubtitle" class="yt-subtitle" data-i18n="yt.myAssignments">Τα assignments σου</p>
+    </div>
+    <div class="yt-header-stats" id="headerStats" style="display:none">
+      <div class="yt-stat">
+        <span class="yt-stat-num" id="statActive">0</span>
+        <span class="yt-stat-label" data-i18n="yt.statActive">Ενεργά</span>
+      </div>
+      <div class="yt-stat">
+        <span class="yt-stat-num" id="statCompleted">0</span>
+        <span class="yt-stat-label" data-i18n="yt.statCompleted">Ολοκληρωμένα</span>
+      </div>
+      <div class="yt-stat">
+        <span class="yt-stat-num" id="statEarned">€0</span>
+        <span class="yt-stat-label" data-i18n="yt.statEarned">Κερδήθηκαν</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="loadingState" class="yt-loading" data-i18n="yt.loading">Φόρτωση...</div>
+
+  <div id="emptyState" class="yt-empty" style="display:none">
+    <div class="yt-empty-icon">📋</div>
+    <h2 data-i18n="yt.emptyTitle">Δεν έχεις assignments ακόμα</h2>
+    <p data-i18n="yt.emptySub">Θα σου στείλουμε email όταν σου ανατεθεί νέο assignment.</p>
+  </div>
+
+  <div id="assignmentsList" style="display:none">
+    <h2 class="yt-section-title" data-i18n="yt.sectionTitle">Assignments</h2>
+    <div id="assignmentsGrid" class="yt-assignments-grid"></div>
+  </div>
+</main>
+
+<script src="/js/api.js?v=5"></script>
+<script>
+function T(k){var l=window.euLang?window.euLang():"en";var t=window.EUREACH_T;return(t&&t[l]&&t[l][k])||k;}
+function getStatusLabel(s){const m={new:T('yt.stNew'),in_progress:T('yt.stInProgress'),submitted:T('yt.stSubmitted'),approved:T('yt.stApproved'),rejected:T('yt.stRejected'),paid:T('yt.stPaid')};return m[s]||s;}
+const STATUS_CLASS = {
+  new: 'yt-badge-new', in_progress: 'yt-badge-progress', submitted: 'yt-badge-submitted',
+  approved: 'yt-badge-approved', rejected: 'yt-badge-rejected', paid: 'yt-badge-paid'
+};
+
+function actionBtn(a) {
+  const id = a.id;
+  if (a.status === 'new')         return `<a href="/youtube/assignment/${id}" class="yt-btn yt-btn-primary">${T('yt.btnStart')}</a>`;
+  if (a.status === 'in_progress') return `<a href="/youtube/assignment/${id}" class="yt-btn yt-btn-primary">${T('yt.btnContinue')}</a>`;
+  if (a.status === 'rejected')    return `<a href="/youtube/assignment/${id}" class="yt-btn yt-btn-warn">${T('yt.btnResubmit')}</a>`;
+  if (a.status === 'submitted')   return `<a href="/youtube/assignment/${id}" class="yt-btn yt-btn-ghost">${T('yt.btnViewSubmission')}</a>`;
+  return `<a href="/youtube/assignment/${id}" class="yt-btn yt-btn-ghost">${T('yt.btnViewDetails')}</a>`;
+}
+
+function renderCard(a) {
+  const brief = a.brief_data || {};
+  const brandName = brief.brand_name || brief.business_name || '—';
+  const stepFrac  = a.status === 'submitted' || a.status === 'approved' || a.status === 'paid' ? '7/7' : (a.current_step || 1) - 1 + '/7';
+  return `
+    <div class="yt-assignment-card ${a.status === 'rejected' ? 'yt-card-rejected' : ''}">
+      <div class="yt-card-top">
+        <span class="yt-badge ${STATUS_CLASS[a.status] || ''}">${getStatusLabel(a.status) || a.status}</span>
+        <span class="yt-card-pay">€${a.payment_amount || 80}</span>
+      </div>
+      <h3 class="yt-card-brand">${escHtml(brandName)}</h3>
+      ${brief.category ? `<p class="yt-card-cat">${escHtml(brief.category)}</p>` : ''}
+      ${a.status === 'rejected' && a.admin_feedback ? `<div class="yt-card-feedback"><strong>${T("yt.feedback")}</strong> ${escHtml(a.admin_feedback)}</div>` : ''}
+      <div class="yt-card-progress">
+        <div class="yt-progress-bar"><div class="yt-progress-fill" style="width:${((a.current_step||1)-1)/7*100}%"></div></div>
+        <span class="yt-progress-label">${T("yt.step")} ${stepFrac}</span>
+      </div>
+      <div class="yt-card-footer">
+        ${actionBtn(a)}
+      </div>
+    </div>`;
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function load() {
+  try {
+    const data = await api.get('/api/youtube/me');
+    document.getElementById('loadingState').style.display = 'none';
+
+    if (data.profile && data.profile.channel_name) {
+      document.getElementById('portalTitle').textContent = 'YouTuber Portal — ' + data.profile.channel_name;
+    }
+
+    const assignments = data.assignments || [];
+    if (assignments.length === 0) {
+      document.getElementById('emptyState').style.display = 'block';
+      return;
+    }
+
+    // Stats
+    const active    = assignments.filter(a => ['new','in_progress'].includes(a.status)).length;
+    const completed = assignments.filter(a => ['approved','paid'].includes(a.status)).length;
+    const earned    = assignments.filter(a => a.status === 'paid').reduce((s,a) => s + (a.payment_amount||0), 0);
+    document.getElementById('statActive').textContent    = active;
+    document.getElementById('statCompleted').textContent = completed;
+    document.getElementById('statEarned').textContent    = '€' + earned;
+    document.getElementById('headerStats').style.display = 'flex';
+
+    // Sort: rejected/in_progress first, then new, then submitted, then approved/paid
+    const ORDER = { rejected: 0, in_progress: 1, new: 2, submitted: 3, approved: 4, paid: 5 };
+    assignments.sort((a,b) => (ORDER[a.status]||9) - (ORDER[b.status]||9));
+
+    document.getElementById('assignmentsList').style.display = 'block';
+    document.getElementById('assignmentsGrid').innerHTML = assignments.map(renderCard).join('');
+  } catch (err) {
+    document.getElementById('loadingState').textContent = T('yt.loadErr');
+    if (err.status === 403) window.location.href = '/signin.html?next=/youtube';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

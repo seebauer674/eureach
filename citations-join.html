@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join Publisher Network — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/citations.css?v=1">
+  <script src="js/translations.js?v=5"></script>
+  <script src="js/i18n.js?v=5"></script>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="citations.html">← Citation Builder</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<div class="cit-join-page">
+  <div class="cit-join-hero">
+    <h1 data-i18n="cjoin.heroTitle">Earn with Your Website</h1>
+    <p data-i18n="cjoin.heroSub">Join our publisher network and earn money by hosting high-quality, AI-optimised editorial content on your site.</p>
+  </div>
+
+  <div class="cit-join-benefits">
+    <div class="cit-benefit"><div class="cit-benefit-icon">💶</div><div><strong data-i18n="cjoin.b1Title">Earn per article</strong><br><span data-i18n="cjoin.b1Sub">Get paid for every approved article we publish on your site.</span></div></div>
+    <div class="cit-benefit"><div class="cit-benefit-icon">✍️</div><div><strong data-i18n="cjoin.b2Title">We write everything</strong><br><span data-i18n="cjoin.b2Sub">Our AI + editorial team produces all content. Zero work for you.</span></div></div>
+    <div class="cit-benefit"><div class="cit-benefit-icon">📊</div><div><strong data-i18n="cjoin.b3Title">Quality content</strong><br><span data-i18n="cjoin.b3Sub">500-700 word editorial articles that actually add value to your readers.</span></div></div>
+  </div>
+
+  <div class="cit-join-form-wrap">
+    <div id="join-success" class="cit-join-success" style="display:none">
+      <div class="cit-join-success-icon">✓</div>
+      <h2 data-i18n="cjoin.successTitle">Application Received!</h2>
+      <p data-i18n="cjoin.successSub">We will review your site and contact you within 48 hours.</p>
+    </div>
+
+    <form id="join-form" class="cit-join-form" onsubmit="submitApplication(event)">
+      <h2 data-i18n="cjoin.formTitle">Apply to Join</h2>
+
+      <label class="cit-form-label" data-i18n="cjoin.urlLabel">Your website URL *</label>
+      <input class="cit-input" id="j-url" type="url" placeholder="https://yoursite.com" required>
+
+      <label class="cit-form-label" data-i18n="cjoin.nameLabel">Site name *</label>
+      <input class="cit-input" id="j-name" type="text" placeholder="My Blog" required>
+
+      <label class="cit-form-label" data-i18n="cjoin.trafficLabel">Monthly traffic (approximate)</label>
+      <select class="cit-input" id="j-traffic">
+        <option value="" data-i18n="cjoin.trafficPlh">Select range…</option>
+        <option value="1000">Under 1,000</option>
+        <option value="5000">1,000 – 5,000</option>
+        <option value="20000">5,000 – 20,000</option>
+        <option value="50000">20,000 – 50,000</option>
+        <option value="100000">50,000+</option>
+      </select>
+
+      <label class="cit-form-label" data-i18n="cjoin.catsLabel">Main categories / niche</label>
+      <input class="cit-input" id="j-cats" type="text" data-i18n-ph="cjoin.catsPlh" placeholder="business, technology, marketing">
+
+      <label class="cit-form-label" data-i18n="cjoin.langLabel">Content language *</label>
+      <select class="cit-input" id="j-lang" required>
+        <option value="el">Greek</option>
+        <option value="en">English</option>
+        <option value="de">German</option>
+      </select>
+
+      <label class="cit-form-label" data-i18n="cjoin.countryLabel">Country</label>
+      <input class="cit-input" id="j-country" type="text" placeholder="Greece" value="Greece">
+
+      <label class="cit-form-label" data-i18n="cjoin.emailLabel">Contact email *</label>
+      <input class="cit-input" id="j-email" type="email" placeholder="you@yoursite.com" required>
+
+      <label class="cit-form-label" data-i18n="cjoin.notesLabel">Why do you want to join? (optional)</label>
+      <textarea class="cit-textarea" id="j-notes" data-i18n-ph="cjoin.notesPlh" placeholder="Tell us about your site…" style="height:100px"></textarea>
+
+      <div id="join-error" class="cit-error" style="display:none"></div>
+      <button class="btn btn-primary" type="submit" id="join-submit-btn" data-i18n="cjoin.submitBtn" style="width:100%;margin-top:0.5rem">Submit Application</button>
+    </form>
+  </div>
+</div>
+
+<script>
+async function submitApplication(e) {
+  e.preventDefault();
+  const btn = document.getElementById("join-submit-btn");
+  const err = document.getElementById("join-error");
+  err.style.display = "none";
+  function T(k){var l=window.euLang?window.euLang():"en";var t=window.EUREACH_T;return(t&&t[l]&&t[l][k])||k;}
+  btn.textContent = T("cjoin.submitting"); btn.disabled = true;
+
+  try {
+    const r = await fetch("/api/citations/publishers/apply", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        url:             document.getElementById("j-url").value,
+        name:            document.getElementById("j-name").value,
+        monthly_traffic: document.getElementById("j-traffic").value,
+        categories:      document.getElementById("j-cats").value,
+        language:        document.getElementById("j-lang").value,
+        country:         document.getElementById("j-country").value,
+        contact_email:   document.getElementById("j-email").value,
+        notes:           document.getElementById("j-notes").value,
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.error || "Submission failed."; err.style.display = ""; btn.textContent = T("cjoin.submitBtn"); btn.disabled = false; return; }
+    document.getElementById("join-form").style.display = "none";
+    document.getElementById("join-success").style.display = "";
+  } catch (ex) {
+    err.textContent = "Error: " + ex.message; err.style.display = "";
+    btn.textContent = T("cjoin.submitBtn"); btn.disabled = false;
+  }
+}
+</script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaign Dashboard — AI Citation Builder</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/citations.css?v=1">
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="citations.html" style="color:var(--white)">← My Campaigns</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<div class="cit-dash-page">
+  <div id="dash-loading" class="cit-loading">Loading campaign…</div>
+  <div id="dash-content" style="display:none">
+
+    <div class="cit-dash-header">
+      <div>
+        <h1 id="dash-title">Campaign</h1>
+        <div class="cit-dash-meta" id="dash-meta"></div>
+      </div>
+      <div class="cit-dash-status-badge" id="dash-status-badge"></div>
+    </div>
+
+    <div class="cit-dash-progress-bar-wrap">
+      <div class="cit-dash-progress-label" id="dash-progress-label"></div>
+      <div class="cit-dash-progress-track"><div class="cit-dash-progress-fill" id="dash-progress-fill"></div></div>
+    </div>
+
+    <!-- Visibility Tracker -->
+    <section class="cit-dash-section">
+      <div class="cit-dash-section-hdr">
+        <h2>AI Visibility Tracker</h2>
+        <button class="btn btn-ghost cit-snap-btn" onclick="takeSnapshot()" id="snap-btn">Check Now</button>
+      </div>
+      <div id="snapshots-area"><p class="cit-muted">No visibility checks yet. Click "Check Now" to run your first check.</p></div>
+    </section>
+
+    <!-- Placements -->
+    <section class="cit-dash-section">
+      <h2>Placements</h2>
+      <div id="placements-area"><p class="cit-muted">No placements assigned yet. Our team will start assigning publishers shortly.</p></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+const params     = new URLSearchParams(location.search);
+const campaignId = params.get("id");
+const isNew      = params.get("new") === "1";
+let campaign     = null;
+
+const STATUS_ICONS = { draft:"⏳", submitted:"📤", published:"✓", rejected:"✗", expired:"⌛" };
+
+async function load() {
+  if (!campaignId) { document.getElementById("dash-loading").textContent = "No campaign ID."; return; }
+  try {
+    const [cr, pr, sr] = await Promise.all([
+      fetch("/api/citations/campaigns/" + campaignId),
+      fetch("/api/citations/campaigns/" + campaignId + "/placements"),
+      fetch("/api/citations/campaigns/" + campaignId + "/snapshots"),
+    ]);
+    if (!cr.ok) { document.getElementById("dash-loading").textContent = "Campaign not found."; return; }
+    const { campaign: c } = await cr.json();
+    campaign = c;
+    const { placements } = pr.ok ? await pr.json() : { placements: [] };
+    const { snapshots }  = sr.ok ? await sr.json() : { snapshots: [] };
+
+    document.getElementById("dash-loading").style.display = "none";
+    document.getElementById("dash-content").style.display = "";
+
+    const pkgNames = { starter: "Starter", growth: "Growth", authority: "Authority" };
+    document.getElementById("dash-title").textContent = pkgNames[c.package] || c.package;
+    document.getElementById("dash-meta").textContent  = "Started " + (c.started_at ? new Date(c.started_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : "pending payment") + " · " + c.target_queries.join(", ");
+
+    const statusLabels = { pending: "Pending Payment", active: "Active", in_progress: "In Progress", completed: "Completed", cancelled: "Cancelled" };
+    document.getElementById("dash-status-badge").textContent = statusLabels[c.status] || c.status;
+    document.getElementById("dash-status-badge").className   = "cit-dash-status-badge cit-status-" + c.status;
+
+    const pct = c.mentions_total ? Math.round(c.mentions_live / c.mentions_total * 100) : 0;
+    document.getElementById("dash-progress-label").textContent = c.mentions_live + " of " + c.mentions_total + " mentions live";
+    document.getElementById("dash-progress-fill").style.width  = pct + "%";
+
+    renderSnapshots(snapshots, c);
+    renderPlacements(placements);
+
+    if (isNew) {
+      const notice = document.createElement("div");
+      notice.className = "cit-new-notice";
+      notice.innerHTML = "<strong>🎉 Campaign created!</strong> Our team will review and start assigning publishers within 24 hours. You will receive an email when your first article goes live.";
+      document.querySelector(".cit-dash-page").insertBefore(notice, document.getElementById("dash-content"));
+    }
+  } catch (e) {
+    document.getElementById("dash-loading").textContent = "Error loading campaign: " + e.message;
+  }
+}
+
+function renderSnapshots(snapshots, c) {
+  const area = document.getElementById("snapshots-area");
+  if (!snapshots.length) { area.innerHTML = '<p class="cit-muted">No visibility checks yet. Click "Check Now" to run your first check.</p>'; return; }
+
+  // Group by query
+  const byQuery = {};
+  snapshots.forEach(s => { if (!byQuery[s.query]) byQuery[s.query] = []; byQuery[s.query].push(s); });
+
+  area.innerHTML = Object.entries(byQuery).map(([query, snaps]) => `
+    <div class="cit-snap-group">
+      <div class="cit-snap-query">"${query}"</div>
+      <table class="cit-snap-table">
+        <thead><tr><th>Engine</th>${snaps.map(s => `<th>${new Date(s.taken_at).toLocaleDateString("en-GB",{day:"numeric",month:"short"})}</th>`).join("")}</tr></thead>
+        <tbody><tr>
+          <td>${snaps[0].engine.replace("_proxy","").replace("_weekly","")}</td>
+          ${snaps.map(s => `<td class="${s.appeared ? "cit-snap-yes" : "cit-snap-no"}">${s.appeared ? "✓" : "✗"}</td>`).join("")}
+        </tr></tbody>
+      </table>
+      ${snaps.filter(s => s.appeared && s.snapshot_text).map(s => `<div class="cit-snap-excerpt">"${s.snapshot_text}"</div>`).join("")}
+    </div>`).join("");
+}
+
+function renderPlacements(placements) {
+  const area = document.getElementById("placements-area");
+  if (!placements.length) { area.innerHTML = '<p class="cit-muted">No placements assigned yet. Our team will start assigning publishers shortly after payment is confirmed.</p>'; return; }
+
+  const live    = placements.filter(p => p.status === "published");
+  const pending = placements.filter(p => p.status !== "published" && p.status !== "expired");
+
+  area.innerHTML = [
+    ...live.map(p => `
+      <div class="cit-placement cit-placement--live">
+        <span class="cit-pl-icon">✓</span>
+        <div class="cit-pl-info">
+          <a class="cit-pl-title" href="${p.article_url}" target="_blank">${p.article_title || p.publisher_name || "Article"}</a>
+          <span class="cit-pl-pub">Published ${p.published_at ? new Date(p.published_at).toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : ""}</span>
+        </div>
+        ${p.article_url ? `<a class="btn btn-ghost cit-pl-view" href="${p.article_url}" target="_blank">View</a>` : ""}
+      </div>`),
+    ...pending.map(p => `
+      <div class="cit-placement cit-placement--pending">
+        <span class="cit-pl-icon">${STATUS_ICONS[p.status] || "⏳"}</span>
+        <div class="cit-pl-info">
+          <span class="cit-pl-title">${p.article_title || "Article being prepared"}</span>
+          <span class="cit-pl-pub">${p.status === "submitted" ? "Submitted — awaiting publication" : p.status === "draft" ? "Content being prepared" : p.status}</span>
+        </div>
+      </div>`),
+  ].join("") || '<p class="cit-muted">Placements loading…</p>';
+}
+
+async function takeSnapshot() {
+  if (!campaign) return;
+  const bname = prompt("Enter your business name (as it should appear in AI responses):");
+  if (!bname) return;
+  const btn = document.getElementById("snap-btn");
+  btn.textContent = "Checking…"; btn.disabled = true;
+  try {
+    const r = await fetch("/api/citations/campaigns/" + campaignId + "/snapshot", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ query: campaign.target_queries[0], business_name: bname })
+    });
+    const d = await r.json();
+    if (!r.ok) { alert(d.error || "Check failed."); }
+    else { alert(d.snap.appeared ? "✓ Your business was mentioned in the AI response!" : "✗ Not found yet. Keep building citations — it takes time."); load(); }
+  } catch (e) { alert("Error: " + e.message); }
+  btn.textContent = "Check Now"; btn.disabled = false;
+}
+
+fetch("/api/auth/me").then(r => { if (!r.ok) window.location.href = "signin.html"; });
+load();
+</script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

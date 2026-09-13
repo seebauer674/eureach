@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join the Creator Network — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <style>
+    .join-wrap { max-width: 640px; margin: 60px auto; padding: 0 20px 80px; }
+    .join-hero { text-align: center; margin-bottom: 48px; }
+    .join-hero h1 { font-size: 2rem; font-weight: 700; margin-bottom: 10px; }
+    .join-hero p { color: var(--muted); font-size: 1rem; line-height: 1.6; }
+    .join-perks { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 48px; }
+    .join-perk { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px 16px; text-align: center; }
+    .join-perk .perk-icon { font-size: 1.6rem; margin-bottom: 8px; }
+    .join-perk .perk-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+    .join-perk .perk-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+    .join-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 36px; }
+    .join-card h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 24px; }
+    .join-field { margin-bottom: 18px; }
+    .join-field label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+    .join-field input, .join-field select, .join-field textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--white); font-size: 0.9rem; box-sizing: border-box; }
+    .join-field textarea { resize: vertical; min-height: 90px; }
+    .join-field input:focus, .join-field select:focus, .join-field textarea:focus { outline: none; border-color: var(--accent); }
+    .join-cats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .join-cat { display: flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; cursor: pointer; font-size: 0.82rem; user-select: none; transition: border-color .15s, background .15s; }
+    .join-cat input { display: none; }
+    .join-cat.checked { border-color: var(--accent); background: rgba(37,99,235,0.12); color: var(--accent); }
+    .join-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .join-submit { width: 100%; margin-top: 8px; }
+    .join-error { color: #f87171; font-size: 0.85rem; margin-top: 12px; display: none; }
+    .join-success { text-align: center; display: none; padding: 40px 0; }
+    .join-success .success-icon { font-size: 3rem; margin-bottom: 16px; }
+    .join-success h3 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+    .join-success p { color: var(--muted); line-height: 1.6; }
+    @media(max-width:600px) { .join-perks { grid-template-columns: 1fr; } .join-row2 { grid-template-columns: 1fr; } .join-card { padding: 24px 18px; } }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-left">
+      <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.82rem;padding:7px 14px">Sign in</a>
+      <a href="signup.html" class="btn btn-primary" style="font-size:0.82rem;padding:7px 14px">Create account →</a>
+    </div>
+  </nav>
+
+  <div class="join-wrap">
+    <div class="join-hero">
+      <div style="font-size:2.5rem;margin-bottom:12px">🎥</div>
+      <h1>Join the eureach Creator Network</h1>
+      <p>Get paid to create content that mentions local businesses.<br>Flexible assignments, transparent pay, no exclusivity.</p>
+    </div>
+
+    <div class="join-perks">
+      <div class="join-perk">
+        <div class="perk-icon">💶</div>
+        <div class="perk-title">Get Paid Per Video</div>
+        <div class="perk-desc">Fixed payment per completed assignment, paid promptly</div>
+      </div>
+      <div class="join-perk">
+        <div class="perk-icon">📋</div>
+        <div class="perk-title">Clear Briefs</div>
+        <div class="perk-desc">Every assignment comes with a detailed brief — no guessing</div>
+      </div>
+      <div class="join-perk">
+        <div class="perk-icon">🕐</div>
+        <div class="perk-title">Work at Your Pace</div>
+        <div class="perk-desc">Accept only the assignments that fit your content and schedule</div>
+      </div>
+    </div>
+
+    <div class="join-card">
+      <h2>Apply to join</h2>
+      <div id="joinForm">
+        <div class="join-row2">
+          <div class="join-field">
+            <label>Your full name *</label>
+            <input type="text" id="jName" placeholder="Maria Papadopoulou">
+          </div>
+          <div class="join-field">
+            <label>Your email *</label>
+            <input type="email" id="jEmail" placeholder="you@example.com">
+          </div>
+        </div>
+        <div class="join-row2">
+          <div class="join-field">
+            <label>Channel name *</label>
+            <input type="text" id="jChannelName" placeholder="My Channel">
+          </div>
+          <div class="join-field">
+            <label>Channel URL *</label>
+            <input type="url" id="jChannelUrl" placeholder="https://youtube.com/@...">
+          </div>
+        </div>
+        <div class="join-row2">
+          <div class="join-field">
+            <label>Subscribers (approx.)</label>
+            <input type="number" id="jSubs" placeholder="5000" min="0">
+          </div>
+          <div class="join-field">
+            <label>Primary content language</label>
+            <select id="jLang">
+              <option value="el">Greek</option>
+              <option value="en">English</option>
+              <option value="de">German</option>
+            </select>
+          </div>
+        </div>
+        <div class="join-field">
+          <label>Content categories (select all that apply)</label>
+          <div class="join-cats" id="jCats">
+            <label class="join-cat"><input type="checkbox" value="lifestyle">Lifestyle</label>
+            <label class="join-cat"><input type="checkbox" value="travel">Travel</label>
+            <label class="join-cat"><input type="checkbox" value="food">Food & Dining</label>
+            <label class="join-cat"><input type="checkbox" value="tech">Tech & Gadgets</label>
+            <label class="join-cat"><input type="checkbox" value="fitness">Fitness & Health</label>
+            <label class="join-cat"><input type="checkbox" value="beauty">Beauty & Fashion</label>
+            <label class="join-cat"><input type="checkbox" value="business">Business & Finance</label>
+            <label class="join-cat"><input type="checkbox" value="education">Education</label>
+            <label class="join-cat"><input type="checkbox" value="entertainment">Entertainment</label>
+            <label class="join-cat"><input type="checkbox" value="local">Local / City content</label>
+          </div>
+        </div>
+        <div class="join-field">
+          <label>Why do you want to join? <span style="color:var(--muted)">(optional)</span></label>
+          <textarea id="jWhy" placeholder="Tell us about your audience, content style, and what kind of brand mentions feel natural for your channel..."></textarea>
+        </div>
+        <div id="joinError" class="join-error"></div>
+        <button class="btn btn-primary join-submit" id="joinBtn" onclick="submitApp()">Submit application →</button>
+      </div>
+      <div class="join-success" id="joinSuccess">
+        <div class="success-icon">✅</div>
+        <h3>Application received!</h3>
+        <p>Thanks for applying. We'll review your channel and get back to you within 2–3 business days.<br><br>
+        Keep an eye on your inbox at <span id="successEmail" style="color:var(--accent)"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js?v=5"></script>
+  <script>
+    // Category pill toggle
+    document.querySelectorAll('.join-cat').forEach(label => {
+      label.addEventListener('click', () => {
+        label.classList.toggle('checked');
+      });
+    });
+
+    async function submitApp() {
+      const btn = document.getElementById('joinBtn');
+      const err = document.getElementById('joinError');
+      err.style.display = 'none';
+
+      const name        = document.getElementById('jName').value.trim();
+      const email       = document.getElementById('jEmail').value.trim();
+      const channelName = document.getElementById('jChannelName').value.trim();
+      const channelUrl  = document.getElementById('jChannelUrl').value.trim();
+
+      if (!name || !email || !channelName || !channelUrl) {
+        err.textContent = 'Please fill in all required fields.';
+        err.style.display = '';
+        return;
+      }
+
+      const categories = Array.from(document.querySelectorAll('.join-cat input:checked')).map(i => i.value);
+
+      btn.textContent = 'Submitting…'; btn.disabled = true;
+      try {
+        await api.post('/api/youtube/join', {
+          name, email,
+          channel_name: channelName,
+          channel_url:  channelUrl,
+          subscribers:  parseInt(document.getElementById('jSubs').value) || 0,
+          language:     document.getElementById('jLang').value,
+          categories,
+          why: document.getElementById('jWhy').value.trim(),
+        });
+        document.getElementById('joinForm').style.display = 'none';
+        document.getElementById('successEmail').textContent = email;
+        document.getElementById('joinSuccess').style.display = 'block';
+      } catch (e) {
+        err.textContent = e.message || 'Something went wrong. Please try again.';
+        err.style.display = '';
+        btn.textContent = 'Submit application →'; btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

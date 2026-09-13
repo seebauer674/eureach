@@ -6,12 +6,17 @@
   <title>Settings — eureach.eu</title>
   <link rel="stylesheet" href="css/style.css?v=2">
   <link rel="stylesheet" href="css/settings.css?v=2">
-  <script src="js/translations.js?v=2"></script>
-  <script src="js/i18n.js?v=2"></script>
+  <script src="js/translations.js?v=5"></script>
+  <script src="js/i18n.js?v=5"></script>
 <style>
 .biz-audit-wrap{display:flex;gap:20px;align-items:flex-start}.biz-col-form{flex:1;min-width:0}#site-audit-panel{flex-shrink:0}.audit-panel{background:linear-gradient(145deg,rgba(37,99,235,.1),rgba(124,58,237,.06));border:1px solid rgba(99,102,241,.35);border-radius:16px;padding:24px}.audit-panel-title{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}.audit-score-ring{display:flex;align-items:center;gap:16px;margin-bottom:20px}.audit-score-circle{width:72px;height:72px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid #2563eb;flex-shrink:0}.audit-score-num{font-size:1.6rem;font-weight:800;line-height:1}.audit-score-label{font-size:.6rem;color:var(--muted);text-transform:uppercase}.audit-score-right{flex:1;min-width:0}.audit-score-grade{font-size:.78rem;color:var(--muted)}.audit-breakdown{margin-bottom:16px}.audit-bk-item{margin-bottom:10px}.audit-bk-top{display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:4px}.audit-bk-lbl{color:var(--muted)}.audit-bk-val{color:var(--white);font-weight:600}.audit-bk-bar{height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}.audit-bk-fill{height:100%;border-radius:4px;transition:width .6s}.audit-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 8px}.audit-list{list-style:none;display:flex;flex-direction:column;gap:6px}.audit-list li{font-size:.78rem;color:var(--text);display:flex;gap:7px;line-height:1.4}.audit-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 0;text-align:center}.audit-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.audit-loading-text{font-size:.82rem;color:var(--muted)}.audit-view-link{display:block;text-align:center;margin-top:14px;font-size:.78rem;color:#60a5fa;text-decoration:none}@media(max-width:900px){.biz-audit-wrap{flex-direction:column}#site-audit-panel{width:100%!important}}
 .adm-stab { background:#1e293b;border:1px solid #2a3050;color:#8b9ab7;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:0.83rem;font-weight:600;transition:all .15s; }
 .adm-stab.active,.adm-stab:hover { background:#7c3aed22;border-color:#7c3aed;color:#c4b5fd; }
+
+.brand-colors-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+.brand-color-item { display: flex; align-items: center; gap: 8px; }
+.brand-color-pick { width: 36px; height: 36px; border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 8px; padding: 2px; cursor: pointer; background: none; }
+.brand-color-hex  { width: 100px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 10px; color: #e2e8f0; font-size: 0.85rem; font-family: monospace; }
 </style>
 </head>
 <body>
@@ -21,19 +26,19 @@
     <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
     <div class="nav-links">
       <div class="nav-dropdown">
-        <button class="nav-dropdown-toggle">
+        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
           Tools
           <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
         </button>
         <div class="nav-dropdown-menu">
           <div class="nav-dropdown-menu-inner">
-            <a href="leads.html"><span class="ndm-icon">🔍</span>Lead Finder</a>
-            <a href="articles.html"><span class="ndm-icon">✍️</span>Articles</a>
-            <a href="competitors.html"><span class="ndm-icon">📡</span>Competitors</a>
-            <a href="citations.html"><span class="ndm-icon">🔗</span>Citations</a>
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
             <div class="nav-dropdown-divider"></div>
-            <a href="youtube.html"><span class="ndm-icon">🎥</span>Creator Portal</a>
-            <a href="youtube-join.html"><span class="ndm-icon">✨</span>Become a Creator</a>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
           </div>
         </div>
       </div>
@@ -46,6 +51,7 @@
       <a href="citations.html">Citations</a>
     
       <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
     </div>
     <div class="nav-lang">
       <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
@@ -63,14 +69,15 @@
 <div class="st-page">
 
   <div class="st-header">
-    <h1 class="st-title">Settings</h1>
+    <h1 class="st-title" data-i18n="st.title">Settings</h1>
     <div class="st-tabs">
-      <button class="st-tab active" data-tab="profile">Profile</button>
-      <button class="st-tab" data-tab="business">My Business</button>
-      <button class="st-tab" data-tab="sites">My Sites</button>
-      <button class="st-tab" data-tab="plan">Plan & Credits</button>
-      <button class="st-tab" data-tab="wordpress">WordPress</button>
-      <button class="st-tab" data-tab="email">Email / SMTP</button>
+      <button class="st-tab active" data-tab="profile" data-i18n="st.tabProfile">Profile</button>
+      <button class="st-tab" data-tab="business" data-i18n="st.tabBusiness">My Business</button>
+      <button class="st-tab" data-tab="brand" data-i18n="st.tabBrand">Brand Kit</button>
+      <button class="st-tab" data-tab="sites" data-i18n="st.tabSites">My Sites</button>
+      <button class="st-tab" data-tab="plan" data-i18n="st.tabPlan">Plan & Credits</button>
+      <button class="st-tab" data-tab="wordpress" data-i18n="st.tabWP">WordPress</button>
+      <button class="st-tab" data-tab="email" data-i18n="st.tabEmail">Email / SMTP</button>
       <button class="st-tab" data-tab="admin" id="tab-btn-admin" style="display:none;border-color:#7c3aed;color:#a78bfa;">⚙ Admin</button>
     </div>
   </div>
@@ -104,28 +111,28 @@
       </div>
 
       <div class="st-card">
-        <h2 class="st-card-title">Account details</h2>
+        <h2 class="st-card-title" data-i18n="st.accountTitle">Account details</h2>
         <form class="st-profile-form" id="profile-form" onsubmit="saveProfile(event)">
           <div class="st-form-row">
             <div class="st-field">
-              <label>First name</label>
+              <label data-i18n="st.firstName">First name</label>
               <input type="text" id="pf-first" placeholder="First name" autocomplete="given-name">
             </div>
             <div class="st-field">
-              <label>Last name</label>
+              <label data-i18n="st.lastName">Last name</label>
               <input type="text" id="pf-last" placeholder="Last name" autocomplete="family-name">
             </div>
           </div>
           <div class="st-form-row">
             <div class="st-field st-field-full">
-              <label>Email address</label>
+              <label data-i18n="st.emailAddr">Email address</label>
               <input type="email" id="pf-email" placeholder="you@example.com" autocomplete="email">
             </div>
           </div>
 
           <div class="st-form-row">
           <div class="st-field st-field-full">
-            <label>Preferred language</label>
+            <label data-i18n="st.prefLang">Preferred language</label>
             <div class="st-lang-chips" id="pf-lang-chips">
               <label class="st-chip-label"><input type="radio" name="pf-lang" value="el">  🇬🇷 Greek</label>
               <label class="st-chip-label"><input type="radio" name="pf-lang" value="en"> 🇬🇧 English</label>
@@ -166,20 +173,25 @@
     <!-- ── My Business ────────────────────────────────── -->
     <section class="st-panel" id="tab-business">
       <div class="st-card">
-        <h2 class="st-card-title">My Business</h2>
-        <p class="st-section-sub" style="margin-bottom:20px">Define your own business so the Competitor Tracker can automatically find competitors in your market.</p>
+        <h2 class="st-card-title">🏢 Business Profile</h2>
+        <p class="st-section-sub" style="margin-bottom:20px">Your business profile is used by the AI Marketing Creator to generate personalised content for all platforms. The more you fill in, the better your results.</p>
         <div class="biz-edit-banner" id="biz-edit-banner" style="display:none"></div>
+
         <form class="st-profile-form" id="biz-form" onsubmit="saveBusiness(event)">
+
+          <!-- Row 1: Name + URL -->
           <div class="st-form-row">
             <div class="st-field">
-              <label>Business Name</label>
-              <input type="text" id="biz-name" placeholder="e.g. My Dental Clinic">
+              <label>Business Name *</label>
+              <input type="text" id="biz-name" placeholder="e.g. My Dental Clinic" required>
             </div>
             <div class="st-field">
               <label>Website URL</label>
               <input type="text" id="biz-url" placeholder="e.g. myclinic.gr">
             </div>
           </div>
+
+          <!-- Row 2: Country + City -->
           <div class="st-form-row">
             <div class="st-field">
               <label>Country</label>
@@ -198,8 +210,10 @@
               <input type="text" id="biz-city" placeholder="e.g. Athens, Munich…">
             </div>
           </div>
+
+          <!-- Row 3: Industry + Phone -->
           <div class="st-form-row">
-            <div class="st-field st-field-full">
+            <div class="st-field">
               <label>Industry / Category</label>
               <select id="biz-industry">
                 <option value="">— Select industry —</option>
@@ -220,9 +234,10 @@
                 <option value="moving">Moving Services</option>
                 <option value="car-mechanic">Car Mechanics</option>
                 <option value="hair-salon">Hair Salons</option>
-                <option value="beauty">Beauty & Wellness</option>
-                <option value="gym">Gyms & Fitness</option>
+                <option value="beauty">Beauty &amp; Wellness</option>
+                <option value="gym">Gyms &amp; Fitness</option>
                 <option value="restaurant">Restaurants</option>
+                <option value="cafe">Cafés &amp; Bakeries</option>
                 <option value="hotel">Hotels</option>
                 <option value="travel-agency">Travel Agencies</option>
                 <option value="real-estate">Real Estate</option>
@@ -232,20 +247,213 @@
                 <option value="photographer">Photographers</option>
                 <option value="computer-tech">IT / Computer Repair</option>
                 <option value="retail">Retail</option>
+                <option value="ecommerce">E-Commerce</option>
+                <option value="digital-marketing">Digital Marketing</option>
+                <option value="saas">SaaS / Software</option>
+                <option value="other">Other</option>
               </select>
-              <div class="st-field-hint">Used to pre-fill the Competitor Tracker search automatically.</div>
+            </div>
+            <div class="st-field">
+              <label>Phone Number</label>
+              <input type="text" id="biz-phone" placeholder="e.g. +30 210 1234567">
             </div>
           </div>
+
+          <!-- Row 4: Description (full width) -->
+          <div class="st-form-row">
+            <div class="st-field st-field-full">
+              <label>Business Description</label>
+              <textarea id="biz-desc" rows="3" placeholder="Describe what your business does, who you serve, and what makes you different. The AI will use this as the foundation for all marketing content."></textarea>
+            </div>
+          </div>
+
+          <!-- Row 5: Services + USP -->
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Products / Services</label>
+              <textarea id="biz-services" rows="2" placeholder="e.g. Hair cuts, Colouring, Keratin treatments, Bridal styling"></textarea>
+            </div>
+            <div class="st-field">
+              <label>Unique Strength / USP</label>
+              <textarea id="biz-usp" rows="2" placeholder="What makes you stand out from competitors? e.g. 20 years experience, eco products, same-day service"></textarea>
+            </div>
+          </div>
+
+          <!-- Row 6: Customer type + Tone -->
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Who is your customer?</label>
+              <input type="text" id="biz-customer" placeholder="e.g. Homeowners in Athens aged 30-55, Small business owners">
+            </div>
+            <div class="st-field">
+              <label>Business Type</label>
+              <select id="biz-type">
+                <option value="">— Select —</option>
+                <option value="local">Local business</option>
+                <option value="regional">Regional</option>
+                <option value="national">National</option>
+                <option value="ecommerce">E-Commerce</option>
+                <option value="b2b">B2B</option>
+                <option value="saas">SaaS / Digital product</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 7: Address + Opening Hours -->
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Address</label>
+              <input type="text" id="biz-address" placeholder="e.g. Ermou 12, Athens 10563">
+            </div>
+            <div class="st-field">
+              <label>Opening Hours</label>
+              <input type="text" id="biz-hours" placeholder="e.g. Mon–Fri 9:00–18:00, Sat 10:00–14:00">
+            </div>
+          </div>
+
+          <!-- Row 8: Main keyword + Known competitors -->
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Main Keyword / Search phrase</label>
+              <input type="text" id="biz-keyword" placeholder="e.g. dentist athens, wedding photographer thessaloniki">
+              <div class="st-field-hint">The search phrase your customers use to find you.</div>
+            </div>
+            <div class="st-field">
+              <label>Known Competitors</label>
+              <input type="text" id="biz-competitors" placeholder="e.g. competitor1.gr, competitor2.com">
+              <div class="st-field-hint">Used by the Competitor Tracker.</div>
+            </div>
+          </div>
+
+          <!-- Row 9: Price positioning -->
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Price Positioning</label>
+              <select id="biz-price">
+                <option value="">— Select —</option>
+                <option value="budget">Budget / Economy</option>
+                <option value="mid">Mid-range</option>
+                <option value="premium">Premium</option>
+                <option value="luxury">Luxury</option>
+              </select>
+            </div>
+            <div class="st-field">
+              <label>Years in Business</label>
+              <input type="text" id="biz-years" placeholder="e.g. 5">
+            </div>
+          </div>
+
           <div class="st-profile-error" id="biz-error"></div>
           <div class="st-profile-actions">
-            <button type="submit" class="st-save-btn">Save Business Profile</button>
+            <button type="submit" class="st-save-btn" id="biz-save-btn">Save Business Profile</button>
+            <a href="marketing.html" class="btn btn-ghost" style="font-size:0.82rem;padding:9px 18px">🚀 Open Marketing Creator</a>
           </div>
         </form>
       </div>
     </section>
 
-    <!-- ── My Sites ──────────────────────────────────── -->
-    <section class="st-panel" id="tab-sites">
+    <!-- ── Brand Kit ─────────────────────────────────── -->
+    <section class="st-panel" id="tab-brand">
+      <div class="st-card">
+        <h2 class="st-card-title">🎨 Brand Kit</h2>
+        <p class="st-section-sub" style="margin-bottom:20px">Your Brand Kit is used by the AI Marketing Creator to match tone, style, and messaging across all content. It ensures consistent branding on every platform.</p>
+
+        <form class="st-profile-form" id="brand-form" onsubmit="saveBrandKit(event)">
+
+          <!-- Row 1: Slogan + Tone -->
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Brand Slogan / Tagline</label>
+              <input type="text" id="brand-slogan" placeholder="e.g. Your health, our priority">
+            </div>
+            <div class="st-field">
+              <label>Tone of Voice</label>
+              <select id="brand-tone">
+                <option value="">— Select tone —</option>
+                <option value="Professional">Professional</option>
+                <option value="Friendly">Friendly &amp; Warm</option>
+                <option value="Urgent">Urgent &amp; Direct</option>
+                <option value="Emotional">Emotional &amp; Inspiring</option>
+                <option value="Humorous">Humorous &amp; Fun</option>
+                <option value="Educational">Educational &amp; Informative</option>
+                <option value="Luxury">Luxury &amp; Exclusive</option>
+                <option value="Local">Local &amp; Community</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 2: Target audience (full) -->
+          <div class="st-form-row">
+            <div class="st-field st-field-full">
+              <label>Target Audience Description</label>
+              <textarea id="brand-audience" rows="2" placeholder="e.g. Greek homeowners aged 35-60 who value quality and trust local businesses. Family-oriented, active on Facebook and Instagram."></textarea>
+            </div>
+          </div>
+
+          <!-- Row 3: Brand colours -->
+          <div class="st-form-row">
+            <div class="st-field st-field-full">
+              <label>Brand Colours</label>
+              <div class="brand-colors-row" id="brand-colors-row">
+                <div class="brand-color-item">
+                  <input type="color" class="brand-color-pick" data-idx="0" value="#2563eb">
+                  <input type="text" class="brand-color-hex" data-idx="0" placeholder="#2563eb" maxlength="7">
+                </div>
+                <div class="brand-color-item">
+                  <input type="color" class="brand-color-pick" data-idx="1" value="#7c3aed">
+                  <input type="text" class="brand-color-hex" data-idx="1" placeholder="#7c3aed" maxlength="7">
+                </div>
+                <div class="brand-color-item">
+                  <input type="color" class="brand-color-pick" data-idx="2" value="#f59e0b">
+                  <input type="text" class="brand-color-hex" data-idx="2" placeholder="#f59e0b" maxlength="7">
+                </div>
+              </div>
+              <div class="st-field-hint">These colours will be referenced in image concept prompts.</div>
+            </div>
+          </div>
+
+          <!-- Row 4: Social accounts -->
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>Facebook Page URL</label>
+              <input type="text" id="brand-fb" placeholder="e.g. facebook.com/mybusiness">
+            </div>
+            <div class="st-field">
+              <label>Instagram Handle</label>
+              <input type="text" id="brand-ig" placeholder="e.g. @mybusiness">
+            </div>
+          </div>
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>TikTok Handle</label>
+              <input type="text" id="brand-tt" placeholder="e.g. @mybusiness">
+            </div>
+            <div class="st-field">
+              <label>LinkedIn Page URL</label>
+              <input type="text" id="brand-li" placeholder="e.g. linkedin.com/company/mybusiness">
+            </div>
+          </div>
+          <div class="st-form-row">
+            <div class="st-field">
+              <label>YouTube Channel URL</label>
+              <input type="text" id="brand-yt" placeholder="e.g. youtube.com/@mybusiness">
+            </div>
+            <div class="st-field">
+              <label>Logo URL (optional)</label>
+              <input type="text" id="brand-logo" placeholder="https://yourdomain.com/logo.png">
+            </div>
+          </div>
+
+          <div class="st-profile-error" id="brand-error"></div>
+          <div class="st-profile-actions">
+            <button type="submit" class="st-save-btn" id="brand-save-btn">Save Brand Kit</button>
+            <a href="marketing.html" class="btn btn-ghost" style="font-size:0.82rem;padding:9px 18px">🚀 Open Marketing Creator</a>
+          </div>
+        </form>
+      </div>
+    </section>
+
+        <section class="st-panel" id="tab-sites">
       <div class="st-card">
         <div class="st-section-hdr">
           <div>
@@ -837,6 +1045,10 @@ function applyBizEditState(editsLeft) {
     inputs.forEach(el => el.disabled = false);
   }
 }
+// ── Business Profile ─────────────────────────────────────────────────────
+function bizSetVal(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+function bizSetSel(id, val) { const el = document.getElementById(id); if (el && val) el.value = val; }
+
 async function loadBusiness() {
   try {
     const res = await fetch('/api/business/profile');
@@ -844,26 +1056,49 @@ async function loadBusiness() {
     const { profile, editsLeft } = await res.json();
     applyBizEditState(editsLeft != null ? editsLeft : 2);
     if (!profile) return;
-    document.getElementById('biz-name').value = profile.businessName || '';
-    document.getElementById('biz-url').value  = profile.businessUrl  || '';
-    document.getElementById('biz-city').value = profile.city         || '';
-    const csel = document.getElementById('biz-country');
-    if (profile.country) csel.value = profile.country;
-    const isel = document.getElementById('biz-industry');
-    if (profile.industry) isel.value = profile.industry;
+    bizSetVal('biz-name',        profile.businessName);
+    bizSetVal('biz-url',         profile.businessUrl);
+    bizSetVal('biz-city',        profile.city);
+    bizSetVal('biz-phone',       profile.phone);
+    bizSetVal('biz-desc',        profile.businessDescription);
+    bizSetVal('biz-services',    profile.services);
+    bizSetVal('biz-usp',         profile.uniqueStrength);
+    bizSetVal('biz-customer',    profile.customerType);
+    bizSetVal('biz-address',     profile.address);
+    bizSetVal('biz-hours',       profile.openingHours);
+    bizSetVal('biz-keyword',     profile.mainKeyword);
+    bizSetVal('biz-competitors', profile.knownCompetitors);
+    bizSetVal('biz-years',       profile.yearsInBusiness);
+    bizSetSel('biz-country',     profile.country);
+    bizSetSel('biz-industry',    profile.industry);
+    bizSetSel('biz-type',        profile.businessType);
+    bizSetSel('biz-price',       profile.pricePositioning);
   } catch {}
 }
+
 async function saveBusiness(e) {
   e.preventDefault();
   const errEl = document.getElementById('biz-error');
-  const btn   = e.target.querySelector('button[type=submit]');
+  const btn   = document.getElementById('biz-save-btn');
   errEl.textContent = '';
   const payload = {
-    businessName: document.getElementById('biz-name').value.trim(),
-    businessUrl:  document.getElementById('biz-url').value.trim(),
-    country:      document.getElementById('biz-country').value,
-    city:         document.getElementById('biz-city').value.trim(),
-    industry:     document.getElementById('biz-industry').value,
+    businessName:        document.getElementById('biz-name').value.trim(),
+    businessUrl:         document.getElementById('biz-url').value.trim(),
+    country:             document.getElementById('biz-country').value,
+    city:                document.getElementById('biz-city').value.trim(),
+    industry:            document.getElementById('biz-industry').value,
+    phone:               document.getElementById('biz-phone').value.trim(),
+    businessDescription: document.getElementById('biz-desc').value.trim(),
+    services:            document.getElementById('biz-services').value.trim(),
+    uniqueStrength:      document.getElementById('biz-usp').value.trim(),
+    customerType:        document.getElementById('biz-customer').value.trim(),
+    businessType:        document.getElementById('biz-type').value,
+    address:             document.getElementById('biz-address').value.trim(),
+    openingHours:        document.getElementById('biz-hours').value.trim(),
+    mainKeyword:         document.getElementById('biz-keyword').value.trim(),
+    knownCompetitors:    document.getElementById('biz-competitors').value.trim(),
+    pricePositioning:    document.getElementById('biz-price').value,
+    yearsInBusiness:     document.getElementById('biz-years').value.trim(),
   };
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
@@ -874,10 +1109,89 @@ async function saveBusiness(e) {
     showToast('Business profile saved ✓');
   } catch (err) {
     errEl.textContent = err.message;
+  } finally {
     btn.disabled = false; btn.textContent = 'Save Business Profile';
   }
 }
+
+// ── Brand Kit ─────────────────────────────────────────────────────────────
+async function loadBrandKit() {
+  try {
+    const res = await fetch('/api/marketing/brand-kit');
+    if (!res.ok) return;
+    const { kit } = await res.json();
+    if (!kit || !Object.keys(kit).length) return;
+    bizSetVal('brand-slogan',   kit.slogan);
+    bizSetSel('brand-tone',     kit.tone);
+    bizSetVal('brand-audience', kit.targetAudience);
+    bizSetVal('brand-logo',     kit.logo);
+    const sa = kit.socialAccounts || {};
+    bizSetVal('brand-fb', sa.facebook);
+    bizSetVal('brand-ig', sa.instagram);
+    bizSetVal('brand-tt', sa.tiktok);
+    bizSetVal('brand-li', sa.linkedin);
+    bizSetVal('brand-yt', sa.youtube);
+    if (Array.isArray(kit.colors)) {
+      kit.colors.forEach((c, i) => {
+        const pick = document.querySelector('.brand-color-pick[data-idx="' + i + '"]');
+        const hex  = document.querySelector('.brand-color-hex[data-idx="' + i + '"]');
+        if (pick && c) pick.value = c;
+        if (hex  && c) hex.value  = c;
+      });
+    }
+  } catch {}
+}
+
+async function saveBrandKit(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('brand-error');
+  const btn   = document.getElementById('brand-save-btn');
+  errEl.textContent = '';
+  const colors = [...document.querySelectorAll('.brand-color-hex')]
+    .map(el => el.value.trim()).filter(c => /^#[0-9a-fA-F]{6}$/.test(c));
+  const payload = {
+    slogan:         document.getElementById('brand-slogan').value.trim(),
+    tone:           document.getElementById('brand-tone').value,
+    targetAudience: document.getElementById('brand-audience').value.trim(),
+    logo:           document.getElementById('brand-logo').value.trim(),
+    colors,
+    socialAccounts: {
+      facebook:  document.getElementById('brand-fb').value.trim(),
+      instagram: document.getElementById('brand-ig').value.trim(),
+      tiktok:    document.getElementById('brand-tt').value.trim(),
+      linkedin:  document.getElementById('brand-li').value.trim(),
+      youtube:   document.getElementById('brand-yt').value.trim(),
+    },
+  };
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res  = await fetch('/api/marketing/brand-kit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+    showToast('Brand Kit saved ✓');
+  } catch (err) {
+    errEl.textContent = err.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Brand Kit';
+  }
+}
+
+// Sync color picker ↔ hex input
+document.addEventListener('input', e => {
+  if (e.target.classList.contains('brand-color-pick')) {
+    const idx = e.target.dataset.idx;
+    const hex = document.querySelector('.brand-color-hex[data-idx="' + idx + '"]');
+    if (hex) hex.value = e.target.value;
+  }
+  if (e.target.classList.contains('brand-color-hex')) {
+    const idx = e.target.dataset.idx;
+    const pick = document.querySelector('.brand-color-pick[data-idx="' + idx + '"]');
+    if (pick && /^#[0-9a-fA-F]{6}$/.test(e.target.value)) pick.value = e.target.value;
+  }
+});
+
 loadBusiness();
+loadBrandKit();
 
 // ── Save profile ──────────────────────────────────────────
 async function saveProfile(e) {
@@ -1163,7 +1477,7 @@ async function saveAdmUser() {
 }
 
 </script>
-<script src="/js/api.js?v=4"></script>
+<script src="/js/api.js?v=5"></script>
 <script src="/js/trial-banner.js"></script>
 <script src="js/nav-init.js"></script>
 

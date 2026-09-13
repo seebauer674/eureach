@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FB Post Agent — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/fb-posts.css">
+  <script src="/js/translations.js"></script>
+  <script src="/js/i18n.js"></script>
+</head>
+<body>
+
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html" data-i18n="nav.leads">Lead Finder</a>
+      <a href="articles.html" data-i18n="nav.articles">Articles</a>
+      <a href="fb-posts.html" style="color:var(--white)" data-i18n="nav.fb_posts">FB Posts</a>
+      <a href="templates.html" data-i18n="nav.templates">Templates</a>
+      <a href="index.html#features">Features</a>
+      <a href="membership.html" data-i18n="nav.membership">Membership</a>
+      <a href="blog.html">Blog</a>
+    
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; My Profile</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="nav.sign_in">Sign in</a>
+      <a href="signup.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">Free trial →</a>
+    </div>
+  </div>
+</nav>
+<div class="sub-nav">
+  <div class="sub-nav-inner">
+    <a href="fb-posts.html" class="sub-nav-link active">&#128216; FB Post Agent</a>
+  </div>
+</div>
+
+<div class="fb-page">
+
+  <div class="fb-header">
+    <div>
+      <div class="fb-title">📘 FB Post Agent</div>
+      <div class="fb-subtitle">Auto-post to your Facebook groups and pages on a weekly rotation</div>
+    </div>
+    <button class="btn btn-primary" id="fb-run-btn" style="font-size:0.85rem;padding:10px 22px">▶ Run Agent Now</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="fb-tabs">
+    <button class="fb-tab active" data-tab="connect">🔗 Connect</button>
+    <button class="fb-tab" data-tab="targets">📍 Groups & Pages <span class="fb-tab-badge" id="tab-badge-targets">0</span></button>
+    <button class="fb-tab" data-tab="templates">📝 Templates <span class="fb-tab-badge" id="tab-badge-templates">0</span></button>
+    <button class="fb-tab" data-tab="log">📋 Agent Log</button>
+  </div>
+
+  <!-- ── Connect Tab ───────────────────────────────────── -->
+  <div class="fb-tab-panel active" id="tab-connect">
+
+    <!-- Not connected state -->
+    <div class="fb-oauth-wrap" id="fb-not-connected">
+      <div class="fb-oauth-icon">&#128172;</div>
+      <div class="fb-oauth-title">Connect your Facebook account</div>
+      <div class="fb-oauth-desc">One click and we handle everything — no tokens, no developer accounts needed. We request only the permissions needed to post to your groups and pages.</div>
+      <a href="/api/auth/facebook" class="fb-oauth-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Connect with Facebook
+      </a>
+      <div class="fb-oauth-note">You will be redirected to Facebook to authorise access. We store your token securely and never post without your action.</div>
+    </div>
+
+    <!-- Connected state -->
+    <div class="fb-oauth-wrap fb-connected-wrap" id="fb-connected" style="display:none">
+      <div class="fb-conn-head">
+        <div class="fb-conn-avatar" id="fb-conn-avatar">F</div>
+        <div class="fb-conn-info">
+          <div class="fb-conn-name" id="fb-conn-name">—</div>
+          <div class="fb-conn-status">
+            <span class="fb-badge fb-badge-set">&#10003; Connected</span>
+            <span class="fb-conn-expiry" id="fb-conn-expiry"></span>
+          </div>
+        </div>
+        <button class="fb-disconnect-btn" id="fb-disconnect-btn">Disconnect</button>
+      </div>
+      <div class="fb-conn-pages" id="fb-conn-pages" style="display:none">
+        <div class="fb-conn-pages-title">&#128196; Facebook Pages detected</div>
+        <div class="fb-conn-pages-list" id="fb-conn-pages-list"></div>
+        <div class="fb-conn-pages-hint">Add these pages as targets in the Groups &amp; Pages tab to post to them.</div>
+      </div>
+      <div class="fb-conn-reauth">
+        <a href="/api/auth/facebook" class="fb-reauth-link">&#8635; Re-authorise / refresh token</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Groups & Pages Tab ────────────────────────────── -->
+  <div class="fb-tab-panel" id="tab-targets">
+    <div class="fb-toolbar">
+      <div class="fb-filter-tabs">
+        <button class="fb-filter active" data-filter="all">All</button>
+        <button class="fb-filter" data-filter="group">Groups</button>
+        <button class="fb-filter" data-filter="page">Pages</button>
+      </div>
+      <button class="fb-save-btn" id="btn-add-target">+ Add Target</button>
+    </div>
+    <div id="targets-list" class="fb-targets-list">
+      <div class="fb-empty">No groups or pages yet. Click "+ Add Target" to add one.</div>
+    </div>
+  </div>
+
+  <!-- ── Templates Tab ────────────────────────────────── -->
+  <div class="fb-tab-panel" id="tab-templates">
+    <div class="fb-toolbar">
+      <div class="fb-filter-tabs">
+        <button class="fb-filter active" data-filter="all">All</button>
+        <button class="fb-filter" data-filter="group">Group Templates</button>
+        <button class="fb-filter" data-filter="page">Page Templates</button>
+      </div>
+      <button class="fb-save-btn" id="btn-add-template">+ New Template</button>
+    </div>
+    <div class="fb-tpl-hint">The agent picks templates by <strong>week number (1–4)</strong> on a rotating 4-week cycle. Set separate templates for groups and pages.</div>
+    <div id="templates-list" class="fb-templates-list">
+      <div class="fb-empty">No templates yet. Click "+ New Template" to write one.</div>
+    </div>
+  </div>
+
+  <!-- ── Log Tab ──────────────────────────────────────── -->
+  <div class="fb-tab-panel" id="tab-log">
+    <div id="log-list" class="fb-log-list">
+      <div class="fb-empty">No posts yet.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Add Target Modal ──────────────────────────────── -->
+<div class="fb-overlay" id="target-overlay" onclick="closeTargetModal()"></div>
+<div class="fb-modal" id="target-modal">
+  <div class="fb-modal-header">
+    <div class="fb-modal-title" id="target-modal-title">Add Target</div>
+    <button class="fb-modal-close" onclick="closeTargetModal()">✕</button>
+  </div>
+  <div class="fb-modal-body">
+    <input type="hidden" id="target-edit-id">
+    <div class="fb-field">
+      <label>Type</label>
+      <div class="fb-type-toggle">
+        <button class="fb-type-btn active" data-type="group">👥 Group</button>
+        <button class="fb-type-btn" data-type="page">📄 Page</button>
+      </div>
+      <input type="hidden" id="target-type" value="group">
+    </div>
+    <div class="fb-field">
+      <label>Name</label>
+      <input type="text" id="target-name" placeholder="Group or page name">
+    </div>
+    <div class="fb-field">
+      <label>Facebook ID <span style="color:var(--muted);font-weight:400">(numeric group/page ID)</span></label>
+      <input type="text" id="target-id" placeholder="123456789">
+    </div>
+    <div class="fb-field">
+      <label>URL <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <input type="text" id="target-url" placeholder="https://facebook.com/groups/…">
+    </div>
+    <div class="fb-field">
+      <label>Niche <span style="color:var(--muted);font-weight:400">(used to match templates)</span></label>
+      <input type="text" id="target-niche" placeholder="e.g. plumbers, local business, fitness">
+    </div>
+    <div class="fb-field">
+      <label>Status</label>
+      <select id="target-join-status" class="fb-select">
+        <option value="joined">Joined ✓</option>
+        <option value="not_joined">Not joined</option>
+        <option value="requested">Requested</option>
+      </select>
+    </div>
+    <div class="fb-modal-err" id="target-err"></div>
+    <div class="fb-modal-footer">
+      <button class="btn btn-ghost" onclick="closeTargetModal()">Cancel</button>
+      <button class="fb-save-btn" id="target-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Template Modal ────────────────────────────── -->
+<div class="fb-overlay" id="tpl-overlay" onclick="closeTplModal()"></div>
+<div class="fb-modal" id="tpl-modal">
+  <div class="fb-modal-header">
+    <div class="fb-modal-title" id="tpl-modal-title">New Template</div>
+    <button class="fb-modal-close" onclick="closeTplModal()">✕</button>
+  </div>
+  <div class="fb-modal-body">
+    <input type="hidden" id="tpl-edit-id">
+    <div class="fb-field">
+      <label>For</label>
+      <div class="fb-type-toggle">
+        <button class="fb-type-btn active" data-type="group">👥 Group</button>
+        <button class="fb-type-btn" data-type="page">📄 Page</button>
+      </div>
+      <input type="hidden" id="tpl-target-type" value="group">
+    </div>
+    <div class="fb-field">
+      <label>Name</label>
+      <input type="text" id="tpl-name" placeholder="Week 1 — General outreach">
+    </div>
+    <div class="fb-field">
+      <label>Week</label>
+      <div class="fb-week-btns">
+        <button class="fb-week-btn active" data-week="1">Week 1</button>
+        <button class="fb-week-btn" data-week="2">Week 2</button>
+        <button class="fb-week-btn" data-week="3">Week 3</button>
+        <button class="fb-week-btn" data-week="4">Week 4</button>
+      </div>
+      <input type="hidden" id="tpl-week" value="1">
+    </div>
+    <div class="fb-field">
+      <label>Niche <span style="color:var(--muted);font-weight:400">(leave blank = matches all)</span></label>
+      <input type="text" id="tpl-niche" placeholder="e.g. plumbers">
+    </div>
+    <div class="fb-field">
+      <label>Post Content <span class="fb-char-count" id="tpl-chars">0 / 63206</span></label>
+      <textarea id="tpl-content" rows="8" placeholder="Write your post…"></textarea>
+    </div>
+    <div class="fb-modal-err" id="tpl-err"></div>
+    <div class="fb-modal-footer">
+      <button class="btn btn-ghost" onclick="closeTplModal()">Cancel</button>
+      <button class="fb-save-btn" id="tpl-save-btn">Save Template</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Agent Run Modal ──────────────────────────────── -->
+<div class="fb-overlay" id="run-overlay"></div>
+<div class="fb-modal" id="run-modal" style="max-width:500px;text-align:center">
+  <div class="fb-modal-header" style="justify-content:center;border:none;padding-bottom:0">
+    <div class="fb-modal-title" id="run-modal-title">▶ Running Agent…</div>
+  </div>
+  <div class="fb-modal-body" style="padding:16px 28px 28px">
+    <div id="run-progress" class="fb-run-progress"></div>
+    <div id="run-results" class="fb-run-results" style="display:none"></div>
+    <button class="fb-save-btn" id="run-close-btn" style="display:none;margin:16px auto 0" onclick="closeRunModal()">Close</button>
+  </div>
+</div>
+
+<script src="js/fb-posts.js"></script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

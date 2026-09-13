@@ -6,6 +6,10 @@
   <title>Pipeline — eureach.eu</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/pipeline.css?v=20260518">
+  <script src="/js/translations.js"></script>
+  <script src="/js/i18n.js"></script>
+  <script src="/js/translations.js?v=5"></script>
+  <script src="/js/i18n.js?v=5"></script>
 </head>
 <body>
 
@@ -13,21 +17,35 @@
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
     <div class="nav-links">
-      <a href="leads.html">Lead Finder</a>
-      
-      <a href="articles.html">Articles</a>
-      <a href="crm.html">CRM</a>
-      <a href="competitors.html">Competitors</a>
-      <a href="audit.html">AI Audit</a>
+      <a href="leads.html" style="color:var(--white)" data-i18n="nav.leads">Lead Finder</a>
+      <a href="articles.html" data-i18n="nav.articles">Articles</a>
+      <a href="fb-posts.html" data-i18n="nav.fb_posts">FB Posts</a>
+      <a href="templates.html" data-i18n="nav.templates">Templates</a>
+      <a href="index.html#features">Features</a>
+      <a href="membership.html" data-i18n="nav.membership">Membership</a>
+      <a href="blog.html">Blog</a>
+    
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
     </div>
     <div class="nav-cta">
-      <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">👤 My Profile</a>
-      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
-      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
-      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
+      <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; My Profile</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="nav.sign_in">Sign in</a>
+      <a href="signup.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">Free trial →</a>
     </div>
   </div>
 </nav>
+<div class="sub-nav">
+  <div class="sub-nav-inner">
+    <a href="leads.html" class="sub-nav-link" data-i18n="subnav.search_leads">&#128269; Search Leads</a>
+    <a href="crm.html" class="sub-nav-link" data-i18n="subnav.crm">&#128203; CRM</a>
+    <a href="competitors.html" class="sub-nav-link" data-i18n="subnav.ai_visibility">&#128202; AI Visibility</a>
+    <a href="competitor-search.html" class="sub-nav-link" data-i18n="subnav.competitor_search">&#128373; Competitor Search</a>
+    <a href="competitor-history.html" class="sub-nav-link" data-i18n="subnav.history">&#128336; History</a>
+  </div>
+</div>
 
 <div class="pl-page">
 
@@ -35,8 +53,8 @@
   <div class="pl-header">
     <div class="pl-header-inner">
       <div>
-        <div class="pl-title">🔁 Lead Pipeline</div>
-        <div class="pl-subtitle">Track your leads from first contact to closed deal</div>
+        <div class="pl-title" data-i18n="pl.title">🔁 Lead Pipeline</div>
+        <div class="pl-subtitle" data-i18n="pl.subtitle">Track your leads from first contact to closed deal</div>
       </div>
     </div>
     <div class="pl-stats" id="pl-stats"></div>
@@ -46,7 +64,7 @@
   <div class="pl-board" id="pl-board">
     <div class="pl-loading" id="pl-loading">
       <div class="pl-spinner"></div>
-      Loading your pipeline…
+      ${T("pl.loading","Loading your pipeline…")}
     </div>
   </div>
 
@@ -62,7 +80,8 @@
   <div class="pl-panel-body" id="pl-panel-body"></div>
 </div>
 
-<script src="js/pipeline.js?v=20260518"></script>
-<script src="/js/api.js"></script>
+<script src="js/pipeline.js?v=20260907"></script>
+<script src="/js/api.js?v=5"></script>
+<script src="js/nav-init.js"></script>
 </body>
 </html>

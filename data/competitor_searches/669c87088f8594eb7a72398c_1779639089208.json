@@ -1,0 +1,445 @@
+{
+  "searchId": "669c87088f8594eb7a72398c_1779639089208",
+  "userId": "669c87088f8594eb7a72398c",
+  "status": "complete",
+  "searchedAt": "2026-05-24T16:11:29.208Z",
+  "completedAt": "2026-05-24T16:12:46.309Z",
+  "input": {
+    "businessName": "pcai",
+    "description": "pcai creates webpages with the help of AI, also creates web apps with AI like AI chatbots.",
+    "businessType": "online",
+    "yearsInBusiness": "1",
+    "city": "Athens",
+    "region": "Attica",
+    "country": "Greece",
+    "countryCode": "GR",
+    "lat": 37.9838,
+    "lng": 23.7275,
+    "scope": "city",
+    "customerType": "b2b",
+    "pricePositioning": "mid",
+    "mainKeyword": "internet pages, AI, chatbots",
+    "uniqueStrength": "48 hours delivery",
+    "website": "pcai.cloud",
+    "knownCompetitors": "",
+    "category": "",
+    "searchQueries": [
+      "internet pages, AI, chatbots Athens",
+      "internet pages, AI, chatbots Attica",
+      "Athens pcai creates webpages"
+    ]
+  },
+  "mapsResults": [
+    {
+      "num": 1,
+      "name": "Polarzee | Κατασκευή Ιστοσελίδων & E-shop | Web Development Αθήνα",
+      "address": "Asklipiou 26-28, Athina 103 80, Greece",
+      "rating": 5,
+      "reviews": 94,
+      "website": "https://polarzee.com/",
+      "phone": "21 1116 7939",
+      "isKnown": "",
+      "types": "establishment, point_of_interest",
+      "openNow": true
+    },
+    {
+      "num": 2,
+      "name": "AimHigh Agency | Υπηρεσίες Digital Marketing",
+      "address": "Agisilaou 7, Kallithea 176 74, Greece",
+      "rating": 5,
+      "reviews": 16,
+      "website": "https://aimhighagency.gr/",
+      "phone": "21 1018 1785",
+      "isKnown": "",
+      "types": "establishment, point_of_interest",
+      "openNow": false
+    },
+    {
+      "num": 3,
+      "name": "Day One Growth Igniters",
+      "address": "Νάκου, Ισόγειο 4, Athina 117 43, Greece",
+      "rating": 5,
+      "reviews": 2,
+      "website": "http://www.dayone.gr/",
+      "phone": "693 464 2120",
+      "isKnown": "",
+      "types": "establishment, point_of_interest",
+      "openNow": false
+    },
+    {
+      "num": 4,
+      "name": "Stegi Tis Ellinikis Viomichanias S.A.",
+      "address": "Xenofontos 5, Athina 105 57, Greece",
+      "rating": 5,
+      "reviews": 1,
+      "website": "http://sevstegi.org.gr/",
+      "phone": "21 0322 2929",
+      "isKnown": "",
+      "types": "establishment, point_of_interest"
+    },
+    {
+      "num": 5,
+      "name": "MindSeed",
+      "address": "Trion Ierarchon 31, Athina 118 51, Greece",
+      "rating": 4.9,
+      "reviews": 15,
+      "website": "http://www.mindseed.gr/",
+      "phone": "21 1790 2990",
+      "isKnown": "",
+      "types": "establishment, point_of_interest",
+      "openNow": false
+    },
+    {
+      "num": 6,
+      "name": "Apt Information Systems S.A.",
+      "address": "2, Adrianiou str, Athina 115 25, Greece",
+      "rating": 4.9,
+      "reviews": 17,
+      "website": "http://www.apt.gr/",
+      "phone": "21 0698 5910",
+      "isKnown": "",
+      "types": "establishment, point_of_interest",
+      "openNow": false
+    },
+    {
+      "num": 7,
+      "name": "Found.ation",
+      "address": "Evristheos 2, Athina 118 54, Greece",
+      "rating": 4.9,
+      "reviews": 20,
+      "website": "http://www.thefoundation.gr/",
+      "phone": "21 0345 0606",
+      "isKnown": "",
+      "types": "establishment, point_of_interest, real_estate_agency",
+      "openNow": false
+    },
+    {
+      "num": 8,
+      "name": "space52",
+      "address": "Larnakos 28, Athina 104 46, Greece",
+      "rating": 4.8,
+      "reviews": 25,
+      "website": "http://www.space52.gr/",
+      "phone": "697 704 1634",
+      "isKnown": "",
+      "types": "establishment, point_of_interest"
+    },
+    {
+      "num": 9,
+      "name": "National Technical University of Athens - Polytechnic Campus",
+      "address": "Leof. Alimou Katechaki, Zografou 157 72, Greece",
+      "rating": 4.6,
+      "reviews": 229,
+      "website": "https://www.ntua.gr/el/",
+      "phone": "21 0772 1000",
+      "isKnown": "",
+      "types": "establishment, point_of_interest, university"
+    },
+    {
+      "num": 10,
+      "name": "Athens Biennale - Head Office",
+      "address": "Mavrommateon 23, 4th floor, Athina 104 34, Greece",
+      "rating": 4.6,
+      "reviews": 8,
+      "website": "http://athensbiennale.org/",
+      "phone": "21 0523 2222",
+      "isKnown": "",
+      "types": "establishment, museum, point_of_interest",
+      "openNow": false
+    },
+    {
+      "num": 11,
+      "name": "Art Athina",
+      "address": "Zappio Megaro, Athina 105 57, Greece",
+      "rating": 4.5,
+      "reviews": 162,
+      "website": "http://art-athina.gr/",
+      "phone": "21 0360 7546",
+      "isKnown": "",
+      "types": "establishment, point_of_interest",
+      "openNow": true
+    },
+    {
+      "num": 12,
+      "name": "attica DPS",
+      "address": "Panepistimiou 9, Athina 105 64, Greece",
+      "rating": 4.4,
+      "reviews": 11863,
+      "website": "https://www.atticadps.gr/",
+      "phone": "21 1990 0000",
+      "isKnown": "",
+      "types": "department_store, establishment, point_of_interest, shopping_mall, store",
+      "openNow": false
+    },
+    {
+      "num": 13,
+      "name": "The Ellinikon Experience Park",
+      "address": "Elliniko 167 77, Greece",
+      "rating": 4.4,
+      "reviews": 5436,
+      "website": "https://theellinikon.com.gr/episkeftite-to-the-ellinikon/experience-park",
+      "phone": "21 6202 0900",
+      "isKnown": "",
+      "types": "establishment, park, point_of_interest",
+      "openNow": true
+    },
+    {
+      "num": 14,
+      "name": "Poka-Yio Studio",
+      "address": "Keratsiniou 72, Athina 104 41, Greece",
+      "rating": 0,
+      "reviews": 0,
+      "website": null,
+      "phone": "697 724 2257",
+      "isKnown": "",
+      "types": "establishment, point_of_interest"
+    }
+  ],
+  "analysis": {
+    "summary": "The Athens web development market is moderately competitive with several established agencies offering traditional development services, mostly without AI-driven delivery speed as a differentiator. Most competitors are generalist digital agencies with physical offices, strong local reputations, and multi-month project timelines. pcai's 48-hour AI-powered delivery is a genuine market gap that none of these competitors explicitly offer. Two irrelevant entries (NTUA and Athens Biennale) appear in results due to broad category matching and pose no real threat.",
+    "biggestThreat": {
+      "name": "Polarzee | Κατασκευή Ιστοσελίδων & E-shop | Web Development Αθήνα",
+      "reason": "Polarzee is a direct, hyper-local Athens web development competitor with a perfect 5.0 rating across 94 reviews — the largest validated social proof in this set. They target the same B2B web development market in Athens, have strong SEO presence (branded for 'κατασκευή ιστοσελίδων Athens'), and are actively open for business. Their volume of reviews signals an established sales pipeline that directly competes for pcai's target clients."
+    },
+    "opportunities": [
+      "Aggressively market the 48-hour AI delivery guarantee as a paid tier — no competitor in this set advertises speed as a core differentiator, making it a blue-ocean positioning in the Athens B2B market.",
+      "Target B2B clients who have been burned by slow traditional agencies (2-8 week timelines) by running retargeting ads and LinkedIn campaigns specifically calling out delivery speed versus the industry norm.",
+      "Build a visible AI chatbot product page on pcai.cloud targeting Greek SMBs — none of the competitors appear to offer AI-powered chatbot development as a packaged service, creating an upsell opportunity within the same client base."
+    ],
+    "competitors": [
+      {
+        "rank": 1,
+        "name": "Polarzee | Κατασκευή Ιστοσελίδων & E-shop | Web Development Αθήνα",
+        "address": "Asklipiou 26-28, Athina 103 80, Greece",
+        "rating": 5,
+        "reviewCount": 94,
+        "website": "https://polarzee.com/",
+        "phone": "21 1116 7939",
+        "isKnown": "",
+        "threatLevel": "high",
+        "strengths": [
+          "94 five-star reviews gives them dominant social proof and trust signals in the Athens market — far ahead of every other competitor listed",
+          "Specialised branding around 'κατασκευή ιστοσελίδων & e-shop' means strong Greek-language SEO for the exact searches pcai needs to win",
+          "Currently open and actively trading with a listed phone number indicating strong operational capacity"
+        ],
+        "gaps": [
+          "No visible AI-powered development offering or speed-based value proposition based on their category and positioning",
+          "E-shop and traditional development focus likely means longer project timelines, no 48-hour delivery equivalent",
+          "Physical office model with traditional agency overhead likely means higher prices or inflexibility for small fast-turnaround B2B jobs"
+        ],
+        "recommendedAction": "Directly target clients searching 'κατασκευή ιστοσελίδων Αθήνα' with Google Ads highlighting '48-hour delivery vs weeks with traditional agencies' to intercept Polarzee's traffic pipeline.",
+        "onlinePresenceScore": 9,
+        "onlinePresenceDetail": "Strong: 94 reviews, active website, listed phone, open status confirmed, clearly optimised for local Greek web searches"
+      },
+      {
+        "rank": 2,
+        "name": "AimHigh Agency | Υπηρεσίες Digital Marketing",
+        "address": "Agisilaou 7, Kallithea 176 74, Greece",
+        "rating": 5,
+        "reviewCount": 16,
+        "website": "https://aimhighagency.gr/",
+        "phone": "21 1018 1785",
+        "isKnown": "",
+        "threatLevel": "medium",
+        "strengths": [
+          "Perfect 5.0 rating with 16 reviews suggests strong client satisfaction and reliable delivery in digital services",
+          "Digital marketing focus means they likely bundle web development with SEO/ads — attractive one-stop-shop for B2B clients"
+        ],
+        "gaps": [
+          "Kallithea location and digital marketing primary focus means web development may be secondary or outsourced, reducing quality control",
+          "16 reviews is a thin base — limited proven track record at scale compared to pcai's speed advantage",
+          "No visible AI or automation capability indicated in their category or branding"
+        ],
+        "recommendedAction": "Position pcai as the AI-native alternative to full-service agencies — pitch clients who want fast web delivery without paying for bundled marketing services they may not need.",
+        "onlinePresenceScore": 6,
+        "onlinePresenceDetail": "Moderate: small but perfect review base, active website, not currently open — limited brand footprint beyond Google listing"
+      },
+      {
+        "rank": 3,
+        "name": "Day One Growth Igniters",
+        "address": "Νάκου, Ισόγειο 4, Athina 117 43, Greece",
+        "rating": 5,
+        "reviewCount": 2,
+        "website": "http://www.dayone.gr/",
+        "phone": "693 464 2120",
+        "isKnown": "",
+        "threatLevel": "low",
+        "strengths": [
+          "Growth-focused branding ('Growth Igniters') may resonate with B2B startup clients seeking measurable ROI from web projects",
+          "Perfect rating, but only 2 reviews — likely a newer or boutique operation"
+        ],
+        "gaps": [
+          "Only 2 reviews makes their reputation unverified and unconvincing to risk-averse B2B buyers",
+          "Mobile phone number (693) instead of landline signals a small or solo operation with limited capacity",
+          "Currently not open — unclear operational consistency or availability"
+        ],
+        "recommendedAction": "No immediate action needed — monitor for growth; if they begin acquiring reviews rapidly, consider differentiating on AI credentials and case studies to outpace their credibility build.",
+        "onlinePresenceScore": 3,
+        "onlinePresenceDetail": "Weak: minimal reviews, mobile-only contact, dated website domain, not confirmed open — very low digital authority"
+      },
+      {
+        "rank": 4,
+        "name": "Stegi Tis Ellinikis Viomichanias S.A.",
+        "address": "Xenofontos 5, Athina 105 57, Greece",
+        "rating": 5,
+        "reviewCount": 1,
+        "website": "http://sevstegi.org.gr/",
+        "phone": "21 0322 2929",
+        "isKnown": "",
+        "threatLevel": "low",
+        "strengths": [
+          "Central Athens address near key business districts could give physical credibility with traditional B2B buyers",
+          "Established S.A. legal structure suggests institutional backing"
+        ],
+        "gaps": [
+          "Only 1 review and appears to be an industrial/trade association building, not a web development agency — likely irrelevant match",
+          "Website domain sevstegi.org.gr indicates a non-commercial organisation, not a competing service provider",
+          "No evidence of digital or web services offering"
+        ],
+        "recommendedAction": "Disregard as a competitor — this entity is almost certainly not a web development agency and was captured due to broad Google category matching.",
+        "onlinePresenceScore": 1,
+        "onlinePresenceDetail": "Minimal: 1 review, institutional non-commercial website, unclear operational status — not a real competitor"
+      },
+      {
+        "rank": 5,
+        "name": "MindSeed",
+        "address": "Trion Ierarchon 31, Athina 118 51, Greece",
+        "rating": 4.9,
+        "reviewCount": 15,
+        "website": "http://www.mindseed.gr/",
+        "phone": "21 1790 2990",
+        "isKnown": "",
+        "threatLevel": "medium",
+        "strengths": [
+          "4.9 rating with 15 reviews shows consistent quality delivery and satisfied B2B clients in the Athens area",
+          "Landline phone number and physical address indicate an established operational setup with real infrastructure"
+        ],
+        "gaps": [
+          "HTTP (non-HTTPS) website signals outdated technical standards — ironic for a web services firm and damages client trust",
+          "Low review volume limits their discoverability and competitive reach against higher-reviewed agencies",
+          "No apparent AI capability or speed-focused positioning"
+        ],
+        "recommendedAction": "Use pcai's AI chatbot product as a differentiator when pitching clients MindSeed serves — highlight that pcai delivers interactive AI features MindSeed cannot offer in the same timeframe.",
+        "onlinePresenceScore": 5,
+        "onlinePresenceDetail": "Moderate: decent review count, landline presence, but HTTP website is a credibility red flag in 2024 — limited SEO authority"
+      },
+      {
+        "rank": 6,
+        "name": "Apt Information Systems S.A.",
+        "address": "2, Adrianiou str, Athina 115 25, Greece",
+        "rating": 4.9,
+        "reviewCount": 17,
+        "website": "http://www.apt.gr/",
+        "phone": "21 0698 5910",
+        "isKnown": "",
+        "threatLevel": "medium",
+        "strengths": [
+          "S.A. corporate structure and 'Information Systems' focus signals enterprise-grade technical capability, appealing to larger B2B clients",
+          "17 reviews at 4.9 indicates sustained quality across multiple engagements, not just one-off projects"
+        ],
+        "gaps": [
+          "HTTP non-secure website in 2024 is a significant credibility gap for an IT company pitching web solutions",
+          "Information systems focus likely means longer, more expensive enterprise projects — not competitive for fast-turnaround SMB web work",
+          "Not currently open suggests limited accessibility or B2B-only scheduled engagement model"
+        ],
+        "recommendedAction": "Target SMB clients who found Apt too slow or too expensive — position pcai as the agile, AI-powered alternative with 48-hour turnaround at mid-range pricing.",
+        "onlinePresenceScore": 5,
+        "onlinePresenceDetail": "Moderate: solid review base, corporate website, but HTTP domain and inactive status reduce trust and discoverability"
+      },
+      {
+        "rank": 7,
+        "name": "Found.ation",
+        "address": "Evristheos 2, Athina 118 54, Greece",
+        "rating": 4.9,
+        "reviewCount": 20,
+        "website": "http://www.thefoundation.gr/",
+        "phone": "21 0345 0606",
+        "isKnown": "",
+        "threatLevel": "medium",
+        "strengths": [
+          "20 reviews at 4.9 with a recognisable brand name ('Found.ation') suggests strong reputation and possibly community/startup ecosystem ties in Athens",
+          "Dual categorisation as real_estate_agency implies cross-sector reach and diverse B2B client base"
+        ],
+        "gaps": [
+          "HTTP website and generic thefoundation.gr domain suggest limited investment in digital brand authority",
+          "Real estate agency categorisation creates brand confusion — unclear core service identity may reduce B2B web client trust",
+          "Not currently open and no apparent AI or speed-based differentiation"
+        ],
+        "recommendedAction": "If Found.ation targets startup or growth-stage B2B clients, compete by showcasing pcai's AI chatbot builds as a startup-friendly growth tool with demonstrable ROI case studies.",
+        "onlinePresenceScore": 5,
+        "onlinePresenceDetail": "Moderate: reasonable review base, recognisable name, but HTTP site and mixed categorisation limit professional positioning"
+      },
+      {
+        "rank": 8,
+        "name": "space52",
+        "address": "Larnakos 28, Athina 104 46, Greece",
+        "rating": 4.8,
+        "reviewCount": 25,
+        "website": "http://www.space52.gr/",
+        "phone": "697 704 1634",
+        "isKnown": "",
+        "threatLevel": "medium",
+        "strengths": [
+          "25 reviews at 4.8 is a solid validated track record — the second highest review count among genuine web competitors",
+          "Mobile contact number suggests lean, flexible operation that may be responsive and easy to work with"
+        ],
+        "gaps": [
+          "Mobile-only contact and HTTP website signal a small team or freelancer setup without enterprise-level support infrastructure",
+          "Unknown open status reduces client confidence in reliability and availability",
+          "No visible AI or tech-forward differentiator in their positioning"
+        ],
+        "recommendedAction": "Target the same SMB and mid-market B2B segment space52 serves — emphasise pcai's AI capability and 48-hour delivery as proof of a more advanced, scalable service offering.",
+        "onlinePresenceScore": 6,
+        "onlinePresenceDetail": "Moderate-good: 25 reviews is the strongest non-Polarzee count, but HTTP site and mobile-only contact undercut professional credibility"
+      },
+      {
+        "rank": 9,
+        "name": "National Technical University of Athens - Polytechnic Campus",
+        "address": "Leof. Alimou Katechaki, Zografou 157 72, Greece",
+        "rating": 4.6,
+        "reviewCount": 229,
+        "website": "https://www.ntua.gr/el/",
+        "phone": "21 0772 1000",
+        "isKnown": "",
+        "threatLevel": "low",
+        "strengths": [
+          "Highest review count in the set (229) reflecting massive institutional reputation and trust",
+          "Strong HTTPS website and national brand recognition"
+        ],
+        "gaps": [
+          "University institution — not a web development competitor in any commercial sense",
+          "Does not serve B2B clients for web or app development commercially",
+          "Included due to Google category mismatch — completely irrelevant competitive threat"
+        ],
+        "recommendedAction": "Disregard entirely as a competitor. Consider NTUA as a talent pipeline — Athens tech graduates are potential hires or collaborators for pcai's AI development work.",
+        "onlinePresenceScore": 10,
+        "onlinePresenceDetail": "Excellent institutional presence but entirely irrelevant to pcai's competitive landscape — not a commercial service provider"
+      },
+      {
+        "rank": 10,
+        "name": "Athens Biennale - Head Office",
+        "address": "Mavrommateon 23, 4th floor, Athina 104 34, Greece",
+        "rating": 4.6,
+        "reviewCount": 8,
+        "website": "http://athensbiennale.org/",
+        "phone": "21 0523 2222",
+        "isKnown": "",
+        "threatLevel": "low",
+        "strengths": [
+          "Cultural institution with recognisable international brand in the Athens arts scene",
+          "Established physical presence and media coverage"
+        ],
+        "gaps": [
+          "Arts/museum organisation — not a web or tech services competitor",
+          "HTTP website, minimal reviews, and museum categorisation confirm zero relevance to pcai's B2B market",
+          "Included due to broad Google category sweep — no actual competitive overlap"
+        ],
+        "recommendedAction": "Disregard entirely as a competitor — Athens Biennale is a cultural institution with no commercial web development services.",
+        "onlinePresenceScore": 3,
+        "onlinePresenceDetail": "Low commercial presence: arts institution with HTTP site, 8 reviews, and no relevance to web development services"
+      }
+    ]
+  },
+  "error": null,
+  "totalFound": 14
+}

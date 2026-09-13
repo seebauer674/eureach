@@ -13,24 +13,72 @@
 <body>
 
 <!-- ── NAV ─────────────────────────────────────────────── -->
+<style>
+.nav-dropdown { position: relative; }
+.nav-dropdown-toggle {
+  font-size: 0.875rem; font-weight: 500; color: var(--muted);
+  cursor: pointer; display: flex; align-items: center; gap: 4px;
+  background: none; border: none; padding: 0; transition: color 0.2s;
+  white-space: nowrap;
+}
+.nav-dropdown-toggle:hover { color: var(--white); }
+.nav-dropdown-toggle svg { width: 10px; height: 10px; transition: transform 0.2s; }
+.nav-dropdown:hover .nav-dropdown-toggle svg { transform: rotate(180deg); }
+.nav-dropdown-menu {
+  display: none; position: absolute; top: 100%; left: 0;
+  padding-top: 12px; min-width: 190px; z-index: 200;
+}
+.nav-dropdown-menu-inner {
+  background: rgba(10,16,36,0.97); border: 1px solid var(--border);
+  border-radius: 12px; padding: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.nav-dropdown:hover .nav-dropdown-menu { display: block; }
+.nav-dropdown-menu a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: 0.85rem; color: var(--muted); text-decoration: none;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-dropdown-menu a:hover { background: rgba(255,255,255,0.07); color: var(--white); }
+.nav-dropdown-menu .ndm-icon { font-size: 1rem; width: 20px; text-align: center; }
+.nav-dropdown-divider { height: 1px; background: var(--border); margin: 6px 0; }
+</style>
 <nav id="nav">
   <div class="nav-inner">
-    <div class="nav-logo">
+    <a href="index.html" class="nav-logo">
       eureach<span class="dot">.</span>eu
-    </div>
+    </a>
     <div class="nav-links">
-      <a href="leads.html">Lead Finder</a>
-      <a href="articles.html">Articles</a>
-      <a href="templates.html">Templates</a>
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
+            <a href="marketing.html"><span class="ndm-icon">🚀</span><span>Marketing Creator</span></a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
+          </div>
+        </div>
+      </div>
+      <a href="audit.html">AI Audit</a>
+      <a href="blog.html">Blog</a>
       <a href="#features">Features</a>
-      <a href="#how">How it works</a>
       <a href="#pricing">Pricing</a>
-      <a href="/solo">Για Επαγγελματίες</a>
       <a href="membership.html">Membership</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
     </div>
     <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" id="nav-profile-btn" style="font-size:0.78rem;padding:7px 14px;display:none"></a>
       <a href="signin.html" class="btn btn-ghost">Log in</a>
-      <a href="signup.html" class="btn btn-primary">Start free →</a>
+      <a href="signup.html" class="btn btn-primary" id="nav-signup-btn">Start free →</a>
     </div>
   </div>
 </nav>
@@ -57,7 +105,7 @@
 
       <div class="hero-actions">
         <a href="signup.html" class="btn btn-primary btn-lg">Start free — no card needed →</a>
-        <a href="#features" class="btn btn-outline-gold btn-lg">See how it works</a>
+        <a href="#how" class="btn btn-outline-gold btn-lg">See how it works</a>
       </div>
 
       <div class="hero-trust">
@@ -171,7 +219,7 @@
   <div class="container">
     <div class="section-head reveal">
       <div class="section-label">What eureach does</div>
-      <h2 class="section-title">Three tools. <span class="gradient-text">One platform.</span></h2>
+      <h2 class="section-title">Five tools. <span class="gradient-text">One platform.</span></h2>
       <p class="section-sub">Everything a European business or digital agency needs to find clients, create content, and dominate local search.</p>
     </div>
 
@@ -211,6 +259,32 @@
           <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span>White-label PDF for agencies</li>
           <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span>Monthly monitoring available</li>
         </ul>
+      </div>
+
+      <div class="feat-card reveal" style="--card-color:#059669;--card-glow:rgba(5,150,105,0.25)">
+        <div class="feat-icon" style="background:rgba(5,150,105,0.15)">📡</div>
+        <h3>Competitor Tracker</h3>
+        <p>eureach finds your competitors automatically and runs a full AI visibility audit on each one — so you always know where you stand and where they're ahead.</p>
+        <ul class="feat-list">
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span>Auto-discover competitors in your niche</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span>AI visibility score for every competitor</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span>Side-by-side breakdown & gap analysis</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span>Alerts when a competitor's score drops</li>
+        </ul>
+      </div>
+
+      <div class="feat-card reveal feat-card-wide" style="--card-color:#d97706;--card-glow:rgba(217,119,6,0.25)">
+        <div class="feat-icon" style="background:rgba(217,119,6,0.15)">🔗</div>
+        <h3>Citation Builder</h3>
+        <p>Get your business listed on high-authority EU directories and niche sites — the backlinks that move the needle for local SEO and AI search visibility. Fully managed by the eureach team.</p>
+        <ul class="feat-list">
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>Placements on DR 50–90 sites in your niche</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>AI-written articles tailored to your business</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>YouTube mention add-on for video creators</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>Live placement tracker — see every link go live</li>
+        </ul>
+        <p style="margin-top:1rem;font-size:0.82rem;color:#fbbf24;opacity:0.85;">🎥 Already partnered with 12+ YouTube creators across Greece &amp; Germany</p>
+        <a href="/citations.html" style="display:inline-block;position:relative;z-index:1;margin-top:1.2rem;padding:0.55rem 1.4rem;background:rgba(217,119,6,0.18);border:1px solid rgba(245,158,11,0.4);border-radius:8px;color:#fbbf24;font-size:0.9rem;font-weight:600;text-decoration:none;">View packages &rarr;</a>
       </div>
 
     </div>
@@ -270,52 +344,157 @@
   </div>
 </section>
 
+<!-- ── COMPARISON ─────────────────────────────────────────── -->
+<section class="comparison" id="compare">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="section-label">How we compare</div>
+      <h2 class="section-title">Built for EU local business. <span class="gradient-text">Nothing else is.</span></h2>
+      <p class="section-sub">Apollo finds Fortune 500s. Clay enriches spreadsheets. eureach finds the dentist in Thessaloniki who needs you — and writes the email to reach them.</p>
+    </div>
+
+    <div class="cmp-wrap reveal">
+      <div class="cmp-table-wrap">
+        <table class="cmp-table">
+          <thead>
+            <tr>
+              <th class="cmp-feature-col">Feature</th>
+              <th class="cmp-us">eureach.eu</th>
+              <th>contacter.ai</th>
+              <th>Apollo.io</th>
+              <th>Clay</th>
+              <th>Instantly</th>
+              <th>Dealfront</th>
+              <th>Pipedrive</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cmp-row-label">Finds local SMBs (Google Maps)</td>
+              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+            </tr>
+            <tr>
+              <td class="cmp-row-label">Greek &amp; German language support</td>
+              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-partial">partial</span></td>
+              <td><span class="cmp-partial">partial</span></td>
+            </tr>
+            <tr>
+              <td class="cmp-row-label">AI article generation</td>
+              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+            </tr>
+            <tr>
+              <td class="cmp-row-label">Social media DM automation</td>
+              <td class="cmp-us"><span class="cmp-soon">soon</span></td>
+              <td><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+            </tr>
+            <tr>
+              <td class="cmp-row-label">AI email outreach sequences</td>
+              <td class="cmp-us"><span class="cmp-soon">soon</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+            </tr>
+            <tr>
+              <td class="cmp-row-label">GDPR / §7 UWG compliant outreach</td>
+              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-partial">partial</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-partial">partial</span></td>
+              <td><span class="cmp-no">✗</span></td>
+            </tr>
+            <tr>
+              <td class="cmp-row-label">AI visibility audit (ChatGPT/Gemini)</td>
+              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+            </tr>
+            <tr>
+              <td class="cmp-row-label">Built-in CRM pipeline</td>
+              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-yes">✓</span></td>
+            </tr>
+            <tr>
+              <td class="cmp-row-label">Starting price / month</td>
+              <td class="cmp-us cmp-price">Free → €29</td>
+              <td class="cmp-price">Demo only</td>
+              <td class="cmp-price">$49 / user</td>
+              <td class="cmp-price">$185</td>
+              <td class="cmp-price">$37</td>
+              <td class="cmp-price">€99</td>
+              <td class="cmp-price">€14 / user</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cmp-note">contacter.ai automates social DMs but can't find real local businesses or write content. eureach combines both — and outreach automation is coming soon.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ── PRICING ───────────────────────────────────────────── -->
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-head reveal">
       <div class="section-label">Simple pricing</div>
       <h2 class="section-title">Start free. <span class="gradient-text">Scale when ready.</span></h2>
-      <p class="section-sub">No contracts. Cancel any time. 2 free articles and 10 lead searches every month — no credit card needed.</p>
+      <p class="section-sub">No contracts. Cancel any time. 150 free AI credits every month — no credit card needed.</p>
     </div>
 
     <div class="pricing-grid">
 
-      <!-- Solo Free -->
+      <!-- Free -->
       <div class="price-card reveal">
-        <div class="price-name">Solo Free</div>
+        <div class="price-name">Free</div>
         <div class="price-amount"><span>€</span>0</div>
-        <div class="price-period">για πάντα δωρεάν</div>
+        <div class="price-period">forever · no card needed</div>
         <div class="price-divider"></div>
         <ul class="price-features">
-          <li><span class="check">✓</span> Προφίλ Επιχείρησης</li>
-          <li><span class="check">✓</span> 1 Έλεγχος AI / μήνα</li>
-          <li><span class="check">✓</span> 1 άρθρο αυτοπροώθησης / μήνα</li>
-          <li><span class="check">✓</span> Μηνιαία λίστα ενεργειών</li>
-          <li><span class="check">✓</span> Ελληνική διεπαφή</li>
-          <li class="dim"><span class="x">✗</span> Αναφορά PDF</li>
-          <li class="dim"><span class="x">✗</span> Υποστήριξη προτεραιότητας</li>
+          <li><span class="check">✓</span> 150 AI credits / month</li>
+          <li><span class="check">✓</span> 1 website</li>
+          <li><span class="check">✓</span> Lead Finder · Articles · AI Audit</li>
+          <li><span class="check">✓</span> Greek &amp; English output</li>
+          <li class="dim"><span class="x">✗</span> German output</li>
+          <li class="dim"><span class="x">✗</span> CSV export</li>
+          <li class="dim"><span class="x">✗</span> CRM pipeline</li>
+          <li class="dim"><span class="x">✗</span> Team seats</li>
         </ul>
-        <a href="signup.html?plan=free_solo" class="btn btn-ghost price-cta">Ξεκίνα δωρεάν →</a>
-      </div>
-
-      <!-- Solo Pro -->
-      <div class="price-card featured reveal">
-        <div class="price-badge">✦ Συνιστάται για Solo</div>
-        <div class="price-name">Solo Pro</div>
-        <div class="price-amount"><span>€</span>12</div>
-        <div class="price-period">ανά μήνα</div>
-        <div class="price-divider"></div>
-        <ul class="price-features">
-          <li><span class="check">✓</span> Όλα του Solo Free</li>
-          <li><span class="check">✓</span> 4 Έλεγχοι AI / μήνα</li>
-          <li><span class="check">✓</span> 6 άρθρα αυτοπροώθησης / μήνα</li>
-          <li><span class="check">✓</span> Μηνιαία αναφορά δράσης</li>
-          <li><span class="check">✓</span> Υποστήριξη προτεραιότητας</li>
-          <li><span class="check">✓</span> Ελληνική &amp; Αγγλική διεπαφή</li>
-          <li class="dim"><span class="x">✗</span> PDF export</li>
-        </ul>
-        <a href="signup.html?plan=pro_solo" class="btn btn-primary price-cta">Ξεκίνα Solo Pro →</a>
+        <a href="signup.html" class="btn btn-ghost price-cta">Start free →</a>
       </div>
 
       <!-- Starter -->
@@ -325,11 +504,11 @@
         <div class="price-period">per month · billed monthly</div>
         <div class="price-divider"></div>
         <ul class="price-features">
-          <li><span class="check">✓</span> 20 AI article credits / month</li>
-          <li><span class="check">✓</span> 50 lead searches / month</li>
-          <li><span class="check">✓</span> Greek + English output</li>
+          <li><span class="check">✓</span> 500 AI credits / month</li>
+          <li><span class="check">✓</span> 2 websites · all 6 countries</li>
+          <li><span class="check">✓</span> Greek &amp; English output</li>
           <li><span class="check">✓</span> CSV export</li>
-          <li><span class="check">✓</span> 2 AI Visibility Audits</li>
+          <li><span class="check">✓</span> WordPress publish</li>
           <li class="dim"><span class="x">✗</span> German output</li>
           <li class="dim"><span class="x">✗</span> White-label reports</li>
           <li class="dim"><span class="x">✗</span> Team seats</li>
@@ -345,11 +524,11 @@
         <div class="price-period">per month · billed monthly</div>
         <div class="price-divider"></div>
         <ul class="price-features">
-          <li><span class="check">✓</span> 100 AI article credits / month</li>
-          <li><span class="check">✓</span> 300 lead searches / month</li>
+          <li><span class="check">✓</span> 1,500 AI credits / month</li>
+          <li><span class="check">✓</span> 3 websites · all 6 countries</li>
           <li><span class="check">✓</span> Greek, English &amp; German</li>
           <li><span class="check">✓</span> CSV + PDF export</li>
-          <li><span class="check">✓</span> 10 AI Visibility Audits</li>
+          <li><span class="check">✓</span> White-label PDF reports</li>
           <li><span class="check">✓</span> Lead history &amp; status tracking</li>
           <li><span class="check">✓</span> Priority support</li>
           <li class="dim"><span class="x">✗</span> Team seats</li>
@@ -364,8 +543,8 @@
         <div class="price-period">per month · billed monthly</div>
         <div class="price-divider"></div>
         <ul class="price-features">
-          <li><span class="check">✓</span> Unlimited article generation</li>
-          <li><span class="check">✓</span> Unlimited lead searches</li>
+          <li><span class="check">✓</span> Unlimited AI credits</li>
+          <li><span class="check">✓</span> 5 websites · all 6 countries</li>
           <li><span class="check">✓</span> Greek, English &amp; German</li>
           <li><span class="check">✓</span> Unlimited AI Audits</li>
           <li><span class="check">✓</span> White-label PDF reports</li>
@@ -385,7 +564,7 @@
   <div class="container">
     <div class="reveal">
       <h2>Ready to find your next <span class="gradient-text">100 clients?</span></h2>
-      <p>Start free today. No credit card. No commitment. Your first 2 articles and 10 lead searches are on us.</p>
+      <p>Start free today. No credit card. No commitment. Your first 150 AI credits are on us.</p>
       <div class="final-cta-btns">
         <a href="signup.html" class="btn btn-primary btn-lg">Create free account →</a>
         <a href="#pricing" class="btn btn-ghost btn-lg">View pricing</a>
@@ -416,28 +595,73 @@
       <div class="footer-col">
         <h4>Company</h4>
         <ul>
-          <li><a href="/about">About</a></li>
-          <li><a href="/blog">Blog</a></li>
-          <li><a href="/contact">Contact</a></li>
-          <li><a href="/affiliate">Affiliates</a></li>
+          <li><a href="mailto:hello@eureach.eu">Contact us</a></li>
+          <li><a href="membership.html">Pricing</a></li>
+          <li><a href="signup.html">Get started</a></li>
+          <li><a href="youtube-join.html">Become a Creator</a></li>
         </ul>
       </div>
       <div class="footer-col">
         <h4>Legal</h4>
         <ul>
-          <li><a href="/privacy">Privacy Policy</a></li>
-          <li><a href="/terms">Terms of Service</a></li>
-          <li><a href="/cookies">Cookie Policy</a></li>
-          <li><a href="/gdpr">GDPR</a></li>
+          <li><a href="privacy.html">Privacy Policy</a></li>
+          <li><a href="terms.html">Terms of Service</a></li>
+          <li><a href="privacy.html#gdpr">GDPR Rights</a></li>
         </ul>
       </div>
     </div>
+    <!-- Newsletter signup strip -->
+    <div style="border-top:1px solid rgba(255,255,255,.08);margin-top:32px;padding-top:32px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+      <div>
+        <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:4px;">Stay ahead of the competition</div>
+        <div style="font-size:.82rem;color:#94a3b8;">Weekly insights on lead generation &amp; growth for European markets.</div>
+      </div>
+      <form id="nl-form" onsubmit="nlSubmit(event)" style="display:flex;gap:.5rem;flex-wrap:wrap;min-width:280px;">
+        <input type="email" id="nl-email" placeholder="your@email.com" required
+          style="flex:1;min-width:200px;padding:.55rem .85rem;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:.88rem;outline:none;">
+        <button type="submit" id="nl-btn"
+          style="background:#c9a227;color:#fff;border:none;border-radius:6px;padding:.55rem 1.2rem;font-weight:700;font-size:.88rem;cursor:pointer;white-space:nowrap;">
+          Subscribe
+        </button>
+      </form>
+      <div id="nl-msg" style="width:100%;font-size:.82rem;margin-top:-.5rem"></div>
+    </div>
+    <script>
+    async function nlSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('nl-btn');
+      const msg = document.getElementById('nl-msg');
+      const email = document.getElementById('nl-email').value.trim();
+      btn.disabled = true; btn.textContent = '...';
+      msg.textContent = '';
+      try {
+        const r = await fetch('/api/newsletter/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, frequency: 'weekly' })
+        });
+        const d = await r.json();
+        if (d.success) {
+          msg.style.color = '#4ade80';
+          msg.textContent = '✓ Check your inbox to confirm your subscription.';
+          document.getElementById('nl-email').value = '';
+        } else {
+          msg.style.color = '#f87171';
+          msg.textContent = d.error || 'Something went wrong.';
+        }
+      } catch {
+        msg.style.color = '#f87171';
+        msg.textContent = 'Connection error. Please try again.';
+      }
+      btn.disabled = false; btn.textContent = 'Subscribe';
+    }
+    </script>
     <div class="footer-bottom">
       <span>© 2026 eureach.eu — All rights reserved</span>
       <div class="footer-bottom-links">
-        <a href="/privacy">Privacy</a>
-        <a href="/terms">Terms</a>
-        <a href="/contact">Contact</a>
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="mailto:hello@eureach.eu">Contact</a>
       </div>
     </div>
   </div>
@@ -452,17 +676,17 @@
     if (!res.ok) return;
     const { user } = await res.json();
     if (!user || user.plan !== "free") return;
-    const left = user.searchesLeft, max = user.searchesMax;
+    const left = user.creditsLeft, max = user.creditsMax;
     if (left === -1 || max === null || max === -1 || max === 0) return;
     const used = max - left;
     if (used / max < 0.8) return;
     const banner = document.createElement("div");
     banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#7c3aed,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;gap:16px;padding:10px 20px;font-size:0.85rem;";
-    banner.innerHTML = `<span>⚡ You've used <strong>${used} of ${max}</strong> free searches this month. <a href="leads.html" style="color:#fff;font-weight:700;text-decoration:underline">Find more leads →</a> or <a href="membership.html" style="color:#fff;font-weight:700;text-decoration:underline">upgrade your plan</a></span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;opacity:0.7;margin-left:8px">✕</button>`;
+    banner.innerHTML = `<span>⚡ You've used <strong>${used} of ${max}</strong> AI credits this month. <a href="leads.html" style="color:#fff;font-weight:700;text-decoration:underline">Use them wisely →</a> or <a href="membership.html" style="color:#fff;font-weight:700;text-decoration:underline">upgrade your plan</a></span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;opacity:0.7;margin-left:8px">✕</button>`;
     document.body.prepend(banner);
   } catch {}
 })();
 </script>
-<script src="/js/api.js"></script>
+<script src="/js/api.js?v=5"></script>
 </body>
 </html>

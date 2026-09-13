@@ -6,8 +6,8 @@
   <title>Competitor Tracker — eureach.eu</title>
   <link rel="stylesheet" href="css/style.css?v=2">
   <link rel="stylesheet" href="css/competitors.css?v=7">
-  <script src="js/translations.js?v=2"></script>
-  <script src="js/i18n.js?v=2"></script>
+  <script src="js/translations.js?v=5"></script>
+  <script src="js/i18n.js?v=5"></script>
 </head>
 <body>
 
@@ -15,12 +15,29 @@
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
     <div class="nav-links">
-      <a href="leads.html" data-i18n="navLeads">Lead Finder</a>
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
+          </div>
+        </div>
+      </div>
       <a href="articles.html" data-i18n="navArticles">Articles</a>
-      <a href="crm.html">CRM</a>
-      <a href="outreach.html">Outreach</a>
-      <a href="competitors.html" style="color:var(--white)" data-i18n="navCompetitors">Competitors</a>
-      <a href="audit.html" data-i18n="navAudit">AI Audit</a>
+      <a href="competitors.html" data-i18n="navCompetitors" style="color:var(--white)">Competitors</a>
+      <a href="citations.html">Citations</a>
+      <a href="/coach" class="nav-coach-link" style="font-size:0.8rem;color:var(--accent)">Coach<span class="coach-nav-dot" id="coach-nav-dot" style="display:none"></span></a>
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
     </div>
     <div class="nav-lang">
       <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
@@ -31,7 +48,6 @@
       <a href="settings.html" class="nav-profile-btn" id="nav-profile-btn" title="Profile">?</a>
       <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="navSignIn">Sign in</a>
       <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
-      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px" data-i18n="navUpgrade">⚡ Upgrade</a>
     </div>
   </div>
 </nav>
@@ -41,23 +57,23 @@
   <div class="ct-header">
     <div class="ct-header-inner">
       <div>
-        <div class="ct-title">📡 Competitor Tracker</div>
-        <div class="ct-subtitle">Search local competitors · Audit AI visibility · Monitor score changes</div>
+        <div class="ct-title" data-i18n="ct.title">📡 Competitor Tracker</div>
+        <div class="ct-subtitle" data-i18n="ct.subtitle">Search local competitors · Audit AI visibility · Monitor score changes</div>
       </div>
       <div class="ct-header-right">
-        <button class="ct-compare-btn" id="ct-compare-btn">&#x2696; Compare</button>
+        <button class="ct-compare-btn" id="ct-compare-btn" data-i18n="ct.compare">&#x2696; Compare</button>
         <div class="ct-stats" id="ct-stats">
         <div class="ct-stat">
           <span class="ct-stat-val" id="stat-total">0</span>
-          <span class="ct-stat-label">Tracked</span>
+          <span class="ct-stat-label" data-i18n="ct.statTracked">Tracked</span>
         </div>
         <div class="ct-stat">
           <span class="ct-stat-val" id="stat-avg">—</span>
-          <span class="ct-stat-label">Avg Score</span>
+          <span class="ct-stat-label" data-i18n="ct.statAvg">Avg Score</span>
         </div>
         <div class="ct-stat ct-stat-alert">
           <span class="ct-stat-val" id="stat-alerts">0</span>
-          <span class="ct-stat-label">Alerts</span>
+          <span class="ct-stat-label" data-i18n="ct.statAlerts">Alerts</span>
         </div>
       </div>
       </div>
@@ -70,10 +86,10 @@
     <aside class="ct-panel" id="ct-panel">
 
       <!-- Search for competitors -->
-      <div class="ct-panel-title">🔍 Find Competitors</div>
+      <div class="ct-panel-title" data-i18n="ct.findPanel">🔍 Find Competitors</div>
 
       <div class="ct-field">
-        <label class="ct-label">Country</label>
+        <label class="ct-label" data-i18n="ct.labelCountry">Country</label>
         <div class="ct-select-wrap">
           <select class="ct-input" id="s-country">
             <option value="">— Select country —</option>
@@ -82,7 +98,7 @@
       </div>
 
       <div class="ct-field">
-        <label class="ct-label">City</label>
+        <label class="ct-label" data-i18n="ct.labelCity">City</label>
         <div class="ct-select-wrap">
           <select class="ct-input" id="s-city" disabled>
             <option value="">— Select city —</option>
@@ -93,7 +109,7 @@
       <div class="ct-divider"></div>
 
       <div class="ct-field" id="s-profile-field">
-        <label class="ct-label">Business Category</label>
+        <label class="ct-label" data-i18n="ct.labelCategory">Business Category</label>
         <div id="s-niche-fallback">
           <input type="text" class="ct-input" id="s-niche-input" placeholder="e.g. Digital Marketing, Restaurant…" style="width:100%">
         </div>
@@ -104,16 +120,16 @@
 
       <div class="ct-divider"></div>
 
-      <button class="ct-search-btn" id="ct-search-btn" disabled>🔍 Find Competitors</button>
+      <button class="ct-search-btn" id="ct-search-btn" disabled data-i18n="ct.searchBtn">🔍 Find Competitors</button>
       <div class="ct-run-err" id="ct-search-err"></div>
 
-      <button class="ct-add-manual-btn" id="ct-add-manual-btn">＋ Add Competitor Manually</button>
+      <button class="ct-add-manual-btn" id="ct-add-manual-btn" data-i18n="ct.addManual">＋ Add Competitor Manually</button>
 
       <div class="ct-divider" style="margin-top:20px"></div>
 
       <!-- Saved Competitors sidebar -->
       <div class="ct-sidebar-saved" id="ct-sidebar-saved" style="display:none">
-        <div class="ct-panel-title">&#x1F4CB; Saved Competitors</div>
+        <div class="ct-panel-title" data-i18n="ct.savedPanel">&#x1F4CB; Saved Competitors</div>
         <div id="ct-sidebar-saved-list"></div>
       </div>
     </aside>
@@ -124,8 +140,8 @@
       <!-- Search results section -->
       <div id="ct-results-section" style="display:none">
         <div class="ct-results-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-          <div class="ct-section-title" style="margin-bottom:0" id="ct-results-title">Search Results</div>
-          <button class="ct-btn" id="ct-save-list-btn" style="display:none">💾 Save List</button>
+          <div class="ct-section-title" style="margin-bottom:0" id="ct-results-title" data-i18n="ct.resultsTitle">Search Results</div>
+          <button class="ct-btn" id="ct-save-list-btn" style="display:none" data-i18n="ct.saveList">💾 Save List</button>
         </div>
         <div class="ct-results-grid" id="ct-results-grid"></div>
         <div class="ct-divider" style="margin:20px 0"></div>
@@ -137,8 +153,8 @@
         <div id="ct-board">
           <div class="ct-empty" id="ct-empty">
             <div class="ct-empty-icon">📡</div>
-            <div class="ct-empty-title">No competitors tracked yet</div>
-            <div class="ct-empty-sub">Search for businesses by country and category, then click "Audit" on any result to start tracking their AI visibility score.</div>
+            <div class="ct-empty-title" data-i18n="ct.emptyTitle">No competitors tracked yet</div>
+            <div class="ct-empty-sub" data-i18n="ct.emptySub">Search for businesses by country and category, then click "Audit" on any result to start tracking their AI visibility score.</div>
           </div>
         </div>
       </div>
@@ -146,7 +162,7 @@
       <!-- Saved search lists -->
       <div id="ct-saved-section" class="ct-saved-section" style="display:none">
         <div class="ct-saved-section-header">
-          <div class="ct-section-title" style="margin-bottom:0">📋 Saved Lists</div>
+          <div class="ct-section-title" style="margin-bottom:0" data-i18n="ct.savedLists">📋 Saved Lists</div>
           <span class="ct-saved-count-badge" id="ct-saved-count">0</span>
         </div>
         <div id="ct-saved-grid"></div>
@@ -161,13 +177,13 @@
 <div class="ct-overlay" id="ct-report-overlay"></div>
 <div class="ct-modal ct-report-modal" id="ct-report-modal">
   <div class="ct-modal-header">
-    <div class="ct-modal-title" id="ct-report-title">AI Visibility Report</div>
+    <div class="ct-modal-title" id="ct-report-title" data-i18n="ct.reportTitle">AI Visibility Report</div>
     <button class="ct-modal-close" id="ct-report-close">✕</button>
   </div>
   <div id="ct-report-body"></div>
   <div class="ct-modal-actions" style="padding:16px 24px 20px;border-top:1px solid var(--border)">
-    <button class="btn btn-ghost" id="ct-report-print">🖨 Print / Save PDF</button>
-    <button class="btn btn-primary" id="ct-report-done">Done</button>
+    <button class="btn btn-ghost" id="ct-report-print" data-i18n="ct.reportPrint">🖨 Print / Save PDF</button>
+    <button class="btn btn-primary" id="ct-report-done" data-i18n="ct.reportDone">Done</button>
   </div>
 </div>
 
@@ -175,19 +191,19 @@
 <div class="ct-modal-overlay" id="ct-manual-overlay" style="display:none"></div>
 <div class="ct-modal" id="ct-manual-modal">
   <div class="ct-modal-head">
-    <div class="ct-modal-title">Add Competitor Manually</div>
+    <div class="ct-modal-title" data-i18n="ct.manualTitle">Add Competitor Manually</div>
     <button class="ct-modal-close" id="ct-manual-close">✕</button>
   </div>
   <div class="ct-field">
-    <label class="ct-label">Business Name *</label>
+    <label class="ct-label" data-i18n="ct.labelName">Business Name *</label>
     <input type="text" class="ct-input" id="m-name" placeholder="e.g. Acme GmbH">
   </div>
   <div class="ct-field">
-    <label class="ct-label">Website URL</label>
+    <label class="ct-label" data-i18n="ct.labelUrl">Website URL</label>
     <input type="text" class="ct-input" id="m-url" placeholder="e.g. acme.de">
   </div>
   <div class="ct-field">
-    <label class="ct-label">Industry</label>
+    <label class="ct-label" data-i18n="ct.labelIndustry">Industry</label>
     <select class="ct-input" id="m-industry">
       <option value="">— Select industry —</option>
       <option value="restaurant">Restaurant / Food</option>
@@ -206,14 +222,14 @@
     </select>
   </div>
   <div class="ct-field">
-    <label class="ct-label">Audit Language</label>
+    <label class="ct-label" data-i18n="ct.labelAuditLang">Audit Language</label>
     <select class="ct-input" id="m-lang">
       <option value="english">English</option>
       <option value="greek">Greek</option>
       <option value="german">German</option>
     </select>
   </div>
-  <button class="ct-run-btn" id="ct-run-btn">▶ Run Audit &amp; Track</button>
+  <button class="ct-run-btn" id="ct-run-btn" data-i18n="ct.runAudit">▶ Run Audit &amp; Track</button>
   <div class="ct-run-err" id="ct-run-err"></div>
 </div>
 
@@ -221,16 +237,17 @@
 <div class="ct-overlay" id="ct-compare-overlay"></div>
 <div class="ct-compare-modal" id="ct-compare-modal">
   <div class="ct-modal-header">
-    <div class="ct-modal-title">&#x2696; Competitor Comparison</div>
+    <div class="ct-modal-title" data-i18n="ct.compareTitle">&#x2696; Competitor Comparison</div>
     <button class="ct-modal-close" id="ct-compare-close" onclick="closeCompareModal()">&#x2715;</button>
   </div>
   <div id="ct-compare-body" style="padding:0 24px 24px"></div>
 </div>
 
-<script src="js/competitors.js?v=22"></script>
-<script src="/js/api.js?v=2"></script>
+<script src="js/competitors.js?v=23"></script>
+<script src="/js/api.js?v=5"></script>
 <script src="/js/trial-banner.js"></script>
 
 
+<script src="js/nav-init.js"></script>
 </body>
 </html>

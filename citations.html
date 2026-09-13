@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Citation Builder — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/citations.css?v=1">
+  <script src="js/translations.js?v=5"></script>
+  <script src="js/i18n.js?v=5"></script>
+  <script src="js/api.js?v=5"></script>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
+          </div>
+        </div>
+      </div>
+      <a href="articles.html" data-i18n="navArticles">Articles</a>
+      <a href="competitors.html" data-i18n="navCompetitors">Competitors</a>
+      <a href="citations.html" style="color:var(--white)">Citations</a>
+      <a href="/coach" class="nav-coach-link" style="font-size:0.8rem;color:var(--accent)">Coach<span class="coach-nav-dot" id="coach-nav-dot" style="display:none"></span></a>
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="settings.html" class="nav-profile-btn" id="nav-profile-btn" title="Profile">?</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" id="nav-signin-btn">Sign in</a>
+    </div>
+  </div>
+</nav>
+
+<div class="cit-page">
+  <div class="cit-hero">
+    <div class="cit-hero-badge" data-i18n="cit.heroBadge">NEW</div>
+    <h1 data-i18n="cit.heroTitle">AI Citation Builder</h1>
+    <p class="cit-hero-sub" data-i18n-html="cit.heroSub">Start appearing in ChatGPT, Perplexity &amp; Google AI Overviews.<br>We place strategic mentions of your business across a curated publisher network.</p>
+  </div>
+
+  <div id="my-campaigns-section" style="display:none" class="cit-my-campaigns">
+    <h2 data-i18n="cit.myCampaigns">My Campaigns</h2>
+    <div id="my-campaigns-list" class="cit-campaigns-grid"></div>
+  </div>
+
+  <div class="cit-packages" id="packages-section">
+
+    <!-- STARTER -->
+    <div class="cit-package" data-package="starter">
+      <div class="cit-package-name">Starter</div>
+      <div class="cit-package-price">€299</div>
+      <div class="cit-package-period" data-i18n="cit.oneTime">one-time</div>
+      <ul class="cit-package-features">
+        <li data-i18n="cit.f.art5">✓ 5 AI-written articles</li>
+        <li data-i18n="cit.f.pub5">✓ 5 publisher sites</li>
+        <li data-i18n="cit.f.q1">✓ 1 target query</li>
+        <li data-i18n="cit.f.day60">✓ 60-day campaign</li>
+        <li data-i18n="cit.f.track">✓ Visibility tracking</li>
+        <li class="cit-feat-unavailable" data-i18n="cit.f.ytNo">✗ YouTube mention</li>
+      </ul>
+      <button class="btn btn-ghost cit-select-btn" onclick="openBooking('starter')" data-i18n="cit.bookBtn">Book a Free Strategy Call</button>
+      <div class="cit-self-serve"><a href="citations-wizard.html?package=starter" class="cit-self-serve-link" data-i18n="cit.startSelf">Start yourself →</a></div>
+    </div>
+
+    <!-- GROWTH -->
+    <div class="cit-package cit-package--featured" data-package="growth">
+      <div class="cit-package-badge" data-i18n="cit.mostPopular">Most Popular</div>
+      <div class="cit-package-name">Growth</div>
+      <div class="cit-package-price" id="growth-price">€699</div>
+      <div class="cit-package-period" data-i18n="cit.oneTime">one-time</div>
+      <ul class="cit-package-features">
+        <li data-i18n="cit.f.art15">✓ 15 AI-written articles</li>
+        <li data-i18n="cit.f.pub10">✓ 10 publisher sites</li>
+        <li data-i18n="cit.f.q3">✓ 3 target queries</li>
+        <li data-i18n="cit.f.day60">✓ 60-day campaign</li>
+        <li data-i18n="cit.f.weekTrack">✓ Weekly visibility tracking</li>
+        <li data-i18n="cit.f.emailUp">✓ Progress email updates</li>
+        <li class="cit-feat-addon" onclick="toggleYoutube()"><span data-i18n="cit.f.ytAvail">+ YouTube mention available</span> &nbsp;<span class="cit-addon-price">+€199</span></li>
+      </ul>
+      <div class="cit-youtube-toggle" id="youtube-toggle">
+        <label class="cit-toggle-label">
+          <input type="checkbox" id="youtube-checkbox" onchange="toggleYoutube()">
+          <span data-i18n="cit.ytAddonLabel">Add YouTube mention placement (+€199)</span>
+        </label>
+        <p class="cit-toggle-note" data-i18n="cit.ytAddonNote">A Greek YouTuber mentions your business in a relevant video</p>
+      </div>
+      <button class="btn btn-primary cit-select-btn" onclick="openBooking('growth')" data-i18n="cit.bookBtn">Book a Free Strategy Call</button>
+      <div class="cit-self-serve"><a href="#" class="cit-self-serve-link" onclick="goSelfServeGrowth(event)" data-i18n="cit.startSelf">Start yourself →</a></div>
+    </div>
+
+    <!-- AUTHORITY -->
+    <div class="cit-package" data-package="authority">
+      <div class="cit-package-name">Authority</div>
+      <div class="cit-package-price">€1,299</div>
+      <div class="cit-package-period" data-i18n="cit.oneTime">one-time</div>
+      <ul class="cit-package-features">
+        <li data-i18n="cit.f.art30">✓ 30 AI-written articles</li>
+        <li data-i18n="cit.f.pub20">✓ 20 publisher sites</li>
+        <li data-i18n="cit.f.q6">✓ 6 target queries</li>
+        <li data-i18n="cit.f.day90">✓ 90-day campaign</li>
+        <li data-i18n="cit.f.weekTrack">✓ Weekly visibility tracking</li>
+        <li data-i18n="cit.f.priority">✓ Priority placement</li>
+        <li data-i18n="cit.f.acctReview">✓ Dedicated account review</li>
+        <li class="cit-feat-youtube-included"><span data-i18n="cit.f.ytIncl">✓ YouTube mention</span> &nbsp;<span class="cit-new-badge">🎥 NEW</span></li>
+      </ul>
+      <button class="btn btn-ghost cit-select-btn" onclick="openBooking('authority')" data-i18n="cit.bookBtn">Book a Free Strategy Call</button>
+      <div class="cit-self-serve"><a href="citations-wizard.html?package=authority&youtube=1" class="cit-self-serve-link" data-i18n="cit.startSelf">Start yourself →</a></div>
+    </div>
+
+  </div>
+
+  <!-- YouTube explanation row -->
+  <div class="cit-youtube-explainer">
+    <div class="cit-yt-icon">🎥</div>
+    <div class="cit-yt-text">
+      <strong data-i18n="cit.ytExpTitle">What is a YouTube mention?</strong>
+      <p data-i18n="cit.ytExpDesc">A relevant Greek YouTuber naturally mentions your business in one of their videos. YouTube is the strongest AI citation signal — stronger than any written article. Available in Growth (+€199) and included in Authority.</p>
+      <p style="margin-top:0.6rem;font-size:0.85rem;color:#fbbf24;font-weight:600;" data-i18n-html="cit.ytExpTrust">✓ Already working with 12+ YouTube creators across Greece &amp; Germany — your business gets introduced to their audience in a natural, trusted way.</p>
+    </div>
+  </div>
+
+  <div class="cit-trust">
+    <span data-i18n="cit.trust1">✓ Articles written by AI, reviewed by our team</span>
+    <span data-i18n="cit.trust2">✓ Published on real, indexed websites</span>
+    <span data-i18n="cit.trust3">✓ Results tracked inside your eureach dashboard</span>
+    <span data-i18n="cit.trust4">✓ Money-back if no improvement in 90 days</span>
+    <span data-i18n="cit.trust5">✓ 12+ YouTube creators already in our network — Greece &amp; Germany</span>
+  </div>
+
+  <div class="cit-publisher-cta">
+    <span data-i18n="cit.pubCta">Own a website?</span> <a href="citations-join.html" data-i18n="cit.pubLink">Earn money by hosting quality content →</a>
+  </div>
+</div>
+
+<!-- Booking modal -->
+<div id="booking-modal" class="cit-modal-overlay" style="display:none" onclick="if(event.target===this)closeBooking()">
+  <div class="cit-modal cit-booking-modal">
+    <div class="cit-modal-hdr">
+      <div>
+        <h3 id="booking-modal-title" data-i18n="cit.bModalTitle">Book a Free Strategy Call</h3>
+        <p class="cit-booking-subtitle" id="booking-modal-subtitle"></p>
+      </div>
+      <button class="cit-modal-close" onclick="closeBooking()">×</button>
+    </div>
+
+    <div id="booking-form-wrap" style="padding:1.5rem">
+      <div class="cit-booking-form">
+        <div class="cit-booking-row">
+          <div class="cit-booking-field">
+            <label class="cit-form-label cit-form-label--req" data-i18n="cit.bName">Name</label>
+            <input class="cit-input" id="b-name" type="text" placeholder="Your name">
+          </div>
+          <div class="cit-booking-field">
+            <label class="cit-form-label cit-form-label--req" data-i18n="cit.bEmail">Email</label>
+            <input class="cit-input" id="b-email" type="email" placeholder="you@example.com">
+          </div>
+        </div>
+        <div class="cit-booking-field">
+          <label class="cit-form-label cit-form-label--req" data-i18n="cit.bPhone">Phone</label>
+          <input class="cit-input" id="b-phone" type="tel" placeholder="+30 69...">
+        </div>
+        <div class="cit-booking-field">
+          <label class="cit-form-label"><span data-i18n="cit.bMsgLabel">What do you want to achieve?</span> <span class="cit-optional" data-i18n="cit.bMsgOpt">(optional)</span></label>
+          <textarea class="cit-textarea" id="b-message" maxlength="200" data-i18n-ph="cit.bMsgPlh" placeholder="Tell us briefly about your business and your goal" style="height:90px"></textarea>
+          <div class="cit-char-count"><span id="b-msg-count">0</span>/200</div>
+        </div>
+        <div class="cit-booking-field">
+          <label class="cit-form-label cit-form-label--req" data-i18n="cit.bTimeLabel">Preferred contact time</label>
+          <div class="cit-btn-group" id="time-btns">
+            <button class="btn btn-ghost cit-time-btn" onclick="selectTime('Morning', this)" data-i18n="cit.bMorning">Morning</button>
+            <button class="btn btn-ghost cit-time-btn" onclick="selectTime('Afternoon', this)" data-i18n="cit.bAfternoon">Afternoon</button>
+            <button class="btn btn-ghost cit-time-btn" onclick="selectTime('Evening', this)" data-i18n="cit.bEvening">Evening</button>
+          </div>
+        </div>
+        <div id="booking-error" class="cit-error" style="display:none"></div>
+        <button class="btn btn-primary cit-booking-submit" id="booking-submit-btn" onclick="submitBooking()">📞 Book Call</button>
+      </div>
+    </div>
+
+    <div id="booking-success" style="display:none;padding:2rem;text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:1rem">✓</div>
+      <h3 style="margin:0 0 0.5rem" data-i18n="cit.bSuccessTitle">Λάβαμε το αίτημά σας!</h3>
+      <p style="color:var(--muted);margin:0" data-i18n="cit.bSuccessSub">Θα επικοινωνήσουμε εντός 24 ωρών για να κλείσουμε την κλήση μας.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function T(k){var l=window.euLang?window.euLang():"en";var t=window.EUREACH_T;return(t&&t[l]&&t[l][k])||k;}
+let _bookingPackage  = "";
+let _preferredTime   = "";
+
+const PKG_LABELS = { starter: "Starter — €299", growth: "Growth — €699", authority: "Authority — €1,299" };
+
+function openBooking(pkg) {
+  _bookingPackage = pkg;
+  _preferredTime  = "";
+  document.getElementById("booking-modal-title").textContent    = T("cit.bModalTitle");
+  document.getElementById("booking-modal-subtitle").textContent = PKG_LABELS[pkg] || pkg;
+  document.getElementById("booking-form-wrap").style.display    = "";
+  document.getElementById("booking-success").style.display      = "none";
+  document.getElementById("booking-error").style.display        = "none";
+  document.getElementById("b-name").value    = "";
+  document.getElementById("b-email").value   = "";
+  document.getElementById("b-phone").value   = "";
+  document.getElementById("b-message").value = "";
+  document.getElementById("b-msg-count").textContent = "0";
+  document.querySelectorAll(".cit-time-btn").forEach(b => { b.classList.remove("btn-primary"); b.classList.add("btn-ghost"); });
+  document.getElementById("booking-submit-btn").textContent = T("cit.bSubmit");
+  document.getElementById("booking-submit-btn").disabled    = false;
+  document.getElementById("booking-modal").style.display    = "flex";
+  document.getElementById("b-message").addEventListener("input", function() {
+    document.getElementById("b-msg-count").textContent = this.value.length;
+  }, { once: true });
+}
+
+function closeBooking() {
+  document.getElementById("booking-modal").style.display = "none";
+}
+
+function selectTime(val, btn) {
+  _preferredTime = val;
+  document.querySelectorAll(".cit-time-btn").forEach(b => { b.classList.remove("btn-primary"); b.classList.add("btn-ghost"); });
+  btn.classList.remove("btn-ghost"); btn.classList.add("btn-primary");
+}
+
+async function submitBooking() {
+  const name    = document.getElementById("b-name").value.trim();
+  const email   = document.getElementById("b-email").value.trim();
+  const phone   = document.getElementById("b-phone").value.trim();
+  const message = document.getElementById("b-message").value.trim();
+  const err     = document.getElementById("booking-error");
+  err.style.display = "none";
+
+  if (!name)           { err.textContent = "Please enter your name."; err.style.display = ""; return; }
+  if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) { err.textContent = "Please enter a valid email address."; err.style.display = ""; return; }
+  if (!phone)          { err.textContent = "Please enter your phone number."; err.style.display = ""; return; }
+  if (!_preferredTime) { err.textContent = "Please select a preferred contact time."; err.style.display = ""; return; }
+
+  const btn = document.getElementById("booking-submit-btn");
+  btn.textContent = "Sending…"; btn.disabled = true;
+
+  try {
+    const r = await fetch("/api/citations/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, phone, message, package_interest: _bookingPackage, preferred_time: _preferredTime })
+    });
+    const d = await r.json();
+    if (!r.ok) { err.textContent = d.error || "Something went wrong. Please try again."; err.style.display = ""; btn.textContent = "📞 Book Call"; btn.disabled = false; return; }
+    document.getElementById("booking-form-wrap").style.display = "none";
+    document.getElementById("booking-success").style.display   = "";
+  } catch (e) {
+    err.textContent = "Error: " + e.message; err.style.display = "";
+    btn.textContent = "📞 Book Call"; btn.disabled = false;
+  }
+}
+
+function goSelfServeGrowth(e) {
+  e.preventDefault();
+  const yt = document.getElementById("youtube-checkbox").checked;
+  window.location.href = "citations-wizard.html?package=growth" + (yt ? "&youtube=1" : "");
+}
+
+async function initNav() {
+  try {
+    const r = await fetch("/api/auth/me");
+    if (!r.ok) return;
+    const { user } = await r.json();
+    if (!user) return;
+    document.getElementById("nav-signin-btn").style.display = "none";
+    const pb = document.getElementById("nav-profile-btn");
+    if (pb) pb.textContent = (user.firstName?.[0] || user.email?.[0] || "U").toUpperCase();
+  } catch {}
+}
+
+async function loadMyCampaigns() {
+  try {
+    const r = await fetch("/api/citations/campaigns");
+    if (!r.ok) return;
+    const { campaigns } = await r.json();
+    if (!campaigns || !campaigns.length) return;
+    document.getElementById("my-campaigns-section").style.display = "";
+    const list = document.getElementById("my-campaigns-list");
+    list.innerHTML = campaigns.map(c => `
+      <a class="cit-campaign-card" href="citations-campaign.html?id=${c.id}">
+        <div class="cit-campaign-pkg">${c.package}</div>
+        <div class="cit-campaign-status cit-status-${c.status}">${c.status}</div>
+        <div class="cit-campaign-progress">
+          <div class="cit-prog-bar"><div class="cit-prog-fill" style="width:${c.mentions_total ? Math.round(c.mentions_live/c.mentions_total*100) : 0}%"></div></div>
+          <span>${c.mentions_live} / ${c.mentions_total} live</span>
+        </div>
+        <div class="cit-campaign-date">${new Date(c.created_at).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})}</div>
+      </a>`).join("");
+  } catch {}
+}
+
+function toggleYoutube() {
+  const cb    = document.getElementById("youtube-checkbox");
+  const price = document.getElementById("growth-price");
+  if (event && event.target.closest(".cit-feat-addon") && event.target.tagName !== "INPUT") {
+    cb.checked = !cb.checked;
+  }
+  price.textContent = cb.checked ? "€868" : "€699";
+}
+
+initNav();
+loadMyCampaigns();
+</script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

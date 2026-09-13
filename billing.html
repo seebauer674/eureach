@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Billing — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <style>
+    .billing-page {
+      min-height: 100vh;
+      padding: 80px 24px 60px;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .billing-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    .billing-sub {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-bottom: 32px;
+    }
+    .billing-section {
+      background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .billing-section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+    }
+    .billing-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      padding: 6px 0;
+    }
+    .billing-row-label { color: var(--muted); }
+    .billing-row-value { font-weight: 600; }
+    .status-pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .status-trial   { background: rgba(37,99,235,0.2);   color: #60a5fa; }
+    .status-paid    { background: rgba(34,197,94,0.15);  color: #4ade80; }
+    .status-expired { background: rgba(239,68,68,0.15); color: #f87171; }
+    .status-free    { background: rgba(255,255,255,0.08); color: var(--muted); }
+    .usage-bar-wrap {
+      background: var(--border);
+      border-radius: 4px;
+      height: 6px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .usage-bar {
+      height: 100%;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--blue), var(--purple));
+      transition: width 0.4s;
+    }
+    .billing-btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+    .billing-btn-primary {
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: var(--white);
+    }
+    .billing-btn-primary:hover { opacity: 0.9; }
+    .billing-btn-danger {
+      background: transparent;
+      border: 1px solid rgba(239,68,68,0.35);
+      color: #f87171;
+    }
+    .billing-btn-danger:hover { background: rgba(239,68,68,0.08); }
+    .billing-error {
+      display: none;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      color: #f87171;
+      margin-top: 12px;
+      text-align: center;
+    }
+    .billing-error.visible { display: block; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  </style>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
+          </div>
+        </div>
+      </div>
+      <a href="/leads.html" class="nav-link">Leads</a>
+      <a href="/profile.html" class="nav-link">Profile</a>
+    
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<main class="billing-page">
+  <h1 class="billing-title">Billing & Subscription</h1>
+  <p class="billing-sub">Manage your trial and payment details.</p>
+
+  <div class="billing-section" id="plan-section">
+    <div class="billing-section-title">Current plan</div>
+    <div class="billing-row">
+      <span class="billing-row-label">Plan</span>
+      <span class="billing-row-value" id="plan-name">Loading…</span>
+    </div>
+    <div class="billing-row">
+      <span class="billing-row-label">Status</span>
+      <span id="plan-status"></span>
+    </div>
+    <div class="billing-row" id="trial-ends-row" style="display:none">
+      <span class="billing-row-label">Trial ends</span>
+      <span class="billing-row-value" id="trial-ends-date"></span>
+    </div>
+    <div class="billing-row" id="next-charge-row" style="display:none">
+      <span class="billing-row-label">Next charge</span>
+      <span class="billing-row-value" id="next-charge-info"></span>
+    </div>
+  </div>
+
+  <div class="billing-section" id="usage-section" style="display:none">
+    <div class="billing-section-title">Trial usage</div>
+
+    <div style="margin-bottom:14px">
+      <div class="billing-row" style="margin-bottom:4px">
+        <span class="billing-row-label">Competitor searches</span>
+        <span class="billing-row-value"><span id="comp-used">0</span> / 1</span>
+      </div>
+      <div class="usage-bar-wrap"><div class="usage-bar" id="comp-bar" style="width:0%"></div></div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div class="billing-row" style="margin-bottom:4px">
+        <span class="billing-row-label">Articles generated</span>
+        <span class="billing-row-value"><span id="art-used">0</span> / 3</span>
+      </div>
+      <div class="usage-bar-wrap"><div class="usage-bar" id="art-bar" style="width:0%"></div></div>
+    </div>
+
+    <div>
+      <div class="billing-row" style="margin-bottom:4px">
+        <span class="billing-row-label">AI audits today</span>
+        <span class="billing-row-value"><span id="audit-used">0</span> / 1</span>
+      </div>
+      <div class="usage-bar-wrap"><div class="usage-bar" id="audit-bar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <div class="billing-section" id="actions-section">
+    <div class="billing-section-title">Actions</div>
+    <div id="action-btns"></div>
+    <div class="billing-error" id="billing-error"></div>
+  </div>
+</main>
+
+<script>
+function getCsrf() {
+  return document.cookie.split('; ').find(c => c.startsWith('csrf_token='))?.split('=')[1] || '';
+}
+
+async function loadBillingStatus() {
+  try {
+    const res  = await fetch('/api/billing/status');
+    if (res.status === 401) { location.href = '/signin.html'; return; }
+    const data = await res.json();
+    render(data);
+  } catch {
+    document.getElementById('plan-name').textContent = 'Error loading billing info.';
+  }
+}
+
+function render(data) {
+  const { plan, trialStatus, daysRemaining, trialEndsAt, nextChargeDate, usage } = data;
+
+  const planLabels = { trial: 'eureach Solo Pro (Trial)', paid: 'eureach Solo Pro', free: 'Free', cancelled: 'Cancelled' };
+  document.getElementById('plan-name').textContent = planLabels[plan] || plan;
+
+  const statusEl = document.getElementById('plan-status');
+  if (plan === 'trial') {
+    statusEl.innerHTML = `<span class="status-pill status-trial">Trial — ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} left</span>`;
+    document.getElementById('trial-ends-row').style.display = '';
+    const d = trialEndsAt ? new Date(trialEndsAt).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }) : '';
+    document.getElementById('trial-ends-date').textContent = d;
+    document.getElementById('next-charge-row').style.display = '';
+    document.getElementById('next-charge-info').textContent = `€15 on ${nextChargeDate || d}`;
+  } else if (plan === 'paid') {
+    statusEl.innerHTML = `<span class="status-pill status-paid">Active</span>`;
+  } else if (plan === 'free' && trialStatus === 'expired') {
+    statusEl.innerHTML = `<span class="status-pill status-expired">Trial expired</span>`;
+  } else {
+    statusEl.innerHTML = `<span class="status-pill status-free">${trialStatus || plan}</span>`;
+  }
+
+  // Usage section for trial users
+  if (plan === 'trial' && usage) {
+    document.getElementById('usage-section').style.display = '';
+    document.getElementById('comp-used').textContent = usage.competitorSearches;
+    document.getElementById('comp-bar').style.width  = Math.round(usage.competitorSearches / usage.competitorSearchesLimit * 100) + '%';
+    document.getElementById('art-used').textContent  = usage.articlesGenerated;
+    document.getElementById('art-bar').style.width   = Math.round(usage.articlesGenerated / usage.articlesLimit * 100) + '%';
+    document.getElementById('audit-used').textContent = usage.auditsToday;
+    document.getElementById('audit-bar').style.width  = Math.round(usage.auditsToday / usage.auditsDailyLimit * 100) + '%';
+  }
+
+  // Action buttons
+  const btns = document.getElementById('action-btns');
+  if (plan === 'trial') {
+    btns.innerHTML = `
+      <button class="billing-btn billing-btn-primary" onclick="location.href='/upgrade'">Upgrade to paid — €15/month →</button>
+      <button class="billing-btn billing-btn-danger" onclick="cancelTrial()">Cancel trial (no charge)</button>
+    `;
+  } else if (plan === 'paid') {
+    btns.innerHTML = `
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px">Your subscription is active. To cancel, contact support.</p>
+    `;
+  } else if (plan === 'free' || plan === 'cancelled') {
+    btns.innerHTML = `
+      <button class="billing-btn billing-btn-primary" onclick="location.href='/signup.html'">Start a new trial →</button>
+    `;
+  }
+}
+
+async function cancelTrial() {
+  if (!confirm('Cancel your trial? You will not be charged and your account will be downgraded.')) return;
+  const err = document.getElementById('billing-error');
+  try {
+    const res  = await fetch('/api/trial/cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrf() },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert('Trial cancelled. You will not be charged.');
+      location.href = '/';
+    } else {
+      err.textContent = data.error || 'Failed to cancel. Please try again.';
+      err.classList.add('visible');
+    }
+  } catch {
+    err.textContent = 'Failed to cancel. Please try again.';
+    err.classList.add('visible');
+  }
+}
+
+loadBillingStatus();
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 10);
+});
+</script>
+<script src="/js/trial-banner.js"></script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

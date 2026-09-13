@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Searching for competitors… — eureach.eu</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.app-nav { background: rgba(7,13,31,0.98); }
+.cl-page { min-height: 100vh; padding-top: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 120px 24px; }
+.cl-icon { font-size: 3rem; margin-bottom: 20px; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+.cl-title { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; text-align: center; }
+.cl-sub { color: var(--muted); font-size: 0.875rem; margin-bottom: 40px; text-align: center; }
+.cl-steps { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 12px; }
+.cl-step {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid var(--border); border-radius: 14px;
+  transition: border-color 0.3s, background 0.3s;
+}
+.cl-step.active {
+  border-color: rgba(37,99,235,0.5);
+  background: rgba(37,99,235,0.08);
+}
+.cl-step.done {
+  border-color: rgba(16,185,129,0.4);
+  background: rgba(16,185,129,0.05);
+}
+.cl-step.step-error {
+  border-color: rgba(239,68,68,0.4);
+  background: rgba(239,68,68,0.05);
+}
+.cl-step-icon { font-size: 1.3rem; width: 32px; text-align: center; flex-shrink: 0; }
+.cl-step-body { flex: 1; }
+.cl-step-label { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+.cl-step-status { font-size: 0.78rem; margin-top: 2px; color: var(--muted); }
+.cl-step.active .cl-step-status { color: #60a5fa; }
+.cl-step.done .cl-step-status { color: #10b981; }
+.cl-step-ind { font-size: 0.95rem; flex-shrink: 0; }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+.spinning { display: inline-block; animation: spin 1.2s linear infinite; }
+.cl-error-box {
+  max-width: 480px; width: 100%; margin-top: 28px;
+  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 14px; padding: 22px 24px; display: none; text-align: center;
+}
+.cl-error-msg { color: #f87171; font-size: 0.9rem; margin-bottom: 16px; }
+.cl-retry-btn {
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  color: #fff; border: none; padding: 11px 22px;
+  border-radius: 10px; cursor: pointer; font-size: 0.88rem; font-weight: 600;
+}
+</style>
+  <script src="/js/translations.js"></script>
+  <script src="/js/i18n.js"></script>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html" data-i18n="nav.leads">Lead Finder</a>
+      <a href="competitor-search.html">Competitor Search</a>
+    
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; My Profile</a>
+    </div>
+  </div>
+</nav>
+
+<div class="cl-page">
+  <div class="cl-icon">🔍</div>
+  <div class="cl-title">Searching for your competitors…</div>
+  <div class="cl-sub">This takes 20–40 seconds. Please don't close this tab.</div>
+
+  <div class="cl-steps">
+    <div class="cl-step" id="st-maps">
+      <div class="cl-step-icon">🗺</div>
+      <div class="cl-step-body">
+        <div class="cl-step-label">Searching Google Maps</div>
+        <div class="cl-step-status" id="st-maps-s">Waiting to start…</div>
+      </div>
+      <div class="cl-step-ind" id="st-maps-i">○</div>
+    </div>
+    <div class="cl-step" id="st-details">
+      <div class="cl-step-icon">📊</div>
+      <div class="cl-step-body">
+        <div class="cl-step-label">Collecting business details</div>
+        <div class="cl-step-status" id="st-details-s">Waiting…</div>
+      </div>
+      <div class="cl-step-ind" id="st-details-i">○</div>
+    </div>
+    <div class="cl-step" id="st-ai">
+      <div class="cl-step-icon">🤖</div>
+      <div class="cl-step-body">
+        <div class="cl-step-label">AI analysing threats &amp; opportunities</div>
+        <div class="cl-step-status" id="st-ai-s">Waiting…</div>
+      </div>
+      <div class="cl-step-ind" id="st-ai-i">○</div>
+    </div>
+    <div class="cl-step" id="st-done">
+      <div class="cl-step-icon">📋</div>
+      <div class="cl-step-body">
+        <div class="cl-step-label">Preparing your report</div>
+        <div class="cl-step-status" id="st-done-s">Waiting…</div>
+      </div>
+      <div class="cl-step-ind" id="st-done-i">○</div>
+    </div>
+  </div>
+
+  <div class="cl-error-box" id="error-box">
+    <div class="cl-error-msg" id="error-msg">Something went wrong.</div>
+    <button class="cl-retry-btn" onclick="window.location.href='competitor-search.html'">← Try again</button>
+  </div>
+</div>
+
+<script src="/js/api.js?v=5"></script>
+<script src="/js/main.js"></script>
+<script>
+const params   = new URLSearchParams(location.search);
+const searchId = params.get('id');
+if (!searchId) window.location.href = 'competitor-search.html';
+
+let elapsed = 0;
+let pollInterval;
+
+function setStep(id, state, statusText) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'cl-step ' + state;
+  const si = document.getElementById(id + '-s');
+  const ii = document.getElementById(id + '-i');
+  if (si) si.textContent = statusText;
+  if (ii) {
+    if (state === 'active')      ii.innerHTML = '<span class="spinning">⚙</span>';
+    else if (state === 'done')   ii.textContent = '✓';
+    else if (state === 'step-error') ii.textContent = '✗';
+    else                         ii.textContent = '○';
+  }
+}
+
+const stepOrder = ['st-maps', 'st-details', 'st-ai', 'st-done'];
+const statusToActive = {
+  queued:             'st-maps',
+  searching_maps:     'st-maps',
+  collecting_details: 'st-details',
+  analysing:          'st-ai',
+  complete:           'st-done',
+};
+
+function applyStatus(status) {
+  const activeId = statusToActive[status] || 'st-maps';
+  const activeIdx = stepOrder.indexOf(activeId);
+  stepOrder.forEach((id, i) => {
+    if (i < activeIdx)      setStep(id, 'done', 'Done ✓');
+    else if (i === activeIdx) setStep(id, 'active', 'Working…');
+    else                    setStep(id, '', 'Waiting…');
+  });
+}
+
+async function poll() {
+  elapsed += 2;
+  if (elapsed > 120) {
+    clearInterval(pollInterval);
+    showError('The search is taking longer than expected. Please try again.');
+    return;
+  }
+  try {
+    const r = await fetch('/api/competitors/status/' + searchId);
+    const d = await r.json();
+    if (!r.ok || !d.success) { clearInterval(pollInterval); showError(d.error || 'Search failed.'); return; }
+    const { status, error } = d.data;
+    applyStatus(status);
+    if (status === 'complete') {
+      clearInterval(pollInterval);
+      setStep('st-done', 'done', 'Done ✓');
+      setTimeout(() => { window.location.href = 'competitor-results.html?id=' + searchId; }, 600);
+    } else if (status === 'error') {
+      clearInterval(pollInterval);
+      stepOrder.forEach(id => { const el = document.getElementById(id); if (el && el.classList.contains('active')) setStep(id, 'step-error', 'Failed'); });
+      showError(error || 'Search failed. Please try again.');
+    }
+  } catch { /* keep polling */ }
+}
+
+function showError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-box').style.display = 'block';
+}
+
+applyStatus('queued');
+pollInterval = setInterval(poll, 2000);
+</script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

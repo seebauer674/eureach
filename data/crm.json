@@ -25,5 +25,61 @@
     "notes": "",
     "createdAt": "2026-05-23T10:29:54.902Z",
     "updatedAt": "2026-05-23T10:29:54.902Z"
+  },
+  {
+    "id": "fa8c5c58696179515f50952b",
+    "userId": "669c87088f8594eb7a72398c",
+    "leadName": "Boutique Hotel Elia",
+    "businessType": "Hotels",
+    "city": "Heraklion",
+    "phone": "+30 241 8257300",
+    "website": null,
+    "email": null,
+    "status": "found",
+    "notes": "",
+    "createdAt": "2026-05-23T10:55:01.018Z",
+    "updatedAt": "2026-05-23T10:55:01.018Z"
+  },
+  {
+    "id": "e730eb741643e6d1a067466e",
+    "userId": "669c87088f8594eb7a72398c",
+    "leadName": "Reisebüro am Markt",
+    "businessType": "Travel Agencies",
+    "city": "Munich",
+    "phone": "+49 44 1143203",
+    "website": "www.reisebroamma.de",
+    "email": null,
+    "status": "found",
+    "notes": "",
+    "createdAt": "2026-05-23T11:04:55.814Z",
+    "updatedAt": "2026-05-23T11:04:55.814Z"
+  },
+  {
+    "id": "52c74aaca425cdd108551056",
+    "userId": "669c87088f8594eb7a72398c",
+    "leadName": "Gasthof Sonne",
+    "businessType": "Restaurants",
+    "city": "Cologne",
+    "phone": "+49 458 1010909",
+    "website": null,
+    "email": null,
+    "status": "found",
+    "notes": "",
+    "createdAt": "2026-05-23T11:10:40.224Z",
+    "updatedAt": "2026-05-23T11:10:40.224Z"
+  },
+  {
+    "id": "4a952dd634553b60b9c393f0",
+    "userId": "669c87088f8594eb7a72398c",
+    "leadName": "TSV Sportfreunde",
+    "businessType": "Football Clubs",
+    "city": "Munich",
+    "phone": "+49 140 491647",
+    "website": "www.tsvsportfreu.de",
+    "email": "info@tsvsportfreu.de",
+    "status": "found",
+    "notes": "",
+    "createdAt": "2026-05-23T11:30:58.242Z",
+    "updatedAt": "2026-05-23T11:30:58.242Z"
   }
 ]

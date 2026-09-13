@@ -1,13 +1,16 @@
+/* ── i18n helper ─────────────────────────────────────────── */
+function T(k,fb){var l=window.euLang?window.euLang():'en';var t=window.EUREACH_T;return(t&&t[l]&&t[l][k])||fb||k;}
+
 /* ── Pipeline JS ────────────────────────────────────────── */
-const STAGES = [
-  { key: "new",       label: "New",       color: "#6366f1" },
-  { key: "contacted", label: "Contacted", color: "#3b82f6" },
-  { key: "replied",   label: "Replied",   color: "#8b5cf6" },
-  { key: "audited",   label: "Audited",   color: "#f59e0b" },
-  { key: "proposal",  label: "Proposal",  color: "#ec4899" },
-  { key: "won",       label: "Won",       color: "#22c55e" },
-  { key: "lost",      label: "Lost",      color: "#6b7280" },
-];
+function STAGES() { return [
+  { key: "new",       label: T("pl.stageNew","New"),             color: "#6366f1" },
+  { key: "contacted", label: T("pl.stageContacted","Contacted"), color: "#3b82f6" },
+  { key: "replied",   label: T("pl.stageReplied","Replied"),     color: "#8b5cf6" },
+  { key: "audited",   label: T("pl.stageAudited","Audited"),     color: "#f59e0b" },
+  { key: "proposal",  label: T("pl.stageProposal","Proposal"),   color: "#ec4899" },
+  { key: "won",       label: T("pl.stageWon","Won"),             color: "#22c55e" },
+  { key: "lost",      label: T("pl.stageLost","Lost"),           color: "#6b7280" },
+]; }
 
 let leads = [];
 let activeLead = null;
@@ -28,7 +31,7 @@ async function loadPipeline() {
     if (res.status === 401) {
       board.innerHTML = `<div class="pl-loading" style="gap:12px">
         <div style="font-size:1.1rem">🔒</div>
-        <div>Sign in to view your pipeline</div>
+        <div>${T("pl.signIn","Sign in to view your pipeline")}</div>
         <a href="signin.html" class="pl-btn pl-btn-primary" style="margin-top:8px">Sign in</a>
       </div>`;
       return;
@@ -37,14 +40,14 @@ async function loadPipeline() {
     renderBoard();
     renderStats();
   } catch (e) {
-    board.innerHTML = `<div class="pl-loading">Failed to load pipeline. Please refresh.</div>`;
+    board.innerHTML = `<div class="pl-loading">${T("pl.failed","Failed to load pipeline. Please refresh.")}</div>`;
   }
 }
 
 /* ── Render board ──────────────────────────────────────── */
 function renderBoard() {
   board.innerHTML = "";
-  for (const stage of STAGES) {
+  for (const stage of STAGES()) {
     const stageleads = leads.filter(l => l.stage === stage.key);
     const col = document.createElement("div");
     col.className = "pl-col";
@@ -55,7 +58,7 @@ function renderBoard() {
         <div class="pl-col-count">${stageleads.length}</div>
       </div>
       <div class="pl-col-cards" id="col-${stage.key}">
-        ${stageleads.length === 0 ? `<div class="pl-col-empty">No leads</div>` : ""}
+        ${stageleads.length === 0 ? `<div class="pl-col-empty">${T("pl.noLeads","No leads")}</div>` : ""}
         ${stageleads.map(l => cardHTML(l, stage)).join("")}
       </div>`;
     board.appendChild(col);
@@ -95,7 +98,7 @@ function renderStats() {
   const won  = leads.filter(l => l.stage === "won").length;
   const lost = leads.filter(l => l.stage === "lost").length;
   const conv = won + lost > 0 ? Math.round(won / (won + lost) * 100) : 0;
-  stats.innerHTML = STAGES.map(s => {
+  stats.innerHTML = STAGES().map(s => {
     const count = leads.filter(l => l.stage === s.key).length;
     return `<div class="pl-stat">
       <div class="pl-stat-count" style="color:${s.color}">${count}</div>
@@ -103,7 +106,7 @@ function renderStats() {
     </div>`;
   }).join("") + `<div class="pl-stat">
     <div class="pl-stat-count pl-stat-conversion">${conv}%</div>
-    <div class="pl-stat-label">Win rate</div>
+    <div class="pl-stat-label">${T("pl.winRate","Win rate")}</div>
   </div>`;
 }
 
@@ -122,11 +125,11 @@ function closePanel() {
 }
 
 function renderPanelBody(lead) {
-  const stage = STAGES.find(s => s.key === lead.stage);
+  const stage = STAGES().find(s => s.key === lead.stage);
   panelBody.innerHTML = `
     <!-- Info -->
     <div class="pl-section">
-      <div class="pl-section-title">Business Info</div>
+      <div class="pl-section-title">${T("pl.bizInfo","Business Info")}</div>
       ${lead.city     ? `<div class="pl-info-row"><span class="pl-info-ico">📍</span>${esc(lead.city)}</div>` : ""}
       ${lead.category ? `<div class="pl-info-row"><span class="pl-info-ico">🏷</span>${esc(lead.category)}</div>` : ""}
       ${lead.phone    ? `<div class="pl-info-row"><span class="pl-info-ico">📞</span>${esc(lead.phone)}</div>` : ""}
@@ -137,45 +140,45 @@ function renderPanelBody(lead) {
 
     <!-- Stage -->
     <div class="pl-section">
-      <div class="pl-section-title">Stage</div>
+      <div class="pl-section-title">${T("pl.stage","Stage")}</div>
       <select class="pl-stage-select" id="pl-stage-sel">
-        ${STAGES.map(s => `<option value="${s.key}" ${s.key === lead.stage ? "selected" : ""}>${s.label}</option>`).join("")}
+        ${STAGES().map(s => `<option value="${s.key}" ${s.key === lead.stage ? "selected" : ""}>${s.label}</option>`).join("")}
       </select>
     </div>
 
     <!-- Follow-up -->
     <div class="pl-section">
-      <div class="pl-section-title">Follow-up Date</div>
+      <div class="pl-section-title">${T("pl.followUp","Follow-up Date")}</div>
       <input type="date" class="pl-date-input" id="pl-followup-date" value="${lead.followUpDate || ""}">
-      <button class="pl-btn" id="pl-save-followup" style="margin-top:4px">Save date</button>
+      <button class="pl-btn" id="pl-save-followup" style="margin-top:4px">${T("pl.saveDate","Save date")}</button>
     </div>
 
     <!-- AI Email -->
     <div class="pl-section">
-      <div class="pl-section-title">Outreach Email</div>
-      <button class="pl-btn pl-btn-ai" id="pl-gen-email">✨ Generate Greek Email</button>
+      <div class="pl-section-title">${T("pl.outreachEmail","Outreach Email")}</div>
+      <button class="pl-btn pl-btn-ai" id="pl-gen-email">${T("pl.genEmail","✨ Generate Greek Email")}</button>
       <div id="pl-email-area"></div>
     </div>
 
     <!-- Notes -->
     <div class="pl-section">
-      <div class="pl-section-title">Notes</div>
+      <div class="pl-section-title">${T("pl.notes","Notes")}</div>
       <div class="pl-notes-list" id="pl-notes-list">
-        ${lead.notes.length === 0 ? `<div style="font-size:0.75rem;color:var(--muted)">No notes yet</div>` : ""}
+        ${lead.notes.length === 0 ? `<div style="font-size:0.75rem;color:var(--muted)">${T("pl.noNotes","No notes yet")}</div>` : ""}
         ${lead.notes.map(n => `
           <div class="pl-note">${esc(n.text)}<div class="pl-note-date">${fmtDateTime(n.date)}</div></div>
         `).join("")}
       </div>
       <textarea class="pl-note-input" id="pl-note-input" placeholder="Add a note…"></textarea>
-      <button class="pl-btn pl-btn-primary" id="pl-add-note" style="margin-top:4px">Add Note</button>
+      <button class="pl-btn pl-btn-primary" id="pl-add-note" style="margin-top:4px">${T("pl.addNote","Add Note")}</button>
     </div>
 
     <!-- History -->
     <div class="pl-section">
-      <div class="pl-section-title">Stage History</div>
+      <div class="pl-section-title">${T("pl.stageHistory","Stage History")}</div>
       <div class="pl-history">
         ${[...lead.history].reverse().map(h => {
-          const s = STAGES.find(st => st.key === h.stage);
+          const s = STAGES().find(st => st.key === h.stage);
           return `<div class="pl-history-item">
             <div class="pl-history-dot" style="background:${s?.color || "#666"}"></div>
             <span style="color:var(--white)">${s?.label || h.stage}</span>
@@ -187,7 +190,7 @@ function renderPanelBody(lead) {
 
     <!-- Delete -->
     <div class="pl-section" style="padding-bottom:8px">
-      <button class="pl-btn pl-btn-danger" id="pl-delete-lead">🗑 Remove from Pipeline</button>
+      <button class="pl-btn pl-btn-danger" id="pl-delete-lead">${T("pl.remove","🗑 Remove from Pipeline")}</button>
     </div>`;
 
   // Stage change
@@ -223,14 +226,14 @@ function renderPanelBody(lead) {
       if (idx !== -1) leads[idx] = updated;
       activeLead = updated;
       renderBoard();
-      showToast("Follow-up date saved");
+      showToast(T("pl.followupSaved","Follow-up date saved"));
     }
   });
 
   // Generate email
   document.getElementById("pl-gen-email").addEventListener("click", async () => {
     const area = document.getElementById("pl-email-area");
-    area.innerHTML = `<div class="pl-email-loading"><div class="pl-spinner" style="width:18px;height:18px;border-width:2px"></div>Generating…</div>`;
+    area.innerHTML = `<div class="pl-email-loading"><div class="pl-spinner" style="width:18px;height:18px;border-width:2px"></div>${T("pl.generating","Generating…")}</div>`;
     try {
       const res = await fetch("/api/pipeline/generate-email", {
         method: "POST",
@@ -241,13 +244,13 @@ function renderPanelBody(lead) {
         const { email } = await res.json();
         area.innerHTML = `
           <div class="pl-email-modal">${esc(email)}</div>
-          <button class="pl-btn" style="margin-top:6px" onclick="copyEmail(this)">📋 Copy</button>`;
+          <button class="pl-btn" style="margin-top:6px" onclick="copyEmail(this)">${T("pl.copy","📋 Copy")}</button>`;
         area._emailText = email;
       } else {
-        area.innerHTML = `<div style="color:#ef4444;font-size:0.78rem">Failed to generate email. Please try again.</div>`;
+        area.innerHTML = `<div style="color:#ef4444;font-size:0.78rem">${T("pl.emailFailed","Failed to generate email.")}</div>`;
       }
     } catch {
-      area.innerHTML = `<div style="color:#ef4444;font-size:0.78rem">Error generating email.</div>`;
+      area.innerHTML = `<div style="color:#ef4444;font-size:0.78rem">${T("pl.emailFailed","Error generating email.")}</div>`;
     }
   });
 
@@ -287,8 +290,8 @@ function copyEmail(btn) {
   const area = document.getElementById("pl-email-area");
   const text = area?._emailText || area?.querySelector(".pl-email-modal")?.textContent || "";
   navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = "✓ Copied!";
-    setTimeout(() => { btn.textContent = "📋 Copy"; }, 2000);
+    btn.textContent = "✓";
+    setTimeout(() => { btn.textContent = T("pl.copy","📋 Copy"); }, 2000);
   });
 }
 

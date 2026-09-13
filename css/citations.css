@@ -1,0 +1,336 @@
+/* ── AI Citation Builder — eureach.eu ──────────────────────────────────────── */
+
+/* ── Landing page ─────────────────────────────────────────────────────────── */
+.cit-page { max-width: 1100px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+
+.cit-hero { text-align: center; margin-bottom: 3rem; }
+.cit-hero-badge { display: inline-block; background: var(--accent); color: var(--bg); font-size: 0.65rem; font-weight: 700; letter-spacing: .1em; padding: 3px 10px; border-radius: 20px; margin-bottom: 1rem; }
+.cit-hero h1 { font-size: 2.4rem; font-weight: 700; margin: 0 0 0.75rem; }
+.cit-hero-sub { color: var(--muted); font-size: 1.05rem; line-height: 1.6; margin: 0; }
+
+.cit-packages { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
+@media (max-width: 768px) { .cit-packages { grid-template-columns: 1fr; } }
+
+.cit-package {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; position: relative;
+}
+.cit-package--featured { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.cit-package-badge {
+  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: var(--bg); font-size: 0.7rem; font-weight: 700;
+  padding: 3px 14px; border-radius: 20px; white-space: nowrap;
+}
+.cit-package-name { font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.cit-package-price { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+.cit-package-period { font-size: 0.78rem; color: var(--muted); margin-bottom: 0.5rem; }
+.cit-package-features { list-style: none; padding: 0; margin: 0 0 1.5rem; display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.88rem; color: var(--muted); }
+.cit-package-features li { color: var(--text); }
+.cit-select-btn { margin-top: auto; }
+
+.cit-trust { display: flex; flex-wrap: wrap; gap: 0.75rem 2rem; justify-content: center; font-size: 0.82rem; color: var(--muted); margin-bottom: 2rem; }
+.cit-publisher-cta { text-align: center; font-size: 0.85rem; color: var(--muted); }
+.cit-publisher-cta a { color: var(--accent); }
+
+/* My campaigns on landing */
+.cit-my-campaigns { margin-bottom: 3rem; }
+.cit-my-campaigns h2 { font-size: 1.1rem; margin-bottom: 1rem; }
+.cit-campaigns-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+.cit-campaign-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; text-decoration: none; color: var(--text); display: flex; flex-direction: column; gap: 0.5rem; transition: border-color .2s; }
+.cit-campaign-card:hover { border-color: var(--accent); }
+.cit-campaign-pkg { font-weight: 700; text-transform: capitalize; font-size: 0.95rem; }
+.cit-campaign-date { font-size: 0.75rem; color: var(--muted); margin-top: auto; }
+
+/* Status badges */
+.cit-status-pending    { color: #f59e0b; }
+.cit-status-active     { color: #10b981; }
+.cit-status-in_progress{ color: #3b82f6; }
+.cit-status-completed  { color: #6366f1; }
+.cit-status-cancelled  { color: var(--muted); }
+.cit-status-draft      { color: var(--muted); }
+.cit-status-submitted  { color: #f59e0b; }
+.cit-status-published  { color: #10b981; }
+.cit-status-rejected   { color: #ef4444; }
+
+/* Progress bar */
+.cit-prog-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; flex: 1; }
+.cit-prog-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .4s; }
+.cit-campaign-progress { display: flex; align-items: center; gap: 0.75rem; font-size: 0.8rem; color: var(--muted); }
+
+/* ── Wizard ───────────────────────────────────────────────────────────────── */
+.cit-wizard-page { max-width: 680px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+.cit-wizard-header { margin-bottom: 2.5rem; }
+.cit-wizard-steps { display: flex; align-items: center; justify-content: center; }
+.cit-step-dot {
+  width: 32px; height: 32px; border-radius: 50%; background: var(--card); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; color: var(--muted);
+  flex-shrink: 0;
+}
+.cit-step-dot.active { border-color: var(--accent); color: var(--accent); }
+.cit-step-dot.done { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.cit-step-line { flex: 1; height: 2px; background: var(--border); max-width: 60px; }
+
+.cit-wizard-body { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; }
+.cit-wizard-step-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
+.cit-wiz-sub { color: var(--muted); font-size: 0.9rem; margin: 0 0 1.5rem; }
+.cit-wiz-hint { font-size: 0.82rem; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; }
+
+.cit-query-inputs { display: flex; flex-direction: column; gap: 0.75rem; }
+.cit-input { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 0.65rem 1rem; font-size: 0.9rem; width: 100%; box-sizing: border-box; }
+.cit-input:focus { outline: none; border-color: var(--accent); }
+.cit-textarea { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 0.75rem 1rem; font-size: 0.9rem; width: 100%; box-sizing: border-box; height: 160px; resize: vertical; font-family: inherit; }
+.cit-textarea:focus { outline: none; border-color: var(--accent); }
+
+.cit-ai-btn { margin-top: 0.75rem; font-size: 0.82rem; }
+
+.cit-pill-input-row { display: flex; gap: 0.75rem; margin-bottom: 0.75rem; }
+.cit-pill-input-row .cit-input { flex: 1; }
+.cit-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.cit-pill { background: var(--bg); border: 1px solid var(--accent); border-radius: 20px; padding: 4px 10px; font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem; }
+.cit-pill button { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1rem; line-height: 1; padding: 0; }
+
+.cit-lang-row { display: flex; align-items: center; gap: 1.5rem; }
+.cit-wiz-label { font-size: 0.85rem; color: var(--muted); white-space: nowrap; min-width: 120px; }
+.cit-btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+.cit-review-box { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem; }
+.cit-review-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+.cit-review-row:last-child { border-bottom: none; }
+.cit-review-row span { color: var(--muted); }
+.cit-review-row strong { text-align: right; max-width: 65%; }
+
+.cit-pay-btn { width: 100%; padding: 1rem; font-size: 1rem; margin-bottom: 0.75rem; }
+.cit-pay-note { font-size: 0.78rem; color: var(--muted); text-align: center; margin: 0; }
+
+.cit-wizard-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+
+.cit-error { color: #ef4444; font-size: 0.85rem; padding: 0.6rem 0.9rem; background: rgba(239,68,68,.08); border-radius: 8px; margin-bottom: 0.75rem; }
+
+/* ── Campaign dashboard ───────────────────────────────────────────────────── */
+.cit-dash-page { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+.cit-loading { padding: 4rem; text-align: center; color: var(--muted); }
+.cit-muted { color: var(--muted); font-size: 0.88rem; }
+
+.cit-new-notice { background: rgba(16,185,129,.1); border: 1px solid #10b981; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; font-size: 0.9rem; }
+
+.cit-dash-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+.cit-dash-header h1 { font-size: 1.6rem; margin: 0 0 0.3rem; }
+.cit-dash-meta { font-size: 0.82rem; color: var(--muted); }
+.cit-dash-status-badge { font-size: 0.8rem; font-weight: 700; padding: 5px 14px; border-radius: 20px; background: var(--card); border: 1px solid var(--border); white-space: nowrap; }
+
+.cit-dash-progress-bar-wrap { margin-bottom: 2.5rem; }
+.cit-dash-progress-label { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.5rem; }
+.cit-dash-progress-track { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.cit-dash-progress-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width .5s; }
+
+.cit-dash-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.cit-dash-section h2 { font-size: 1rem; font-weight: 700; margin: 0 0 1rem; }
+.cit-dash-section-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.cit-dash-section-hdr h2 { margin: 0; }
+
+.cit-snap-group { margin-bottom: 1.5rem; }
+.cit-snap-query { font-size: 0.88rem; font-weight: 600; margin-bottom: 0.6rem; }
+.cit-snap-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.cit-snap-table th, .cit-snap-table td { padding: 6px 10px; border: 1px solid var(--border); text-align: center; }
+.cit-snap-table th { background: var(--bg); color: var(--muted); font-weight: 600; }
+.cit-snap-yes { color: #10b981; font-weight: 700; }
+.cit-snap-no { color: var(--muted); }
+.cit-snap-excerpt { font-size: 0.8rem; color: var(--muted); font-style: italic; margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: var(--bg); border-radius: 6px; border-left: 3px solid var(--accent); }
+
+.cit-placement { display: flex; align-items: center; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border); }
+.cit-placement:last-child { border-bottom: none; }
+.cit-pl-icon { font-size: 1.1rem; width: 24px; text-align: center; flex-shrink: 0; }
+.cit-placement--live .cit-pl-icon { color: #10b981; }
+.cit-placement--pending .cit-pl-icon { color: var(--muted); }
+.cit-pl-info { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
+.cit-pl-title { font-size: 0.9rem; font-weight: 600; color: var(--text); text-decoration: none; }
+.cit-pl-title:hover { color: var(--accent); }
+.cit-pl-pub { font-size: 0.78rem; color: var(--muted); }
+.cit-pl-view { font-size: 0.78rem; padding: 4px 10px; }
+
+/* ── Admin panel ──────────────────────────────────────────────────────────── */
+.cit-admin-page { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+.cit-admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+.cit-tab { background: none; border: none; color: var(--muted); font-size: 0.9rem; font-weight: 600; padding: 0.5rem 1rem; cursor: pointer; border-radius: 8px; }
+.cit-tab.active { color: var(--text); background: var(--card); }
+.cit-tab:hover { color: var(--text); }
+
+.cit-admin-loading { color: var(--muted); padding: 1rem; }
+.cit-admin-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.cit-admin-table th { background: var(--bg); color: var(--muted); font-weight: 600; padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border); }
+.cit-admin-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.cit-admin-table tr:hover td { background: var(--card); }
+.cit-btn-sm { font-size: 0.75rem; padding: 4px 10px; }
+
+.cit-admin-form { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+.cit-admin-form h3 { margin: 0 0 1.25rem; }
+.cit-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+@media (max-width: 600px) { .cit-form-grid { grid-template-columns: 1fr; } }
+
+/* ── Modal ────────────────────────────────────────────────────────────────── */
+.cit-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.cit-modal { background: var(--card); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 680px; max-height: 85vh; overflow-y: auto; }
+.cit-modal-hdr { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+.cit-modal-hdr h3 { margin: 0; font-size: 1rem; }
+.cit-modal-close { background: none; border: none; color: var(--muted); font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0; }
+#modal-body { padding: 1.5rem; }
+.cit-modal-field { margin-bottom: 1rem; }
+.cit-modal-field label { font-size: 0.78rem; color: var(--muted); display: block; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: .05em; }
+.cit-article-pre { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; font-size: 0.8rem; white-space: pre-wrap; max-height: 280px; overflow-y: auto; font-family: inherit; }
+
+/* ── Join page ────────────────────────────────────────────────────────────── */
+.cit-join-page { max-width: 700px; margin: 0 auto; padding: 3rem 1.5rem 5rem; }
+.cit-join-hero { text-align: center; margin-bottom: 2.5rem; }
+.cit-join-hero h1 { font-size: 2rem; margin-bottom: 0.75rem; }
+.cit-join-hero p { color: var(--muted); font-size: 1rem; }
+
+.cit-join-benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 3rem; }
+@media (max-width: 600px) { .cit-join-benefits { grid-template-columns: 1fr; } }
+.cit-benefit { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; display: flex; gap: 0.75rem; }
+.cit-benefit-icon { font-size: 1.5rem; }
+.cit-benefit strong { display: block; margin-bottom: 0.3rem; font-size: 0.9rem; }
+.cit-benefit div { font-size: 0.82rem; color: var(--muted); }
+
+.cit-join-form-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; }
+.cit-join-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.cit-join-form h2 { margin: 0 0 0.5rem; }
+.cit-form-label { font-size: 0.8rem; color: var(--muted); }
+
+.cit-join-success { text-align: center; padding: 2rem; }
+.cit-join-success-icon { font-size: 3rem; color: #10b981; margin-bottom: 0.75rem; }
+.cit-join-success h2 { margin: 0 0 0.5rem; }
+
+/* ── YouTube add-on additions ─────────────────────────────────────────────── */
+.cit-feat-unavailable {
+  opacity: 0.35;
+  text-decoration: line-through;
+  color: var(--muted) !important;
+}
+
+.cit-feat-addon {
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 0.25rem;
+  user-select: none;
+}
+.cit-feat-addon:hover { opacity: 0.8; }
+.cit-addon-price { font-size: 0.8em; opacity: 0.8; }
+
+.cit-youtube-toggle {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0 0.75rem;
+}
+.cit-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.cit-toggle-label input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+.cit-toggle-note { font-size: 0.75rem; color: var(--muted); margin: 0.35rem 0 0 1.6rem; }
+
+.cit-feat-youtube-included { font-weight: 600; color: var(--text); }
+.cit-new-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  vertical-align: middle;
+  margin-left: 4px;
+  letter-spacing: .02em;
+}
+
+/* YouTube explainer row */
+.cit-youtube-explainer {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+  margin: 0 0 2rem;
+}
+.cit-yt-icon { font-size: 1.6rem; flex-shrink: 0; line-height: 1.3; }
+.cit-yt-text strong { font-size: 0.95rem; display: block; margin-bottom: 0.4rem; }
+.cit-yt-text p { font-size: 0.83rem; color: var(--muted); margin: 0; line-height: 1.6; }
+
+/* ── YouTube Context wizard step ─────────────────────────────────────────── */
+.cit-yt-step-section { margin-bottom: 1.75rem; }
+
+.cit-form-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text); margin-bottom: 0.6rem; }
+.cit-form-label--req::after { content: " *"; color: var(--accent); }
+.cit-optional { font-weight: 400; color: var(--muted); font-size: 0.8em; }
+
+.cit-yt-audience-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.6rem;
+}
+.cit-yt-option {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 0.65rem 1rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .15s, background .15s;
+}
+.cit-yt-option:hover { border-color: var(--accent); }
+.cit-yt-option--selected {
+  border-color: var(--accent);
+  background: rgba(99,102,241,.12);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Booking modal ────────────────────────────────────────────────────────── */
+.cit-booking-modal { max-width: 560px; }
+
+.cit-booking-subtitle {
+  font-size: 0.8rem;
+  color: var(--accent);
+  margin: 0.15rem 0 0;
+  font-weight: 600;
+}
+
+.cit-booking-form { display: flex; flex-direction: column; gap: 1.1rem; }
+
+.cit-booking-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+@media (max-width: 480px) { .cit-booking-row { grid-template-columns: 1fr; } }
+
+.cit-booking-field { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.cit-char-count { font-size: 0.72rem; color: var(--muted); text-align: right; margin-top: 0.2rem; }
+
+.cit-booking-submit { width: 100%; padding: 0.85rem; font-size: 0.95rem; margin-top: 0.25rem; }
+
+/* Self-serve link under each card */
+.cit-self-serve { text-align: center; margin-top: 0.65rem; }
+.cit-self-serve-link {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--border);
+  padding-bottom: 1px;
+  transition: color .15s;
+}
+.cit-self-serve-link:hover { color: var(--text); }
+
+/* Payment methods — wizard review step */
+.cit-pay-methods { display:flex; flex-direction:column; gap:12px; margin:20px 0 8px; }
+.cit-pay-label { font-size:0.8rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
+.cit-pay-btn { width:100%; justify-content:center; }
+#paypal-button-container { width:100%; }
+#paypal-button-container iframe { border-radius:6px; }

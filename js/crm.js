@@ -1,3 +1,6 @@
+/* ── i18n helper ────────────────────────────────────────── */
+function T(k,fb){var l=window.euLang?window.euLang():'en';var t=window.EUREACH_T;return(t&&t[l]&&t[l][k])||fb||k;}
+
 /* ── eureach.eu — CRM Pipeline ────────────────────────── */
 
 let entries = [];
@@ -66,9 +69,19 @@ let crmUserCaps = { canOutreach: true, canWhatsApp: true, crmLeadsMax: -1 };
 async function loadUserCaps() {
   try {
     const res = await fetch("/api/auth/me");
-    if (!res.ok) return;
+    const signInBtn  = document.querySelector('a[href="signin.html"].btn-ghost');
+    const profileBtn = document.getElementById("nav-profile-btn");
+    if (!res.ok) {
+      if (profileBtn) profileBtn.style.display = "none";
+      return;
+    }
     const { user } = await res.json();
-    if (!user) return;
+    if (!user) { if (profileBtn) profileBtn.style.display = "none"; return; }
+
+    // Nav auth state
+    if (signInBtn)  signInBtn.style.display  = "none";
+    if (profileBtn) profileBtn.textContent   = (user.firstName?.[0] || user.email?.[0] || "U").toUpperCase();
+
     crmUserCaps = {
       canOutreach:  user.canOutreach  !== false,
       canWhatsApp:  user.canWhatsApp  !== false,
@@ -110,6 +123,8 @@ async function loadEntries() {
     const data = await res.json();
     entries = data.entries || [];
     render();
+    const saveBtn = document.getElementById("crm-save-btn");
+    if (saveBtn) saveBtn.style.display = entries.length ? "" : "none";
   } catch {
     render();
   }
@@ -135,50 +150,24 @@ function render() {
   document.getElementById("stat-closed").textContent    = entries.filter(e => e.status === "closed").length;
 }
 
-function reminderBadgeHTML(reminder) {
-  if (!reminder || !reminder.date) return "";
-  const today    = new Date().toISOString().slice(0, 10);
-  const isToday  = reminder.date === today;
-  const isOverdue = reminder.date < today;
-  const cls  = isOverdue ? "crm-reminder-badge overdue" : isToday ? "crm-reminder-badge today" : "crm-reminder-badge upcoming";
-  const label = isOverdue ? "⚠ Overdue" : isToday ? "🔔 Today" : "🔔 " + reminder.date;
-  const tip  = reminder.note ? esc(reminder.note) : "";
-  return `<span class="${cls}" title="${tip}">${label}</span>`;
-}
-
-function lastCallBadgeHTML(callLog) {
-  if (!callLog || !callLog.length) return "";
-  const last    = callLog[callLog.length - 1];
-  const icons   = { answered: "✅", no_answer: "📵", voicemail: "📱", callback: "🔁" };
-  const labels  = { answered: "Answered", no_answer: "No answer", voicemail: "Voicemail", callback: "Callback" };
-  const icon    = icons[last.outcome]  || "📞";
-  const label   = labels[last.outcome] || last.outcome;
-  const dt      = new Date(last.at);
-  const diffMs  = Date.now() - dt;
-  const diffH   = Math.floor(diffMs / 3600000);
-  const timeStr = diffH < 1 ? "just now" : diffH < 24 ? diffH + "h ago" : Math.floor(diffH / 24) + "d ago";
-  return `<span class="crm-call-badge" title="${esc(last.notes || "")}">${icon} ${label} · ${timeStr}</span>`;
-}
-
 function cardHTML(e) {
   const s = crmScoreMap[crmScoreKey(e.leadName, e.city)];
   const scoreBadge = s
     ? `<div class="crm-score-badge tier-${s.tier}" title="${esc(s.reasoning || "")}">${crmTierIcon(s.tier)} ${s.score}</div>`
     : "";
-  const reminderBadge = reminderBadgeHTML(e.reminder);
-  const callBadge     = lastCallBadgeHTML(e.callLog);
-  const badgesRow     = (reminderBadge || callBadge)
-    ? `<div class="crm-badges-row">${callBadge}${reminderBadge}</div>`
-    : "";
-  const sub = [e.businessType, e.city].filter(Boolean).join(" · ");
   return `
-  <div class="crm-card crm-card-compact" data-id="${e.id}">
+  <div class="crm-card" data-id="${e.id}">
     <div class="crm-card-name-row">
-      <div class="crm-card-name crm-card-name-link" data-id="${e.id}" title="View details">${esc(e.leadName)}</div>
+      <div class="crm-card-name">${esc(e.leadName)}</div>
       ${scoreBadge}
     </div>
-    ${sub ? `<div class="crm-card-sub">${esc(sub)}</div>` : ""}
-    ${badgesRow}
+    <div class="crm-card-meta">
+      ${e.businessType ? `<div class="crm-card-row"><span>🏢</span>${esc(e.businessType)}</div>` : ""}
+      ${e.city         ? `<div class="crm-card-row"><span>📍</span>${esc(e.city)}</div>` : ""}
+      ${e.phone        ? `<div class="crm-card-row"><span>📞</span>${esc(e.phone)}</div>` : ""}
+      ${e.website      ? `<div class="crm-card-row"><span>🌐</span><a href="https://${esc(e.website)}" target="_blank">${esc(e.website)}</a></div>` : ""}
+    </div>
+    <textarea class="crm-card-notes" data-id="${e.id}" placeholder="Add notes…">${esc(e.notes || "")}</textarea>
     <div class="crm-card-footer">
       <select class="crm-status-select" data-id="${e.id}">
         <option value="found"     ${e.status === "found"     ? "selected" : ""}>🔵 Found</option>
@@ -188,361 +177,8 @@ function cardHTML(e) {
       </select>
       <button class="crm-delete-btn" data-id="${e.id}" title="Remove">✕</button>
     </div>
-    <div class="crm-action-bar">
-      <button class="crm-action-btn crm-call-btn"     data-id="${e.id}">📞 Log Call</button>
-      <button class="crm-action-btn crm-reminder-btn" data-id="${e.id}">⏰ Remind me</button>
-      <button class="crm-action-btn crm-email-btn"    data-id="${e.id}">✉ Email</button>
-      <button class="crm-action-btn crm-outreach-btn" data-id="${e.id}">✨ Outreach</button>
-    </div>
+    <button class="crm-outreach-btn" data-id="${e.id}">✨ Generate Outreach</button>
   </div>`;
-}
-
-
-/* ── Lead Detail Modal ───────────────────────────────── */
-let ldCurrentLead = null;
-let ldActivePanel = null;
-
-function openLeadDetail(lead) {
-  ldCurrentLead = lead;
-  document.getElementById('ld-name').textContent = lead.leadName;
-
-  const pills = [
-    lead.businessType ? `<span class="ld-pill">🏢 ${esc(lead.businessType)}</span>` : '',
-    lead.city         ? `<span class="ld-pill">📍 ${esc(lead.city)}</span>` : '',
-    lead.phone        ? `<a class="ld-pill ld-pill-link" href="tel:${esc(lead.phone)}">📞 ${esc(lead.phone)}</a>` : '',
-    lead.website      ? `<a class="ld-pill ld-pill-link" href="https://${esc(lead.website)}" target="_blank">🌐 ${esc(lead.website)}</a>` : '',
-    lead.email        ? `<span class="ld-pill">✉ ${esc(lead.email)}</span>` : '',
-  ].filter(Boolean).join('');
-  document.getElementById('ld-contact-bar').innerHTML = pills || '<span class="ld-pill" style="color:var(--muted)">No contact info</span>';
-
-  const sel = document.getElementById('ld-status-sel');
-  sel.value = lead.status;
-  sel.onchange = () => { lead.status = sel.value; patchEntry(lead.id, { status: sel.value }); render(); };
-
-  const ta = document.getElementById('ld-notes');
-  ta.value = lead.notes || '';
-  ta.onblur = () => patchEntry(lead.id, { notes: ta.value });
-
-  ldRenderFeed(lead);
-
-  document.getElementById('ld-action-panel').innerHTML = '';
-  ldActivePanel = null;
-  document.querySelectorAll('.ld-act-btn').forEach(b => b.classList.remove('active'));
-
-  document.getElementById('ld-act-email').onclick = () => ldTogglePanel('email');
-  document.getElementById('ld-act-call').onclick  = () => ldTogglePanel('call');
-  document.getElementById('ld-act-msg').onclick   = () => ldTogglePanel('message');
-
-  document.getElementById('lead-detail-overlay').classList.add('open');
-  document.getElementById('lead-detail-modal').classList.add('open');
-}
-
-function ldRenderFeed(lead) {
-  const items = [];
-  (lead.callLog    || []).forEach(c => items.push({ type: 'call',    data: c, at: c.at }));
-  (lead.emailLog   || []).forEach(e => items.push({ type: 'email',   data: e, at: e.sentAt }));
-  (lead.messageLog || []).forEach(m => items.push({ type: 'message', data: m, at: m.sentAt }));
-  items.sort((a, b) => new Date(b.at) - new Date(a.at));
-
-  const feedEl = document.getElementById('ld-feed');
-  if (!items.length) {
-    feedEl.innerHTML = '<div class="ld-feed-empty">No activity yet — use the buttons below to start.</div>';
-    return;
-  }
-
-  const callIcons  = { answered: '✅', no_answer: '📵', voicemail: '📱', callback: '🔁' };
-  const callLabels = { answered: 'Answered', no_answer: 'No answer', voicemail: 'Voicemail', callback: 'Callback' };
-  const chIcons    = { sms: '💬', telegram: '✈️', viber: '💜', whatsapp: '💬' };
-
-  feedEl.innerHTML = items.map(item => {
-    const dt   = new Date(item.at);
-    const dStr = dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    const tStr = dt.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-    const when = `<span class="ld-feed-when">${dStr} ${tStr}</span>`;
-
-    if (item.type === 'call') {
-      const c = item.data;
-      return `<div class="ld-feed-item">
-        <div class="ld-feed-icon">${callIcons[c.outcome] || '📞'}</div>
-        <div class="ld-feed-body">
-          <div class="ld-feed-line"><strong>${callLabels[c.outcome] || c.outcome}</strong>${when}</div>
-          ${c.notes ? `<div class="ld-feed-note">${esc(c.notes)}</div>` : ''}
-        </div>
-      </div>`;
-    }
-    if (item.type === 'email') {
-      const e = item.data;
-      return `<div class="ld-feed-item ld-feed-email-item" onclick="this.classList.toggle('expanded')">
-        <div class="ld-feed-icon">✉</div>
-        <div class="ld-feed-body">
-          <div class="ld-feed-line"><strong>${esc(e.subject)}</strong>${when}</div>
-          <div class="ld-feed-expand">${esc(e.body || '')}</div>
-        </div>
-      </div>`;
-    }
-    if (item.type === 'message') {
-      const m = item.data;
-      return `<div class="ld-feed-item">
-        <div class="ld-feed-icon">${chIcons[m.channel] || '💬'}</div>
-        <div class="ld-feed-body">
-          <div class="ld-feed-line"><strong>${esc(m.channel.charAt(0).toUpperCase() + m.channel.slice(1))}</strong>${when}</div>
-          <div class="ld-feed-note">${esc(m.text)}</div>
-        </div>
-      </div>`;
-    }
-    return '';
-  }).join('');
-}
-
-function ldTogglePanel(type) {
-  const panel  = document.getElementById('ld-action-panel');
-  const btnMap = { email: 'ld-act-email', call: 'ld-act-call', message: 'ld-act-msg' };
-
-  if (ldActivePanel === type) {
-    panel.innerHTML = '';
-    ldActivePanel = null;
-    document.querySelectorAll('.ld-act-btn').forEach(b => b.classList.remove('active'));
-    return;
-  }
-  ldActivePanel = type;
-  document.querySelectorAll('.ld-act-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(btnMap[type]).classList.add('active');
-
-  if (type === 'email') {
-    // Check email config first, then render panel
-    (async () => {
-      let emailCfg = { configured: false };
-      try { const r = await fetch('/api/email/status'); emailCfg = await r.json(); } catch {}
-
-      panel.innerHTML = `<div class="ld-panel">
-        <div class="ld-panel-title">✉ Send Email</div>
-        ${emailCfg.configured
-          ? `<div class="ld-email-from">Sending from: <strong>${esc(emailCfg.from)}</strong> via ${emailCfg.method === 'gmail' ? 'Gmail' : 'SMTP'}${emailCfg.replyEmail ? ' · Replies go to: <strong>' + esc(emailCfg.replyEmail) + '</strong>' : ' · <a href="profile.html" style="color:var(--blue2)">Set reply-to →</a>'}</div>`
-          : `<div class="ld-email-warn">⚠ No email configured. <a href="settings.html#email">Set up email →</a></div>`
-        }
-        <div class="ld-panel-row"><label>To</label><input class="ld-panel-input" id="ldp-to" type="email" value="${esc(ldCurrentLead.email || '')}" placeholder="recipient@email.com"></div>
-        <div class="ld-panel-row"><label>Subject</label><input class="ld-panel-input" id="ldp-subj" placeholder="Email subject…"></div>
-        <div class="ld-panel-row">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-            <label>Body</label>
-            <button class="ld-tpl-btn" id="ldp-tpl-btn" type="button">📋 Insert Template</button>
-          </div>
-          <div class="ld-tpl-dropdown" id="ldp-tpl-dropdown" style="display:none"></div>
-          <textarea class="ld-panel-ta" id="ldp-body" placeholder="Write your message…"></textarea>
-        </div>
-        <div class="ld-panel-err" id="ldp-err"></div>
-        <div class="ld-panel-footer">
-          <button class="crm-panel-cancel" onclick="ldTogglePanel('email')">Cancel</button>
-          <button class="crm-panel-save" id="ldp-send" ${emailCfg.configured ? '' : 'disabled'}>✉ Send</button>
-        </div>
-      </div>`;
-
-      // Live validation — keep Send disabled until all fields filled
-      const sendBtn = document.getElementById('ldp-send');
-      function validateEmail() {
-        const ok = emailCfg.configured
-          && document.getElementById('ldp-to').value.trim().includes('@')
-          && document.getElementById('ldp-subj').value.trim().length > 0
-          && document.getElementById('ldp-body').value.trim().length > 0;
-        sendBtn.disabled = !ok;
-      }
-      ['ldp-to','ldp-subj','ldp-body'].forEach(id => {
-        document.getElementById(id)?.addEventListener('input', validateEmail);
-      });
-      validateEmail();
-    // Template picker
-    document.getElementById('ldp-tpl-btn').onclick = async () => {
-      const dd = document.getElementById('ldp-tpl-dropdown');
-      if (dd.style.display !== 'none') { dd.style.display = 'none'; return; }
-      dd.innerHTML = '<div class="ld-tpl-loading">Loading…</div>';
-      dd.style.display = 'block';
-      try {
-        const res = await fetch('/api/templates/list');
-        const data = await res.json();
-        const tpls = (data.templates || []).filter(t => t.subject && t.body);
-        if (!tpls.length) {
-          dd.innerHTML = '<div class="ld-tpl-empty">No templates yet. <a href="templates.html">Create one →</a></div>';
-          return;
-        }
-        dd.innerHTML = tpls.map(t => `<div class="ld-tpl-item" data-id="${t.id}">
-          <div class="ld-tpl-name">${esc(t.name)}</div>
-          <div class="ld-tpl-meta">${esc(t.templateType || '')} ${t.purpose ? '· ' + esc(t.purpose) : ''}</div>
-        </div>`).join('');
-        dd.querySelectorAll('.ld-tpl-item').forEach(el => {
-          el.onclick = () => {
-            const tpl = tpls.find(t => t.id === el.dataset.id);
-            if (!tpl) return;
-            document.getElementById('ldp-subj').value = tpl.subject;
-            document.getElementById('ldp-body').value = tpl.body;
-            dd.style.display = 'none';
-          };
-        });
-      } catch { dd.innerHTML = '<div class="ld-tpl-empty">Failed to load templates.</div>'; }
-    };
-
-        document.getElementById('ldp-send').onclick = async () => {
-      const to   = document.getElementById('ldp-to').value.trim();
-      const subj = document.getElementById('ldp-subj').value.trim();
-      const body = document.getElementById('ldp-body').value.trim();
-      const err  = document.getElementById('ldp-err');
-      if (!to || !subj || !body) { err.textContent = 'All fields required.'; return; }
-      const btn = document.getElementById('ldp-send');
-      btn.disabled = true; btn.textContent = 'Sending…';
-      const res  = await fetch('/api/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, subject: subj, body, leadId: ldCurrentLead.id }) });
-      const data = await res.json();
-      if (!res.ok) { err.textContent = data.error || 'Send failed.'; btn.disabled = false; btn.textContent = '✉ Send'; return; }
-      const entry = entries.find(e => e.id === ldCurrentLead.id);
-      if (entry) { entry.emailLog = entry.emailLog || []; entry.emailLog.push({ subject: subj, body, to, sentAt: data.sentAt }); ldCurrentLead = entry; }
-      ldTogglePanel('email');
-      ldRenderFeed(ldCurrentLead);
-      showToast('Email sent ✓');
-      if (ldCurrentLead.status === 'found') {
-        await patchEntry(ldCurrentLead.id, { status: 'contacted' });
-        const i2 = entries.findIndex(e => e.id === ldCurrentLead.id);
-        if (i2 !== -1) { entries[i2].status = 'contacted'; ldCurrentLead.status = 'contacted'; }
-        document.getElementById('ld-status-sel').value = 'contacted';
-        render();
-      }
-    };
-    })(); // end async IIFE
-  }
-
-  if (type === 'call') {
-    let outcome = null;
-    panel.innerHTML = `<div class="ld-panel">
-      <div class="ld-panel-title">📞 Log Call</div>
-      <div class="ld-outcome-btns">
-        <button class="crm-outcome-btn" data-o="answered">✅ Answered</button>
-        <button class="crm-outcome-btn" data-o="no_answer">📵 No answer</button>
-        <button class="crm-outcome-btn" data-o="voicemail">📱 Voicemail</button>
-        <button class="crm-outcome-btn" data-o="callback">🔁 Callback</button>
-      </div>
-      <div class="ld-panel-row" style="margin-top:10px"><label>Notes</label><textarea class="ld-panel-ta" id="ldp-cnotes" placeholder="What was discussed…"></textarea></div>
-      <div class="ld-panel-err" id="ldp-err"></div>
-      <div class="ld-panel-footer">
-        <button class="crm-panel-cancel" onclick="ldTogglePanel('call')">Cancel</button>
-        <button class="crm-panel-save" id="ldp-csave">Save</button>
-      </div>
-    </div>`;
-    panel.querySelectorAll('.crm-outcome-btn').forEach(b => {
-      b.onclick = () => { panel.querySelectorAll('.crm-outcome-btn').forEach(x => x.classList.remove('selected')); b.classList.add('selected'); outcome = b.dataset.o; };
-    });
-    document.getElementById('ldp-csave').onclick = async () => {
-      const err = document.getElementById('ldp-err');
-      if (!outcome) { err.textContent = 'Select an outcome.'; return; }
-      const notes = document.getElementById('ldp-cnotes').value.trim();
-      const btn   = document.getElementById('ldp-csave');
-      btn.disabled = true; btn.textContent = 'Saving…';
-      const res  = await fetch(`/api/crm/${ldCurrentLead.id}/call`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ outcome, notes }) });
-      const data = await res.json();
-      if (!res.ok) { err.textContent = data.error || 'Failed.'; btn.disabled = false; btn.textContent = 'Save'; return; }
-      const entry = entries.find(e => e.id === ldCurrentLead.id);
-      if (entry) { entry.callLog = data.callLog; ldCurrentLead = entry; }
-      ldTogglePanel('call');
-      ldRenderFeed(ldCurrentLead);
-      showToast('Call logged ✓');
-      if (ldCurrentLead.status === 'found') {
-        await patchEntry(ldCurrentLead.id, { status: 'contacted' });
-        const i2 = entries.findIndex(e => e.id === ldCurrentLead.id);
-        if (i2 !== -1) { entries[i2].status = 'contacted'; ldCurrentLead.status = 'contacted'; }
-        document.getElementById('ld-status-sel').value = 'contacted';
-        render();
-      }
-    };
-  }
-
-  if (type === 'message') {
-    (async () => {
-      let userCfg = {};
-      try { const r = await fetch('/api/auth/me'); const d = await r.json(); userCfg = d.user || {}; } catch {}
-
-      const lead     = ldCurrentLead;
-      const leadPhone = (lead.phone || '').replace(/[^\d+]/g, '');
-      const hasPhone  = leadPhone.length > 4;
-
-      const channels = [
-        { ch: 'telegram', icon: '✈️', label: 'Telegram', val: userCfg.telegramHandle, hint: userCfg.telegramHandle ? `@${userCfg.telegramHandle}` : null,
-          link: p => `https://t.me/+${p}` },
-        { ch: 'whatsapp', icon: '💬', label: 'WhatsApp', val: userCfg.whatsappPhone,  hint: userCfg.whatsappPhone  || null,
-          link: p => `https://wa.me/${p}` },
-        { ch: 'viber',    icon: '💜', label: 'Viber',    val: userCfg.viberPhone,     hint: userCfg.viberPhone     || null,
-          link: p => `viber://chat?number=%2B${p}` },
-      ];
-
-      const anyConfigured = channels.some(c => c.val);
-      let activeChannel = channels.find(c => c.val) || channels[0];
-
-      const tabsHTML = channels.map(c => {
-        const configured = !!c.val;
-        const cls = c.ch === activeChannel.ch ? 'ld-ch-tab active' : 'ld-ch-tab';
-        const disabledAttr = configured ? '' : 'data-unconfigured="1"';
-        return `<button class="${cls} ${configured ? '' : 'ld-ch-tab-off'}" data-ch="${c.ch}" ${disabledAttr} title="${configured ? c.hint || '' : 'Not configured — set up in My Profile'}">${c.icon} ${c.label}${configured ? '' : ' <span class="ld-ch-lock">⚠</span>'}</button>`;
-      }).join('');
-
-      const phoneBar = hasPhone
-        ? `<div class="ld-msg-phone">📞 Contacting: <strong>${esc(lead.phone)}</strong></div>`
-        : `<div class="ld-msg-warn">⚠ No phone number on this lead — add one to enable messaging.</div>`;
-
-      const setupBar = anyConfigured ? '' : `<div class="ld-msg-warn">No messaging channels configured. <a href="profile.html">Set up in My Profile →</a></div>`;
-
-      panel.innerHTML = `<div class="ld-panel">
-        <div class="ld-panel-title">💬 Send Message</div>
-        ${setupBar}
-        <div class="ld-channel-tabs">${tabsHTML}</div>
-        ${phoneBar}
-        <div class="ld-panel-row"><textarea class="ld-panel-ta" id="ldp-msg" placeholder="Write your message…"></textarea></div>
-        <div class="ld-panel-err" id="ldp-err"></div>
-        <div class="ld-panel-footer">
-          <button class="crm-panel-cancel" onclick="ldTogglePanel('message')">Cancel</button>
-          <button class="crm-panel-save" id="ldp-msend" ${(!anyConfigured || !hasPhone) ? 'disabled' : ''}>Send & Log</button>
-        </div>
-      </div>`;
-
-      // Tab switching — skip unconfigured
-      panel.querySelectorAll('.ld-ch-tab').forEach(t => {
-        t.onclick = () => {
-          if (t.dataset.unconfigured) {
-            document.getElementById('ldp-err').textContent = `${t.textContent.replace('⚠','').trim()} not configured. Set up in My Profile.`;
-            return;
-          }
-          panel.querySelectorAll('.ld-ch-tab').forEach(x => x.classList.remove('active'));
-          t.classList.add('active');
-          activeChannel = channels.find(c => c.ch === t.dataset.ch) || activeChannel;
-          document.getElementById('ldp-err').textContent = '';
-        };
-      });
-
-      // Live validation
-      const sendBtn = document.getElementById('ldp-msend');
-      document.getElementById('ldp-msg').addEventListener('input', () => {
-        sendBtn.disabled = !document.getElementById('ldp-msg').value.trim() || !anyConfigured || !hasPhone;
-      });
-
-      sendBtn.onclick = async () => {
-        const text = document.getElementById('ldp-msg').value.trim();
-        const err  = document.getElementById('ldp-err');
-        if (!text) { err.textContent = 'Enter a message.'; return; }
-        sendBtn.disabled = true; sendBtn.textContent = 'Logging…';
-        const res  = await fetch(`/api/crm/${lead.id}/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ channel: activeChannel.ch, text }) });
-        const data = await res.json();
-        if (!res.ok) { err.textContent = data.error || 'Failed.'; sendBtn.disabled = false; sendBtn.textContent = 'Send & Log'; return; }
-        const entry = entries.find(e => e.id === lead.id);
-        if (entry) { entry.messageLog = data.messageLog; ldCurrentLead = entry; }
-        // Open app with lead's phone
-        if (leadPhone) window.open(activeChannel.link(leadPhone), '_blank');
-        ldTogglePanel('message');
-        ldRenderFeed(ldCurrentLead);
-        showToast('Message logged ✓');
-      };
-    })();
-  }
-}
-
-function closeLeadDetail() {
-  document.getElementById('lead-detail-overlay').classList.remove('open');
-  document.getElementById('lead-detail-modal').classList.remove('open');
-  ldCurrentLead = null;
-  ldActivePanel = null;
 }
 
 function bindColEvents(col) {
@@ -561,38 +197,10 @@ function bindColEvents(col) {
     });
   });
 
-  col.querySelectorAll(".crm-card-name-link").forEach(el => {
-    el.addEventListener("click", () => {
-      const lead = entries.find(e => e.id === el.dataset.id);
-      if (lead) openLeadDetail(lead);
-    });
-  });
-
-    col.querySelectorAll(".crm-outreach-btn").forEach(btn => {
+  col.querySelectorAll(".crm-outreach-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const lead = entries.find(e => e.id === btn.dataset.id);
       if (lead) openOutreachModal(lead);
-    });
-  });
-
-  col.querySelectorAll(".crm-call-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const lead = entries.find(e => e.id === btn.dataset.id);
-      if (lead) toggleCallPanel(btn, lead);
-    });
-  });
-
-  col.querySelectorAll(".crm-reminder-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const lead = entries.find(e => e.id === btn.dataset.id);
-      if (lead) toggleReminderPanel(btn, lead);
-    });
-  });
-
-  col.querySelectorAll(".crm-email-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const lead = entries.find(e => e.id === btn.dataset.id);
-      if (lead) toggleEmailPanel(btn, lead);
     });
   });
 }
@@ -671,13 +279,13 @@ overlay.addEventListener("click", e => { if (e.target === overlay) closeModal();
 saveBtn.addEventListener("click", async () => {
   const leadName = document.getElementById("m-name").value.trim();
   if (!leadName) {
-    modalErr.textContent = "Business name is required.";
+    modalErr.textContent = T("crm.nameRequired","Business name is required.");
     modalErr.classList.add("visible");
     document.getElementById("m-name").focus();
     return;
   }
   saveBtn.disabled = true;
-  saveBtn.textContent = "Adding…";
+  saveBtn.textContent = T("crm.adding","Adding…");
 
   const err = await createEntry({
     leadName,
@@ -689,7 +297,7 @@ saveBtn.addEventListener("click", async () => {
   });
 
   saveBtn.disabled = false;
-  saveBtn.textContent = "Add to Pipeline";
+  saveBtn.textContent = T("crm.addBtn","Add to Pipeline");
 
   if (err) {
     modalErr.textContent = err;
@@ -728,12 +336,13 @@ function openOutreachModal(lead) {
   const leadLabel = [lead.leadName, lead.businessType, lead.city].filter(Boolean).join(" · ");
   document.getElementById("or-lead-display").textContent = leadLabel;
   document.getElementById("wa-lead-display").textContent = leadLabel;
-  document.getElementById("or-modal-title").textContent  = "Generate Outreach";
+  document.getElementById("or-modal-title").textContent  = T("crm.genOutreach","Generate Outreach");
 
   // Auto-set language from city
   const detectedLang = detectLang(lead);
   document.getElementById("or-language").value = detectedLang;
   document.getElementById("wa-language").value = detectedLang;
+  handleOrLangChange(detectedLang);
 
   // Pre-fill phone if available
   if (lead.phone) document.getElementById("wa-phone").value = lead.phone;
@@ -776,6 +385,21 @@ waFormCancel.addEventListener("click", closeOutreachModal);
 waDoneBtn.addEventListener("click", closeOutreachModal);
 waRegenBtn.addEventListener("click", () => showWaView("form"));
 
+function handleOrLangChange(lang) {
+  const row  = document.getElementById("or-gdpr-row");
+  const chk  = document.getElementById("or-gdpr");
+  const info = document.getElementById("or-gdpr-info");
+  if (!row) return;
+  if (lang === "german") {
+    row.style.display = "block";
+    if (chk) chk.checked = true;
+    if (info) info.style.display = "block";
+  } else {
+    row.style.display = lang === "english" ? "none" : "block";
+    if (info) info.style.display = "none";
+  }
+}
+
 orGenerateBtn.addEventListener("click", () => runGenerate());
 orRegenBtn.addEventListener("click", () => { showOrView("form"); });
 waGenerateBtn.addEventListener("click", () => runWA());
@@ -783,11 +407,12 @@ waGenerateBtn.addEventListener("click", () => runWA());
 async function runGenerate() {
   if (!orCurrentLead) return;
 
-  const language = document.getElementById("or-language").value;
-  const tone     = document.getElementById("or-tone").value;
+  const language     = document.getElementById("or-language").value;
+  const tone         = document.getElementById("or-tone").value;
+  const gdprCompliant = document.getElementById("or-gdpr")?.checked || false;
 
   orGenerateBtn.disabled = true;
-  orGenerateBtn.textContent = "Generating…";
+  orGenerateBtn.textContent = T("crm.generating","Generating…");
   orFormErr.textContent = "";
   orFormErr.classList.remove("visible");
   showOrView("loading");
@@ -803,6 +428,7 @@ async function runGenerate() {
         city:         orCurrentLead.city || "",
         language,
         tone,
+        gdprCompliant,
       }),
     });
 
@@ -810,7 +436,7 @@ async function runGenerate() {
 
     if (!res.ok) {
       showOrView("form");
-      if (res.status === 403 && data.error === "limit_reached") { closeOutreachModal(); showLimitModal("outreach"); return; }
+      if (res.status === 403 && data.error === "insufficient_credits") { closeOutreachModal(); showLimitModal("outreach"); return; }
       orFormErr.textContent = data.error || "Failed to generate. Please try again.";
       orFormErr.classList.add("visible");
       return;
@@ -824,7 +450,7 @@ async function runGenerate() {
     orFormErr.classList.add("visible");
   } finally {
     orGenerateBtn.disabled = false;
-    orGenerateBtn.textContent = "✨ Generate Sequence";
+    orGenerateBtn.textContent = T("crm.genSeq","✨ Generate Sequence");
   }
 }
 
@@ -836,7 +462,7 @@ async function runWA() {
   const phone       = document.getElementById("wa-phone").value.trim();
 
   waGenerateBtn.disabled = true;
-  waGenerateBtn.textContent = "Generating…";
+  waGenerateBtn.textContent = T("crm.generating","Generating…");
   waFormErr.textContent = "";
   waFormErr.classList.remove("visible");
   showWaView("loading");
@@ -859,7 +485,7 @@ async function runWA() {
     const data = await res.json();
     if (!res.ok) {
       showWaView("form");
-      if (res.status === 403 && data.error === "limit_reached") { closeOutreachModal(); showLimitModal("whatsapp"); return; }
+      if (res.status === 403 && data.error === "insufficient_credits") { closeOutreachModal(); showLimitModal("whatsapp"); return; }
       waFormErr.textContent = data.error || "Failed to generate. Please try again.";
       waFormErr.classList.add("visible");
       return;
@@ -873,7 +499,7 @@ async function runWA() {
     waFormErr.classList.add("visible");
   } finally {
     waGenerateBtn.disabled = false;
-    waGenerateBtn.textContent = "✨ Generate Messages";
+    waGenerateBtn.textContent = T("crm.genMsgs","✨ Generate Messages");
   }
 }
 
@@ -1005,10 +631,9 @@ function openEmailSendForm(btn, msg) {
   btn.classList.add("active");
   const form = document.createElement("div");
   form.className = "or-send-form";
-  const prefillEmail = orCurrentLead?.email || "";
   form.innerHTML = `
     <div class="or-send-form-inner">
-      <input type="email" class="or-send-email" placeholder="Recipient email address" autocomplete="email" value="${esc(prefillEmail)}">
+      <input type="email" class="or-send-email" placeholder="Recipient email address" autocomplete="email">
       <button class="or-send-confirm">✉ Send now</button>
       <button class="or-send-cancel">Cancel</button>
     </div>
@@ -1050,265 +675,12 @@ function openEmailSendForm(btn, msg) {
       }
       const t = new Date(data.sentAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
       form.innerHTML = `<div class="or-send-success">✅ Sent at ${t}</div>`;
-      // Auto-move to Contacted if still at 'found'
-      if (lead.status === 'found') {
-        await patchEntry(lead.id, { status: 'contacted' });
-        const idx2 = entries.findIndex(e => e.id === lead.id);
-        if (idx2 !== -1) entries[idx2].status = 'contacted';
-      }
       btn.textContent = "✓ Sent"; btn.disabled = true; btn.classList.add("or-send-btn-done");
     } catch {
       form.querySelector(".or-send-err").textContent = "Network error. Please try again.";
       confirmBtn.disabled = false; confirmBtn.textContent = "✉ Send now";
     }
   });
-}
-
-/* ── Call log panel ─────────────────────────────────────── */
-function toggleCallPanel(btn, lead) {
-  const card = btn.closest(".crm-card");
-  const existing = card.querySelector(".crm-call-panel");
-  if (existing) { existing.remove(); btn.classList.remove("active"); return; }
-  closeAllPanels(card);
-  btn.classList.add("active");
-
-  const panel = document.createElement("div");
-  panel.className = "crm-call-panel";
-  panel.innerHTML = `
-    <div class="crm-panel-label">What happened?</div>
-    <div class="crm-outcome-btns">
-      <button class="crm-outcome-btn" data-outcome="answered">✅ Answered</button>
-      <button class="crm-outcome-btn" data-outcome="no_answer">📵 No Answer</button>
-      <button class="crm-outcome-btn" data-outcome="voicemail">📱 Voicemail</button>
-      <button class="crm-outcome-btn" data-outcome="callback">🔁 Callback</button>
-    </div>
-    <input type="text" class="crm-panel-input" placeholder="Notes (optional)" maxlength="300">
-    <div class="crm-panel-footer">
-      <button class="crm-panel-save" disabled>Save</button>
-      <button class="crm-panel-cancel">Cancel</button>
-    </div>
-    <div class="crm-panel-err"></div>`;
-
-  card.appendChild(panel);
-
-  let selectedOutcome = null;
-  const saveBtn = panel.querySelector(".crm-panel-save");
-
-  panel.querySelectorAll(".crm-outcome-btn").forEach(ob => {
-    ob.addEventListener("click", () => {
-      panel.querySelectorAll(".crm-outcome-btn").forEach(x => x.classList.remove("selected"));
-      ob.classList.add("selected");
-      selectedOutcome = ob.dataset.outcome;
-      saveBtn.disabled = false;
-    });
-  });
-
-  panel.querySelector(".crm-panel-cancel").addEventListener("click", () => {
-    panel.remove(); btn.classList.remove("active");
-  });
-
-  saveBtn.addEventListener("click", async () => {
-    if (!selectedOutcome) return;
-    const notes = panel.querySelector(".crm-panel-input").value.trim();
-    saveBtn.disabled = true; saveBtn.textContent = "Saving…";
-    try {
-      const res  = await fetch(`/api/crm/${lead.id}/call`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ outcome: selectedOutcome, notes }),
-      });
-      const data = await res.json();
-      if (!res.ok) { panel.querySelector(".crm-panel-err").textContent = data.error || "Failed."; saveBtn.disabled = false; saveBtn.textContent = "Save"; return; }
-      // Update local entry
-      const idx = entries.findIndex(e => e.id === lead.id);
-      if (idx !== -1) entries[idx].callLog = data.callLog;
-      panel.remove(); btn.classList.remove("active");
-      render();
-      showToast("Call logged ✓");
-      // Auto-move to Contacted if still at 'found'
-      if (lead.status === 'found') {
-        await patchEntry(lead.id, { status: 'contacted' });
-        const idx2 = entries.findIndex(e => e.id === lead.id);
-        if (idx2 !== -1) entries[idx2].status = 'contacted';
-      }
-    } catch { panel.querySelector(".crm-panel-err").textContent = "Network error."; saveBtn.disabled = false; saveBtn.textContent = "Save"; }
-  });
-}
-
-/* ── Reminder panel ──────────────────────────────────────── */
-function toggleReminderPanel(btn, lead) {
-  const card = btn.closest(".crm-card");
-  const existing = card.querySelector(".crm-reminder-panel");
-  if (existing) { existing.remove(); btn.classList.remove("active"); return; }
-  closeAllPanels(card);
-  btn.classList.add("active");
-
-  const today = new Date().toISOString().slice(0, 10);
-  const existing_date = lead.reminder?.date || "";
-  const existing_note = lead.reminder?.note || "";
-
-  const panel = document.createElement("div");
-  panel.className = "crm-reminder-panel";
-  panel.innerHTML = `
-    <div class="crm-panel-label">Follow-up reminder</div>
-    <div class="crm-panel-row">
-      <input type="date" class="crm-panel-date" value="${esc(existing_date)}" min="${today}">
-      <input type="text" class="crm-panel-input" placeholder="Note (optional)" value="${esc(existing_note)}" maxlength="200">
-    </div>
-    <div class="crm-panel-footer">
-      <button class="crm-panel-save">Set Reminder</button>
-      <button class="crm-panel-cancel">Cancel</button>
-      ${existing_date ? '<button class="crm-panel-clear">Clear</button>' : ""}
-    </div>
-    <div class="crm-panel-err"></div>`;
-
-  card.appendChild(panel);
-
-  const dateInput = panel.querySelector(".crm-panel-date");
-  const noteInput = panel.querySelector(".crm-panel-input");
-  const saveBtn   = panel.querySelector(".crm-panel-save");
-  const errEl     = panel.querySelector(".crm-panel-err");
-
-  panel.querySelector(".crm-panel-cancel").addEventListener("click", () => {
-    panel.remove(); btn.classList.remove("active");
-  });
-
-  const clearBtn = panel.querySelector(".crm-panel-clear");
-  if (clearBtn) {
-    clearBtn.addEventListener("click", async () => {
-      clearBtn.disabled = true; clearBtn.textContent = "Clearing…";
-      await saveReminder(lead, null, panel, btn);
-    });
-  }
-
-  saveBtn.addEventListener("click", async () => {
-    const date = dateInput.value;
-    if (!date) { errEl.textContent = "Pick a date."; return; }
-    saveBtn.disabled = true; saveBtn.textContent = "Saving…";
-    await saveReminder(lead, { date, note: noteInput.value.trim() }, panel, btn);
-  });
-}
-
-async function saveReminder(lead, reminder, panel, btn) {
-  const errEl = panel.querySelector(".crm-panel-err");
-  try {
-    const res  = await fetch(`/api/crm/${lead.id}`, {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reminder }),
-    });
-    const data = await res.json();
-    if (!res.ok) { errEl.textContent = data.error || "Failed."; return; }
-    const idx = entries.findIndex(e => e.id === lead.id);
-    if (idx !== -1) entries[idx].reminder = data.entry.reminder;
-    panel.remove(); btn.classList.remove("active");
-    render();
-    showToast(reminder ? "Reminder set ✓" : "Reminder cleared");
-  } catch { errEl.textContent = "Network error."; }
-}
-
-/* ── Email compose panel ─────────────────────────────── */
-async function toggleEmailPanel(btn, lead) {
-  const card = btn.closest('.crm-card');
-  const existing = card.querySelector('.crm-email-panel');
-  if (existing) { existing.remove(); btn.classList.remove('active'); return; }
-  closeAllPanels(card);
-  btn.classList.add('active');
-
-  const panel = document.createElement('div');
-  panel.className = 'crm-email-panel';
-  panel.innerHTML = `
-    <div class="crm-panel-label">Compose Email</div>
-    <input type="email" class="crm-panel-input crm-email-to" placeholder="To: email address" value="${esc(lead.email || '')}" maxlength="200">
-    <input type="text" class="crm-panel-input crm-email-subject" placeholder="Subject" maxlength="200">
-    <textarea class="crm-panel-textarea crm-email-body" rows="6" placeholder="Body…" maxlength="5000"></textarea>
-    <div class="crm-panel-pick-row">
-      <div class="crm-pick-template-wrap">
-        <button class="crm-pick-template-btn">📋 Pick Template ▾</button>
-        <div class="crm-pick-template-dropdown" style="display:none;"></div>
-      </div>
-    </div>
-    <div class="crm-panel-footer">
-      <button class="crm-panel-save crm-email-send-btn">✉ Send</button>
-      <button class="crm-panel-cancel">Cancel</button>
-    </div>
-    <div class="crm-panel-err"></div>`;
-  card.appendChild(panel);
-
-  const toInput      = panel.querySelector('.crm-email-to');
-  const subjectInput = panel.querySelector('.crm-email-subject');
-  const bodyInput    = panel.querySelector('.crm-email-body');
-  const sendBtn      = panel.querySelector('.crm-email-send-btn');
-  const errEl        = panel.querySelector('.crm-panel-err');
-  const pickBtn      = panel.querySelector('.crm-pick-template-btn');
-  const dropdown     = panel.querySelector('.crm-pick-template-dropdown');
-
-  panel.querySelector('.crm-panel-cancel').addEventListener('click', () => {
-    panel.remove(); btn.classList.remove('active');
-  });
-
-  // Template picker
-  pickBtn.addEventListener('click', async () => {
-    if (dropdown.style.display !== 'none') { dropdown.style.display = 'none'; return; }
-    dropdown.textContent = 'Loading…';
-    dropdown.style.display = 'block';
-    try {
-      const res = await fetch('/api/templates');
-      const data = await res.json();
-      const list = data.templates || [];
-      if (!list.length) {
-        dropdown.innerHTML = '<div class="crm-pick-empty">No templates saved yet. <a href="templates.html">Create one →</a></div>';
-        return;
-      }
-      dropdown.innerHTML = list.map(t => `<div class="crm-pick-item" data-id="${esc(t.id)}">${esc(t.name)}<span class="crm-pick-type">${esc(t.templateType)}</span></div>`).join('');
-      dropdown.querySelectorAll('.crm-pick-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const tmpl = list.find(t => t.id === item.dataset.id);
-          if (!tmpl) return;
-          subjectInput.value = tmpl.subject;
-          bodyInput.value = tmpl.body
-            .replace(/\{\{businessName\}\}/g, lead.leadName || '')
-            .replace(/\{\{senderName\}\}/g, '');
-          dropdown.style.display = 'none';
-        });
-      });
-    } catch {
-      dropdown.innerHTML = '<div class="crm-pick-empty">Failed to load templates.</div>';
-    }
-  });
-
-  // Close dropdown on outside click
-  document.addEventListener('click', function closeDropdown(e) {
-    if (!panel.contains(e.target)) { dropdown.style.display = 'none'; document.removeEventListener('click', closeDropdown); }
-  });
-
-  sendBtn.addEventListener('click', async () => {
-    const to      = toInput.value.trim();
-    const subject = subjectInput.value.trim();
-    const body    = bodyInput.value.trim();
-    if (!to || !subject || !body) { errEl.textContent = 'To, Subject, and Body are required.'; return; }
-    if (!to.includes('@')) { errEl.textContent = 'Enter a valid email address.'; return; }
-    sendBtn.disabled = true; sendBtn.textContent = 'Sending…';
-    try {
-      const res = await fetch('/api/email/send', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to, subject, body, leadId: lead.id }),
-      });
-      const data = await res.json();
-      if (!res.ok) { errEl.textContent = data.error || 'Send failed.'; sendBtn.disabled = false; sendBtn.textContent = '✉ Send'; return; }
-      panel.remove(); btn.classList.remove('active');
-      showToast('Email sent ✓');
-      // Auto-move to Contacted if still at 'found'
-      if (lead.status === 'found') {
-        await patchEntry(lead.id, { status: 'contacted' });
-        const idx2 = entries.findIndex(e => e.id === lead.id);
-        if (idx2 !== -1) entries[idx2].status = 'contacted';
-      }
-    } catch { errEl.textContent = 'Network error.'; sendBtn.disabled = false; sendBtn.textContent = '✉ Send'; }
-  });
-}
-
-function closeAllPanels(card) {
-  card.querySelectorAll(".crm-call-panel, .crm-reminder-panel, .crm-email-panel").forEach(p => p.remove());
-  card.querySelectorAll(".crm-call-btn, .crm-reminder-btn, .crm-email-btn").forEach(b => b.classList.remove("active"));
 }
 
 /* ── Auth notice ─────────────────────────────────────── */
@@ -1328,8 +700,109 @@ function esc(s) {
   return d.innerHTML;
 }
 
+/* ── Save pipeline list ──────────────────────────────── */
+document.getElementById("crm-save-btn").addEventListener("click", saveCrmList);
+
+async function saveCrmList() {
+  if (!entries.length) return;
+  const btn = document.getElementById("crm-save-btn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+  const label = "Pipeline snapshot · " + new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  const results = entries.map(e => ({
+    leadName: e.leadName, businessType: e.businessType || "",
+    city: e.city || "", phone: e.phone || "", website: e.website || "",
+    status: e.status, notes: e.notes || "",
+  }));
+  try {
+    const res = await fetch("/api/crm/saved-lists", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label, results }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || "Save failed."); return; }
+    btn.textContent = "✓ Saved!";
+    setTimeout(() => { btn.textContent = "💾 Save List"; btn.disabled = false; }, 2500);
+    loadCrmSavedLists();
+  } catch {
+    alert("Network error. Please try again.");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ── Saved CRM lists view ────────────────────────────── */
+async function loadCrmSavedLists() {
+  try {
+    const res = await fetch("/api/crm/saved-lists");
+    if (!res.ok) return;
+    const { savedLists } = await res.json();
+    renderCrmSavedLists(savedLists || []);
+  } catch {}
+}
+
+function renderCrmSavedLists(lists) {
+  const section = document.getElementById("crm-saved-section");
+  const grid    = document.getElementById("crm-saved-grid");
+  const count   = document.getElementById("crm-saved-count");
+  if (!section) return;
+  if (!lists.length) { section.style.display = "none"; return; }
+  section.style.display = "";
+  if (count) count.textContent = lists.length;
+  grid.innerHTML = "";
+  [...lists].reverse().forEach(s => {
+    const card = document.createElement("div");
+    card.className = "ct-saved-card";
+    card.innerHTML = `
+      <div class="ct-saved-card-head">
+        <div class="ct-saved-card-info">
+          <div class="ct-saved-card-label">${esc(s.label)}</div>
+          <div class="ct-saved-card-meta">${s.results.length} leads · Saved ${new Date(s.savedAt).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" })}</div>
+        </div>
+        <div class="ct-saved-card-actions">
+          <button class="ct-saved-toggle ct-btn">▾ Show</button>
+          <button class="ct-saved-delete ct-btn ct-btn-danger">✕</button>
+        </div>
+      </div>
+      <div class="ct-saved-results" style="display:none">
+        ${s.results.map(r => `
+        <div class="ct-result-card">
+          <div class="ct-result-info">
+            <div class="ct-result-name">${esc(r.leadName)}</div>
+            <div class="ct-result-meta">
+              ${r.businessType ? `<span>🏢 ${esc(r.businessType)}</span>` : ""}
+              ${r.city         ? `<span>📍 ${esc(r.city)}</span>` : ""}
+              ${r.phone        ? `<span>📞 ${esc(r.phone)}</span>` : ""}
+              ${r.website      ? `<span>🌐 ${esc(r.website)}</span>` : ""}
+              <span class="crm-status-tag crm-status-${esc(r.status)}">${esc(r.status)}</span>
+            </div>
+          </div>
+        </div>`).join("")}
+      </div>`;
+    card.querySelector(".ct-saved-toggle").addEventListener("click", function () {
+      const res = card.querySelector(".ct-saved-results");
+      const open = res.style.display !== "none";
+      res.style.display = open ? "none" : "";
+      this.textContent = open ? "▾ Show" : "▴ Hide";
+    });
+    card.querySelector(".ct-saved-delete").addEventListener("click", () => deleteCrmSavedList(s.id));
+    grid.appendChild(card);
+  });
+}
+
+async function deleteCrmSavedList(id) {
+  if (!confirm("Delete this saved list?")) return;
+  try {
+    const res = await fetch(`/api/crm/saved-lists/${id}`, { method: "DELETE" });
+    if (!res.ok) return;
+    loadCrmSavedLists();
+  } catch {}
+}
+
 /* ── Init ────────────────────────────────────────────── */
 render();
 loadEntries();
 loadCrmScoreCache();
 loadUserCaps();
+loadCrmSavedLists();

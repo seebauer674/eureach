@@ -1,0 +1,110 @@
+[
+  {
+    "id": "mqarvcsrkzbpzb",
+    "userId": null,
+    "sessionId": "mqarvcsrds1c9r",
+    "businessName": "Test Cafe",
+    "category": "Εστιατόριο / Καφέ",
+    "city": "Αθήνα",
+    "status": "complete",
+    "query": "Εστιατόριο / Καφέ Αθήνα",
+    "results": {
+      "perplexity": {
+        "appeared": false,
+        "score": 19,
+        "competitors": [
+          "Café Avissinia",
+          "Τσαΐ του Παππού",
+          "Couleur Café"
+        ],
+        "excerpt": "Αναζητώντας εστιατόρια και καφέ στην Αθήνα, τα αποτελέσματα περιλαμβάνουν δημοφιλή καταστήματα στην Πλάκα και το κέντρο. Το 'Test Cafe' δεν εμφανίζεται στις κύριες εταιρίες αναζήτησης."
+      },
+      "google_ai": {
+        "appeared": false,
+        "score": 15,
+        "competitors": [
+          "Καφές της Παλιάς Αθήνας",
+          "Τσαγερό",
+          "Evripides"
+        ],
+        "excerpt": "Για εστιατόριο ή καφέ στην Αθήνα, τα αποτελέσματα δείχνουν δημοφιλή καταστήματα με ιστορία και κριτικές. Το 'Test Cafe' δεν εμφανίζεται καθώς δεν είναι γνωστό ή καταχωρημένο κατάστημα."
+      },
+      "chatgpt": {
+        "appeared": false,
+        "score": 8,
+        "competitors": [
+          "Café Avissinia",
+          "Τhe Underdog",
+          "Couleur Locale"
+        ],
+        "excerpt": "Για εστιατόρια και καφέ στην Αθήνα, θα βρείτε επιλογές όπως το Café Avissinia στην Πλάκα και το The Underdog στο Ψυρρί. Δεν υπάρχει γνωστό κατάστημα με όνομα 'Test Cafe' στα αποτελέσματα αναζήτησης."
+      }
+    },
+    "overall": 14,
+    "competitors": [
+      "Café Avissinia",
+      "Τσαΐ του Παππού",
+      "Couleur Café",
+      "Καφές της Παλιάς Αθήνας"
+    ],
+    "createdAt": "2026-06-12T10:17:05.163Z",
+    "completedAt": "2026-06-12T10:17:08.002Z",
+    "expiresAt": "2026-06-13T10:17:08.002Z",
+    "utmSource": null,
+    "utmCampaign": null
+  },
+  {
+    "id": "mqas1gs6mxnsuu",
+    "userId": null,
+    "sessionId": "mqas1gs6wj82y2",
+    "businessName": "Μπουγατσάδικο Βαρδής",
+    "category": "Εστιατόριο / Καφέ",
+    "city": "Θεσσαλονίκη",
+    "status": "complete",
+    "query": "Εστιατόριο / Καφέ Θεσσαλονίκη",
+    "results": {
+      "chatgpt": {
+        "appeared": false,
+        "score": 9,
+        "competitors": [
+          "To Pavillon",
+          "Ouzeri Tsipouro",
+          "Makedonia Palace Restaurant"
+        ],
+        "excerpt": "Για εστιατόρια και καφέ στη Θεσσαλονίκη, προτείνω δημοφιλή επιλογές στο κέντρο και την παραλία. Το Μπουγατσάδικο Βαρδής δεν εμφανίζεται στα κύρια αποτελέσματα αναζήτησης για γενικά εστιατόρια."
+      },
+      "perplexity": {
+        "appeared": false,
+        "score": 7,
+        "competitors": [
+          "Τρικαλινός",
+          "Αλεξάνδρεια",
+          "Πήδιπ Πίτσα"
+        ],
+        "excerpt": "Στη Θεσσαλονίκη υπάρχουν πολλά εστιατόρια και καφέ. Δημοφιλή είναι τα παραδοσιακά κατ/τα στην Περιοχή Λαδάδικων και τα σύγχρονα καφέ στο κέντρο. Για παραδοσιακή κουζίνα, προτείνονται εστιατόρια με θέα στον Θερμαϊκό."
+      },
+      "google_ai": {
+        "appeared": false,
+        "score": 15,
+        "competitors": [
+          "Το Τσιπουράδικο",
+          "Ψαροταβέρνα Αριστοτέλης",
+          "Καφές Τρένο"
+        ],
+        "excerpt": "Για εστιατόρια και καφέ στη Θεσσαλονίκη, εμφανίζονται κυρίως ιστορικές ταβέρνες και καφές στο κέντρο. Το Μπουγατσάδικο Βαρδής δεν κατατάσσεται σε αυτά τα αποτελέσματα αναζήτησης."
+      }
+    },
+    "overall": 10,
+    "competitors": [
+      "To Pavillon",
+      "Ouzeri Tsipouro",
+      "Makedonia Palace Restaurant",
+      "Τρικαλινός"
+    ],
+    "createdAt": "2026-06-12T10:21:50.262Z",
+    "completedAt": "2026-06-12T10:21:53.987Z",
+    "expiresAt": "2026-06-13T10:21:53.987Z",
+    "utmSource": null,
+    "utmCampaign": null
+  }
+]

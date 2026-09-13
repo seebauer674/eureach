@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .blog-page{max-width:1100px;margin:0 auto;padding:100px 24px 80px}
+    .blog-header{margin-bottom:48px}
+    .blog-header h1{font-size:2rem;font-weight:800;color:var(--white);margin-bottom:8px}
+    .blog-header p{color:var(--muted);font-size:0.95rem}
+    .blog-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px}
+    .blog-filter-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:0.8rem;font-weight:600;padding:6px 16px;cursor:pointer;font-family:inherit;transition:all .15s}
+    .blog-filter-btn.active,.blog-filter-btn:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+    .blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
+    .blog-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .2s,box-shadow .2s;text-decoration:none;color:inherit;display:flex;flex-direction:column}
+    .blog-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+    .blog-card-img{width:100%;height:180px;object-fit:cover}
+    .blog-card-img-ph{width:100%;height:180px;background:linear-gradient(135deg,rgba(37,99,235,.2),rgba(124,58,237,.2));display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+    .blog-card-body{padding:22px;flex:1;display:flex;flex-direction:column}
+    .blog-card-meta{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+    .blog-card-lang{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.3);color:#60a5fa;border-radius:20px;padding:2px 8px}
+    .blog-card-cat{font-size:0.7rem;color:var(--muted)}
+    .blog-card-date{font-size:0.7rem;color:var(--muted);margin-left:auto}
+    .blog-card-title{font-size:1.05rem;font-weight:700;color:var(--white);margin-bottom:8px;line-height:1.35}
+    .blog-card-excerpt{font-size:0.83rem;color:var(--muted);line-height:1.6;flex:1}
+    .blog-card-read{margin-top:16px;font-size:0.8rem;font-weight:600;color:#60a5fa}
+    .blog-empty{text-align:center;padding:80px 24px;color:var(--muted)}
+  </style>
+  <script src="/js/translations.js?v=5"></script>
+  <script src="/js/i18n.js?v=5"></script>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html" data-i18n="nav.leads">Lead Finder</a>
+      <a href="articles.html" data-i18n="nav.articles">Articles</a>
+      <a href="fb-posts.html" data-i18n="nav.fb_posts">FB Posts</a>
+      <a href="templates.html" data-i18n="nav.templates">Templates</a>
+      <a href="blog.html" style="color:var(--white)">Blog</a>
+      <a href="membership.html" data-i18n="nav.membership">Membership</a>
+    
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; My Profile</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="nav.sign_in">Sign in</a>
+      <a href="signup.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">Start free &rarr;</a>
+    </div>
+  </div>
+</nav>
+<div class="blog-page">
+  <div class="blog-header">
+    <h1 data-i18n="bl.title">Blog</h1>
+    <p data-i18n="bl.subtitle">Insights on lead generation, AI content, and growing your business across Europe.</p>
+  </div>
+  <div class="blog-filters">
+    <button class="blog-filter-btn active" data-lang="" data-i18n="bl.filterAll">All</button>
+    <button class="blog-filter-btn" data-lang="en" data-i18n="bl.filterEN">&#127468;&#127463; English</button>
+    <button class="blog-filter-btn" data-lang="el" data-i18n="bl.filterEL">&#127468;&#127479; Greek</button>
+    <button class="blog-filter-btn" data-lang="de" data-i18n="bl.filterDE">&#127465;&#127466; German</button>
+  </div>
+  <div class="blog-grid" id="blog-grid"><p style="color:var(--muted);padding:40px">Loading&hellip;</p></div>
+</div>
+<script>
+var currentLang='';
+function T(k,fb){var l=window.euLang?window.euLang():'en';var t=window.EUREACH_T;return(t&&t[l]&&t[l][k])||fb||k;}
+var LANG_FLAG={en:'&#127468;&#127463;',el:'&#127468;&#127479;',de:'&#127465;&#127466;'};
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+async function loadPosts(){
+  var url='/api/blog'+(currentLang?'?lang='+currentLang:'');
+  var res=await fetch(url).then(function(r){return r.json()}).catch(function(){return{posts:[]}});
+  var posts=res.posts||[];
+  var grid=document.getElementById('blog-grid');
+  if(!posts.length){grid.innerHTML='<div class="blog-empty">'+T('bl.noArticles','No articles yet. Check back soon.')+'</div>';return;}
+  grid.innerHTML=posts.map(function(p){
+    var date=p.publishedAt?new Date(p.publishedAt).toLocaleDateString(undefined,{day:'numeric',month:'long',year:'numeric'}):'';
+    var img=p.featuredImage?'<img class="blog-card-img" src="'+esc(p.featuredImage)+'" alt="" loading="lazy">':'<div class="blog-card-img-ph">&#10022;</div>';
+    return '<a class="blog-card" href="blog-post.html?slug='+encodeURIComponent(p.slug)+'">'+img+'<div class="blog-card-body"><div class="blog-card-meta"><span class="blog-card-lang">'+(p.language||'').toUpperCase()+'</span><span class="blog-card-cat">'+esc(p.category||'')+'</span><span class="blog-card-date">'+esc(date)+'</span></div><div class="blog-card-title">'+esc(p.title)+'</div>'+(p.excerpt?'<div class="blog-card-excerpt">'+esc(p.excerpt)+'</div>':'')+'<div class="blog-card-read">Read article &rarr;</div></div></a>';
+  }).join('');
+}
+document.querySelectorAll('.blog-filter-btn').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    document.querySelectorAll('.blog-filter-btn').forEach(function(b){b.classList.remove('active')});
+    btn.classList.add('active');currentLang=btn.dataset.lang;loadPosts();
+  });
+});
+loadPosts();
+</script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

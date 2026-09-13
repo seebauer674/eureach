@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Test Site",
+    "url": "https://testsite.gr",
+    "domain_rating": null,
+    "monthly_traffic": 5000,
+    "language": "el",
+    "categories": [
+      "News",
+      "Business"
+    ],
+    "country": "Greece",
+    "cost_per_placement": null,
+    "status": "pending",
+    "notes": "",
+    "contact_email": "publisher@test.com",
+    "added_at": "2026-06-09T10:30:19.453Z"
+  }
+]

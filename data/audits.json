@@ -1,1 +1,141 @@
-[]
+[
+  {
+    "id": "a9a152f4302933b8331f85dd",
+    "userId": "669c87088f8594eb7a72398c",
+    "businessName": "TestCo",
+    "businessUrl": "testco.gr",
+    "industry": "IT",
+    "score": 42,
+    "breakdown": {
+      "ai_visibility": 30,
+      "content_quality": 40,
+      "local_seo": 20,
+      "schema_markup": 25,
+      "citation_readiness": 50
+    },
+    "strengths": [
+      "Clear business name and industry focus",
+      "Potential for high citation readiness due to IT industry presence"
+    ],
+    "weaknesses": [
+      "Limited online presence and lack of content",
+      "Insufficient schema markup and local SEO signals",
+      "Low visibility in AI-powered search engines"
+    ],
+    "recommendations": [
+      "Develop and implement a comprehensive content strategy to improve content quality and quantity",
+      "Optimize the website for local SEO by including name, address, and phone number (NAP) consistently across the web",
+      "Add schema markup to the website to provide AI-powered search engines with structured data",
+      "Utilize online directories and citations to increase the business's online presence and credibility"
+    ],
+    "shareToken": null,
+    "shareCreatedAt": null,
+    "shareViews": 0,
+    "shareEnabled": false,
+    "createdAt": "2026-05-27T19:35:53.168Z"
+  },
+  {
+    "id": "772b6a7ddd5637f307f0ff6d",
+    "userId": "669c87088f8594eb7a72398c",
+    "businessName": "Eureach - The AI platform for European local marketing",
+    "businessUrl": "eureach.eu",
+    "industry": "Digital Marketing",
+    "score": 42,
+    "breakdown": {
+      "ai_visibility": 30,
+      "content_quality": 50,
+      "local_seo": 20,
+      "schema_markup": 40,
+      "citation_readiness": 60
+    },
+    "strengths": [
+      "Strong focus on AI technology",
+      "Clear industry specialization in European local marketing",
+      "Basic website presence established"
+    ],
+    "weaknesses": [
+      "Lack of prominent online presence in AI-powered search results",
+      "Limited geographic targeting beyond European scope",
+      "Insufficient optimization for local search engine results"
+    ],
+    "recommendations": [
+      "Develop high-quality, AI-optimized content to improve search visibility",
+      "Enhance local SEO by including name, address, and phone number consistently across the web",
+      "Implement comprehensive schema markup on the website to improve search result snippets",
+      "Expand online presence through strategic partnerships and citations in relevant European marketing directories"
+    ],
+    "shareToken": null,
+    "shareCreatedAt": null,
+    "shareViews": 0,
+    "shareEnabled": false,
+    "createdAt": "2026-05-27T19:55:06.986Z"
+  },
+  {
+    "id": "48331d06a134b242d94e6065",
+    "userId": "669c87088f8594eb7a72398c",
+    "businessName": "Eureach - The AI platform for European local marketing",
+    "businessUrl": "eureach.eu",
+    "industry": "Digital Marketing",
+    "score": 42,
+    "breakdown": {
+      "ai_visibility": 30,
+      "content_quality": 50,
+      "local_seo": 40,
+      "schema_markup": 20,
+      "citation_readiness": 60
+    },
+    "strengths": [
+      "Strong industry focus on AI and digital marketing",
+      "Clear value proposition for European local marketing",
+      "Established online presence with a dedicated website"
+    ],
+    "weaknesses": [
+      "Limited online presence beyond the website",
+      "Lack of visible schema markup and structured data",
+      "Insufficient content tailored to AI-powered search engines"
+    ],
+    "recommendations": [
+      "Implement schema markup for services, reviews, and business hours to improve search engine understanding",
+      "Develop and publish high-quality, AI-optimized content (e.g., blog posts, guides, and tutorials) to enhance visibility and credibility",
+      "Expand online presence through social media, directories, and partnerships to increase citation potential and local SEO"
+    ],
+    "shareToken": null,
+    "shareCreatedAt": null,
+    "shareViews": 0,
+    "shareEnabled": false,
+    "createdAt": "2026-05-28T11:21:28.591Z"
+  },
+  {
+    "id": "0e2b7deeba8f1f6dacefb408",
+    "userId": "ec31c0892a286f08f51e67d4",
+    "businessName": "Acme Dental",
+    "businessUrl": "acmedental.gr",
+    "industry": "dental",
+    "score": 20,
+    "breakdown": {
+      "ai_visibility": 10,
+      "content_quality": 20,
+      "local_seo": 10,
+      "schema_markup": 5,
+      "citation_readiness": 15
+    },
+    "strengths": [
+      "Acme Dental has a simple and memorable brand name",
+      "The dental industry has a well-defined set of keywords that can be targeted for AI search visibility"
+    ],
+    "weaknesses": [
+      "No website crawl data is available, making it difficult to assess current search visibility",
+      "The website's country-code top-level domain (ccTLD) is .gr, which may limit international search visibility"
+    ],
+    "recommendations": [
+      "Conduct a thorough website crawl to identify technical SEO issues and opportunities for improvement",
+      "Develop a content strategy that targets relevant keywords in the dental industry, such as 'dental care' or 'orthodontics'",
+      "Consider registering a generic top-level domain (gTLD) such as .com or .net to improve international search visibility"
+    ],
+    "shareToken": null,
+    "shareCreatedAt": null,
+    "shareViews": 0,
+    "shareEnabled": false,
+    "createdAt": "2026-06-09T11:17:26.934Z"
+  }
+]

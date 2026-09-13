@@ -1,1 +1,25 @@
-[]
+[
+  {
+    "id": "f222aedb-dc2c-4d47-9c0e-07e7c8a0d5e1",
+    "userId": "669c87088f8594eb7a72398c",
+    "name": "Reisebüro am Markt",
+    "category": "Travel Agencies",
+    "city": "Munich",
+    "phone": "+49 44 1143203",
+    "website": "www.reisebroamma.de",
+    "email": "",
+    "address": "Munich, Königsallee 88",
+    "rating": 3.6,
+    "reviews": 86,
+    "stage": "new",
+    "notes": [],
+    "history": [
+      {
+        "stage": "new",
+        "date": "2026-05-23T11:04:52.514Z"
+      }
+    ],
+    "followUpDate": null,
+    "addedAt": "2026-05-23T11:04:52.514Z"
+  }
+]

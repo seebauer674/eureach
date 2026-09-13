@@ -737,8 +737,8 @@ function buildCard(comp) {
     </div>
     <div class="ct-score-meta">
       <div class="ct-last-checked">Last checked: ${esc(checked)}</div>
-      ${snap && snap.lastUpdated ? `<div class="ct-site-updated">Site updated: <strong>${esc(snap.lastUpdated.slice(0,10))}</strong></div>` : ""}
-      ${snap && snap.recentUpdates && snap.recentUpdates.length > 1 ? `<div class="ct-site-updates-list">Recent updates: ${snap.recentUpdates.slice(0,3).map(d => esc(d.slice(0,10))).join(" · ")}</div>` : ""}
+      ${snap && snap.lastUpdated ? `<div class="ct-site-updated">Site updated: <strong>${fmtDate(snap.lastUpdated)}</strong></div>` : ""}
+      ${snap && snap.recentUpdates && snap.recentUpdates.length > 1 ? `<div class="ct-site-updates-list">Recent updates: ${snap.recentUpdates.slice(0,3).map(d => fmtDate(d)).join(" · ")}</div>` : ""}
     </div>
   </div>
 

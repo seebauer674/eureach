@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Competitor Results — eureach.eu</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.app-nav { background: rgba(7,13,31,0.98); }
+.cr-page { min-height: 100vh; padding-top: 64px; }
+
+/* Header */
+.cr-header { background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(124,58,237,0.08)); border-bottom: 1px solid var(--border); padding: 24px 0; }
+.cr-header-inner { max-width: 960px; margin: 0 auto; padding: 0 24px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.cr-strip-info { font-size: 0.85rem; color: var(--muted); }
+.cr-strip-info strong { color: var(--text); }
+.cr-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.cr-btn { padding: 8px 16px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.82rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s; }
+.cr-btn:hover { background: rgba(255,255,255,0.1); }
+.cr-btn.primary { background: linear-gradient(135deg, var(--blue), var(--purple)); border-color: transparent; color: #fff; box-shadow: 0 4px 16px rgba(37,99,235,0.3); }
+.cr-btn.primary:hover { opacity: 0.9; }
+
+/* Body */
+.cr-body { max-width: 960px; margin: 0 auto; padding: 28px 24px 80px; }
+
+/* Threat banner */
+.threat-banner {
+  background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(251,191,36,0.05));
+  border: 1px solid rgba(245,158,11,0.25); border-radius: 14px;
+  padding: 18px 22px; margin-bottom: 22px; display: flex; align-items: flex-start; gap: 14px;
+}
+.tb-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 2px; }
+.tb-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #f59e0b; margin-bottom: 4px; }
+.tb-name { font-weight: 700; font-size: 1rem; color: var(--white); }
+.tb-reason { color: var(--muted); font-size: 0.85rem; margin-top: 3px; }
+
+/* Opportunities */
+.opps-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 12px; }
+.opps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 26px; }
+.opp-card { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px; padding: 16px; }
+.opp-num { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #10b981; margin-bottom: 8px; }
+.opp-text { font-size: 0.85rem; color: var(--text); line-height: 1.55; }
+
+/* Summary */
+.summary-card { background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 26px; }
+.summary-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 10px; }
+.summary-text { font-size: 0.9rem; color: var(--text); line-height: 1.65; }
+
+/* Filter bar */
+.filter-bar { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; flex-wrap: wrap; padding: 14px 18px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; }
+.filter-label { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+.filter-btns { display: flex; gap: 6px; }
+.fb { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 0.79rem; cursor: pointer; transition: all 0.15s; }
+.fb:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+.fb.active { color: var(--white); }
+.fb.f-all.active  { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.5); }
+.fb.f-high.active { background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.5); }
+.fb.f-med.active  { background: rgba(217,119,6,0.15); border-color: rgba(217,119,6,0.5); }
+.fb.f-low.active  { background: rgba(107,114,128,0.15); border-color: rgba(107,114,128,0.5); }
+.sort-select { padding: 5px 14px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 20px; color: var(--text); font-size: 0.79rem; cursor: pointer; appearance: none; }
+
+/* Competitor cards */
+.comp-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid var(--border); border-radius: 14px; padding: 22px;
+  margin-bottom: 14px; transition: border-color 0.15s;
+  border-left: 4px solid transparent;
+}
+.comp-card:hover { border-color: rgba(255,255,255,0.12); }
+.comp-card.high   { border-left-color: #dc2626; }
+.comp-card.medium { border-left-color: #d97706; }
+.comp-card.low    { border-left-color: #374151; }
+
+.cc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.cc-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.threat-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+.threat-badge.high   { background: rgba(220,38,38,0.18); color: #f87171; border: 1px solid rgba(220,38,38,0.3); }
+.threat-badge.medium { background: rgba(217,119,6,0.18); color: #fbbf24; border: 1px solid rgba(217,119,6,0.3); }
+.threat-badge.low    { background: rgba(107,114,128,0.12); color: #9ca3af; border: 1px solid rgba(107,114,128,0.25); }
+.known-badge { font-size: 0.7rem; font-weight: 600; padding: 3px 10px; border-radius: 6px; background: rgba(124,58,237,0.15); color: #c4b5fd; border: 1px solid rgba(124,58,237,0.3); }
+.cc-rating { font-size: 0.88rem; color: var(--muted); white-space: nowrap; }
+.cc-rating strong { color: var(--gold); }
+
+.cc-name { font-size: 1.05rem; font-weight: 700; color: var(--white); margin-bottom: 6px; }
+.cc-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.8rem; color: var(--muted); margin-bottom: 16px; }
+.cc-meta a { color: #60a5fa; text-decoration: none; }
+.cc-meta a:hover { text-decoration: underline; }
+
+.cc-body { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+.cc-col-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
+.cc-list { list-style: none; padding: 0; margin: 0; }
+.cc-list li { font-size: 0.85rem; color: var(--text); padding: 4px 0 4px 14px; position: relative; line-height: 1.45; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.cc-list li:last-child { border-bottom: none; }
+.cc-list li::before { content: "•"; position: absolute; left: 0; color: var(--muted); }
+.cc-strengths .cc-list li::before { color: rgba(16,185,129,0.7); }
+.cc-gaps .cc-list li::before { color: rgba(245,158,11,0.7); }
+
+.cc-action {
+  background: rgba(14,165,233,0.07); border-left: 3px solid rgba(14,165,233,0.5);
+  padding: 11px 16px; border-radius: 0 10px 10px 0; font-size: 0.85rem; margin-bottom: 12px; line-height: 1.5;
+}
+.cc-action-label { font-weight: 700; color: #38bdf8; }
+
+.cc-presence { font-size: 0.78rem; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.cc-dots { font-size: 0.9rem; letter-spacing: 2px; }
+.dot-on { color: #10b981; }
+.dot-off { color: rgba(255,255,255,0.12); }
+
+/* AI warning */
+.ai-warn { background: rgba(217,119,6,0.08); border: 1px solid rgba(217,119,6,0.25); border-radius: 10px; padding: 12px 16px; font-size: 0.83rem; color: #fbbf24; margin-bottom: 20px; display: none; }
+
+/* States */
+.cr-loading { text-align: center; padding: 80px 20px; color: var(--muted); }
+.no-results { text-align: center; padding: 50px 20px; color: var(--muted); }
+
+@media (max-width: 600px) {
+  .opps-grid { grid-template-columns: 1fr; }
+  .cc-body { grid-template-columns: 1fr; }
+  .filter-bar { gap: 8px; }
+}
+</style>
+  <script src="/js/translations.js"></script>
+  <script src="/js/i18n.js"></script>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html" data-i18n="nav.leads">Lead Finder</a>
+      <a href="articles.html" data-i18n="nav.articles">Articles</a>
+      <a href="fb-posts.html" data-i18n="nav.fb_posts">FB Posts</a>
+      <a href="templates.html" data-i18n="nav.templates">Templates</a>
+      <a href="membership.html" data-i18n="nav.membership">Membership</a>
+    
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; My Profile</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="nav.sign_in">Sign in</a>
+    </div>
+  </div>
+</nav>
+<div class="sub-nav">
+  <div class="sub-nav-inner">
+    <a href="leads.html" class="sub-nav-link" data-i18n="subnav.search_leads">&#128269; Search Leads</a>
+    <a href="crm.html" class="sub-nav-link" data-i18n="subnav.crm">&#128203; CRM</a>
+    <a href="competitors.html" class="sub-nav-link" data-i18n="subnav.ai_visibility">&#128202; AI Visibility</a>
+    <a href="competitor-search.html" class="sub-nav-link active" data-i18n="subnav.competitor_search">&#128373; Competitor Search</a>
+    <a href="competitor-history.html" class="sub-nav-link" data-i18n="subnav.history">&#128336; History</a>
+  </div>
+</div>
+
+<div class="cr-page">
+  <div class="cr-loading" id="cr-loading" style="padding-top:120px;">⏳ Loading your report…</div>
+
+  <div id="cr-content" style="display:none">
+    <!-- Header strip -->
+    <div class="cr-header">
+      <div class="cr-header-inner">
+        <div>
+          <div class="cr-strip-info" id="strip-info">Loading…</div>
+        </div>
+        <div class="cr-actions">
+          <a href="competitor-search.html" class="cr-btn">+ New search</a>
+          <button class="cr-btn primary" id="export-btn" onclick="exportReport()">⬇ Export report</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="cr-body">
+      <div class="ai-warn" id="ai-warn">⚠️ AI analysis was unavailable — showing raw competitor data. The threat scores and recommendations below are estimates only.</div>
+
+      <!-- Threat banner -->
+      <div class="threat-banner" id="threat-banner" style="display:none">
+        <div class="tb-icon">⚠️</div>
+        <div>
+          <div class="tb-label">Biggest threat to your business</div>
+          <div class="tb-name" id="tb-name"></div>
+          <div class="tb-reason" id="tb-reason"></div>
+        </div>
+      </div>
+
+      <!-- Opportunities -->
+      <div id="opps-section" style="display:none">
+        <div class="opps-title">💡 Your top strategic opportunities</div>
+        <div class="opps-grid" id="opps-grid"></div>
+      </div>
+
+      <!-- Landscape summary -->
+      <div class="summary-card" id="summary-card" style="display:none">
+        <div class="summary-label">Competitive landscape summary</div>
+        <div class="summary-text" id="summary-text"></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar">
+        <span class="filter-label">Show:</span>
+        <div class="filter-btns">
+          <button class="fb f-all active" onclick="setFilter('all',this)">All</button>
+          <button class="fb f-high" onclick="setFilter('high',this)">🔴 High threat</button>
+          <button class="fb f-med" onclick="setFilter('medium',this)">🟡 Medium</button>
+          <button class="fb f-low" onclick="setFilter('low',this)">⚪ Low</button>
+        </div>
+        <span class="filter-label" style="margin-left:auto">Sort:</span>
+        <select class="sort-select" onchange="setSort(this.value)">
+          <option value="threat">By threat level</option>
+          <option value="rating">By rating</option>
+          <option value="reviews">By review count</option>
+        </select>
+      </div>
+
+      <!-- Cards -->
+      <div id="comp-cards"></div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js?v=5"></script>
+<script src="/js/main.js"></script>
+<script>
+const params   = new URLSearchParams(location.search);
+const searchId = params.get('id');
+if (!searchId) window.location.href = 'competitor-search.html';
+
+let allCompetitors = [];
+let currentFilter  = 'all';
+let currentSort    = 'threat';
+
+async function loadResults() {
+  try {
+    const r = await fetch('/api/competitors/search/' + searchId);
+    const d = await r.json();
+    if (!r.ok || !d.success) throw new Error(d.error || 'Failed to load results.');
+    render(d.data);
+  } catch (e) {
+    document.getElementById('cr-loading').innerHTML = '❌ ' + e.message + '<br><a href="competitor-search.html" style="color:#60a5fa;margin-top:12px;display:inline-block">← Start a new search</a>';
+  }
+}
+
+function render(data) {
+  document.getElementById('cr-loading').style.display = 'none';
+  document.getElementById('cr-content').style.display = 'block';
+
+  const a   = data.analysis || {};
+  const inp = data.input   || {};
+
+  if (data.aiError) document.getElementById('ai-warn').style.display = 'block';
+
+  // Header strip
+  const scopeLabels = { city: 'Local city', area: 'Region', country: 'Nationwide', europe: 'All Europe' };
+  const dateStr = new Date(data.searchedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  document.getElementById('strip-info').innerHTML =
+    `<strong>${inp.category || inp.businessType || 'Competitor search'}</strong> &nbsp;·&nbsp; ` +
+    `${inp.city}${inp.region ? ', ' + inp.region : ''} &nbsp;·&nbsp; ` +
+    `${scopeLabels[inp.scope] || inp.scope} scope &nbsp;·&nbsp; ` +
+    `<strong>${data.totalFound || 0} competitors</strong> found &nbsp;·&nbsp; ${dateStr}`;
+
+  // Threat
+  if (a.biggestThreat) {
+    document.getElementById('tb-name').textContent   = a.biggestThreat.name;
+    document.getElementById('tb-reason').textContent = a.biggestThreat.reason;
+    document.getElementById('threat-banner').style.display = 'flex';
+  }
+
+  // Opportunities
+  if (a.opportunities?.length) {
+    document.getElementById('opps-grid').innerHTML = a.opportunities.map((o, i) =>
+      `<div class="opp-card"><div class="opp-num">💡 Opportunity ${i+1}</div><div class="opp-text">${esc(o)}</div></div>`
+    ).join('');
+    document.getElementById('opps-section').style.display = 'block';
+  }
+
+  // Summary
+  if (a.summary) {
+    document.getElementById('summary-text').textContent = a.summary;
+    document.getElementById('summary-card').style.display = 'block';
+  }
+
+  allCompetitors = a.competitors || [];
+  renderCards();
+}
+
+const threatOrder = { high: 0, medium: 1, low: 2 };
+
+function renderCards() {
+  let list = [...allCompetitors];
+  if (currentFilter !== 'all') list = list.filter(c => c.threatLevel === currentFilter);
+
+  if (currentSort === 'threat')   list.sort((a,b) => (threatOrder[a.threatLevel]||1)-(threatOrder[b.threatLevel]||1) || (b.rating||0)-(a.rating||0));
+  else if (currentSort === 'rating')  list.sort((a,b) => (b.rating||0)-(a.rating||0));
+  else if (currentSort === 'reviews') list.sort((a,b) => (b.reviewCount||0)-(a.reviewCount||0));
+
+  if (!list.length) {
+    document.getElementById('comp-cards').innerHTML = '<div class="no-results">No competitors match this filter.</div>';
+    return;
+  }
+  document.getElementById('comp-cards').innerHTML = list.map(cardHtml).join('');
+}
+
+function dotScore(n) {
+  n = Math.max(0, Math.min(3, n||0));
+  return '<span class="dot-on">' + '●'.repeat(n) + '</span><span class="dot-off">' + '●'.repeat(3-n) + '</span>';
+}
+
+function cardHtml(c) {
+  const tl = c.threatLevel || 'low';
+  const tLabels = { high: '🔴 High threat', medium: '🟡 Medium threat', low: '⚪ Low threat' };
+  const webHref = c.website ? (c.website.startsWith('http') ? c.website : 'https://' + c.website) : null;
+  const webDomain = c.website ? c.website.replace(/^https?:\/\//,'').split('/')[0] : null;
+
+  return `<div class="comp-card ${tl}">
+    <div class="cc-top">
+      <div class="cc-badges">
+        <span class="threat-badge ${tl}">${tLabels[tl]}</span>
+        ${c.isKnown ? '<span class="known-badge">You already knew this one</span>' : ''}
+      </div>
+      <div class="cc-rating"><strong>★ ${c.rating || '—'}</strong> <span>(${c.reviewCount||0} reviews)</span></div>
+    </div>
+    <div class="cc-name">${esc(c.name||'')}</div>
+    <div class="cc-meta">
+      ${c.address ? `<span>📍 ${esc(c.address)}</span>` : ''}
+      ${webHref ? `<a href="${webHref}" target="_blank" rel="noopener">🌐 ${esc(webDomain)}</a>` : ''}
+      ${c.phone ? `<span>📞 ${esc(c.phone)}</span>` : ''}
+    </div>
+    <div class="cc-body">
+      <div class="cc-col cc-strengths">
+        <div class="cc-col-title">What they do well</div>
+        <ul class="cc-list">${(c.strengths||[]).map(s=>`<li>${esc(s)}</li>`).join('') || '<li style="color:var(--muted)">No data available</li>'}</ul>
+      </div>
+      <div class="cc-col cc-gaps">
+        <div class="cc-col-title">Where they're weak — your opening</div>
+        <ul class="cc-list">${(c.gaps||[]).map(g=>`<li>${esc(g)}</li>`).join('') || '<li style="color:var(--muted)">No data available</li>'}</ul>
+      </div>
+    </div>
+    ${c.recommendedAction ? `<div class="cc-action"><span class="cc-action-label">👉 Your move: </span>${esc(c.recommendedAction)}</div>` : ''}
+    <div class="cc-presence"><span class="cc-dots">${dotScore(c.onlinePresenceScore)}</span><span>${esc(c.onlinePresenceDetail||'')}</span></div>
+  </div>`;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.fb').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCards();
+}
+function setSort(s) { currentSort = s; renderCards(); }
+
+async function exportReport() {
+  const btn = document.getElementById('export-btn');
+  btn.textContent = '⏳ Generating…';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/competitors/export/' + searchId, { method: 'POST' });
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'competitor-report.html'; a.click();
+    URL.revokeObjectURL(url);
+  } catch { alert('Export failed. Please try again.'); }
+  btn.textContent = '⬇ Export report';
+  btn.disabled = false;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s||''); return d.innerHTML; }
+
+loadResults();
+</script>
+<script src="/js/trial-banner.js"></script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

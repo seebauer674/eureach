@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — YouTuber Management</title>
+<link rel="stylesheet" href="/css/style.css?v=2">
+<link rel="stylesheet" href="/css/youtube-portal.css?v=1">
+</head>
+<body class="yt-page yt-admin-page">
+
+<nav class="yt-nav">
+  <a href="/" class="yt-nav-logo">eureach.eu</a>
+  <a href="/" class="yt-nav-back">← Dashboard</a>
+  <div class="yt-nav-right">
+    <span class="yt-badge yt-badge-admin">Admin</span>
+  </div>
+</nav>
+
+<main class="yt-main">
+  <div class="yt-header">
+    <h1>YouTuber Management</h1>
+  </div>
+
+  <div class="yt-admin-tabs">
+    <button class="yt-tab-btn yt-tab-active" id="tabYoutubers" onclick="switchTab('youtubers')">YouTubers</button>
+    <button class="yt-tab-btn" id="tabAssignments" onclick="switchTab('assignments')">Assignments</button>
+    <button class="yt-tab-btn" id="tabApplications" onclick="switchTab('applications')">Applications <span id="appsBadge" style="display:none;background:#ef4444;color:#fff;border-radius:10px;padding:1px 7px;font-size:0.72rem;margin-left:4px"></span></button>
+  </div>
+
+  <!-- ── YOUTUBERS TAB ──────────────────────────────────────────────────── -->
+  <div id="panelYoutubers">
+    <div class="yt-admin-card">
+      <h2>Παροχή Πρόσβασης</h2>
+      <div class="yt-grant-form">
+        <input type="email" id="grantEmail" class="yt-input" placeholder="email@example.com" style="max-width:320px">
+        <button class="yt-btn yt-btn-primary" onclick="grantAccess()">Grant Access</button>
+      </div>
+      <div id="grantMsg" class="yt-msg" style="display:none"></div>
+    </div>
+
+    <div class="yt-admin-card">
+      <div class="yt-card-header-row">
+        <h2>YouTubers (<span id="ytCount">0</span>)</h2>
+        <button class="yt-btn yt-btn-ghost yt-btn-sm" onclick="loadYoutubers()">Ανανέωση</button>
+      </div>
+      <div id="ytLoadingState" class="yt-loading">Φόρτωση...</div>
+      <div class="yt-table-wrap" id="ytTableWrap" style="display:none">
+        <table class="yt-table" id="ytTable">
+          <thead>
+            <tr>
+              <th>Χρήστης</th><th>Κανάλι</th><th>Subscribers</th>
+              <th>Assignments</th><th>Ολοκλήρωσε</th><th>Status</th><th>Ενέργειες</th>
+            </tr>
+          </thead>
+          <tbody id="ytTableBody"></tbody>
+        </table>
+        <p id="ytEmpty" class="yt-empty-row" style="display:none">Δεν υπάρχουν YouTubers ακόμα.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ASSIGNMENTS TAB ──────────────────────────────────────────────────── -->
+  <div id="panelAssignments" style="display:none">
+
+    <div class="yt-admin-card">
+      <h2>Δημιουργία Assignment</h2>
+      <div class="yt-create-form">
+        <div class="yt-field">
+          <label>YouTuber</label>
+          <select id="createYtUser" class="yt-select"><option value="">— Επίλεξε —</option></select>
+        </div>
+        <div class="yt-field">
+          <label>Campaign (citation)</label>
+          <select id="createCampaign" class="yt-select"><option value="">— Επίλεξε —</option></select>
+        </div>
+        <div class="yt-field">
+          <label>Πληρωμή (€)</label>
+          <input type="number" id="createPayment" class="yt-input" value="80" min="0" style="max-width:120px">
+        </div>
+        <button class="yt-btn yt-btn-primary" onclick="createAssignment()">Δημιουργία</button>
+      </div>
+      <div id="createMsg" class="yt-msg" style="display:none"></div>
+    </div>
+
+    <div class="yt-admin-card">
+      <div class="yt-card-header-row">
+        <h2>Assignments (<span id="aCount">0</span>)</h2>
+        <div class="yt-filter-group">
+          <select id="filterStatus" class="yt-select yt-select-sm" onchange="loadAssignments()">
+            <option value="all">Όλα</option>
+            <option value="new">Νέα</option>
+            <option value="in_progress">Σε εξέλιξη</option>
+            <option value="submitted">Υποβλήθηκε</option>
+            <option value="approved">Εγκρίθηκε</option>
+            <option value="rejected">Απορρίφθηκε</option>
+            <option value="paid">Πληρώθηκε</option>
+          </select>
+        </div>
+      </div>
+      <div id="aLoadingState" class="yt-loading">Φόρτωση...</div>
+      <div class="yt-table-wrap" id="aTableWrap" style="display:none">
+        <table class="yt-table" id="aTable">
+          <thead>
+            <tr>
+              <th>#</th><th>YouTuber</th><th>Campaign</th><th>Status</th>
+              <th>Υποβολή</th><th>Πληρωμή</th><th>Ενέργειες</th>
+            </tr>
+          </thead>
+          <tbody id="aTableBody"></tbody>
+        </table>
+        <p id="aEmpty" class="yt-empty-row" style="display:none">Δεν υπάρχουν assignments.</p>
+      </div>
+    </div>
+  </div>
+  <!-- ── APPLICATIONS TAB ──────────────────────────────────────────────────── -->
+  <div id="panelApplications" style="display:none">
+    <div class="yt-section-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div class="yt-section-title">Creator Applications</div>
+        <div class="yt-section-sub">Review and approve YouTuber applications from youtube-join.html</div>
+      </div>
+    </div>
+    <div id="appsLoading" class="yt-loading">Loading…</div>
+    <div id="appsWrap" style="display:none">
+      <div id="appsList"></div>
+      <p id="appsEmpty" class="yt-empty-row" style="display:none">No applications yet. Share <strong>eureach.eu/youtube-join.html</strong> to get applicants.</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- Review Modal -->
+<div id="reviewModal" class="yt-modal-overlay" style="display:none" onclick="closeModal(event)">
+  <div class="yt-modal">
+    <div class="yt-modal-header">
+      <h2>Review Assignment #<span id="modalId"></span></h2>
+      <button class="yt-modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="yt-modal-body">
+      <div class="yt-modal-section">
+        <h3>Brief</h3>
+        <div id="modalBrief" class="yt-brief-block"></div>
+      </div>
+      <div class="yt-modal-section">
+        <h3>Υποβολή</h3>
+        <div id="modalVideoUrl" class="yt-modal-row"></div>
+        <div id="modalTimestamp" class="yt-modal-row"></div>
+      </div>
+      <div class="yt-modal-section" id="modalTranscriptSection">
+        <h3>Transcript</h3>
+        <pre id="modalTranscript" class="yt-modal-pre"></pre>
+      </div>
+      <div class="yt-modal-section">
+        <h3>Admin Feedback</h3>
+        <textarea id="modalFeedback" class="yt-textarea" rows="4" placeholder="Γράψε feedback για τον YouTuber (εμφανίζεται αν απορριφθεί)..."></textarea>
+        <div class="yt-field">
+          <label>Πληρωμή (€)</label>
+          <input type="number" id="modalPayment" class="yt-input" min="0" style="max-width:120px">
+        </div>
+      </div>
+      <div id="modalError" class="yt-error-msg" style="display:none"></div>
+    </div>
+    <div class="yt-modal-footer">
+      <button class="yt-btn yt-btn-success" onclick="updateStatus('approved')">Έγκριση</button>
+      <button class="yt-btn yt-btn-danger"  onclick="updateStatus('rejected')">Απόρριψη</button>
+      <button class="yt-btn yt-btn-primary" onclick="updateStatus('paid')">Πληρώθηκε</button>
+      <button class="yt-btn yt-btn-ghost"   onclick="closeModal()">Κλείσιμο</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js?v=5"></script>
+<script>
+const STATUS_LABEL = {
+  new:'Νέο', in_progress:'Σε εξέλιξη', submitted:'Υποβλήθηκε',
+  approved:'Εγκρίθηκε', rejected:'Απορρίφθηκε', paid:'Πληρώθηκε'
+};
+const STATUS_CLASS = {
+  new:'yt-badge-new', in_progress:'yt-badge-progress', submitted:'yt-badge-submitted',
+  approved:'yt-badge-approved', rejected:'yt-badge-rejected', paid:'yt-badge-paid'
+};
+
+let currentModalId = null;
+let activeTab = 'youtubers';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('panelYoutubers').style.display    = tab === 'youtubers'    ? '' : 'none';
+  document.getElementById('panelAssignments').style.display  = tab === 'assignments'  ? '' : 'none';
+  document.getElementById('panelApplications').style.display = tab === 'applications' ? '' : 'none';
+  document.getElementById('tabYoutubers').classList.toggle('yt-tab-active',    tab === 'youtubers');
+  document.getElementById('tabAssignments').classList.toggle('yt-tab-active',  tab === 'assignments');
+  document.getElementById('tabApplications').classList.toggle('yt-tab-active', tab === 'applications');
+  if (tab === 'assignments') {
+    loadAssignments();
+    loadYoutubersForSelect();
+    loadCampaignsForSelect();
+  }
+  if (tab === 'applications') loadApplications();
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('el-GR');
+}
+
+// ── YouTubers tab ──────────────────────────────────────────────────────────
+
+async function loadYoutubers() {
+  document.getElementById('ytLoadingState').style.display = '';
+  document.getElementById('ytTableWrap').style.display   = 'none';
+  try {
+    const data = await api.get('/api/admin/youtubers');
+    const yt   = data.youtubers || [];
+    document.getElementById('ytCount').textContent          = yt.length;
+    document.getElementById('ytLoadingState').style.display = 'none';
+    document.getElementById('ytTableWrap').style.display    = '';
+    document.getElementById('ytEmpty').style.display        = yt.length === 0 ? '' : 'none';
+    document.getElementById('ytTableBody').innerHTML = yt.map(u => `
+      <tr>
+        <td><strong>${escHtml((u.firstName||'')+' '+(u.lastName||''))}</strong><br><small>${escHtml(u.email)}</small></td>
+        <td>${u.channel_url ? `<a href="${escHtml(u.channel_url)}" target="_blank">${escHtml(u.channel_name||u.channel_url)}</a>` : escHtml(u.channel_name||'—')}</td>
+        <td>${(u.subscribers||0).toLocaleString('el-GR')}</td>
+        <td>${u.total_assignments||0}</td>
+        <td>${u.total_completed||0}</td>
+        <td><span class="yt-badge ${u.status==='active'?'yt-badge-approved':'yt-badge-rejected'}">${escHtml(u.status||'active')}</span></td>
+        <td>
+          <button class="yt-btn yt-btn-ghost yt-btn-sm" onclick="revokeAccess(${u.id},'${escHtml(u.email)}')">Ανάκληση</button>
+        </td>
+      </tr>`).join('');
+  } catch (e) {
+    document.getElementById('ytLoadingState').textContent = 'Σφάλμα φόρτωσης.';
+  }
+}
+
+async function grantAccess() {
+  const email = document.getElementById('grantEmail').value.trim();
+  if (!email) { showMsg('grantMsg', 'Εισάγετε email.', 'error'); return; }
+  try {
+    const r = await api.post('/api/admin/youtubers/grant-access', { email });
+    showMsg('grantMsg', 'Εγκρίθηκε ο χρήστης ' + (r.user?.email || email), 'success');
+    document.getElementById('grantEmail').value = '';
+    loadYoutubers();
+  } catch (e) {
+    showMsg('grantMsg', e.message || 'Σφάλμα.', 'error');
+  }
+}
+
+async function revokeAccess(userId, email) {
+  if (!confirm('Να ανακληθεί η πρόσβαση του ' + email + ';')) return;
+  try {
+    await api.post('/api/admin/youtubers/revoke-access', { userId });
+    loadYoutubers();
+  } catch (e) {
+    alert('Σφάλμα: ' + (e.message || 'Δοκίμασε ξανά'));
+  }
+}
+
+// ── Assignments tab ─────────────────────────────────────────────────────────
+
+async function loadAssignments() {
+  const status = document.getElementById('filterStatus').value;
+  document.getElementById('aLoadingState').style.display = '';
+  document.getElementById('aTableWrap').style.display    = 'none';
+  try {
+    const data = await api.get('/api/admin/youtubers/assignments?status=' + status);
+    const arr  = data.assignments || [];
+    document.getElementById('aCount').textContent          = arr.length;
+    document.getElementById('aLoadingState').style.display = 'none';
+    document.getElementById('aTableWrap').style.display    = '';
+    document.getElementById('aEmpty').style.display        = arr.length === 0 ? '' : 'none';
+    document.getElementById('aTableBody').innerHTML = arr.map(a => `
+      <tr>
+        <td>${a.id}</td>
+        <td>${escHtml(a.youtuber_name||'')}<br><small>${escHtml(a.youtuber_email||'')}</small></td>
+        <td>${escHtml(a.campaign_package||'Campaign #'+a.campaign_id)}</td>
+        <td><span class="yt-badge ${STATUS_CLASS[a.status]||''}">${STATUS_LABEL[a.status]||a.status}</span></td>
+        <td>${fmtDate(a.submitted_at)}</td>
+        <td>€${a.payment_amount||80}</td>
+        <td>
+          <button class="yt-btn yt-btn-ghost yt-btn-sm" onclick="openReview(${a.id})">Review</button>
+          ${a.status==='submitted' ? `<button class="yt-btn yt-btn-success yt-btn-sm" onclick="quickAction(${a.id},'approved')">Approve</button>` : ''}
+          ${a.status==='approved'  ? `<button class="yt-btn yt-btn-primary yt-btn-sm" onclick="quickAction(${a.id},'paid')">Paid</button>` : ''}
+        </td>
+      </tr>`).join('');
+  } catch (e) {
+    document.getElementById('aLoadingState').textContent = 'Σφάλμα φόρτωσης.';
+  }
+}
+
+async function loadYoutubersForSelect() {
+  try {
+    const data = await api.get('/api/admin/youtubers');
+    const sel  = document.getElementById('createYtUser');
+    sel.innerHTML = '<option value="">— Επίλεξε YouTuber —</option>' +
+      (data.youtubers||[]).map(u => `<option value="${u.id}">${escHtml((u.firstName||'')+' '+(u.lastName||'')+' ('+u.email+')')}</option>`).join('');
+  } catch (e) {}
+}
+
+async function loadCampaignsForSelect() {
+  try {
+    const data = await api.get('/api/citations/campaigns');
+    const sel  = document.getElementById('createCampaign');
+    const campaigns = (data.campaigns || data || []).filter(c => c.id);
+    sel.innerHTML = '<option value="">— Επίλεξε Campaign —</option>' +
+      campaigns.map(c => `<option value="${c.id}">#${c.id} ${escHtml(c.package||c.brand_name||'Campaign')}</option>`).join('');
+  } catch (e) {}
+}
+
+async function createAssignment() {
+  const ytId      = document.getElementById('createYtUser').value;
+  const campaignId = document.getElementById('createCampaign').value;
+  const payment   = document.getElementById('createPayment').value;
+  if (!ytId || !campaignId) { showMsg('createMsg','Επίλεξε YouTuber και Campaign.','error'); return; }
+  try {
+    const r = await api.post('/api/admin/youtubers/assignments', {
+      youtuber_user_id: parseInt(ytId), campaign_id: parseInt(campaignId), payment_amount: parseFloat(payment)||80
+    });
+    showMsg('createMsg','Assignment #'+r.assignment.id+' δημιουργήθηκε!','success');
+    loadAssignments();
+  } catch (e) {
+    showMsg('createMsg', e.message||'Σφάλμα.', 'error');
+  }
+}
+
+async function quickAction(id, status) {
+  try {
+    await api.put('/api/admin/youtubers/assignments/' + id, { status });
+    loadAssignments();
+  } catch (e) {
+    alert('Σφάλμα: ' + (e.message||'Δοκίμασε ξανά'));
+  }
+}
+
+// ── Review Modal ─────────────────────────────────────────────────────────────
+
+async function openReview(id) {
+  currentModalId = id;
+  document.getElementById('reviewModal').style.display = 'flex';
+  document.getElementById('modalId').textContent       = id;
+  document.getElementById('modalError').style.display  = 'none';
+  document.getElementById('modalBrief').innerHTML      = '<em>Φόρτωση...</em>';
+  document.getElementById('modalVideoUrl').innerHTML   = '';
+  document.getElementById('modalTimestamp').innerHTML  = '';
+  document.getElementById('modalTranscript').textContent = '';
+  document.getElementById('modalFeedback').value       = '';
+  document.getElementById('modalPayment').value        = '';
+
+  try {
+    const data = await api.get('/api/admin/youtubers/assignments?status=all');
+    const a    = (data.assignments||[]).find(x => x.id === id);
+    if (!a) { document.getElementById('modalBrief').textContent = 'Δεν βρέθηκε.'; return; }
+
+    const b = a.brief_data || {};
+    document.getElementById('modalBrief').innerHTML =
+      `<div class="yt-brief-row"><label>Brand:</label><span>${escHtml(b.brand_name||b.business_name||'—')}</span></div>` +
+      (b.category ? `<div class="yt-brief-row"><label>Κατηγορία:</label><span>${escHtml(b.category)}</span></div>` : '') +
+      (b.website  ? `<div class="yt-brief-row"><label>Website:</label><a href="${escHtml(b.website)}" target="_blank">${escHtml(b.website)}</a></div>` : '') +
+      (b.example_phrases ? `<div class="yt-brief-row yt-brief-full"><label>Παράδειγμα:</label><div class="yt-brief-example">${escHtml(b.example_phrases)}</div></div>` : '');
+
+    if (a.video_url) {
+      document.getElementById('modalVideoUrl').innerHTML = `<label>Video URL:</label> <a href="${escHtml(a.video_url)}" target="_blank">${escHtml(a.video_url)}</a>`;
+    }
+    if (a.timestamp_mention) {
+      document.getElementById('modalTimestamp').innerHTML = `<label>Timestamp:</label> <span>${escHtml(a.timestamp_mention)}</span>`;
+    }
+    const transcript = (a.step_data||{}).transcript || '';
+    if (transcript) {
+      document.getElementById('modalTranscriptSection').style.display = '';
+      document.getElementById('modalTranscript').textContent = transcript;
+    } else {
+      document.getElementById('modalTranscriptSection').style.display = 'none';
+    }
+    document.getElementById('modalFeedback').value = a.admin_feedback || '';
+    document.getElementById('modalPayment').value  = a.payment_amount || 80;
+  } catch (e) {
+    document.getElementById('modalBrief').textContent = 'Σφάλμα φόρτωσης.';
+  }
+}
+
+async function updateStatus(status) {
+  if (!currentModalId) return;
+  const feedback = document.getElementById('modalFeedback').value;
+  const payment  = parseFloat(document.getElementById('modalPayment').value) || undefined;
+  const payload  = { status };
+  if (feedback) payload.admin_feedback = feedback;
+  if (payment)  payload.payment_amount = payment;
+
+  document.getElementById('modalError').style.display = 'none';
+  try {
+    await api.put('/api/admin/youtubers/assignments/' + currentModalId, payload);
+    document.getElementById('reviewModal').style.display = 'none';
+    loadAssignments();
+  } catch (e) {
+    document.getElementById('modalError').textContent   = e.message || 'Σφάλμα.';
+    document.getElementById('modalError').style.display = '';
+  }
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('reviewModal') || !e.target) {
+    document.getElementById('reviewModal').style.display = 'none';
+  }
+}
+
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className   = 'yt-msg yt-msg-' + type;
+  el.style.display = '';
+  setTimeout(() => el.style.display = 'none', 5000);
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    await loadYoutubers();
+  } catch (e) {
+    if (e.status === 403) window.location.href = '/signin.html';
+  }
+}
+
+init();
+
+// ── Applications tab ───────────────────────────────────────────────────────
+
+async function loadApplications() {
+  document.getElementById('appsLoading').style.display = '';
+  document.getElementById('appsWrap').style.display = 'none';
+  try {
+    const data = await api.get('/api/admin/youtubers/applications');
+    const apps = data.applications || [];
+    document.getElementById('appsLoading').style.display = 'none';
+    document.getElementById('appsWrap').style.display = '';
+    const pending = apps.filter(a => a.status === 'pending').length;
+    const badge = document.getElementById('appsBadge');
+    if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+    else badge.style.display = 'none';
+    if (!apps.length) { document.getElementById('appsEmpty').style.display = ''; return; }
+    document.getElementById('appsEmpty').style.display = 'none';
+    document.getElementById('appsList').innerHTML = apps.map(app => {
+      const statusColor = { pending: '#f59e0b', approved: '#4ade80', rejected: '#f87171' }[app.status] || '#888';
+      const cats = (app.categories || []).join(', ') || '—';
+      return `<div class="yt-app-card" id="appCard${app.id}">
+        <div class="yt-app-top">
+          <div>
+            <div class="yt-app-name">${escHtml(app.channel_name)}</div>
+            <div class="yt-app-meta">${escHtml(app.name)} · ${escHtml(app.email)} · ${(app.subscribers||0).toLocaleString()} subs · ${(app.language||'').toUpperCase()}</div>
+            <div class="yt-app-meta" style="margin-top:2px">Categories: ${escHtml(cats)}</div>
+            ${app.why ? `<div class="yt-app-why">"${escHtml(app.why)}"</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:120px">
+            <span class="yt-status-badge" style="background:${statusColor}22;color:${statusColor};border:1px solid ${statusColor}44">${app.status}</span>
+            <a href="${escHtml(app.channel_url)}" target="_blank" style="font-size:0.78rem;color:var(--accent)">View channel ↗</a>
+            <div class="yt-app-date">${fmtDate(app.applied_at)}</div>
+          </div>
+        </div>
+        ${app.status === 'pending' ? `
+        <div class="yt-app-actions">
+          <button class="btn btn-primary" style="font-size:0.8rem;padding:7px 16px" onclick="approveApp(${app.id})">✓ Approve</button>
+          <button class="btn btn-ghost" style="font-size:0.8rem;padding:7px 16px;color:#f87171;border-color:rgba(248,113,113,0.3)" onclick="rejectApp(${app.id}, '${escHtml(app.name)}')">✗ Reject</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('appsLoading').textContent = 'Error loading applications.';
+  }
+}
+
+async function approveApp(id) {
+  if (!confirm('Approve this application? This will grant YouTuber access (and create an account if needed).')) return;
+  try {
+    const d = await api.post('/api/admin/youtubers/applications/' + id + '/approve', {});
+    alert(d.new_user ? 'Approved! A new account was created and login details emailed.' : 'Approved! YouTuber access granted and email sent.');
+    loadApplications();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function rejectApp(id, name) {
+  const reason = prompt('Rejection reason for ' + name + ' (optional — will be included in email):');
+  if (reason === null) return;
+  try {
+    await api.post('/api/admin/youtubers/applications/' + id + '/reject', { reason });
+    loadApplications();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+</script>
+</body>
+</html>

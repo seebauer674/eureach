@@ -13,17 +13,37 @@
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
     <div class="nav-links">
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
+          </div>
+        </div>
+      </div>
       <a href="leads.html">Lead Finder</a>
       <a href="articles.html">Articles</a>
       <a href="crm.html">CRM</a>
+      <a href="outreach.html">Outreach</a>
       <a href="competitors.html">Competitors</a>
       <a href="audit.html">AI Audit</a>
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
     </div>
     <div class="nav-cta">
-      <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">👤 My Profile</a>
       <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
       <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
-      <a href="membership.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">⚡ Upgrade</a>
     </div>
   </div>
 </nav>
@@ -75,6 +95,7 @@
 </div>
 
 <script src="js/email.js"></script>
-<script src="/js/api.js"></script>
+<script src="/js/api.js?v=5"></script>
+<script src="js/nav-init.js"></script>
 </body>
 </html>

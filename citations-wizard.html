@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaign Wizard — AI Citation Builder</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/citations.css?v=1">
+  <script src="js/translations.js?v=5"></script>
+  <script src="js/i18n.js?v=5"></script>
+  <script src="js/api.js?v=5"></script>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="citations.html" style="color:var(--white)">← AI Citation Builder</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<div class="cit-wizard-page">
+  <div class="cit-wizard-header">
+    <div class="cit-wizard-steps" id="step-indicator"></div>
+  </div>
+  <div class="cit-wizard-body" id="wizard-body"></div>
+</div>
+
+<script>
+function T(k,vars){var l=window.euLang?window.euLang():"en";var t=window.EUREACH_T;var s=(t&&t[l]&&t[l][k])||k;if(vars)Object.keys(vars).forEach(function(v){s=s.replace("{"+v+"}",vars[v]);});return s;}
+const params        = new URLSearchParams(location.search);
+const __PAYPAL_CLIENT_ID__ = window.__PAYPAL_CLIENT_ID__ || "NOT_SET";
+const PKG_KEY       = params.get("package") || "growth";
+const YOUTUBE_ADDON = params.get("youtube") === "1";
+
+const PACKAGES = {
+  starter:   { name: "Starter",   mentions: 5,  queries: 1, days: 60,  price: 299  },
+  growth:    { name: "Growth",    mentions: 15, queries: 3, days: 60,  price: 699  },
+  authority: { name: "Authority", mentions: 30, queries: 6, days: 90,  price: 1299 },
+};
+const pkg = PACKAGES[PKG_KEY] || PACKAGES.growth;
+
+// YouTube Context step shown for Authority (always) or Growth with add-on
+const HAS_YOUTUBE = (PKG_KEY === "authority") || (PKG_KEY === "growth" && YOUTUBE_ADDON);
+
+function getSteps(){return[
+  { id: "queries",     title: T("cwiz.step1Title"), subtitle: T("cwiz.step1Sub") },
+  { id: "description", title: T("cwiz.step2Title"), subtitle: T("cwiz.step2Sub") },
+  { id: "messages",    title: T("cwiz.step3Title"), subtitle: T("cwiz.step3Sub") },
+  { id: "language",    title: T("cwiz.step4Title"), subtitle: T("cwiz.step4Sub") },
+  { id: "youtube",     title: T("cwiz.step5Title"), subtitle: T("cwiz.step5Sub"), youtubeOnly: true },
+  { id: "review",      title: T("cwiz.step6Title"), subtitle: T("cwiz.step6Sub") },
+];}
+const ALL_STEPS = getSteps();
+
+const STEPS = ALL_STEPS.filter(s => !s.youtubeOnly || HAS_YOUTUBE);
+const TOTAL = STEPS.length;
+
+const state = {
+  step:                  1,
+  target_queries:        [],
+  business_description:  "",
+  key_messages:          [],
+  target_language:       "el",
+  target_market:         "greece",
+  youtube_audience_type: "",
+  youtube_natural_phrase:"",
+  youtube_restrictions:  "",
+};
+
+const YT_AUDIENCE_OPTIONS = [
+  "Business & entrepreneurship",
+  "Technology & AI tools",
+  "Industry-specific content",
+  "Local Greek content",
+  "Not sure",
+];
+
+function currentStepDef() { return STEPS[state.step - 1]; }
+
+function renderIndicator() {
+  document.getElementById("step-indicator").innerHTML = STEPS.map((s, i) =>
+    `<div class="cit-step-dot ${i + 1 === state.step ? "active" : i + 1 < state.step ? "done" : ""}">${i + 1 < state.step ? "✓" : i + 1}</div>`
+  ).join('<div class="cit-step-line"></div>');
+}
+
+function renderStep() {
+  renderIndicator();
+  const body = document.getElementById("wizard-body");
+  const s    = currentStepDef();
+  let inner  = "";
+
+  if (s.id === "queries") {
+    inner = `
+      <h2>${s.title}</h2><p class="cit-wiz-sub">${s.subtitle}</p>
+      <p class="cit-wiz-hint">${T("cwiz.step1Hint",{n:pkg.queries,qs:pkg.queries===1?"query":"queries"})}</p>
+      <div class="cit-query-inputs" id="query-inputs">
+        ${Array.from({length: pkg.queries}, (_, i) => `<input class="cit-input" type="text" placeholder="${T('cwiz.queryN',{n:i+1})}" value="${state.target_queries[i]||""}" onchange="state.target_queries[${i}]=this.value.trim()">`).join("")}
+      </div>`;
+
+  } else if (s.id === "description") {
+    inner = `
+      <h2>${s.title}</h2><p class="cit-wiz-sub">${s.subtitle}</p>
+      <textarea class="cit-textarea" id="biz-desc" placeholder="${T('cwiz.step2Plh')}">${state.business_description}</textarea>
+      <button class="btn btn-ghost cit-ai-btn" onclick="aiAssistDesc()" id="ai-assist-btn">${T("cwiz.aiAssist")}</button>`;
+
+  } else if (s.id === "messages") {
+    inner = `
+      <h2>${s.title}</h2><p class="cit-wiz-sub">${s.subtitle}</p>
+      <p class="cit-wiz-hint">${T("cwiz.step3Hint")}</p>
+      <div class="cit-pill-input-row">
+        <input class="cit-input" id="msg-input" type="text" placeholder="${T('cwiz.msgPlh')}" onkeydown="if(event.key==='Enter')addMessage()">
+        <button class="btn btn-ghost" onclick="addMessage()">${T("cwiz.msgAdd")}</button>
+      </div>
+      <div class="cit-pills" id="messages-pills">${state.key_messages.map((m,i)=>`<span class="cit-pill">${m}<button onclick="removeMsg(${i})">×</button></span>`).join("")}</div>`;
+
+  } else if (s.id === "language") {
+    inner = `
+      <h2>${s.title}</h2><p class="cit-wiz-sub">${s.subtitle}</p>
+      <div class="cit-lang-row">
+        <label class="cit-wiz-label">${T("cwiz.langLabel")}</label>
+        <div class="cit-btn-group">
+          ${[["el","🇬🇷 Greek"],["en","🇬🇧 English"],["de","🇩🇪 German"]].map(([v,l])=>`<button class="btn ${state.target_language===v?"btn-primary":"btn-ghost"}" onclick="setLangChoice('${v}',this)">${l}</button>`).join("")}
+        </div>
+      </div>
+      <div class="cit-lang-row" style="margin-top:1.5rem">
+        <label class="cit-wiz-label">${T("cwiz.marketLabel")}</label>
+        <div class="cit-btn-group">
+          ${[[["greece",T("cwiz.mktGreece")],["europe",T("cwiz.mktEurope")],["global",T("cwiz.mktGlobal")]]].map(([v,l])=>`<button class="btn ${state.target_market===v?"btn-primary":"btn-ghost"}" onclick="setMarketChoice('${v}',this)">${l}</button>`).join("")}
+        </div>
+      </div>`;
+
+  } else if (s.id === "youtube") {
+    inner = `
+      <h2>${s.title}</h2><p class="cit-wiz-sub">${s.subtitle}</p>
+
+      <div class="cit-yt-step-section">
+        <label class="cit-form-label cit-form-label--req">${T("cwiz.ytAudLabel")}</label>
+        <div class="cit-yt-audience-grid">
+          ${YT_AUDIENCE_OPTIONS.map(opt => `
+            <button class="cit-yt-option ${state.youtube_audience_type === opt ? "cit-yt-option--selected" : ""}"
+              onclick="selectAudienceType('${opt.replace(/'/g,"\\'")}', this)">${opt}</button>`).join("")}
+        </div>
+      </div>
+
+      <div class="cit-yt-step-section">
+        <label class="cit-form-label cit-form-label--req">${T("cwiz.ytPhraseLabel")}</label>
+        <input class="cit-input" id="yt-phrase" type="text" maxlength="100"
+          placeholder="${T('cwiz.ytPhrasePlh')}"
+          value="${state.youtube_natural_phrase}"
+          oninput="state.youtube_natural_phrase=this.value.trim()">
+        <p class="cit-wiz-hint" style="margin-top:0.5rem">${T("cwiz.ytPhraseHint")}</p>
+      </div>
+
+      <div class="cit-yt-step-section">
+        <label class="cit-form-label">${T("cwiz.ytRestLabel")} <span class="cit-optional">(optional)</span></label>
+        <input class="cit-input" id="yt-restrictions" type="text" maxlength="100"
+          placeholder="${T('cwiz.ytRestPlh')}"
+          value="${state.youtube_restrictions}"
+          oninput="state.youtube_restrictions=this.value.trim()">
+        <p class="cit-wiz-hint" style="margin-top:0.5rem">${T("cwiz.ytRestHint")}</p>
+      </div>`;
+
+  } else if (s.id === "review") {
+    const queries = state.target_queries.filter(Boolean);
+    const msgs    = state.key_messages;
+    inner = `
+      <h2>${s.title}</h2>
+      <div class="cit-review-box">
+        <div class="cit-review-row"><span>${T("cwiz.revPackage")}</span><strong>${pkg.name} — €${pkg.price.toLocaleString()}</strong></div>
+        <div class="cit-review-row"><span>${T("cwiz.revMentions")}</span><strong>${pkg.mentions} ${T("cwiz.articles")} ${pkg.mentions} ${T("cwiz.publishers")}</strong></div>
+        <div class="cit-review-row"><span>${T("cwiz.revDuration")}</span><strong>${pkg.days} ${T("cwiz.days")}</strong></div>
+        <div class="cit-review-row"><span>${T("cwiz.revQueries")}</span><strong>${queries.length ? queries.join(", ") : "—"}</strong></div>
+        <div class="cit-review-row"><span>${T("cwiz.revLanguage")}</span><strong>${state.target_language.toUpperCase()}</strong></div>
+        <div class="cit-review-row"><span>${T("cwiz.revMarket")}</span><strong>${state.target_market}</strong></div>
+        ${YOUTUBE_ADDON ? '<div class="cit-review-row"><span>'+T("cwiz.revYtAddon")+'</span><strong style="color:var(--accent)">'+T("cwiz.revYtIncluded")+'</strong></div>' : ''}
+        ${HAS_YOUTUBE && state.youtube_audience_type ? `<div class="cit-review-row"><span>${T("cwiz.revYtAudience")}</span><strong>${state.youtube_audience_type}</strong></div>` : ''}
+        <div class="cit-review-row"><span>${T("cwiz.revMessages")}</span><strong>${msgs.length ? msgs.join("; ") : "—"}</strong></div>
+      </div>
+      <div id="pay-error" class="cit-error" style="display:none"></div>
+      <div class="cit-pay-methods">
+        <div class="cit-pay-label">${T("cwiz.payLabel")}</div>
+        <!-- Stripe disabled temporarily -->
+        <div id="paypal-button-container"></div>
+      </div>
+      ${YOUTUBE_ADDON ? '<p class="cit-pay-note" style="color:var(--accent);margin-bottom:0.25rem">'+T("cwiz.payNoteYT")+'</p>' : ''}
+      <p class="cit-pay-note">${T("cwiz.payNote")}</p>`;
+  }
+
+  body.innerHTML = `
+    <div class="cit-wizard-step-title">${s.title}</div>
+    ${inner}
+    <div class="cit-wizard-nav">
+      ${state.step > 1 ? '<button class="btn btn-ghost" onclick="prevStep()">← Back</button>' : '<span></span>'}
+      ${state.step < TOTAL ? '<button class="btn btn-primary" onclick="nextStep()">Continue →</button>' : ''}
+    </div>`;
+  if (s.id === 'review') maybeInitPayPal();
+}
+
+function nextStep() {
+  const s = currentStepDef();
+
+  if (s.id === "queries") {
+    const queries = Array.from(document.querySelectorAll(".cit-query-inputs input")).map(i => i.value.trim()).filter(Boolean);
+    if (!queries.length) { alert(T("cwiz.errQuery")); return; }
+    state.target_queries = queries;
+  }
+  if (s.id === "description") {
+    const desc = document.getElementById("biz-desc").value.trim();
+    if (!desc) { alert(T("cwiz.errDesc")); return; }
+    state.business_description = desc;
+  }
+  if (s.id === "youtube") {
+    if (!state.youtube_audience_type) { alert(T("cwiz.errYtAud")); return; }
+    const phrase = document.getElementById("yt-phrase").value.trim();
+    if (!phrase) { alert(T("cwiz.errYtPhrase")); return; }
+    state.youtube_natural_phrase = phrase;
+    state.youtube_restrictions   = document.getElementById("yt-restrictions").value.trim();
+  }
+
+  state.step++;
+  renderStep();
+  window.scrollTo(0, 0);
+}
+
+function prevStep() { state.step--; renderStep(); window.scrollTo(0, 0); }
+
+function selectAudienceType(val, btn) {
+  state.youtube_audience_type = val;
+  btn.closest(".cit-yt-audience-grid").querySelectorAll(".cit-yt-option").forEach(b => b.classList.remove("cit-yt-option--selected"));
+  btn.classList.add("cit-yt-option--selected");
+}
+
+function addMessage() {
+  const inp = document.getElementById("msg-input");
+  const val = (inp.value || "").trim();
+  if (!val || state.key_messages.length >= 5) return;
+  state.key_messages.push(val);
+  inp.value = "";
+  renderStep();
+}
+
+function removeMsg(i) { state.key_messages.splice(i, 1); renderStep(); }
+
+function setLangChoice(v, btn) {
+  state.target_language = v;
+  btn.closest(".cit-btn-group").querySelectorAll(".btn").forEach(b => { b.classList.remove("btn-primary"); b.classList.add("btn-ghost"); });
+  btn.classList.remove("btn-ghost"); btn.classList.add("btn-primary");
+}
+
+function setMarketChoice(v, btn) {
+  state.target_market = v;
+  btn.closest(".cit-btn-group").querySelectorAll(".btn").forEach(b => { b.classList.remove("btn-primary"); b.classList.add("btn-ghost"); });
+  btn.classList.remove("btn-ghost"); btn.classList.add("btn-primary");
+}
+
+async function aiAssistDesc() {
+  const btn = document.getElementById("ai-assist-btn");
+  btn.textContent = T("cwiz.aiAssistWorking"); btn.disabled = true;
+  try {
+    const profileRes = await fetch("/api/business/profile");
+    let profile = {};
+    if (profileRes.ok) { const d = await profileRes.json(); profile = d.profile || {}; }
+    const r = await fetch("/api/outreach", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ type: "custom", prompt: `Write a compelling 150-word business description for AI citation placement based on this profile: ${JSON.stringify(profile)}. Write in first person, no fluff, focus on what makes this business valuable to customers.` }) });
+    if (r.ok) { const d = await r.json(); const ta = document.getElementById("biz-desc"); if (ta) ta.value = d.content || d.message || ""; }
+  } catch {}
+  btn.textContent = T("cwiz.aiAssist"); btn.disabled = false;
+}
+
+async function createCampaignRecord() {
+  const queries = state.target_queries.filter(Boolean);
+  const err = document.getElementById("pay-error");
+  err.style.display = "none";
+  if (!queries.length) { err.textContent = "Please go back and add target queries."; err.style.display = ""; return null; }
+  const cr = await fetch("/api/citations/campaigns", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({
+      package:               PKG_KEY,
+      target_queries:        queries,
+      business_description:  state.business_description,
+      key_messages:          state.key_messages,
+      target_language:       state.target_language,
+      target_market:         state.target_market,
+      youtube_addon:         YOUTUBE_ADDON,
+      youtube_audience_type: state.youtube_audience_type  || null,
+      youtube_natural_phrase:state.youtube_natural_phrase || null,
+      youtube_restrictions:  state.youtube_restrictions   || null,
+    })
+  });
+  const cd = await cr.json();
+  if (!cr.ok) { err.textContent = cd.error || "Could not create campaign."; err.style.display = ""; return null; }
+  return cd.campaign.id;
+}
+
+async function submitCampaign(provider) {
+  const btn = document.getElementById("pay-btn-stripe");
+  const err = document.getElementById("pay-error");
+  err.style.display = "none";
+  btn.textContent = "Processing…"; btn.disabled = true;
+
+  try {
+    const campaignId = await createCampaignRecord();
+    if (!campaignId) { btn.textContent = "Pay via Card"; btn.disabled = false; return; }
+
+    const pr = await fetch("/api/citations/checkout", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ package: PKG_KEY, campaign_id: campaignId, youtube_addon: YOUTUBE_ADDON })
+    });
+    const pd = await pr.json();
+    if (!pr.ok) { err.textContent = pd.error || "Payment setup failed."; err.style.display = ""; btn.textContent = "Pay via Card"; btn.disabled = false; return; }
+
+    window.location.href = pd.url;
+  } catch (e) {
+    err.textContent = "Error: " + e.message; err.style.display = "";
+    btn.textContent = "Pay via Card"; btn.disabled = false;
+  }
+}
+
+function initPayPalButton() {
+  if (!window.paypal || !document.getElementById("paypal-button-container")) return;
+  const amountEur = (YOUTUBE_ADDON ? pkg.price + 199 : pkg.price).toFixed(2);
+  paypal.Buttons({
+    style: { layout: "horizontal", color: "gold", shape: "rect", label: "pay", height: 44 },
+    createOrder: async () => {
+      const err = document.getElementById("pay-error");
+      err.style.display = "none";
+      const campaignId = await createCampaignRecord();
+      if (!campaignId) throw new Error("Could not create campaign");
+      window._ppCampaignId = campaignId;
+      const r = await fetch("/api/citations/paypal/create-order", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ package: PKG_KEY, campaign_id: campaignId, youtube_addon: YOUTUBE_ADDON }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "PayPal error");
+      return d.id;
+    },
+    onApprove: async (data) => {
+      const err = document.getElementById("pay-error");
+      err.style.display = "none";
+      const r = await fetch("/api/citations/paypal/capture-order", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ order_id: data.orderID }),
+      });
+      const d = await r.json();
+      if (!r.ok) { err.textContent = d.error || "Payment capture failed."; err.style.display = ""; return; }
+      window.location.href = "citations-campaign.html?id=" + d.campaign_id + "&paid=1";
+    },
+    onError: (e) => {
+      const err = document.getElementById("pay-error");
+      err.textContent = "PayPal error: " + e; err.style.display = "";
+    },
+  }).render("#paypal-button-container");
+}
+
+fetch("/api/auth/me").then(r => { if (!r.ok) window.location.href = "signin.html?next=citations-wizard.html%3Fpackage%3D" + PKG_KEY; });
+
+// Load PayPal SDK and init button when review step renders
+function maybeInitPayPal() {
+  const clientId = window.__PAYPAL_CLIENT_ID__;
+  if (!clientId || clientId === "NOT_SET") return;
+  if (window.paypal) { initPayPalButton(); return; }
+  const s = document.createElement("script");
+  s.src = "https://www.paypal.com/sdk/js?client-id=" + clientId + "&currency=EUR&intent=capture&components=buttons";
+  s.onload = initPayPalButton;
+  document.head.appendChild(s);
+}
+
+renderStep();
+</script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

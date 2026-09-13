@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Προφίλ Καναλιού — YouTuber Portal</title>
+<link rel="stylesheet" href="/css/style.css?v=2">
+<link rel="stylesheet" href="/css/youtube-portal.css?v=1">
+<script src="/js/translations.js?v=5"></script>
+<script src="/js/i18n.js?v=5"></script>
+</head>
+<body class="yt-page">
+
+<nav class="yt-nav">
+  <a href="/" class="yt-nav-logo">eureach.eu</a>
+  <a href="/youtube" class="yt-nav-back" data-i18n="yt.back">← Portal</a>
+</nav>
+
+<main class="yt-main yt-main-narrow">
+  <div class="yt-header">
+    <h1 data-i18n="ytpro.title">Προφίλ Καναλιού</h1>
+  </div>
+
+  <div id="loadingState" class="yt-loading" data-i18n="ytpro.loading">Φόρτωση...</div>
+  <div id="notFoundState" class="yt-empty" style="display:none">
+    <p data-i18n="ytpro.notFound">Το προφίλ σου δεν βρέθηκε. Επικοινώνησε με την υποστήριξη.</p>
+  </div>
+
+  <form id="profileForm" style="display:none" onsubmit="saveProfile(event)">
+    <div class="yt-form-section">
+      <h2 class="yt-form-section-title" data-i18n="ytpro.channelSection">Στοιχεία Καναλιού</h2>
+
+      <div class="yt-field">
+        <label data-i18n="ytpro.channelName">Όνομα Καναλιού</label>
+        <input type="text" id="channelName" class="yt-input" placeholder="My Channel">
+      </div>
+
+      <div class="yt-field">
+        <label data-i18n="ytpro.channelUrl">YouTube URL</label>
+        <input type="url" id="channelUrl" class="yt-input" placeholder="https://youtube.com/@mychannel">
+      </div>
+
+      <div class="yt-field">
+        <label data-i18n="ytpro.channelId">Channel ID (προαιρετικό)</label>
+        <input type="text" id="channelId" class="yt-input" placeholder="UCxxxxxxxx">
+      </div>
+
+      <div class="yt-field">
+        <label data-i18n="ytpro.subscribers">Αριθμός Subscribers</label>
+        <input type="number" id="subscribers" class="yt-input" min="0" placeholder="10000">
+      </div>
+
+      <div class="yt-field">
+        <label data-i18n="ytpro.language">Γλώσσα κυρίως περιεχομένου</label>
+        <select id="language" class="yt-select">
+          <option value="el">Ελληνικά</option>
+          <option value="en">Αγγλικά</option>
+          <option value="both">Και τα δύο</option>
+        </select>
+      </div>
+
+      <div class="yt-field">
+        <label><span data-i18n="ytpro.categories">Κατηγορίες</span> <span class="yt-muted" data-i18n="ytpro.catNote">(επίλεξε όλες που ισχύουν)</span></label>
+        <div class="yt-pills" id="categoryPills">
+          <button type="button" class="yt-pill" data-cat="technology">Τεχνολογία</button>
+          <button type="button" class="yt-pill" data-cat="business">Επιχειρήσεις</button>
+          <button type="button" class="yt-pill" data-cat="lifestyle">Lifestyle</button>
+          <button type="button" class="yt-pill" data-cat="education">Εκπαίδευση</button>
+          <button type="button" class="yt-pill" data-cat="gaming">Gaming</button>
+          <button type="button" class="yt-pill" data-cat="food">Φαγητό</button>
+          <button type="button" class="yt-pill" data-cat="travel">Ταξίδια</button>
+          <button type="button" class="yt-pill" data-cat="fitness">Fitness</button>
+          <button type="button" class="yt-pill" data-cat="finance">Οικονομικά</button>
+          <button type="button" class="yt-pill" data-cat="other">Άλλο</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="yt-form-section">
+      <h2 class="yt-form-section-title" data-i18n="ytpro.paySection">Στοιχεία Πληρωμής</h2>
+      <p class="yt-step-hint" data-i18n="ytpro.payNote">Τα στοιχεία αποθηκεύονται κρυπτογραφημένα. Μόνο εσύ και το admin μπορείτε να τα αναθεωρήσετε.</p>
+
+      <div class="yt-field">
+        <label>Μέθοδος πληρωμής</label>
+        <div class="yt-toggle-group">
+          <button type="button" class="yt-toggle-btn yt-toggle-active" id="toggleIban" onclick="setPaymentType('iban')">IBAN</button>
+          <button type="button" class="yt-toggle-btn" id="togglePaypal" onclick="setPaymentType('paypal')">PayPal</button>
+        </div>
+      </div>
+
+      <div class="yt-field" id="paymentField">
+        <label id="paymentLabel">IBAN</label>
+        <div id="paymentDisplay" class="yt-payment-display" style="display:none">
+          <span id="paymentMasked"></span>
+          <button type="button" class="yt-btn yt-btn-ghost yt-btn-sm" onclick="editPayment()">Αλλαγή</button>
+        </div>
+        <input type="text" id="paymentInfo" class="yt-input" placeholder="GR00 0000 0000 0000..." style="display:none">
+        <p class="yt-step-hint">Αφήσε κενό για να διατηρήσεις τα υπάρχοντα στοιχεία.</p>
+      </div>
+    </div>
+
+    <div id="saveError" class="yt-error-msg" style="display:none"></div>
+    <div id="saveSuccess" class="yt-success-msg" style="display:none">Οι αλλαγές αποθηκεύτηκαν!</div>
+
+    <div class="yt-form-actions">
+      <button type="submit" class="yt-btn yt-btn-primary" id="saveBtn">Αποθήκευση</button>
+      <a href="/youtube" class="yt-btn yt-btn-ghost">Ακύρωση</a>
+    </div>
+  </form>
+</main>
+
+<script src="/js/api.js?v=5"></script>
+<script>
+let paymentType = 'iban';
+let hasPaymentInfo = false;
+let editingPayment = false;
+
+function setPaymentType(type) {
+  paymentType = type;
+  document.getElementById('toggleIban').classList.toggle('yt-toggle-active', type === 'iban');
+  document.getElementById('togglePaypal').classList.toggle('yt-toggle-active', type === 'paypal');
+  document.getElementById('paymentLabel').textContent = type === 'iban' ? 'IBAN' : 'PayPal Email';
+  document.getElementById('paymentInfo').placeholder = type === 'iban' ? 'GR00 0000 0000 0000...' : 'email@paypal.com';
+}
+
+function editPayment() {
+  editingPayment = true;
+  document.getElementById('paymentDisplay').style.display = 'none';
+  document.getElementById('paymentInfo').style.display    = '';
+  document.getElementById('paymentInfo').focus();
+}
+
+async function load() {
+  try {
+    const data    = await api.get('/api/youtube/me');
+    const profile = data.profile;
+
+    document.getElementById('loadingState').style.display = 'none';
+
+    if (!profile) {
+      document.getElementById('notFoundState').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('profileForm').style.display = 'block';
+    document.getElementById('channelName').value    = profile.channel_name || '';
+    document.getElementById('channelUrl').value     = profile.channel_url  || '';
+    document.getElementById('channelId').value      = profile.channel_id   || '';
+    document.getElementById('subscribers').value    = profile.subscribers  || '';
+    document.getElementById('language').value       = profile.language     || 'el';
+
+    // Categories
+    const cats = profile.categories || [];
+    document.querySelectorAll('#categoryPills .yt-pill').forEach(btn => {
+      const cat = btn.dataset.cat;
+      if (cats.includes(cat)) btn.classList.add('yt-pill-active');
+      btn.addEventListener('click', () => btn.classList.toggle('yt-pill-active'));
+    });
+
+    // Payment info
+    hasPaymentInfo = profile.has_payment_info || false;
+    if (hasPaymentInfo) {
+      document.getElementById('paymentDisplay').style.display = '';
+      document.getElementById('paymentInfo').style.display    = 'none';
+      document.getElementById('paymentMasked').textContent    = profile.payment_info_display || '****';
+    } else {
+      document.getElementById('paymentDisplay').style.display = 'none';
+      document.getElementById('paymentInfo').style.display    = '';
+    }
+  } catch (e) {
+    document.getElementById('loadingState').textContent = 'Σφάλμα φόρτωσης.';
+    if (e.status === 403) window.location.href = '/signin.html?next=/youtube/profile';
+  }
+}
+
+async function saveProfile(e) {
+  e.preventDefault();
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Αποθήκευση...';
+  document.getElementById('saveError').style.display   = 'none';
+  document.getElementById('saveSuccess').style.display = 'none';
+
+  const cats = [];
+  document.querySelectorAll('#categoryPills .yt-pill.yt-pill-active').forEach(b => cats.push(b.dataset.cat));
+
+  const payload = {
+    channel_name: document.getElementById('channelName').value,
+    channel_url:  document.getElementById('channelUrl').value,
+    channel_id:   document.getElementById('channelId').value,
+    subscribers:  parseInt(document.getElementById('subscribers').value) || 0,
+    language:     document.getElementById('language').value,
+    categories:   cats,
+  };
+
+  const piVal = document.getElementById('paymentInfo').value.trim();
+  if (piVal) payload.payment_info = piVal;
+
+  try {
+    await api.put('/api/youtube/profile', payload);
+    document.getElementById('saveSuccess').style.display = 'block';
+    setTimeout(() => document.getElementById('saveSuccess').style.display = 'none', 3000);
+    // If we just saved payment, mask it
+    if (piVal) {
+      hasPaymentInfo = true;
+      document.getElementById('paymentMasked').textContent    = piVal.slice(0,4) + '****';
+      document.getElementById('paymentDisplay').style.display = '';
+      document.getElementById('paymentInfo').style.display    = 'none';
+      document.getElementById('paymentInfo').value            = '';
+    }
+  } catch (err) {
+    document.getElementById('saveError').textContent    = err.message || 'Σφάλμα αποθήκευσης.';
+    document.getElementById('saveError').style.display  = 'block';
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Αποθήκευση';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

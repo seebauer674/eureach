@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Citations Admin — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/citations.css?v=1">
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="citations.html">Citations</a>
+      <a href="citations-admin.html" style="color:var(--white)">Admin</a>
+      <a href="admin.html">← Admin Panel</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<div class="cit-admin-page">
+  <div class="cit-admin-tabs">
+    <button class="cit-tab active" onclick="showTab('campaigns', this)">Campaigns</button>
+    <button class="cit-tab" onclick="showTab('placements', this)">Placement Queue</button>
+    <button class="cit-tab" onclick="showTab('publishers', this)">Publishers</button>
+    <button class="cit-tab" onclick="showTab('leads', this)">Leads</button>
+  </div>
+
+  <!-- CAMPAIGNS -->
+  <div id="tab-campaigns" class="cit-tab-panel">
+    <div id="campaigns-list" class="cit-admin-loading">Loading…</div>
+  </div>
+
+  <!-- PLACEMENTS -->
+  <div id="tab-placements" class="cit-tab-panel" style="display:none">
+    <div id="placements-list" class="cit-admin-loading">Loading…</div>
+  </div>
+
+  <!-- PUBLISHERS -->
+  <div id="tab-publishers" class="cit-tab-panel" style="display:none">
+    <button class="btn btn-primary" style="margin-bottom:1.5rem" onclick="showAddPublisher()">+ Add Publisher</button>
+    <div id="add-publisher-form" class="cit-admin-form" style="display:none">
+      <h3>Add Publisher</h3>
+      <div class="cit-form-grid">
+        <input class="cit-input" id="pub-name" placeholder="Site name">
+        <input class="cit-input" id="pub-url"  placeholder="URL (https://...)">
+        <input class="cit-input" id="pub-dr"   placeholder="Domain Rating (0-100)" type="number">
+        <input class="cit-input" id="pub-traffic" placeholder="Monthly traffic" type="number">
+        <select class="cit-input" id="pub-lang">
+          <option value="el">Greek</option>
+          <option value="en">English</option>
+          <option value="de">German</option>
+        </select>
+        <input class="cit-input" id="pub-cats" placeholder="Categories (comma-separated)">
+        <input class="cit-input" id="pub-country" placeholder="Country" value="Greece">
+        <input class="cit-input" id="pub-cost" placeholder="Cost per placement (€)" type="number">
+        <input class="cit-input" id="pub-email" placeholder="Contact email">
+      </div>
+      <div style="display:flex;gap:1rem;margin-top:1rem">
+        <button class="btn btn-primary" onclick="savePublisher()">Save Publisher</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('add-publisher-form').style.display='none'">Cancel</button>
+      </div>
+    </div>
+    <div id="publishers-list" class="cit-admin-loading">Loading…</div>
+  </div>
+  <!-- LEADS -->
+  <div id="tab-leads" class="cit-tab-panel" style="display:none">
+    <div id="leads-list" class="cit-admin-loading">Loading…</div>
+  </div>
+</div>
+
+<!-- Placement detail modal -->
+<div id="placement-modal" class="cit-modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="cit-modal">
+    <div class="cit-modal-hdr">
+      <h3 id="modal-title">Placement</h3>
+      <button class="cit-modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+let allCampaigns  = [];
+let allPlacements = [];
+let allPublishers = [];
+
+async function loadLeads() {
+  const r = await fetch("/api/admin/citations/leads");
+  if (!r.ok) { document.getElementById("leads-list").textContent = "Access denied."; return; }
+  const { leads } = await r.json();
+  const el = document.getElementById("leads-list");
+  if (!leads.length) { el.innerHTML = '<p style="color:var(--muted)">No leads yet.</p>'; return; }
+  const PKG = { starter: "Starter €299", growth: "Growth €699", authority: "Authority €1,299" };
+  el.innerHTML = `<table class="cit-admin-table">
+    <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Package</th><th>Time</th><th>Message</th><th>Date</th></tr></thead>
+    <tbody>${leads.map(l => `
+      <tr>
+        <td>${l.name}</td>
+        <td><a href="mailto:${l.email}">${l.email}</a></td>
+        <td>${l.phone}</td>
+        <td>${PKG[l.package_interest] || l.package_interest || "—"}</td>
+        <td>${l.preferred_time || "—"}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(l.message||"").replace(/"/g,"")}">${l.message || "—"}</td>
+        <td>${new Date(l.created_at).toLocaleDateString("en-GB")}</td>
+      </tr>`).join("")}
+    </tbody></table>`;
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll(".cit-tab-panel").forEach(p => p.style.display = "none");
+  document.querySelectorAll(".cit-tab").forEach(b => b.classList.remove("active"));
+  document.getElementById("tab-" + name).style.display = "";
+  btn.classList.add("active");
+  if (name === "campaigns" && !allCampaigns.length)   loadCampaigns();
+  if (name === "placements" && !allPlacements.length) loadPlacements();
+  if (name === "publishers" && !allPublishers.length) loadPublishers();
+  if (name === "leads") loadLeads();
+}
+
+async function loadCampaigns() {
+  const r = await fetch("/api/admin/citations/campaigns");
+  if (!r.ok) { document.getElementById("campaigns-list").textContent = "Access denied."; return; }
+  const { campaigns } = await r.json();
+  allCampaigns = campaigns;
+  const el = document.getElementById("campaigns-list");
+  if (!campaigns.length) { el.innerHTML = '<p style="color:var(--muted)">No campaigns yet.</p>'; return; }
+  el.innerHTML = `<table class="cit-admin-table">
+    <thead><tr><th>ID</th><th>User</th><th>Package</th><th>Status</th><th>Progress</th><th>Created</th><th>Actions</th></tr></thead>
+    <tbody>${campaigns.map(c => `
+      <tr>
+        <td>#${c.id}</td>
+        <td>${c.user_email}</td>
+        <td>${c.package}</td>
+        <td><span class="cit-status-${c.status}">${c.status}</span></td>
+        <td>${c.mentions_live}/${c.mentions_total}</td>
+        <td>${new Date(c.created_at).toLocaleDateString("en-GB")}</td>
+        <td>
+          <button class="btn btn-ghost cit-btn-sm" onclick="assignPublisher(${c.id})">+ Assign Publisher</button>
+          ${c.youtube_addon ? `<button class="btn btn-ghost cit-btn-sm" onclick="generateYoutubeBrief(${c.id})">&#x1F3A5; Brief</button>` : ""}
+          <a class="btn btn-ghost cit-btn-sm" href="citations-campaign.html?id=${c.id}" target="_blank">View</a>
+        </td>
+      </tr>`).join("")}
+    </tbody></table>`;
+}
+
+async function loadPlacements() {
+  const [pr, pubr] = await Promise.all([
+    fetch("/api/admin/citations/placements"),
+    fetch("/api/admin/citations/publishers"),
+  ]);
+  const { placements } = pr.ok ? await pr.json() : { placements: [] };
+  const { publishers } = pubr.ok ? await pubr.json() : { publishers: [] };
+  allPlacements = placements;
+  allPublishers = publishers;
+  const el = document.getElementById("placements-list");
+  if (!placements.length) { el.innerHTML = '<p style="color:var(--muted)">No placements yet.</p>'; return; }
+  el.innerHTML = `<table class="cit-admin-table">
+    <thead><tr><th>ID</th><th>Campaign</th><th>Publisher</th><th>Status</th><th>Article</th><th>Actions</th></tr></thead>
+    <tbody>${placements.map(p => `
+      <tr>
+        <td>#${p.id}</td>
+        <td>Campaign #${p.campaign_id} (${p.campaign_package || ""})</td>
+        <td>${p.publisher_name || p.publisher_id}</td>
+        <td><span class="cit-status-${p.status}">${p.status}</span></td>
+        <td>${p.article_title ? p.article_title.slice(0,40) + "…" : "—"}</td>
+        <td style="display:flex;gap:0.5rem;flex-wrap:wrap">
+          <button class="btn btn-ghost cit-btn-sm" onclick="openPlacement(${p.id})">View</button>
+          ${p.status === "draft" ? `<button class="btn btn-ghost cit-btn-sm" onclick="generateArticle(${p.id})">✦ Generate</button>` : ""}
+          ${p.article_content && p.status === "draft" ? `<button class="btn btn-ghost cit-btn-sm" onclick="markSubmitted(${p.id})">→ Submit</button>` : ""}
+          ${p.status === "submitted" ? `<button class="btn btn-primary cit-btn-sm" onclick="markPublished(${p.id})">✓ Mark Live</button>` : ""}
+        </td>
+      </tr>`).join("")}
+    </tbody></table>`;
+}
+
+async function loadPublishers() {
+  const r = await fetch("/api/admin/citations/publishers");
+  if (!r.ok) return;
+  const { publishers } = await r.json();
+  allPublishers = publishers;
+  const el = document.getElementById("publishers-list");
+  if (!publishers.length) { el.innerHTML = '<p style="color:var(--muted)">No publishers yet. Add one above or wait for applications from citations-join.html.</p>'; return; }
+  el.innerHTML = `<table class="cit-admin-table">
+    <thead><tr><th>Name</th><th>URL</th><th>DR</th><th>Traffic</th><th>Lang</th><th>Cost</th><th>Status</th><th></th></tr></thead>
+    <tbody>${publishers.map(p => `
+      <tr>
+        <td>${p.name}</td>
+        <td><a href="${p.url}" target="_blank">${p.url}</a></td>
+        <td>${p.domain_rating || "—"}</td>
+        <td>${p.monthly_traffic ? p.monthly_traffic.toLocaleString() : "—"}</td>
+        <td>${p.language}</td>
+        <td>${p.cost_per_placement ? "€" + p.cost_per_placement : "—"}</td>
+        <td><span class="cit-status-${p.status}">${p.status}</span></td>
+        <td><button class="btn btn-ghost cit-btn-sm" onclick="togglePublisherStatus(${p.id},'${p.status === "active" ? "paused" : "active"}')">${p.status === "active" ? "Pause" : "Activate"}</button></td>
+      </tr>`).join("")}
+    </tbody></table>`;
+}
+
+function showAddPublisher() {
+  document.getElementById("add-publisher-form").style.display = "";
+}
+
+async function savePublisher() {
+  const data = {
+    name:               document.getElementById("pub-name").value.trim(),
+    url:                document.getElementById("pub-url").value.trim(),
+    domain_rating:      document.getElementById("pub-dr").value,
+    monthly_traffic:    document.getElementById("pub-traffic").value,
+    language:           document.getElementById("pub-lang").value,
+    categories:         document.getElementById("pub-cats").value,
+    country:            document.getElementById("pub-country").value,
+    cost_per_placement: document.getElementById("pub-cost").value,
+    contact_email:      document.getElementById("pub-email").value,
+  };
+  if (!data.name || !data.url) { alert("Name and URL are required."); return; }
+  const r = await fetch("/api/admin/citations/publishers", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(data) });
+  if (r.ok) { document.getElementById("add-publisher-form").style.display = "none"; allPublishers = []; loadPublishers(); }
+  else { const d = await r.json(); alert(d.error || "Failed to save."); }
+}
+
+async function togglePublisherStatus(id, newStatus) {
+  await fetch("/api/admin/citations/publishers/" + id, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ status: newStatus }) });
+  allPublishers = []; loadPublishers();
+}
+
+async function assignPublisher(campaignId) {
+  if (!allPublishers.length) { const r = await fetch("/api/admin/citations/publishers"); const d = await r.json(); allPublishers = d.publishers || []; }
+  const active = allPublishers.filter(p => p.status === "active");
+  if (!active.length) { alert("No active publishers. Add publishers first."); return; }
+  const options = active.map((p, i) => `${i+1}. ${p.name} (${p.language}, DR${p.domain_rating || "?"}) — ${p.url}`).join("\n");
+  const choice  = prompt("Select publisher number:\n\n" + options);
+  const idx     = parseInt(choice) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= active.length) return;
+  const pub = active[idx];
+  const r = await fetch("/api/admin/citations/placements", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ campaign_id: campaignId, publisher_id: pub.id }) });
+  if (r.ok) { alert("Placement created for " + pub.name + ". Go to the Placement Queue to generate the article."); allPlacements = []; }
+  else { const d = await r.json(); alert(d.error || "Failed."); }
+}
+
+function openPlacement(id) {
+  const p = allPlacements.find(p => p.id === id);
+  if (!p) return;
+  document.getElementById("modal-title").textContent = "Placement #" + p.id + " — " + (p.publisher_name || "");
+  document.getElementById("modal-body").innerHTML = `
+    <div class="cit-modal-field"><label>Status</label><span class="cit-status-${p.status}">${p.status}</span></div>
+    ${p.article_title ? `<div class="cit-modal-field"><label>Title</label><p>${p.article_title}</p></div>` : ""}
+    ${p.article_content ? `<div class="cit-modal-field"><label>Article</label><pre class="cit-article-pre">${p.article_content}</pre></div>` : ""}
+    ${p.mention_excerpt ? `<div class="cit-modal-field"><label>Client mention</label><em>${p.mention_excerpt}</em></div>` : ""}
+    ${p.article_url ? `<div class="cit-modal-field"><label>Live URL</label><a href="${p.article_url}" target="_blank">${p.article_url}</a></div>` : ""}
+    <div class="cit-modal-field"><label>Admin notes</label><textarea class="cit-textarea" id="modal-notes" style="height:80px">${p.admin_notes||""}</textarea></div>
+    <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem">
+      <button class="btn btn-ghost" onclick="saveNotes(${p.id})">Save Notes</button>
+      ${p.status === "draft" ? `<button class="btn btn-ghost" onclick="generateArticle(${p.id});closeModal()">✦ Generate Article</button>` : ""}
+      ${p.article_content && p.status === "draft" ? `<button class="btn btn-ghost" onclick="markSubmitted(${p.id});closeModal()">→ Mark Submitted</button>` : ""}
+      ${p.status === "submitted" ? `<button class="btn btn-primary" onclick="promptMarkLive(${p.id})">✓ Mark as Published</button>` : ""}
+    </div>`;
+  document.getElementById("placement-modal").style.display = "flex";
+}
+
+function closeModal() { document.getElementById("placement-modal").style.display = "none"; }
+
+async function saveNotes(id) {
+  const notes = document.getElementById("modal-notes").value;
+  await fetch("/api/admin/citations/placements/" + id, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ admin_notes: notes }) });
+  alert("Notes saved.");
+}
+
+async function generateArticle(id) {
+  if (!confirm("Generate article with AI for placement #" + id + "?")) return;
+  const r = await fetch("/api/admin/citations/generate", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ placement_id: id }) });
+  const d = await r.json();
+  if (r.ok) { alert("Article generated: " + (d.article.title || "")); allPlacements = []; loadPlacements(); }
+  else { alert(d.error || "Generation failed."); }
+}
+
+async function markSubmitted(id) {
+  await fetch("/api/admin/citations/placements/" + id, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ status: "submitted", submitted_at: new Date().toISOString() }) });
+  allPlacements = []; loadPlacements();
+}
+
+async function promptMarkLive(id) {
+  const url = prompt("Enter the live article URL:");
+  if (!url) return;
+  await fetch("/api/admin/citations/placements/" + id, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ status: "published", article_url: url, published_at: new Date().toISOString() }) });
+  closeModal(); allPlacements = []; loadPlacements();
+}
+
+async function markPublished(id) { await promptMarkLive(id); }
+
+async function generateYoutubeBrief(campaignId) {
+  if (!confirm("Generate YouTube brief for campaign #" + campaignId + " using AI?")) return;
+  const r = await fetch("/api/admin/citations/youtube-brief", {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ campaign_id: campaignId })
+  });
+  const d = await r.json();
+  if (!r.ok) { alert(d.error || "Failed to generate brief."); return; }
+  const b = d.brief;
+  const lines = [
+    "=== YOUTUBE MENTION BRIEF ===", "",
+    "Channel fit: " + b.channel_fit, "",
+    "Suggested context:", b.suggested_context, "",
+    "Example phrase:", '"' + b.example_phrase + '"', "",
+    "Talking points:", ...(b.talking_points || []).map(p => "* " + p), "",
+    "Avoid:", ...(b.avoid || []).map(a => "x " + a), "",
+    "Suggested duration: " + b.duration,
+  ];
+  const text = lines.join("\n");
+  const esc  = text.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  document.getElementById("modal-title").textContent = "YouTube Brief — Campaign #" + campaignId;
+  document.getElementById("modal-body").innerHTML =
+    '<pre class="cit-article-pre" style="white-space:pre-wrap">' + esc + '</pre>' +
+    '<button class="btn btn-ghost" style="margin-top:1rem" onclick="navigator.clipboard.writeText(' +
+    JSON.stringify(text) + ').then(()=>alert('Copied!'))">Copy to clipboard</button>';
+  document.getElementById("placement-modal").style.display = "flex";
+}
+
+// Check admin access
+fetch("/api/auth/me").then(r => r.json()).then(d => {
+  if (!d.user || d.user.role !== "admin") { document.body.innerHTML = '<div style="padding:4rem;text-align:center;color:#f44">Admin access only.</div>'; return; }
+  loadCampaigns();
+}).catch(() => window.location.href = "signin.html");
+</script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

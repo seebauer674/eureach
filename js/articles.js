@@ -14,9 +14,9 @@
       formSub:        "AI-powered SEO + GEO + AEO content generation",
       savedBtn:       "📂 Saved Articles",
       generateBtn:    "✍️ Generate Article",
-      creditNote:     "This will use 1 credit",
+      creditNote:     "This will use 10 AI credits",
       gateTitle:      "Add a site to get started",
-      gateSub:        "The Article Generator writes content tailored to your specific website — its niche, audience, language, and tone. Register up to 3 sites on your Pro plan.",
+      gateSub:        "The Article Generator writes content tailored to your specific website — its niche, audience, language, and tone. Add your website in Settings to get started.",
       gateBtn:        "⚙ Go to Settings → Add Site",
       gateSaved:      "📂 View Saved Articles",
       secCore:        "Core",
@@ -111,9 +111,9 @@
       formSub:        "Δημιουργία περιεχομένου SEO + GEO + AEO με AI",
       savedBtn:       "📂 Αποθηκευμένα Άρθρα",
       generateBtn:    "✍️ Δημιουργία Άρθρου",
-      creditNote:     "Θα χρησιμοποιηθεί 1 credit",
+      creditNote:     "Θα χρησιμοποιηθούν 10 AI credits",
       gateTitle:      "Προσθέστε ιστοσελίδα για να ξεκινήσετε",
-      gateSub:        "Η Δημιουργία Άρθρων γράφει περιεχόμενο προσαρμοσμένο στην ιστοσελίδα σας — κλάδο, κοινό, γλώσσα και τόνο. Εγγράψτε έως 3 ιστοσελίδες στο Pro πλάν.",
+      gateSub:        "Η Δημιουργία Άρθρων γράφει περιεχόμενο προσαρμοσμένο στην ιστοσελίδα σας — κλάδο, κοινό, γλώσσα και τόνο. Προσθέστε τον ιστότοπό σας στις Ρυθμίσεις.",
       gateBtn:        "⚙ Μεταβείτε στις Ρυθμίσεις → Προσθήκη Ιστοσελίδας",
       gateSaved:      "📂 Προβολή Αποθηκευμένων",
       secCore:        "Βασικά Στοιχεία",
@@ -208,9 +208,9 @@
       formSub:        "KI-gestützte SEO + GEO + AEO Inhaltserstellung",
       savedBtn:       "📂 Gespeicherte Artikel",
       generateBtn:    "✍️ Artikel generieren",
-      creditNote:     "Dies verbraucht 1 Credit",
+      creditNote:     "Dies verbraucht 10 KI-Credits",
       gateTitle:      "Website hinzufügen, um zu starten",
-      gateSub:        "Der Artikel-Generator erstellt Inhalte, die auf Ihre Website zugeschnitten sind — Nische, Zielgruppe, Sprache und Tonalität. Registrieren Sie bis zu 3 Websites im Pro-Plan.",
+      gateSub:        "Der Artikel-Generator erstellt Inhalte, die auf Ihre Website zugeschnitten sind — Nische, Zielgruppe, Sprache und Tonalität. Fügen Sie Ihre Website in den Einstellungen hinzu.",
       gateBtn:        "⚙ Zu Einstellungen → Website hinzufügen",
       gateSaved:      "📂 Gespeicherte Artikel anzeigen",
       secCore:        "Grundeinstellungen",
@@ -310,16 +310,20 @@
   ];
 
   /* ── state ───────────────────────────────────────────── */
-  let currentLang    = "en";   // el | en | de
-  let state          = "form"; // form | generating | results | saved
+  let currentLang    = (window.euLang && window.euLang()) || "en";   // el | en | de
+  let state          = "form"; // form | generating | results | saved | existing | existing-gen | existing-res
   let formData       = {};
   let result         = null;
+  let existingData   = {};
+  let existingResult = null;
   let activeTab      = 0;      // index into t().tabs
+  let articleAutoId  = null;   // stable ID for automation panel within session
   let activeSiteId   = null;
   let selectedTones      = new Set();
   let selectedAiTargets  = new Set(["chatgpt", "perplexity", "google-ai"]);
   let progressStep   = 0;
   let savedArticles  = JSON.parse(localStorage.getItem("eureach_articles") || "[]");
+  let articleSavedLists = [];
   let wpConnected    = false;
   let wpSiteUrl      = "";
 
@@ -329,8 +333,14 @@
   function t(key) { return (I18N[currentLang] || I18N.en)[key]; }
 
   /* ── sites store ─────────────────────────────────────── */
-  function loadSites() {
-    try { return JSON.parse(localStorage.getItem("eureach_sites") || "[]"); } catch { return []; }
+  let _sites = [];
+  function loadSites() { return _sites; }
+  async function fetchSites() {
+    try {
+      const r = await fetch('/api/sites');
+      if (r.ok) { const d = await r.json(); _sites = Array.isArray(d.sites) ? d.sites : []; return; }
+    } catch {}
+    try { _sites = JSON.parse(localStorage.getItem("eureach_sites") || "[]"); } catch { _sites = []; }
   }
 
   /* ── helpers ─────────────────────────────────────────── */
@@ -390,9 +400,6 @@
     root.innerHTML = "";
     syncPageSubtitle();
 
-    // language selector — always shown at the top
-    root.appendChild(buildLangSelector());
-
     const sites = loadSites();
     if (!sites.length && state !== "saved") { renderNoSites(); return; }
 
@@ -400,10 +407,13 @@
       activeSiteId = sites[0]?.id || null;
     }
 
-    if (state === "form")            renderForm();
-    else if (state === "generating") renderGenerating();
-    else if (state === "results")    renderResults();
-    else if (state === "saved")      renderSaved();
+    if (state === "form")              renderForm();
+    else if (state === "generating")   renderGenerating();
+    else if (state === "results")      renderResults();
+    else if (state === "saved")        renderSaved();
+    else if (state === "existing")     renderExistingForm();
+    else if (state === "existing-gen") renderExistingGenerating();
+    else if (state === "existing-res") renderExistingResults();
   }
 
   /* ── Language selector (top bar) ─────────────────────── */
@@ -484,6 +494,13 @@
         <h2 class="ag-form-title">${t("newArticle")}</h2>
         <div class="ag-form-sub">${t("formSub")}</div>
       </div>`;
+    const existingBtn = document.createElement("button");
+    existingBtn.type = "button";
+    existingBtn.className = "ag-ghost-btn";
+    existingBtn.style.cssText = "border-color:rgba(245,158,11,0.4);color:#fbbf24;";
+    existingBtn.textContent = "📋 I already have an article";
+    existingBtn.addEventListener("click", () => { state = "existing"; existingData = {}; render(); });
+    hdr.appendChild(existingBtn);
     const savedBtn = document.createElement("button");
     savedBtn.type = "button";
     savedBtn.className = "ag-ghost-btn";
@@ -524,6 +541,7 @@
     manageLink.textContent = sites.length < 3 ? `${t("addSite")} (${sites.length}/3)` : t("manageSites");
     siteSel.appendChild(manageLink);
     wrap.appendChild(siteSel);
+    wrap.appendChild(buildLangSelector());
 
     // site profile strip
     if (activeSite) {
@@ -809,6 +827,19 @@
       wpBtn.addEventListener("click", () => { window.location.href = "settings.html#wordpress"; });
     }
     actionRow.appendChild(wpBtn);
+
+    const campaignBtn = document.createElement("button");
+    campaignBtn.className = "ag-ghost-btn";
+    campaignBtn.title = "Send this article to the Marketing Creator to generate a full social/ad campaign";
+    campaignBtn.textContent = "🚀 " + (currentLang === "el" ? "Δημιουργία Καμπάνιας" : currentLang === "de" ? "Kampagne erstellen" : "Create Campaign");
+    campaignBtn.addEventListener("click", () => {
+      const title = seo?.title_tag || article?.h1 || formData?.topic || "";
+      const plain = buildCopyAll(article, seo);
+      sessionStorage.setItem("mc_article_title",   title);
+      sessionStorage.setItem("mc_article_content", plain);
+      window.location.href = "marketing.html#article";
+    });
+    actionRow.appendChild(campaignBtn);
 
     topBar.appendChild(actionRow);
     wrap.appendChild(topBar);
@@ -1113,6 +1144,14 @@
     heading.className = "ag-saved-heading";
     heading.textContent = t("savedHeading");
     hdr.appendChild(heading);
+    if (savedArticles.length > 0) {
+      const saveListBtn = document.createElement("button");
+      saveListBtn.className = "ag-ghost-btn";
+      saveListBtn.style.cssText = "font-size:0.82rem;padding:7px 14px;margin-left:auto";
+      saveListBtn.textContent = "💾 Save List";
+      saveListBtn.addEventListener("click", () => saveArticleList(saveListBtn));
+      hdr.appendChild(saveListBtn);
+    }
     wrap.appendChild(hdr);
 
     const listEl = document.createElement("div");
@@ -1161,6 +1200,37 @@
       });
     }
     wrap.appendChild(listEl);
+
+    // Saved lists section
+    const savedListsEl = document.createElement("div");
+    savedListsEl.id = "ag-saved-lists-section";
+    savedListsEl.style.marginTop = "32px";
+    renderArticleSavedLists(savedListsEl);
+    wrap.appendChild(savedListsEl);
+
+    if (result) {
+      const articleHtml = result.formattedHtml || result.html || "";
+      const articleTitle = result.title || result.seoTitle || result.metaTitle || "Article";
+      wrap.appendChild(buildPublishBtn({
+        title: articleTitle,
+        excerpt: result.metaDescription || result.excerpt || "",
+        html: articleHtml,
+        lang: currentLang || "en",
+        metaDescription: result.metaDescription || "",
+      }));
+
+      if (typeof initAutomationPanel === "function") {
+        if (!articleAutoId) articleAutoId = "gen-" + Date.now();
+        const autoWrap = document.createElement("div");
+        wrap.appendChild(autoWrap);
+        initAutomationPanel(articleAutoId, {
+          title: articleTitle,
+          html:  articleHtml,
+          lang:  currentLang || "en",
+        }, autoWrap);
+      }
+    }
+
     root.appendChild(wrap);
   }
 
@@ -1171,8 +1241,8 @@
       const chk = await fetch("/api/articles/deduct", { method: "POST" });
       if (!chk.ok) {
         const d = await chk.json();
-        if (chk.status === 403 && d.error === "limit_reached") {
-          showArticleLimitModal(d.max);
+        if (chk.status === 403 && d.error === "insufficient_credits") {
+          showArticleLimitModal(d.creditsMax);
           return;
         }
         if (chk.status === 401) return; // not logged in — let it proceed anyway
@@ -1219,7 +1289,7 @@
     el.innerHTML = `<div style="background:#1e293b;border:1px solid rgba(255,255,255,0.12);border-radius:16px;max-width:420px;width:100%;padding:36px 28px;text-align:center">
       <div style="font-size:2.2rem;margin-bottom:12px">🔒</div>
       <h2 style="margin:0 0 8px;font-size:1.2rem;color:#f1f5f9">Article Limit Reached</h2>
-      <p style="color:#94a3b8;font-size:0.9rem;margin:0 0 20px">Free plan includes ${max || 1} AI article per month. Upgrade for more.</p>
+      <p style="color:#94a3b8;font-size:0.9rem;margin:0 0 20px">You've run out of AI credits. Upgrade your plan to generate more articles.</p>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
         <a href="membership.html?highlight=starter" style="background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-size:0.87rem;font-weight:600">⚡ Upgrade Plan</a>
         <button onclick="document.getElementById('ag-limit-modal').style.display='none'" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;padding:10px 20px;border-radius:8px;font-size:0.87rem;cursor:pointer">Maybe later</button>
@@ -1436,8 +1506,467 @@
     });
   }
 
+  /* ── Article Saved Lists ─────────────────────────────── */
+  async function saveArticleList(btn) {
+    const d = new Date();
+    const label = "Articles snapshot · " + d.toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" });
+    const results = savedArticles.map(a => ({
+      title: a.title || "",
+      keyword: a.keyword || "",
+      language: a.language || "",
+      siteDomain: a.siteDomain || "",
+      slug: a.slug || "",
+      savedAt: a.savedAt || "",
+    }));
+    if (!results.length) return;
+    try {
+      const r = await fetch("/api/articles/saved-lists", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label, results }),
+      });
+      if (!r.ok) return;
+      const data = await r.json();
+      articleSavedLists.unshift(data.savedList);
+      const sec = document.getElementById("ag-saved-lists-section");
+      if (sec) renderArticleSavedLists(sec);
+      if (btn) { const orig = btn.textContent; btn.textContent = "✅ Saved"; setTimeout(() => { btn.textContent = orig; }, 2000); }
+    } catch {}
+  }
+
+  async function loadArticleSavedLists() {
+    try {
+      const r = await fetch("/api/articles/saved-lists");
+      if (!r.ok) return;
+      const data = await r.json();
+      articleSavedLists = data.savedLists || [];
+    } catch {}
+  }
+
+  function renderArticleSavedLists(container) {
+    container.innerHTML = "";
+    if (!articleSavedLists.length) return;
+    const titleRow = document.createElement("div");
+    titleRow.style.cssText = "display:flex;align-items:center;gap:10px;margin-bottom:16px";
+    titleRow.innerHTML = `<div style="font-size:1rem;font-weight:700;color:var(--white)">📋 Saved Lists</div>
+      <span style="background:var(--blue2);color:#fff;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:20px">${articleSavedLists.length}</span>`;
+    container.appendChild(titleRow);
+    const grid = document.createElement("div");
+    articleSavedLists.forEach(list => {
+      const card = document.createElement("div");
+      card.className = "ct-saved-card";
+      const date = new Date(list.savedAt).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" });
+      card.innerHTML = `
+        <div class="ct-saved-card-head">
+          <div>
+            <strong>${esc(list.label)}</strong>
+            <span style="color:var(--muted);font-size:0.8rem;margin-left:8px">${list.results.length} articles · ${date}</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="ct-btn" data-action="toggle">▼ View</button>
+            <button class="ct-btn ct-btn-danger" data-action="del">🗑</button>
+          </div>
+        </div>
+        <div class="ct-saved-results" style="display:none"></div>`;
+      const resultsEl = card.querySelector(".ct-saved-results");
+      card.querySelector("[data-action=toggle]").addEventListener("click", function() {
+        const open = resultsEl.style.display !== "none";
+        if (open) { resultsEl.style.display = "none"; this.textContent = "▼ View"; return; }
+        resultsEl.style.display = "block";
+        this.textContent = "▲ Hide";
+        if (resultsEl.innerHTML) return;
+        resultsEl.innerHTML = list.results.map(a => `
+          <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:12px;align-items:flex-start">
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;color:var(--white);font-size:0.88rem">${esc(a.title)}</div>
+              <div style="color:var(--muted);font-size:0.78rem;margin-top:2px">
+                ${a.language ? `${{"Greek":"🇬🇷","English":"🇬🇧","German":"🇩🇪"}[a.language]||"🌐"} ${esc(a.language)} · ` : ""}
+                ${a.keyword ? `🔑 ${esc(a.keyword)} · ` : ""}
+                ${a.siteDomain ? `🌐 ${esc(a.siteDomain)} · ` : ""}
+                ${a.savedAt ? new Date(a.savedAt).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}) : ""}
+              </div>
+            </div>
+          </div>`).join("");
+      });
+      card.querySelector("[data-action=del]").addEventListener("click", () => {
+        if (!confirm("Delete this saved list?")) return;
+        deleteArticleSavedList(list.id, card);
+      });
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
+  }
+
+  async function deleteArticleSavedList(id, cardEl) {
+    try {
+      const r = await fetch(`/api/articles/saved-lists/${id}`, { method: "DELETE" });
+      if (!r.ok) return;
+      articleSavedLists = articleSavedLists.filter(l => l.id !== id);
+      cardEl.remove();
+    } catch {}
+  }
+
+  /* ── Nav auth + credits state ───────────────────────── */
+  async function loadNavState() {
+    try {
+      const res = await fetch("/api/auth/me");
+      const credEl    = document.getElementById("nav-credits-val");
+      const signInBtn = document.querySelector('a[href="signin.html"].btn-ghost');
+      const profileBtn= document.getElementById("nav-profile-btn");
+      if (!res.ok) {
+        if (profileBtn) profileBtn.style.display = "none";
+        return;
+      }
+      const { user } = await res.json();
+      if (!user) { if (profileBtn) profileBtn.style.display = "none"; return; }
+      if (credEl) credEl.textContent = user.creditsLeft === -1 ? "∞" : (user.creditsLeft ?? "—");
+      if (signInBtn) signInBtn.style.display = "none";
+      if (profileBtn) profileBtn.textContent = (user.firstName?.[0] || user.email?.[0] || "U").toUpperCase();
+      if (user.preferredLang && I18N[user.preferredLang] && !localStorage.getItem("eureach_lang")) {
+        currentLang = user.preferredLang;
+        render();
+      }
+    } catch {}
+  }
+
+  /* ── EXISTING ARTICLE FLOW ──────────────────────────── */
+
+  function renderExistingForm() {
+    const wrap = document.createElement("div");
+    wrap.className = "ag-form-wrap";
+
+    // header
+    const hdr = document.createElement("div");
+    hdr.className = "ag-form-hdr";
+    hdr.innerHTML = `<div><h2 class="ag-form-title">📋 Improve existing article</h2><div class="ag-form-sub">Paste your article — AI will auto-detect the language, optimise for SEO, and improve it.</div></div>`;
+    const backBtn = document.createElement("button");
+    backBtn.type = "button"; backBtn.className = "ag-ghost-btn"; backBtn.textContent = "← Back";
+    backBtn.addEventListener("click", () => { state = "form"; render(); });
+    hdr.appendChild(backBtn);
+    wrap.appendChild(hdr);
+
+    const form = document.createElement("form");
+    form.className = "ag-form";
+
+    // ── 1. Paste article ───────────────────────────────
+    form.appendChild(section("1. Paste your article", `
+      <div class="ag-field ag-field-full">
+        <label>Article text <span class="ag-req">*</span></label>
+        <textarea name="articleText" rows="12" placeholder="Paste your full article here…" required style="font-size:0.85rem;line-height:1.6">${esc(existingData.articleText || "")}</textarea>
+        <div class="ag-field-hint">Minimum 100 characters. Supports plain text or HTML. Language is auto-detected.</div>
+      </div>
+    `));
+
+    // ── 2. SEO configuration ───────────────────────────
+    form.appendChild(section("2. SEO configuration", `
+      <div class="ag-field">
+        <label>Primary keyword</label>
+        <input type="text" name="primaryKeyword" placeholder="e.g. best SEO agency Athens" value="${esc(existingData.primaryKeyword || "")}">
+      </div>
+      <div class="ag-field">
+        <label>Suggested meta title <span class="ag-muted">(optional)</span></label>
+        <input type="text" name="metaTitleHint" placeholder="Leave blank to auto-generate" value="${esc(existingData.metaTitleHint || "")}">
+      </div>
+      <div class="ag-field ag-field-full">
+        <label>Suggested meta description <span class="ag-muted">(optional)</span></label>
+        <input type="text" name="metaDescHint" placeholder="Leave blank to auto-generate" value="${esc(existingData.metaDescHint || "")}">
+      </div>
+    `));
+
+    // ── 3. Translation ────────────────────────────────
+    const prevTranslate = existingData.translateTo || [];
+    const prevKeep      = existingData.keepOriginal !== false;
+    form.appendChild(section("3. Language & translation", `
+      <div class="ag-field-hint" style="margin-bottom:12px;">The article will be improved in its original language. Optionally also generate translated versions:</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border:1px solid var(--border);border-radius:10px;">
+          <input type="checkbox" name="keepOriginal" value="1" ${prevKeep?"checked":""} style="width:16px;height:16px;accent-color:#3b82f6;">
+          <span>✅ <strong>Keep original</strong> — deliver the improved article in its original language</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border:1px solid var(--border);border-radius:10px;">
+          <input type="checkbox" name="translateEn" value="en" ${prevTranslate.includes("en")?"checked":""} style="width:16px;height:16px;accent-color:#3b82f6;">
+          <span>🇬🇧 <strong>Also translate to English</strong></span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border:1px solid var(--border);border-radius:10px;">
+          <input type="checkbox" name="translateEl" value="el" ${prevTranslate.includes("el")?"checked":""} style="width:16px;height:16px;accent-color:#3b82f6;">
+          <span>🇬🇷 <strong>Also translate to Greek</strong></span>
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border:1px solid var(--border);border-radius:10px;">
+          <input type="checkbox" name="translateDe" value="de" ${prevTranslate.includes("de")?"checked":""} style="width:16px;height:16px;accent-color:#3b82f6;">
+          <span>🇩🇪 <strong>Also translate to German</strong></span>
+        </label>
+      </div>
+    `));
+
+    // submit
+    const submitRow = document.createElement("div");
+    submitRow.style.cssText = "display:flex;justify-content:flex-end;margin-top:24px";
+    const submitBtn = document.createElement("button");
+    submitBtn.type = "submit"; submitBtn.className = "ag-generate-btn";
+    submitBtn.textContent = "✦ Analyse & Improve";
+    submitRow.appendChild(submitBtn);
+    form.appendChild(submitRow);
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const translateTo = ["en","el","de"].filter(l => fd.get("translate" + l.charAt(0).toUpperCase() + l.slice(1)));
+      existingData = {
+        articleText:    fd.get("articleText"),
+        primaryKeyword: fd.get("primaryKeyword"),
+        metaTitleHint:  fd.get("metaTitleHint"),
+        metaDescHint:   fd.get("metaDescHint"),
+        keepOriginal:   !!fd.get("keepOriginal"),
+        translateTo,
+      };
+      const sites = loadSites();
+      const site  = sites.find(s => s.id === activeSiteId) || sites[0];
+      existingData.siteContext = site ? { domain: site.domain, niche: site.niche, audience: site.audience, geo: site.geo } : null;
+      state = "existing-gen"; render();
+      try {
+        const r = await fetch("/api/articles/analyze-existing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(existingData),
+        });
+        const raw = await r.text();
+        let d;
+        try { d = JSON.parse(raw); }
+        catch { throw new Error("Server returned non-JSON (status " + r.status + "): " + raw.slice(0, 200)); }
+        if (!r.ok) throw new Error(d.error || "Failed");
+        existingResult = d.result;
+        state = "existing-res"; render();
+      } catch (err) {
+        state = "existing"; render();
+        setTimeout(() => alert("Error: " + err.message), 50);
+      }
+    });
+
+    wrap.appendChild(form);
+    root.appendChild(wrap);
+  }
+
+  function renderExistingGenerating() {
+    const wrap = document.createElement("div");
+    wrap.className = "ag-generating";
+    wrap.innerHTML = `
+      <div class="ag-gen-spinner"></div>
+      <h2 class="ag-gen-title">Analysing your article…</h2>
+      <p class="ag-gen-sub">AI is reading, optimising SEO, and preparing your chosen format. This takes about 20 seconds.</p>`;
+    root.appendChild(wrap);
+  }
+
+  function renderExistingResults() {
+    const res = existingResult;
+    if (!res) { state = "existing"; render(); return; }
+
+
+    const wrap = document.createElement("div");
+    wrap.className = "ag-form-wrap";
+
+    // header
+    const hdr = document.createElement("div");
+    hdr.className = "ag-form-hdr";
+    hdr.innerHTML = `<div><h2 class="ag-form-title">✦ Article ready</h2><div class="ag-form-sub">${res.wordCount || ""} words · ~${res.readingTime || "?"}min read</div></div>`;
+    const backBtn = document.createElement("button");
+    backBtn.type = "button"; backBtn.className = "ag-ghost-btn"; backBtn.textContent = "← Edit";
+    backBtn.addEventListener("click", () => { state = "existing"; render(); });
+    hdr.appendChild(backBtn);
+    wrap.appendChild(hdr);
+
+    // meta strip
+    const meta = document.createElement("div");
+    meta.className = "ag-results-meta-strip";
+    meta.style.cssText = "background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:20px;display:flex;flex-direction:column;gap:8px";
+    meta.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:.75rem;color:var(--muted);min-width:120px">Meta title</span><strong style="font-size:.88rem">${esc(res.metaTitle||"")}</strong></div>
+      <div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:.75rem;color:var(--muted);min-width:120px">Meta description</span><span style="font-size:.83rem;color:var(--text)">${esc(res.metaDescription||"")}</span></div>
+      <div style="display:flex;gap:8px;align-items:baseline"><span style="font-size:.75rem;color:var(--muted);min-width:120px">Primary keyword</span><span style="font-size:.83rem;color:#60a5fa">${esc(res.primaryKeyword||"")}</span></div>`;
+    wrap.appendChild(meta);
+
+    // improvements list
+    if (res.improvements?.length) {
+      const imp = document.createElement("div");
+      imp.style.cssText = "background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);border-radius:10px;padding:14px 18px;margin-bottom:20px";
+      imp.innerHTML = `<div style="font-size:.78rem;font-weight:700;color:#60a5fa;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">What was improved</div>${res.improvements.map(i=>`<div style="font-size:.83rem;color:var(--text);padding:3px 0">✓ ${esc(i)}</div>`).join("")}`;
+      wrap.appendChild(imp);
+    }
+
+    // article preview
+    const preview = document.createElement("div");
+    preview.className = "ag-article-preview";
+    preview.style.cssText = "background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:32px 36px;line-height:1.8;color:var(--text)";
+    preview.innerHTML = res.html || "";
+    wrap.appendChild(preview);
+
+    wrap.appendChild(buildPublishBtn({
+      title: res.metaTitle || "Article",
+      excerpt: res.metaDescription || "",
+      html: res.html || "",
+      lang: existingData.targetLang || "en",
+      metaDescription: res.metaDescription || "",
+      showExport: true,
+    }));
+
+    // Automation panel
+    if (typeof initAutomationPanel === "function") {
+      if (!articleAutoId) articleAutoId = "ex-" + Date.now();
+      const autoWrap = document.createElement("div");
+      wrap.appendChild(autoWrap);
+      const detectedLang = res.detectedLang || "en";
+      initAutomationPanel(articleAutoId, {
+        title: res.metaTitle || "Article",
+        html:  res.html || "",
+        lang:  detectedLang,
+      }, autoWrap);
+      // Auto-trigger translations selected in the form
+      const translateTo = existingData.translateTo || [];
+      if (translateTo.length) {
+        setTimeout(() => {
+          translateTo.forEach(lang => {
+            const key = "translate_" + lang;
+            window._autoTriggerTranslation && window._autoTriggerTranslation(key);
+          });
+        }, 400);
+      }
+    }
+
+    root.appendChild(wrap);
+  }
+
+  /* ── Publish panel (Eureach Blog + Agora) ───────────── */
+  function buildPublishBtn({ title, excerpt, html, lang, metaDescription, showExport }) {
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "margin-top:24px;padding-top:24px;border-top:1px solid var(--border,#2a3050);";
+
+    const exportRowHtml = showExport ? `
+      <div style="margin-bottom:20px;">
+        <div style="font-size:0.85rem;font-weight:600;color:var(--text-muted,#8b9ab7);margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em;">Export</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button id="exp-copy" class="ag-ghost-btn">📋 Copy HTML</button>
+          <button id="exp-dl" class="ag-ghost-btn">⬇ Download .html</button>
+          <button id="exp-pdf" class="ag-ghost-btn">📄 Save as PDF</button>
+          <button id="exp-docx" class="ag-ghost-btn">📝 Download .docx</button>
+        </div>
+      </div>` : "";
+
+    wrap.innerHTML = `
+      ${exportRowHtml}
+      <div style="font-size:0.85rem;font-weight:600;color:var(--text-muted,#8b9ab7);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;">Publish to</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;color:var(--text,#e2e8f0);">
+          <input type="checkbox" id="pub-eureach" checked style="width:16px;height:16px;accent-color:#7c3aed;">
+          <span>📝 Eureach Blog</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;color:var(--text,#e2e8f0);">
+          <input type="checkbox" id="pub-agora" checked style="width:16px;height:16px;accent-color:#0ea5e9;">
+          <span>🌐 Agora (agora.sos.gr)</span>
+        </label>
+      </div>
+      <button id="pub-btn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:0.95rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">🚀 Publish</button>
+      <div id="pub-status" style="margin-top:12px;font-size:0.85rem;color:var(--text-muted,#8b9ab7);min-height:20px;"></div>
+    `;
+
+    if (showExport) {
+      const safeTitle = (title || "Article").replace(/[^a-z0-9]/gi, "_");
+      wrap.querySelector("#exp-copy").addEventListener("click", (e) => {
+        navigator.clipboard.writeText(html || "").then(() => { e.target.textContent = "✓ Copied!"; setTimeout(() => e.target.textContent = "📋 Copy HTML", 1500); });
+      });
+      wrap.querySelector("#exp-dl").addEventListener("click", () => {
+        const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title||"Article"}</title><meta name="description" content="${metaDescription||""}"></head><body>${html}</body></html>`], { type: "text/html" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = safeTitle + ".html"; a.click();
+      });
+      const pdfBtn = wrap.querySelector("#exp-pdf");
+      pdfBtn.addEventListener("click", () => {
+        const w = window.open("", "_blank");
+        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title||"Article"}</title><style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;line-height:1.7;color:#111}h1{font-size:2rem;margin-bottom:.5rem}h2{font-size:1.4rem;margin-top:2rem}p{margin:.8rem 0}</style></head><body>${html}</body></html>`);
+        w.document.close(); w.focus(); setTimeout(() => w.print(), 400);
+      });
+      wrap.querySelector("#exp-docx").addEventListener("click", () => {
+        const wordHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset='UTF-8'><title>${title||"Article"}</title></head><body>${html}</body></html>`;
+        const blob = new Blob(['\ufeff', wordHtml], { type: "application/msword" });
+        const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = safeTitle + ".doc"; a.click();
+      });
+    }
+
+    const btn    = wrap.querySelector("#pub-btn");
+    const status = wrap.querySelector("#pub-status");
+
+    btn.addEventListener("click", async () => {
+      const toEureach = wrap.querySelector("#pub-eureach").checked;
+      const toAgora   = wrap.querySelector("#pub-agora").checked;
+      if (!toEureach && !toAgora) {
+        status.style.color = "#f87171";
+        status.textContent = "Select at least one destination.";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = "⏳ Publishing…";
+      status.style.color = "var(--text-muted,#8b9ab7)";
+      status.textContent = "";
+
+      const results = [];
+
+      if (toEureach) {
+        try {
+          const r = await fetch("/api/blog", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: title || "Article",
+              excerpt: excerpt || metaDescription || "",
+              html: html || "",
+              lang: lang || "en",
+              category: "article",
+            }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "Eureach publish failed");
+          results.push(`✅ Eureach Blog — submitted for admin approval.`);
+        } catch (err) {
+          results.push(`❌ Eureach Blog: ${err.message}`);
+        }
+      }
+
+      if (toAgora) {
+        try {
+          const r = await fetch("/api/publish-to-agora", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: title || "Article",
+              excerpt: excerpt || metaDescription || "",
+              html: html || "",
+              lang: lang || "en",
+            }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "Agora publish failed");
+          results.push(`✅ Agora — <a href="https://agora.sos.gr/gnomi/${d.slug || ''}" target="_blank" style="color:#38bdf8;text-decoration:underline;">View on Agora →</a>`);
+        } catch (err) {
+          results.push(`❌ Agora: ${err.message}`);
+        }
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = "🚀 Publish";
+      status.innerHTML = results.join("<br>");
+    });
+
+    return wrap;
+  }
+
   /* ── init ────────────────────────────────────────────── */
+  loadNavState();
   loadWpStatus();
-  render();
+  loadArticleSavedLists();
+  // Pre-fill from coach URL params
+  const _coachParams = new URLSearchParams(window.location.search);
+  if (_coachParams.get("topic")) {
+    formData.topic = _coachParams.get("topic");
+    if (_coachParams.get("brief")) formData.brief = _coachParams.get("brief");
+  }
+  fetchSites().then(() => render());
 
 })();

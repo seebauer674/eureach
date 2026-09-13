@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Competitor Search — eureach.eu</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.app-nav { background: rgba(7,13,31,0.98); }
+.cs-page { min-height: 100vh; padding-top: 64px; }
+.cs-header { background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(124,58,237,0.08)); border-bottom: 1px solid var(--border); padding: 32px 0; }
+.cs-header-inner { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+.cs-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.4px; margin-bottom: 6px; }
+.cs-sub { color: var(--muted); font-size: 0.9rem; }
+.cs-body { max-width: 720px; margin: 0 auto; padding: 32px 24px 80px; display: flex; flex-direction: column; gap: 20px; }
+
+/* Profile summary card */
+.cs-profile-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px;
+}
+.cs-profile-title {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;
+}
+.cs-profile-edit { font-size: 0.78rem; color: #60a5fa; text-decoration: none; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.cs-profile-edit:hover { color: #93c5fd; }
+.cs-profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; }
+.cs-profile-item { display: flex; flex-direction: column; gap: 2px; }
+.cs-profile-item.full { grid-column: 1 / -1; }
+.cs-profile-key { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.cs-profile-val { font-size: 0.9rem; color: var(--text); font-weight: 500; }
+.cs-profile-val.missing { color: #f87171; font-style: italic; font-weight: 400; }
+
+/* Incomplete banner */
+.cs-incomplete {
+  background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25);
+  border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+}
+.cs-incomplete-icon { font-size: 1.4rem; flex-shrink: 0; }
+.cs-incomplete-body { flex: 1; }
+.cs-incomplete-title { font-size: 0.9rem; font-weight: 700; color: #fbbf24; margin-bottom: 3px; }
+.cs-incomplete-sub { font-size: 0.82rem; color: var(--muted); }
+.cs-incomplete-btn {
+  background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.35);
+  color: #fbbf24; border-radius: 8px; padding: 9px 18px; font-size: 0.82rem;
+  font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.cs-incomplete-btn:hover { background: rgba(245,158,11,0.25); }
+
+/* Scope picker */
+.cs-scope-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid var(--border); border-radius: 16px; padding: 24px 28px;
+}
+.cs-scope-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 14px; }
+.cs-scope-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.cs-scope-tab {
+  flex: 1; min-width: 120px; border: 2px solid var(--border); border-radius: 10px;
+  background: var(--bg); color: var(--text); font-size: 0.82rem; font-weight: 600;
+  padding: 11px 12px; cursor: pointer; text-align: center;
+  transition: border-color .15s, background .15s; font-family: inherit;
+}
+.cs-scope-tab:hover { border-color: rgba(99,102,241,.4); background: rgba(99,102,241,.06); }
+.cs-scope-tab.active { border-color: var(--blue); background: rgba(37,99,235,.12); color: #60a5fa; }
+.cs-scope-desc {
+  margin-top: 12px; padding: 10px 14px;
+  background: rgba(37,99,235,0.07); border: 1px solid rgba(37,99,235,0.15);
+  border-radius: 8px; font-size: 0.82rem; color: var(--muted);
+}
+
+/* Launch button */
+.cs-launch-wrap { display: flex; flex-direction: column; gap: 12px; }
+.cs-launch-btn {
+  width: 100%; padding: 16px 28px;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 1rem; font-weight: 800; cursor: pointer;
+  box-shadow: 0 6px 24px rgba(37,99,235,0.4);
+  transition: opacity .15s, transform .1s; font-family: inherit;
+}
+.cs-launch-btn:hover { opacity: .9; transform: translateY(-1px); }
+.cs-launch-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.cs-history-link { text-align: center; font-size: 0.82rem; color: var(--muted); }
+.cs-history-link a { color: #60a5fa; text-decoration: none; }
+.cs-history-link a:hover { text-decoration: underline; }
+.cs-error {
+  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
+  color: #f87171; border-radius: 10px; padding: 12px 16px;
+  font-size: 0.85rem; display: none;
+}
+.cs-error.visible { display: block; }
+.cs-cooldown {
+  background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.25);
+  border-radius: 12px; padding: 16px 20px; display: flex; align-items: center; gap: 14px;
+}
+.cs-cooldown-icon { font-size: 1.5rem; flex-shrink: 0; }
+.cs-cooldown-body { flex: 1; }
+.cs-cooldown-title { font-size: 0.95rem; font-weight: 700; color: #a78bfa; margin-bottom: 3px; }
+.cs-cooldown-sub { font-size: 0.82rem; color: var(--muted); }
+
+/* Pill badges */
+.cs-pill {
+  display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.75rem;
+  background: rgba(99,102,241,0.12); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2);
+  font-weight: 600;
+}
+
+
+/* ── Add competitor manually ─────────────────────────── */
+.cs-manual-btn {
+  width: 100%; padding: 13px 20px;
+  background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.18);
+  border-radius: 12px; color: var(--muted); font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: background .15s, border-color .15s, color .15s;
+  font-family: inherit; text-align: center;
+}
+.cs-manual-btn:hover { background: rgba(99,102,241,.08); border-color: rgba(99,102,241,.35); color: #a5b4fc; }
+.cs-manual-list-card {
+  background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+}
+.cs-manual-list-head {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: var(--muted);
+}
+.cs-manual-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 20px; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.cs-manual-item:last-child { border-bottom: none; }
+.cs-manual-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.threat-low    { background: #10b981; }
+.threat-medium { background: #f59e0b; }
+.threat-high   { background: #ef4444; }
+.cs-manual-info { flex: 1; min-width: 0; }
+.cs-manual-name { font-size: 0.88rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-manual-meta { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+.cs-manual-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 4px 8px; border-radius: 6px; transition: color .15s, background .15s; flex-shrink: 0; }
+.cs-manual-del:hover { color: #f87171; background: rgba(239,68,68,.08); }
+/* Modal */
+.mc-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.mc-overlay.open { opacity: 1; pointer-events: all; }
+.mc-modal { background: #0f1929; border: 1px solid var(--border); border-radius: 20px; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; padding: 28px; display: flex; flex-direction: column; gap: 18px; transform: translateY(16px); transition: transform .2s; }
+.mc-overlay.open .mc-modal { transform: translateY(0); }
+.mc-header { display: flex; align-items: center; justify-content: space-between; }
+.mc-title { font-size: 1.1rem; font-weight: 800; }
+.mc-close { background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 5px 10px; transition: background .15s; }
+.mc-close:hover { background: rgba(255,255,255,.1); color: var(--text); }
+.mc-field { display: flex; flex-direction: column; gap: 6px; }
+.mc-row { display: flex; gap: 12px; }
+.mc-row .mc-field { flex: 1; }
+.mc-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.mc-input, .mc-textarea {
+  background: rgba(255,255,255,.05); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 0.88rem;
+  padding: 9px 12px; font-family: inherit; width: 100%; box-sizing: border-box;
+}
+.mc-input:focus, .mc-textarea:focus { outline: none; border-color: var(--blue); }
+.mc-textarea { resize: vertical; min-height: 70px; }
+.mc-threat-tabs { display: flex; gap: 8px; }
+.mc-threat-tab { flex: 1; padding: 9px 8px; border: 2px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--muted); font-size: 0.8rem; font-weight: 700; cursor: pointer; text-align: center; transition: border-color .15s, background .15s; font-family: inherit; }
+.mc-threat-tab[data-t="low"].sel  { border-color: #10b981; background: rgba(16,185,129,.1); color: #10b981; }
+.mc-threat-tab[data-t="medium"].sel { border-color: #f59e0b; background: rgba(245,158,11,.1); color: #f59e0b; }
+.mc-threat-tab[data-t="high"].sel { border-color: #ef4444; background: rgba(239,68,68,.1); color: #ef4444; }
+.mc-footer { display: flex; gap: 10px; margin-top: 4px; }
+.mc-save-btn { flex: 1; padding: 12px; background: linear-gradient(135deg, var(--blue), var(--purple)); border: none; border-radius: 10px; color: #fff; font-size: 0.9rem; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity .15s; }
+.mc-save-btn:hover { opacity: .88; }
+.mc-save-btn:disabled { opacity: .4; cursor: not-allowed; }
+.mc-cancel-btn { padding: 12px 20px; background: rgba(255,255,255,.04); border: 1px solid var(--border); border-radius: 10px; color: var(--muted); font-size: 0.88rem; cursor: pointer; font-family: inherit; transition: background .15s; }
+.mc-cancel-btn:hover { background: rgba(255,255,255,.08); }
+.mc-msg { font-size: 0.8rem; min-height: 18px; }
+@media (max-width: 520px) {
+  .cs-profile-grid { grid-template-columns: 1fr; }
+  .cs-scope-tabs { flex-wrap: wrap; }
+  .cs-scope-tab { flex: none; width: calc(50% - 4px); }
+}
+</style>
+  <script src="/js/translations.js"></script>
+  <script src="/js/i18n.js"></script>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html" data-i18n="nav.leads">Lead Finder</a>
+      <a href="articles.html" data-i18n="nav.articles">Articles</a>
+      <a href="fb-posts.html" data-i18n="nav.fb_posts">FB Posts</a>
+      <a href="templates.html" data-i18n="nav.templates">Templates</a>
+      <a href="membership.html" data-i18n="nav.membership">Membership</a>
+    
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; My Profile</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="nav.sign_in">Sign in</a>
+      <a href="signup.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">Free trial →</a>
+    </div>
+  </div>
+</nav>
+<div class="sub-nav">
+  <div class="sub-nav-inner">
+    <a href="leads.html" class="sub-nav-link" data-i18n="subnav.search_leads">&#128269; Search Leads</a>
+    <a href="crm.html" class="sub-nav-link" data-i18n="subnav.crm">&#128203; CRM</a>
+    <a href="competitors.html" class="sub-nav-link" data-i18n="subnav.ai_visibility">&#128202; AI Visibility</a>
+    <a href="competitor-search.html" class="sub-nav-link active" data-i18n="subnav.competitor_search">&#128373; Competitor Search</a>
+    <a href="competitor-history.html" class="sub-nav-link" data-i18n="subnav.history">&#128336; History</a>
+  </div>
+</div>
+
+<div class="cs-page">
+  <div class="cs-header">
+    <div class="cs-header-inner">
+      <div class="cs-title">&#128373; Find your competitors</div>
+      <div class="cs-sub">We'll search Google Maps for businesses competing in your area and use AI to analyse their strengths and weaknesses.</div>
+    </div>
+  </div>
+
+  <div class="cs-body">
+    <div class="cs-error" id="cs-error"></div>
+    <div id="cs-content"><div style="text-align:center;padding:60px;color:var(--muted);">&#9203; Loading your profile…</div></div>
+  </div>
+</div>
+
+<script src="/js/api.js?v=5"></script>
+<script src="/js/main.js"></script>
+<script>
+const SCOPE_DESCS = {
+  city:    'Search within ~15 km — ideal for local services like tradespeople, restaurants, or shops.',
+  area:    'Search across the wider region — covers surrounding towns and the metro area.',
+  country: 'Search all of the country — useful if you operate nationally or ship nationwide.',
+  europe:  'Search EU-wide — best for online businesses, exporters, or pan-European brands.',
+};
+
+const PLAN_GEO_LOCK = { free: 'Greece', local: 'Greece' };
+
+let me = null;
+let selectedScope = '';
+let locData = null;
+
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s||''); return d.innerHTML; }
+
+function showError(msg) {
+  const el = document.getElementById('cs-error');
+  el.textContent = msg; el.classList.add('visible');
+}
+
+function pval(v, fallback) {
+  return v ? `<span class="cs-profile-val">${esc(v)}</span>`
+           : `<span class="cs-profile-val missing">${fallback}</span>`;
+}
+
+function pill(v, map) {
+  const label = map[v] || v;
+  return v ? `<span class="cs-pill">${esc(label)}</span>` : `<span class="cs-profile-val missing">Not set</span>`;
+}
+
+const BTYPE_MAP  = { fixed_location:'Fixed location', mobile:'Mobile / visits', online:'Online / remote' };
+const CTYPE_MAP  = { b2c:'Consumers (B2C)', b2b:'Businesses (B2B)', both:'B2C + B2B' };
+const PRICE_MAP  = { budget:'Budget', mid:'Mid-range', premium:'Premium' };
+const SCOPE_MAP  = { city:'Local city', area:'Region', country:'Nationwide', europe:'All Europe' };
+
+function missingFields(u) {
+  const required = ['businessName','businessDescription','businessCity','businessCountry'];
+  return required.filter(k => !u[k]);
+}
+
+function renderProfile(u) {
+  const missing = missingFields(u);
+  const city    = [u.businessCity, u.businessCountry].filter(Boolean).join(', ') || null;
+  const incomplete = missing.length > 0;
+
+  let html = '';
+
+  if (incomplete) {
+    html += `<div class="cs-incomplete">
+      <div class="cs-incomplete-icon">&#9888;&#65039;</div>
+      <div class="cs-incomplete-body">
+        <div class="cs-incomplete-title">Complete your business profile first</div>
+        <div class="cs-incomplete-sub">Add your business name, description, and location in My Profile so we know what to search for.</div>
+      </div>
+      <a href="profile.html" class="cs-incomplete-btn">Go to profile &#8594;</a>
+    </div>`;
+  }
+
+  html += `<div class="cs-profile-card">
+    <div class="cs-profile-title">
+      Your business profile
+      <a href="profile.html" class="cs-profile-edit">Edit &#9998;</a>
+    </div>
+    <div class="cs-profile-grid">
+      <div class="cs-profile-item full">
+        <div class="cs-profile-key">Business</div>
+        ${pval(u.businessName, 'Not set — go to profile')}
+      </div>
+      <div class="cs-profile-item full">
+        <div class="cs-profile-key">Description</div>
+        ${u.businessDescription
+          ? `<span class="cs-profile-val" style="font-size:0.84rem;line-height:1.5">${esc(u.businessDescription)}</span>`
+          : `<span class="cs-profile-val missing">Not set — go to profile</span>`}
+      </div>
+      <div class="cs-profile-item">
+        <div class="cs-profile-key">Location</div>
+        ${pval(city, 'Not set — go to profile')}
+      </div>
+      <div class="cs-profile-item">
+        <div class="cs-profile-key">Business type</div>
+        ${pill(u.businessType, BTYPE_MAP)}
+      </div>
+      <div class="cs-profile-item">
+        <div class="cs-profile-key">Customers</div>
+        ${pill(u.customerType, CTYPE_MAP)}
+      </div>
+      <div class="cs-profile-item">
+        <div class="cs-profile-key">Price position</div>
+        ${pill(u.pricePositioning, PRICE_MAP)}
+      </div>
+      ${u.mainKeyword ? `<div class="cs-profile-item"><div class="cs-profile-key">Search keyword</div><span class="cs-profile-val">${esc(u.mainKeyword)}</span></div>` : ''}
+      ${u.uniqueStrength ? `<div class="cs-profile-item"><div class="cs-profile-key">Your strength</div><span class="cs-profile-val">${esc(u.uniqueStrength)}</span></div>` : ''}
+      ${u.businessWebsite ? `<div class="cs-profile-item"><div class="cs-profile-key">Website</div><span class="cs-profile-val">${esc(u.businessWebsite)}</span></div>` : ''}
+      ${u.yearsInBusiness ? `<div class="cs-profile-item"><div class="cs-profile-key">Years active</div><span class="cs-profile-val">${esc(u.yearsInBusiness)}</span></div>` : ''}
+    </div>
+  </div>`;
+
+  html += `<div class="cs-scope-card">
+    <div class="cs-scope-label">Search radius for this search</div>
+    <div class="cs-scope-tabs" id="scope-tabs">
+      <button class="cs-scope-tab" data-scope="city">&#127960; Local city</button>
+      <button class="cs-scope-tab" data-scope="area">&#128506; Region</button>
+      <button class="cs-scope-tab" data-scope="country">&#127757; Nationwide</button>
+      <button class="cs-scope-tab" data-scope="europe">&#127760; All Europe</button>
+    </div>
+    <div class="cs-scope-desc" id="scope-desc" style="display:none"></div>
+  </div>`;
+
+  const cd = cooldownData;
+  const cdLocked = cd && cd.locked;
+  let cdHtml = '';
+  if (cdLocked) {
+    const d = cd.daysRemaining, h = cd.hoursRemaining;
+    const timeStr = d > 0 ? d + ' day' + (d > 1 ? 's' : '') + (h > 0 ? ' ' + h + 'h' : '') : h + ' hour' + (h > 1 ? 's' : '');
+    cdHtml = `<div class="cs-cooldown"><div class="cs-cooldown-icon">&#8987;</div><div class="cs-cooldown-body"><div class="cs-cooldown-title">Next search available in ${timeStr}</div><div class="cs-cooldown-sub">Searches are limited to once every 14 days. See your results in <a href="competitor-history.html" style="color:#a78bfa">My Competitors</a>.</div></div></div>`;
+  }
+
+  html += `<div class="cs-launch-wrap">
+    ${cdHtml}
+    <button class="cs-launch-btn" id="launch-btn" ${(incomplete || cdLocked) ? 'disabled' : ''} onclick="startSearch()">
+      ${cdLocked ? '&#128274; Search locked — cooldown active' : '&#128373; Find my competitors'}
+    </button>
+    <button class="cs-manual-btn" onclick="openMC()"><span data-i18n="comp.add_manual">&#10133; Add a competitor manually</span></button>
+    <div id="manual-list-wrap"></div>
+    <div class="cs-history-link">&#128336; <a href="competitor-history.html">View past searches</a></div>
+  </div>`;
+
+  document.getElementById('cs-content').innerHTML = html;
+
+  // Scope tabs
+  const defaultScope = u.searchScope || 'city';
+  selectScope(defaultScope);
+  document.querySelectorAll('.cs-scope-tab').forEach(t => {
+    t.addEventListener('click', () => selectScope(t.dataset.scope));
+  });
+}
+
+function selectScope(scope) {
+  selectedScope = scope;
+  document.querySelectorAll('.cs-scope-tab').forEach(t => t.classList.toggle('active', t.dataset.scope === scope));
+  const desc = document.getElementById('scope-desc');
+  if (desc) { desc.textContent = SCOPE_DESCS[scope] || ''; desc.style.display = 'block'; }
+}
+
+async function startSearch() {
+  const btn = document.getElementById('launch-btn');
+  if (!me) return;
+  const missing = missingFields(me);
+  if (missing.length) { showError('Please complete your business profile before searching.'); return; }
+  if (!selectedScope) { showError('Please select a search radius.'); return; }
+
+  btn.disabled = true; btn.textContent = '⏳ Starting search…';
+
+  // Resolve location from static lookup
+  let resolvedLoc = { city: me.businessCity, country: me.businessCountry, region: '', countryCode: '', lat: null, lng: null };
+  try {
+    const lr = await fetch('/api/competitors/resolve-location', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ city: me.businessCity }),
+    });
+    const ld = await lr.json();
+    if (ld.success) resolvedLoc = { ...resolvedLoc, ...ld.data };
+  } catch {}
+
+  const kw = me.mainKeyword || me.businessName || '';
+  const searchQueries = [
+    kw + ' ' + resolvedLoc.city,
+    kw + ' ' + (resolvedLoc.region || resolvedLoc.city),
+    resolvedLoc.city + ' ' + (me.businessDescription || '').split(' ').slice(0,3).join(' '),
+  ].filter(Boolean).slice(0,3);
+
+  const payload = {
+    businessName:     me.businessName,
+    description:      me.businessDescription,
+    businessType:     me.businessType || 'fixed_location',
+    yearsInBusiness:  me.yearsInBusiness || '',
+    city:             resolvedLoc.city,
+    region:           resolvedLoc.region || '',
+    country:          resolvedLoc.country || me.businessCountry,
+    countryCode:      resolvedLoc.countryCode || '',
+    lat:              resolvedLoc.lat,
+    lng:              resolvedLoc.lng,
+    scope:            selectedScope,
+    customerType:     me.customerType || 'b2c',
+    pricePositioning: me.pricePositioning || 'mid',
+    mainKeyword:      me.mainKeyword || '',
+    uniqueStrength:   me.uniqueStrength || '',
+    website:          me.businessWebsite || '',
+    knownCompetitors: me.knownCompetitors || '',
+    category:         '',
+    searchQueries:    searchQueries,
+  };
+
+  try {
+    const r = await fetch('/api/competitors/search', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    if (r.ok && d.success) {
+      window.location.href = 'competitor-loading.html?id=' + d.data.searchId;
+    } else {
+      showError(d.error || 'Search failed. Please try again.');
+      btn.disabled = false; btn.textContent = '🔍 Find my competitors';
+    }
+  } catch {
+    showError('Network error — please check your connection and try again.');
+    btn.disabled = false; btn.textContent = '🔍 Find my competitors';
+  }
+}
+
+let cooldownData = null;
+
+(async () => {
+  try {
+    const [meRes, cdRes] = await Promise.all([
+      fetch('/api/auth/me').then(r => r.json()).catch(() => ({})),
+      fetch('/api/competitors/cooldown').then(r => r.json()).catch(() => ({})),
+    ]);
+    if (!meRes.user) { window.location.href = 'signin.html'; return; }
+    me = meRes.user;
+    cooldownData = cdRes.success ? cdRes.data : null;
+    if (window.syncLangFromProfile) window.syncLangFromProfile(me);
+    renderProfile(me);
+    await loadManualComps();
+  } catch (e) {
+    document.getElementById('cs-content').innerHTML = `<div style="color:#f87171;text-align:center;padding:60px">&#10060; Failed to load: ${esc(e.message)}</div>`;
+  }
+})();
+
+// ── Manual Competitors ──────────────────────────────────────────────────────
+let mcThreat = 'medium';
+let manualComps = [];
+
+const MC_COUNTRIES = {
+  "Greece":         ["Athens","Thessaloniki","Patras","Heraklion","Rhodes","Chania","Larissa","Volos","Ioannina","Kavala","Corfu","Kalamata","Santorini","Mykonos","Nafplio"],
+  "Cyprus":         ["Nicosia","Limassol","Larnaca","Paphos","Famagusta","Kyrenia"],
+  "Germany":        ["Berlin","Munich","Hamburg","Cologne","Frankfurt","Stuttgart","Düsseldorf","Leipzig","Dortmund","Essen","Bremen","Dresden","Hannover","Nuremberg","Bonn"],
+  "Austria":        ["Vienna","Graz","Linz","Salzburg","Innsbruck","Klagenfurt","Villach","Wels","Sankt Pölten","Dornbirn"],
+  "Switzerland":    ["Zurich","Geneva","Basel","Bern","Lausanne","Winterthur","Lucerne","St. Gallen","Lugano","Biel"],
+  "United Kingdom": ["London","Birmingham","Manchester","Glasgow","Leeds","Liverpool","Sheffield","Edinburgh","Bristol","Cardiff"],
+};
+
+function mcInitCountries() {
+  const countrySel = document.getElementById('mc-country');
+  const citySel    = document.getElementById('mc-city');
+  countrySel.innerHTML = '<option value="">-- Select country --</option>';
+  Object.keys(MC_COUNTRIES).forEach(c => {
+    const o = document.createElement('option'); o.value = c; o.textContent = c;
+    countrySel.appendChild(o);
+  });
+  citySel.innerHTML = '<option value="">-- Select country first --</option>';
+  citySel.disabled = true;
+  countrySel.onchange = function() {
+    if (countrySel.value) {
+      citySel.innerHTML = MC_COUNTRIES[countrySel.value]
+        .map(c => '<option value="' + c + '">' + c + '</option>').join('');
+      citySel.disabled = false;
+    } else {
+      citySel.innerHTML = '<option value="">-- Select country first --</option>';
+      citySel.disabled = true;
+    }
+  };
+}
+
+function openMC() {
+  mcInitCountries();
+  document.getElementById('mc-overlay').classList.add('open');
+  document.getElementById('mc-name').focus();
+}
+function closeMC() {
+  document.getElementById('mc-overlay').classList.remove('open');
+  document.getElementById('mc-msg').textContent = '';
+}
+function mcOverlayClick(e) {
+  if (e.target === document.getElementById('mc-overlay')) closeMC();
+}
+function mcSetThreat(t) {
+  mcThreat = t;
+  document.querySelectorAll('.mc-threat-tab').forEach(b => b.classList.toggle('sel', b.dataset.t === t));
+}
+
+async function saveManualComp() {
+  const name = document.getElementById('mc-name').value.trim();
+  const msg  = document.getElementById('mc-msg');
+  if (!name) { msg.style.color='#f87171'; msg.textContent='Business name is required.'; return; }
+  const btn = document.getElementById('mc-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+  const payload = {
+    name,
+    website:     document.getElementById('mc-website').value.trim(),
+    phone:       document.getElementById('mc-phone').value.trim(),
+    city:        document.getElementById('mc-city').value.trim(),
+    category:    document.getElementById('mc-category').value.trim(),
+    rating:      parseFloat(document.getElementById('mc-rating').value) || null,
+    threatLevel: mcThreat,
+    notes:       document.getElementById('mc-notes').value.trim(),
+  };
+  try {
+    const r = await fetch('/api/competitors/manual', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    if (r.ok && d.success) {
+      manualComps.unshift(d.data);
+      renderManualList();
+      ['mc-name','mc-website','mc-phone','mc-category','mc-rating','mc-notes'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      mcSetThreat('medium');
+      msg.style.color = '#4ade80'; msg.textContent = '\u2713 Competitor added';
+      setTimeout(closeMC, 900);
+    } else {
+      msg.style.color = '#f87171'; msg.textContent = d.error || 'Save failed.';
+    }
+  } catch { msg.style.color = '#f87171'; msg.textContent = 'Network error.'; }
+  btn.disabled = false; btn.textContent = 'Save competitor';
+}
+
+async function deleteManualComp(id) {
+  await fetch('/api/competitors/manual/' + id, { method: 'DELETE' });
+  manualComps = manualComps.filter(c => c.id !== id);
+  renderManualList();
+}
+
+function renderManualList() {
+  const wrap = document.getElementById('manual-list-wrap');
+  if (!wrap) return;
+  if (!manualComps.length) { wrap.innerHTML = ''; return; }
+  const rows = manualComps.map(c => {
+    const meta = [c.city, c.category, c.rating ? '\u2b50 ' + c.rating : ''].filter(Boolean).join(' \u00b7 ');
+    const site = c.website ? '<a href="' + esc(c.website) + '" target="_blank" rel="noopener" style="color:#60a5fa;font-size:0.78rem;text-decoration:none">&#8599; site</a>' : '';
+    return '<div class="cs-manual-item">'
+      + '<div class="cs-manual-dot threat-' + (c.threatLevel||'medium') + '"></div>'
+      + '<div class="cs-manual-info"><div class="cs-manual-name">' + esc(c.name) + '</div>'
+      + (meta ? '<div class="cs-manual-meta">' + esc(meta) + '</div>' : '')
+      + '</div>' + site
+      + '<button class="cs-manual-del" onclick="deleteManualComp(\'' + c.id + '\')" title="Remove">&#10005;</button>'
+      + '</div>';
+  }).join('');
+  wrap.innerHTML = '<div class="cs-manual-list-card">'
+    + '<div class="cs-manual-list-head">Manually added (' + manualComps.length + ')</div>'
+    + rows + '</div>';
+}
+
+async function loadManualComps() {
+  try {
+    const r = await fetch('/api/competitors/manual');
+    const d = await r.json();
+    if (d.success) { manualComps = d.data; renderManualList(); }
+  } catch {}
+}
+</script>
+
+<!-- Add Competitor Modal -->
+<div class="mc-overlay" id="mc-overlay" onclick="mcOverlayClick(event)">
+  <div class="mc-modal">
+    <div class="mc-header">
+      <div class="mc-title">&#10133; Add competitor manually</div>
+      <button class="mc-close" onclick="closeMC()">&#10005;</button>
+    </div>
+    <div class="mc-field">
+      <div class="mc-label">Business name <span style="color:#ef4444">*</span></div>
+      <input id="mc-name" class="mc-input" type="text" placeholder="e.g. FastFix Plumbing">
+    </div>
+    <div class="mc-row">
+      <div class="mc-field">
+        <div class="mc-label">Website</div>
+        <input id="mc-website" class="mc-input" type="url" placeholder="https://">
+      </div>
+      <div class="mc-field">
+        <div class="mc-label">Phone</div>
+        <input id="mc-phone" class="mc-input" type="tel" placeholder="+30 210...">
+      </div>
+    </div>
+    <div class="mc-field">
+      <div class="mc-label">Country</div>
+      <select id="mc-country" class="mc-input" style="cursor:pointer">
+        <option value="">-- Select country --</option>
+      </select>
+    </div>
+    <div class="mc-row">
+      <div class="mc-field">
+        <div class="mc-label">City</div>
+        <select id="mc-city" class="mc-input" style="cursor:pointer" disabled>
+          <option value="">-- Select country first --</option>
+        </select>
+      </div>
+      <div class="mc-field">
+        <div class="mc-label">Category / type</div>
+        <input id="mc-category" class="mc-input" type="text" placeholder="e.g. Plumber">
+      </div>
+    </div>
+    <div class="mc-row">
+      <div class="mc-field">
+        <div class="mc-label">Google rating (0-5)</div>
+        <input id="mc-rating" class="mc-input" type="number" min="0" max="5" step="0.1" placeholder="e.g. 4.5">
+      </div>
+      <div class="mc-field"></div>
+    </div>
+    <div class="mc-field">
+      <div class="mc-label">Threat level</div>
+      <div class="mc-threat-tabs">
+        <button class="mc-threat-tab" data-t="low" onclick="mcSetThreat('low')">&#128994; Low</button>
+        <button class="mc-threat-tab sel" data-t="medium" onclick="mcSetThreat('medium')">&#128993; Medium</button>
+        <button class="mc-threat-tab" data-t="high" onclick="mcSetThreat('high')">&#128308; High</button>
+      </div>
+    </div>
+    <div class="mc-field">
+      <div class="mc-label">Notes</div>
+      <textarea id="mc-notes" class="mc-textarea" placeholder="What do you know about them? Strengths, weaknesses, how they market..."></textarea>
+    </div>
+    <div class="mc-msg" id="mc-msg"></div>
+    <div class="mc-footer">
+      <button class="mc-cancel-btn" onclick="closeMC()">Cancel</button>
+      <button class="mc-save-btn" id="mc-save-btn" onclick="saveManualComp()">Save competitor</button>
+    </div>
+  </div>
+</div>
+<script src="/js/trial-banner.js"></script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

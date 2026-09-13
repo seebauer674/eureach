@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Έλεγχος AI Ορατότητας… — eureach.eu</title>
+  <link rel="stylesheet" href="/css/style.css?v=2">
+  <link rel="stylesheet" href="/css/audit-public.css?v=1">
+</head>
+<body class="audit-public-body">
+
+<div class="ap-running">
+
+  <div class="ap-logo-wrap">
+    <a href="/" class="ap-logo">eureach<span class="ap-dot">.</span>eu</a>
+  </div>
+
+  <div class="ap-running-inner">
+    <div class="ap-spinner">
+      <div class="ap-spinner-ring"></div>
+    </div>
+
+    <h2 class="ap-running-msg" id="running-msg">Ετοιμαζόμαστε…</h2>
+    <p class="ap-running-sub" id="running-sub"></p>
+
+    <div class="ap-run-progress-wrap">
+      <div class="ap-run-progress-bar">
+        <div class="ap-run-progress-fill" id="run-progress-fill"></div>
+      </div>
+    </div>
+
+    <div class="ap-engine-checks" id="engine-checks">
+      <div class="ap-engine-check" id="chk-chatgpt">
+        <span class="ap-chk-icon pending" id="chk-chatgpt-icon">⏳</span>
+        <span>ChatGPT</span>
+      </div>
+      <div class="ap-engine-check" id="chk-perplexity">
+        <span class="ap-chk-icon pending" id="chk-perplexity-icon">⏳</span>
+        <span>Perplexity</span>
+      </div>
+      <div class="ap-engine-check" id="chk-google">
+        <span class="ap-chk-icon pending" id="chk-google-icon">⏳</span>
+        <span>Google AI</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  var params      = new URLSearchParams(window.location.search);
+  var jobId       = params.get('job');
+  var businessName = sessionStorage.getItem('audit_business') || 'η επιχείρησή σου';
+
+  if (!jobId) { window.location.href = '/audit'; return; }
+
+  var messages = [
+    'Ψάχνουμε "' + businessName + '" στο ChatGPT…',
+    'Ελέγχουμε το Perplexity…',
+    'Ελέγχουμε το Google AI…',
+    'Αναλύουμε τι βρήκαμε…',
+    'Συγκρίνουμε με τον ανταγωνισμό…',
+    'Σχεδόν έτοιμο…',
+  ];
+
+  var msgEl      = document.getElementById('running-msg');
+  var fillEl     = document.getElementById('run-progress-fill');
+  var msgIndex   = 0;
+  var startTime  = Date.now();
+  var totalMs    = 16000;
+  var slow       = false;
+
+  function updateMsg() {
+    if (msgIndex < messages.length) {
+      msgEl.textContent = messages[msgIndex++];
+    }
+  }
+
+  function updateProgress() {
+    var elapsed = Date.now() - startTime;
+    var pct     = Math.min(92, (elapsed / totalMs) * 100);
+    fillEl.style.width = pct + '%';
+  }
+
+  // Engine check animations
+  function tickEngines() {
+    var elapsed = Date.now() - startTime;
+    var chatgptIcon = document.getElementById('chk-chatgpt-icon');
+    var plxIcon     = document.getElementById('chk-perplexity-icon');
+    var gaiIcon     = document.getElementById('chk-google-icon');
+    if (elapsed > 3000)  { chatgptIcon.textContent = '🔍'; chatgptIcon.className = 'ap-chk-icon checking'; }
+    if (elapsed > 7000)  { chatgptIcon.textContent = '✓';  chatgptIcon.className = 'ap-chk-icon done'; plxIcon.textContent = '🔍'; plxIcon.className = 'ap-chk-icon checking'; }
+    if (elapsed > 11000) { plxIcon.textContent = '✓';     plxIcon.className = 'ap-chk-icon done'; gaiIcon.textContent = '🔍'; gaiIcon.className = 'ap-chk-icon checking'; }
+  }
+
+  // Kick off message rotation
+  updateMsg();
+  var msgInterval  = setInterval(function() { updateMsg(); }, 2500);
+  var progInterval = setInterval(function() { updateProgress(); tickEngines(); }, 200);
+
+  // Slow message after 30s
+  var slowTimeout = setTimeout(function() {
+    if (!slow) {
+      slow = true;
+      msgEl.textContent = 'Χρειάζεται λίγο περισσότερο χρόνο — μείνε εκεί…';
+    }
+  }, 30000);
+
+  // Poll status every 2s
+  var pollCount = 0;
+  var pollInterval = setInterval(function() {
+    pollCount++;
+    fetch('/api/audit-public/status/' + encodeURIComponent(jobId))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.status === 'complete') {
+          clearInterval(pollInterval);
+          clearInterval(msgInterval);
+          clearInterval(progInterval);
+          clearTimeout(slowTimeout);
+          fillEl.style.width = '100%';
+          // Mark all engines done
+          ['chk-chatgpt-icon','chk-perplexity-icon','chk-google-icon'].forEach(function(id) {
+            var el = document.getElementById(id);
+            el.textContent = '✓'; el.className = 'ap-chk-icon done';
+          });
+          msgEl.textContent = 'Τα αποτελέσματα είναι έτοιμα!';
+          setTimeout(function() {
+            window.location.href = '/audit/results?job=' + encodeURIComponent(jobId);
+          }, 800);
+        } else if (data.status === 'failed') {
+          clearInterval(pollInterval);
+          window.location.href = '/audit/results?job=' + encodeURIComponent(jobId) + '&error=1';
+        }
+        // Give up after 90s
+        if (pollCount > 45) {
+          clearInterval(pollInterval);
+          window.location.href = '/audit/results?job=' + encodeURIComponent(jobId) + '&error=1';
+        }
+      })
+      .catch(function() {});
+  }, 2000);
+})();
+</script>
+
+</body>
+</html>

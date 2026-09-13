@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Outreach — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/outreach.css?v=2">
+  <script src="js/translations.js?v=5"></script>
+  <script src="js/i18n.js?v=5"></script>
+</head>
+<body>
+
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
+          </div>
+        </div>
+      </div>
+      <a href="leads.html" data-i18n="navLeads">Lead Finder</a>
+      <span style="color:var(--border);font-size:0.7rem">|</span>
+      <a href="crm.html" data-i18n="navCrm" style="font-size:0.8rem">CRM</a>
+      <a href="outreach.html" data-i18n="navOutreach" style="font-size:0.8rem">Outreach</a>
+      <a href="/coach" class="nav-coach-link" style="font-size:0.8rem;color:var(--accent)">Coach<span class="coach-nav-dot" id="coach-nav-dot" style="display:none"></span></a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-lang">
+      <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
+    </div>
+    <div class="nav-cta">
+      <a href="settings.html" class="nav-profile-btn" id="nav-profile-btn" title="Profile">?</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="navSignIn">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+    </div>
+  </div>
+  <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+</nav>
+
+<div class="or-page">
+
+  <!-- Header -->
+  <div class="or-header">
+    <div class="or-header-inner">
+      <div>
+        <div class="or-title" data-i18n="or.title">📨 Email Outreach</div>
+        <div class="or-subtitle" data-i18n="or.subtitle">Automated email sequences for your leads · Powered by AI + SMTP</div>
+      </div>
+      <div class="or-header-actions">
+        <a href="email_log.html" class="btn btn-ghost" style="font-size:0.82rem;padding:8px 16px" data-i18n="or.emailLog">📬 Email Log</a>
+        <button class="btn btn-primary" id="or-new-btn" data-i18n="or.newSeq" style="font-size:0.82rem;padding:8px 18px">+ New Sequence</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="or-stats" id="or-stats">
+    <div class="or-stat">
+      <span class="or-stat-val" id="stat-active">0</span>
+      <span class="or-stat-label" data-i18n="or.statActive">Active sequences</span>
+    </div>
+    <div class="or-stat">
+      <span class="or-stat-val" id="stat-sent">0</span>
+      <span class="or-stat-label" data-i18n="or.statSent">Emails sent</span>
+    </div>
+    <div class="or-stat">
+      <span class="or-stat-val" id="stat-due">0</span>
+      <span class="or-stat-label" data-i18n="or.statDue">Due today</span>
+    </div>
+    <div class="or-stat">
+      <span class="or-stat-val" id="stat-done">0</span>
+      <span class="or-stat-label" data-i18n="or.statDone">Completed</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="or-tabs">
+    <button class="or-tab active" data-tab="queue" data-i18n="or.tabQueue">Active Sequences</button>
+    <button class="or-tab" data-tab="new" data-i18n="or.tabNew">New Sequence</button>
+  </div>
+
+  <!-- Queue tab -->
+  <div class="or-panel" id="tab-queue">
+    <div class="or-filters">
+      <input class="or-search" id="or-search" type="text" placeholder="Search by lead name or email…">
+      <select class="or-filter-select" id="or-status-filter">
+        <option value="">All statuses</option>
+        <option value="active">Active</option>
+        <option value="paused">Paused</option>
+        <option value="completed">Completed</option>
+        <option value="stopped">Stopped</option>
+      </select>
+      <button class="or-save-btn" id="or-save-list-btn" style="display:none">💾 Save List</button>
+    </div>
+    <div id="or-queue-wrap">
+      <div class="or-loading">Loading sequences…</div>
+    </div>
+
+    <!-- Saved outreach lists -->
+    <div id="or-saved-section" style="display:none;margin-top:32px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div class="or-section-title">📋 Saved Lists</div>
+        <span id="or-saved-count" style="background:var(--blue2);color:#fff;font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:20px">0</span>
+      </div>
+      <div id="or-saved-grid"></div>
+    </div>
+  </div>
+
+  <!-- New Sequence tab -->
+  <div class="or-panel" id="tab-new" style="display:none">
+    <div class="or-form-wrap">
+
+      <div class="or-form-section">
+        <div class="or-form-title">1. Lead details</div>
+        <div class="or-form-grid">
+          <div class="or-field">
+            <label class="or-label">Lead name *</label>
+            <input class="or-input" id="nf-lead-name" type="text" placeholder="e.g. Hotel Santorini View">
+          </div>
+          <div class="or-field">
+            <label class="or-label">Email address *</label>
+            <input class="or-input" id="nf-lead-email" type="email" placeholder="info@example.com">
+          </div>
+          <div class="or-field">
+            <label class="or-label">Business type</label>
+            <input class="or-input" id="nf-biz-type" type="text" placeholder="e.g. Boutique Hotel">
+          </div>
+          <div class="or-field">
+            <label class="or-label">City</label>
+            <input class="or-input" id="nf-city" type="text" placeholder="e.g. Athens">
+          </div>
+        </div>
+      </div>
+
+      <div class="or-form-section">
+        <div class="or-form-title">2. Sequence settings</div>
+        <div class="or-form-grid">
+          <div class="or-field">
+            <label class="or-label">Language</label>
+            <select class="or-select" id="nf-lang">
+              <option value="english">English</option>
+              <option value="greek">Greek</option>
+              <option value="german">German</option>
+            </select>
+          </div>
+          <div class="or-field">
+            <label class="or-label">Tone</label>
+            <select class="or-select" id="nf-tone">
+              <option value="friendly">Friendly</option>
+              <option value="formal">Formal</option>
+              <option value="direct">Direct</option>
+            </select>
+          </div>
+          <div class="or-field or-field-full">
+            <label class="or-label">
+              <input type="checkbox" id="nf-gdpr" checked style="margin-right:6px">
+              Add GDPR / §7 UWG compliant footer
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <button class="or-generate-btn" id="nf-generate-btn">✦ Generate sequence with AI</button>
+
+      <!-- Preview area -->
+      <div id="nf-preview-wrap" style="display:none">
+        <div class="or-form-section">
+          <div class="or-form-title">3. Preview &amp; send</div>
+          <div id="nf-steps-preview"></div>
+          <div class="or-enqueue-row">
+            <button class="btn btn-primary" id="nf-enqueue-btn" style="font-size:0.9rem;padding:11px 28px">
+              📨 Add to send queue
+            </button>
+            <span class="or-enqueue-note">Step 1 sends now · Step 2 auto-sends in 3 days · Step 3 in 7 days</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="or-no-smtp" id="or-no-smtp" style="display:none">
+        <div class="or-no-smtp-icon">⚙</div>
+        <div class="or-no-smtp-title">SMTP not configured</div>
+        <div class="or-no-smtp-sub">Connect your email account in Settings to send outreach emails.</div>
+        <a href="settings.html#email" class="btn btn-primary" style="margin-top:16px;font-size:0.85rem">Connect email →</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="js/outreach.js?v=2"></script>
+<script src="/js/api.js?v=5"></script>
+<script src="/js/trial-banner.js"></script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

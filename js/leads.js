@@ -527,6 +527,12 @@ function randWebsite(name, countryKey) {
               countryKey.includes("UK") ? ".co.uk" : ".gr";
   return "www." + name.toLowerCase().replace(/[^a-z]/g,"").slice(0,12) + tld;
 }
+function guessEmail(website) {
+  if (!website) return "";
+  const domain = website.replace(/^https?:\/\//i,"").replace(/\/.*/,"").replace(/^www\./,"");
+  return "info@" + domain;
+}
+
 function randEmail(name, countryKey) {
   if (Math.random() > 0.5) return null;
   const tld = countryKey.includes("Germany") || countryKey.includes("Austria") ? ".de" :
@@ -562,11 +568,13 @@ function generateMockLeads(slug, city, countryKey, count = 18) {
 }
 
 /* ── State ───────────────────────────────────────────── */
-let results      = [];
+let results            = [];
+let currentLeadResults = [];
+let currentLeadLabel   = "";
 let viewMode     = "grid";
 let currentPage  = 1;
-let currentLang  = "en";
-let searchesLeft = null;
+let currentLang  = (window.euLang && window.euLang()) || "en";
+let creditsLeft = null;
 const PER_PAGE   = 12;
 
 // Lead scoring state
@@ -595,16 +603,9 @@ const clearBtn    = document.getElementById("lf-clear-btn");
 const resultsArea = document.getElementById("lf-results-area");
 const resultsBar  = document.getElementById("lf-results-bar");
 const countEl     = document.getElementById("lf-count");
-const emailOnlyChk= document.getElementById("lf-email-only");
-const filterWrapper= document.getElementById("lf-filter-wrapper");
 const gridBtn     = document.getElementById("lf-grid-btn");
 const listBtn     = document.getElementById("lf-list-btn");
 const exportBtn   = document.getElementById("lf-export-btn");
-
-function syncFilterWrapper() {
-  if (!filterWrapper) return;
-  filterWrapper.classList.toggle("expanded", !!(emailOnlyChk && emailOnlyChk.checked) || resultsBar.style.display !== "none");
-}
 
 /* ── Apply i18n labels ───────────────────────────────── */
 function applyLang(lang) {
@@ -636,12 +637,12 @@ Object.keys(COUNTRIES).forEach(c => {
 });
 
 countrySel.addEventListener("change", () => {
-  const lang = getLang(countrySel.value);
+  const lang = localStorage.getItem("eureach_lang") || getLang(countrySel.value);
   applyLang(lang);
 
   // populate cities
   const cities = COUNTRIES[countrySel.value] || [];
-  const t = I18N[lang];
+  const t = I18N[lang] || I18N.en;
   citySel.innerHTML = `<option value="">${t.placeholderCity}</option>`;
   cities.forEach(city => {
     const o = document.createElement("option");
@@ -706,39 +707,51 @@ function doSearch() {
   if (!subCat)  { flash(subcatSel,  t.validSubcat);  return; }
 
   // Credit gate
-  if (searchesLeft !== null && searchesLeft !== -1 && searchesLeft <= 0) {
+  if (creditsLeft !== null && creditsLeft !== -1 && creditsLeft < 2) {
     openGate();
     return;
   }
 
   searchBtn.disabled = true;
   searchBtn.textContent = t.searching;
-  resultsBar.style.display = "none"; syncFilterWrapper();
+  resultsBar.style.display = "none";
   showLoading(subCat, city, t);
 
-  setTimeout(async () => {
+  (async () => {
     try {
-      results = generateMockLeads(subCat, city, country, 18);
+      const subName = subcatSel.options[subcatSel.selectedIndex]?.textContent || subCat;
+      const r = await fetch("/api/leads/find", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subcatLabel: subName, city, country }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "Search failed");
+      results = data.leads || [];
+      currentLeadResults = results;
+      currentLeadLabel   = subName + " in " + city + ", " + country.replace(/^\S+\s/, "");
       currentPage  = 1;
       scoreMap     = {};
       scoreFilter  = "all";
       sortByScore  = true;
       scoresDone   = false;
       renderResults();
-      resultsBar.style.display = "flex"; syncFilterWrapper();
-      const subName = subcatSel.options[subcatSel.selectedIndex]?.textContent || subCat;
+      resultsBar.style.display = "flex";
       countEl.innerHTML = `<strong>${results.length}</strong> leads · <strong>${subName}</strong> · <strong>${city}</strong>`;
+      const saveBtn = document.getElementById("lf-save-list-btn");
+      if (saveBtn) { saveBtn.textContent = "💾 Save List"; saveBtn.disabled = false; }
       await deductCredit(results.length);
       triggerScoring(); // non-blocking — skeletons already shown
     } catch (err) {
       console.error("Search error:", err);
       resultsArea.innerHTML = emptyHTML();
-      resultsBar.style.display = "none"; syncFilterWrapper();
+      resultsBar.style.display = "none";
+      showToast(err.message || "Search failed. Please try again.");
     } finally {
       searchBtn.disabled = false;
       searchBtn.textContent = t.searchBtn;
     }
-  }, 1400);
+  })();
 }
 
 function flash(el, msg) {
@@ -765,9 +778,6 @@ function renderResults() {
 
   // Build filtered + sorted display list
   let display = [...results];
-  if (emailOnlyChk && emailOnlyChk.checked) {
-    display = display.filter(l => !!(l.email || "").trim());
-  }
   if (scoreFilter !== "all") {
     display = display.filter(l => scoreMap[scoreKey(l.name, city)]?.tier === scoreFilter);
   }
@@ -822,19 +832,23 @@ function cardHTML(l, i) {
     </div>
     <div class="lead-card-meta">
       ${l.address ? `<div class="lead-card-row"><span class="ico">📍</span>${esc(l.address)}</div>` : ""}
-      ${l.phone   ? `<div class="lead-card-row"><span class="ico">📞</span>${esc(l.phone)}</div>` : ""}
+      ${l.phone   ? `<div class="lead-card-row"><span class="ico">📞</span><a href="tel:${l.phone.replace(/\s/g,'')}" class="lead-phone-link">${esc(l.phone)}</a></div>` : ""}
       ${l.website ? `<div class="lead-card-row"><span class="ico">🌐</span><a href="https://${l.website}" target="_blank">${esc(l.website)}</a></div>` : ""}
+      ${(l.email || l.website) ? `<div class="lead-card-row lead-email-row" id="email-row-${l.id}">
+        <span class="ico">✉️</span>
+        <span class="lead-email-addr">${esc(l.email || guessEmail(l.website))}</span>
+        <button class="lc-verify-btn" data-id="${l.id}" data-email="${esc(l.email || guessEmail(l.website))}" title="Verify email">Verify</button>
+        <span class="lc-verify-badge" id="verify-badge-${l.id}"></span>
+      </div>` : ""}
     </div>
     <div class="lead-card-tags">
       ${l.phone   ? `<span class="lead-tag tag-has-phone">Has Phone</span>` : ""}
       ${l.website ? `<span class="lead-tag tag-has-web">Has Website</span>` : ""}
-      ${l.email   ? `<span class="lead-tag tag-has-email">Has Email</span>` : `<span class="lead-tag tag-no-email">No Email</span>`}
-      <span class="lead-tag tag-reviews">${l.reviews} reviews</span>
+      <a class="lead-tag tag-reviews" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(l.name + " " + l.address)}" target="_blank" title="View on Google Maps">${l.reviews} ⭐ reviews</a>
     </div>
     <div class="lead-card-actions">
       <button class="lc-btn primary" data-action="save" data-id="${l.id}">💾 Save</button>
       <button class="lc-btn" data-action="crm" data-id="${l.id}">➕ CRM</button>
-
       ${l.website ? `<button class="lc-btn" data-action="open" data-url="${l.website}">↗</button>` : ""}
     </div>
   </div>`;
@@ -846,7 +860,7 @@ function rowHTML(l, i) {
   <div class="lead-row" data-id="${l.id}" style="animation-delay:${i*30}ms">
     <div class="lr-icon">${subIcon}</div>
     <div><div class="lr-name">${esc(l.name)}</div><div class="lr-cat">${esc(l.address)}</div></div>
-    <div class="lr-phone">${l.phone ? esc(l.phone) : "—"}</div>
+    <div class="lr-phone">${l.phone ? `<a href="tel:${l.phone.replace(/\s/g,'')}" class="lead-phone-link">${esc(l.phone)}</a>` : "—"}</div>
     <div class="lr-web">${l.website ? `<a href="https://${l.website}" target="_blank">${esc(l.website)}</a>` : "—"}</div>
     <div class="lr-rating">★ ${l.rating}</div>
     <div class="lr-actions">
@@ -880,9 +894,12 @@ function bindCardActions() {
       const lead = results.find(r => r.id == id);
       if (!lead) return;
       if (action === "save") {
-        addLeadToCrm(lead, btn, true);
+        lead.status = "saved";
+        btn.textContent = "✓ Saved";
+        btn.disabled = true;
+        showToast(`${lead.name} saved`);
       } else if (action === "crm") {
-        addLeadToCrm(lead, btn, false);
+        addLeadToCrm(lead, btn);
       } else if (action === "audit") {
         showToast("AI Audit — coming with Pro plan");
       } else if (action === "open" && url) {
@@ -890,15 +907,51 @@ function bindCardActions() {
       }
     });
   });
+
+  resultsArea.querySelectorAll(".lc-verify-btn").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      const { id, email } = btn.dataset;
+      if (!email) return;
+      const badge = document.getElementById(`verify-badge-${id}`);
+      btn.disabled = true;
+      btn.textContent = "…";
+      try {
+        const res  = await fetch("/api/leads/verify-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        btn.style.display = "none";
+        if (!badge) return;
+        const s = data.status;
+        if (s === "valid") {
+          badge.innerHTML = `<span class="ev-valid">✓ Valid</span>`;
+        } else if (s === "invalid") {
+          badge.innerHTML = `<span class="ev-invalid">✗ Invalid</span>`;
+        } else if (s === "catch-all") {
+          badge.innerHTML = `<span class="ev-catchall">⚠ Catch-all</span>`;
+        } else if (s === "do_not_mail" || s === "spamtrap" || s === "abuse") {
+          badge.innerHTML = `<span class="ev-invalid">✗ Do not mail</span>`;
+        } else {
+          badge.innerHTML = `<span class="ev-unknown">? Unknown</span>`;
+        }
+      } catch {
+        btn.disabled = false;
+        btn.textContent = "Verify";
+        showToast("Verification failed — try again");
+      }
+    });
+  });
 }
 
 /* ── Add to CRM ──────────────────────────────────────── */
-async function addLeadToCrm(lead, btn, savedMode = false) {
+async function addLeadToCrm(lead, btn) {
   const city     = citySel.value;
   const subLabel = subcatSel.options[subcatSel.selectedIndex]?.textContent?.replace(/^[^ ]+ /, "") || "";
   btn.disabled = true;
   btn.textContent = "…";
-  const resetLabel = savedMode ? "💾 Save" : "➕ CRM";
   try {
     const res = await fetch("/api/crm", {
       method: "POST",
@@ -909,36 +962,31 @@ async function addLeadToCrm(lead, btn, savedMode = false) {
         city:         city,
         phone:        lead.phone    || null,
         website:      lead.website  || null,
-        email:        lead.email    || null,
         notes:        "",
       }),
     });
     if (res.ok) {
-      btn.textContent = savedMode ? "✓ Saved" : "✓ Added";
-      showToast(savedMode ? `${lead.name} saved to CRM` : `${lead.name} added to CRM`);
+      btn.textContent = "✓ Added";
+      showToast(`${lead.name} added to CRM`);
     } else if (res.status === 401) {
       btn.disabled = false;
-      btn.textContent = resetLabel;
+      btn.textContent = "➕ CRM";
       showToast("Sign in to save leads to CRM");
-    } else if (res.status === 409) {
-      btn.textContent = "✓ Already in CRM";
     } else {
       btn.disabled = false;
-      btn.textContent = resetLabel;
+      btn.textContent = "➕ CRM";
       showToast("Failed to add to CRM");
     }
   } catch {
     btn.disabled = false;
-    btn.textContent = resetLabel;
+    btn.textContent = "➕ CRM";
     showToast("Failed to add to CRM");
   }
 }
 
-
 /* ── View toggle ─────────────────────────────────────── */
 gridBtn.addEventListener("click", () => { viewMode = "grid"; gridBtn.classList.add("active"); listBtn.classList.remove("active"); if (results.length) renderResults(); });
 listBtn.addEventListener("click", () => { viewMode = "list"; listBtn.classList.add("active"); gridBtn.classList.remove("active"); if (results.length) renderResults(); });
-if (emailOnlyChk) emailOnlyChk.addEventListener("change", () => { currentPage = 1; syncFilterWrapper(); renderResults(); });
 
 /* ── Clear ───────────────────────────────────────────── */
 clearBtn.addEventListener("click", () => {
@@ -951,8 +999,8 @@ clearBtn.addEventListener("click", () => {
   subcatSel.innerHTML = `<option value="">— Select service —</option>`;
   subcatWrap.classList.remove("visible");
   radiusSlider.value = 5; radiusVal.textContent = "5 km";
-  resultsBar.style.display = "none"; syncFilterWrapper();
-  applyLang("en");
+  resultsBar.style.display = "none";
+  applyLang(currentLang);
   resultsArea.innerHTML = emptyHTML();
 });
 
@@ -1003,29 +1051,43 @@ async function loadCredits() {
     const res  = await fetch("/api/auth/me");
     if (!res.ok) { setCreditsDisplay(null, null, null); return; }
     const { user } = await res.json();
-    setCreditsDisplay(user ? user.searchesLeft : null, user ? user.searchesMax : null, user ? user.resetDate : null);
+    setCreditsDisplay(user ? user.creditsLeft : null, user ? user.creditsMax : null, user ? user.resetDate : null, user || null);
+    /* only apply preferredLang if user has none stored locally yet */
+    if (user?.preferredLang && I18N[user.preferredLang] && !localStorage.getItem("eureach_lang")) {
+      applyLang(user.preferredLang);
+    }
   } catch { setCreditsDisplay(null, null, null); }
 }
 
-function setCreditsDisplay(left, max, resetDate) {
-  searchesLeft = left;
-  searchesMax  = max;
-  searchReset  = resetDate;
+function setCreditsDisplay(left, max, resetDate, user) {
+  creditsLeft = left;
+  searchesMax = max;
+  searchReset = resetDate;
   const unlimited = left === -1;
   if (navLeft) navLeft.textContent = unlimited ? "∞" : left === null ? "—" : left;
 
+  // Auth state: show/hide Sign in button and populate profile initial
+  const signInBtn = document.querySelector('a[href="signin.html"].btn-ghost');
+  const profileBtn = document.getElementById("nav-profile-btn");
+  if (user) {
+    if (signInBtn) signInBtn.style.display = "none";
+    if (profileBtn) profileBtn.textContent = (user.firstName?.[0] || user.email?.[0] || "U").toUpperCase();
+  } else {
+    if (profileBtn) profileBtn.style.display = "none";
+  }
+
   let label;
-  if (unlimited)        label = "Unlimited searches";
+  if (unlimited)          label = "Unlimited credits";
   else if (left === null) label = "— remaining";
   else if (max !== null && max !== -1) {
     const used = max - left;
-    label = `${used} / ${max} used${resetDate ? ` · Resets ${resetDate}` : ""}`;
+    label = `${used} / ${max} credits used${resetDate ? ` · Resets ${resetDate}` : ""}`;
   } else {
-    label = `${left} remaining`;
+    label = `${left} credits remaining`;
   }
   if (creditsRemEl) creditsRemEl.textContent = label;
 
-  const out = left !== null && !unlimited && left <= 0;
+  const out = left !== null && !unlimited && left < 2;
   if (creditCostEl) creditCostEl.classList.toggle("out-of-credits", out);
   searchBtn.classList.toggle("lf-search-btn-disabled", out);
 }
@@ -1049,13 +1111,12 @@ async function deductCredit(leadsCount) {
     });
     const data = await res.json();
     if (res.ok) {
-      setCreditsDisplay(data.searchesLeft, data.searchesMax, data.resetDate);
-      // Show nudge if at 80%+ usage
-      if (data.searchesMax > 0 && data.searchesLeft !== -1) {
-        const used = data.searchesMax - data.searchesLeft;
-        if (used / data.searchesMax >= 0.8) showNudgeBanner();
+      setCreditsDisplay(data.creditsLeft, data.creditsMax, data.resetDate);
+      if (data.creditsMax > 0 && data.creditsLeft !== -1) {
+        const used = data.creditsMax - data.creditsLeft;
+        if (used / data.creditsMax >= 0.8) showNudgeBanner();
       }
-    } else if (res.status === 403 && data.error === "limit_reached") {
+    } else if (res.status === 403 && data.error === "insufficient_credits") {
       openGate();
     }
   } catch {}
@@ -1066,7 +1127,7 @@ function showNudgeBanner() {
   if (existing) return;
   const banner = document.createElement("div");
   banner.id = "lf-nudge-banner";
-  banner.innerHTML = `<span>⚡ You've used 80%+ of your free searches. <a href="membership.html">Upgrade to keep finding leads →</a></span><button onclick="this.parentElement.remove()">✕</button>`;
+  banner.innerHTML = `<span>⚡ You've used 80%+ of your AI credits this month. <a href="membership.html">Upgrade to keep finding leads →</a></span><button onclick="this.parentElement.remove()">✕</button>`;
   banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#7c3aed,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;gap:16px;padding:10px 20px;font-size:0.85rem;";
   banner.querySelector("a").style.cssText = "color:#fff;font-weight:700;text-decoration:underline;";
   banner.querySelector("button").style.cssText = "background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;opacity:0.7;margin-left:8px;";
@@ -1162,6 +1223,106 @@ function bindScoreBar() {
   });
 }
 
+/* ── Save lead list ──────────────────────────────────── */
+document.getElementById("lf-save-list-btn").addEventListener("click", saveLeadList);
+
+async function saveLeadList() {
+  if (!currentLeadResults.length) return;
+  const btn = document.getElementById("lf-save-list-btn");
+  btn.disabled    = true;
+  btn.textContent = "Saving…";
+  try {
+    const res = await fetch("/api/leads/saved-searches", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: currentLeadLabel, results: currentLeadResults }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      btn.disabled    = false;
+      btn.textContent = "💾 Save List";
+      alert(data.error || "Save failed.");
+      return;
+    }
+    btn.textContent = "✓ Saved!";
+    setTimeout(() => { btn.textContent = "💾 Save List"; btn.disabled = false; }, 2500);
+    loadSavedLeadSearches();
+  } catch {
+    btn.disabled    = false;
+    btn.textContent = "💾 Save List";
+    alert("Network error. Please try again.");
+  }
+}
+
+/* ── Saved lead lists view ───────────────────────────── */
+async function loadSavedLeadSearches() {
+  try {
+    const res = await fetch("/api/leads/saved-searches");
+    if (!res.ok) return;
+    const { savedSearches } = await res.json();
+    renderSavedLeadSearches(savedSearches || []);
+  } catch {}
+}
+
+function renderSavedLeadSearches(lists) {
+  const section = document.getElementById("lf-saved-section");
+  const grid    = document.getElementById("lf-saved-grid");
+  const count   = document.getElementById("lf-saved-count");
+  if (!section) return;
+  if (!lists.length) { section.style.display = "none"; return; }
+  section.style.display = "";
+  if (count) count.textContent = lists.length;
+  grid.innerHTML = "";
+  [...lists].reverse().forEach(s => {
+    const card = document.createElement("div");
+    card.className = "ct-saved-card";
+    card.innerHTML = `
+      <div class="ct-saved-card-head">
+        <div class="ct-saved-card-info">
+          <div class="ct-saved-card-label">${esc(s.label)}</div>
+          <div class="ct-saved-card-meta">${s.results.length} leads · Saved ${fmtDate(s.savedAt)}</div>
+        </div>
+        <div class="ct-saved-card-actions">
+          <button class="ct-saved-toggle ct-btn">▾ Show</button>
+          <button class="ct-saved-delete ct-btn ct-btn-danger" data-id="${esc(s.id)}">✕</button>
+        </div>
+      </div>
+      <div class="ct-saved-results" style="display:none">
+        ${s.results.map(b => `
+        <div class="ct-result-card">
+          <div class="ct-result-info">
+            <div class="ct-result-name">${esc(b.name)}</div>
+            <div class="ct-result-meta">
+              ${b.address ? `<span>📍 ${esc(b.address)}</span>` : ""}
+              ${(b.website||b.url) ? `<span>🌐 <a href="https://${esc(b.website||b.url)}" target="_blank" rel="noopener">${esc(b.website||b.url)}</a></span>` : ""}
+              ${b.phone ? `<span>📞 ${esc(b.phone)}</span>` : ""}
+              ${b.email ? `<span>✉ ${esc(b.email)}</span>` : ""}
+            </div>
+          </div>
+        </div>`).join("")}
+      </div>`;
+    card.querySelector(".ct-saved-toggle").addEventListener("click", function() {
+      const results = card.querySelector(".ct-saved-results");
+      const open = results.style.display !== "none";
+      results.style.display = open ? "none" : "";
+      this.textContent = open ? "▾ Show" : "▴ Hide";
+    });
+    card.querySelector(".ct-saved-delete").addEventListener("click", () => deleteSavedLeadSearch(s.id));
+    grid.appendChild(card);
+  });
+}
+
+async function deleteSavedLeadSearch(id) {
+  if (!confirm("Delete this saved list?")) return;
+  try {
+    const res = await fetch(`/api/leads/saved-searches/${id}`, { method: "DELETE" });
+    if (!res.ok) return;
+    loadSavedLeadSearches();
+  } catch {}
+}
+
 /* ── Init ────────────────────────────────────────────── */
+applyLang(currentLang);
 resultsArea.innerHTML = emptyHTML();
 loadCredits();
+loadSavedLeadSearches();

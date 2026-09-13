@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Action Coach — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css?v=2">
+  <link rel="stylesheet" href="css/coach.css?v=1">
+  <script src="js/translations.js?v=5"></script>
+  <script src="js/i18n.js?v=5"></script>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
+          </div>
+        </div>
+      </div>
+      <a href="leads.html" data-i18n="navLeads" style="color:var(--white)">Lead Finder</a>
+      <span style="color:var(--border);font-size:0.7rem">|</span>
+      <a href="crm.html" data-i18n="navCrm" style="font-size:0.8rem">CRM</a>
+      <a href="outreach.html" data-i18n="navOutreach" style="font-size:0.8rem">Outreach</a>
+      <a href="/coach" class="nav-coach-link" style="font-size:0.8rem;color:var(--accent)">
+        Coach
+        <span class="coach-nav-dot" id="coach-nav-dot" style="display:none"></span>
+      </a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-lang">
+      <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
+    </div>
+    <div class="nav-cta">
+      <a href="settings.html" class="nav-profile-btn" id="nav-profile-btn" title="Profile">?</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="navSignIn">Sign in</a>
+      <a href="settings.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">⚙</a>
+    </div>
+  </div>
+  <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+</nav>
+
+<!-- ── PAGE ─────────────────────────────────────────────── -->
+<div class="coach-page">
+
+  <!-- Header -->
+  <div class="coach-header">
+    <div class="coach-header-inner">
+      <div class="coach-title-row">
+        <div>
+          <h1 class="coach-title">Weekly Action Coach</h1>
+          <p class="coach-subtitle" id="coach-week-label">Εβδομάδα —</p>
+        </div>
+        <div class="coach-streak" id="coach-streak" style="display:none">
+          <span class="streak-fire">🔥</span>
+          <span class="streak-count" id="streak-count">0</span>
+          <span class="streak-label">εβδομάδες</span>
+        </div>
+      </div>
+      <div class="coach-progress-wrap">
+        <div class="coach-progress-bar">
+          <div class="coach-progress-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+        <span class="coach-progress-text" id="progress-text">0/3 δράσεις αυτή την εβδομάδα</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading state -->
+  <div id="coach-loading" class="coach-loading">
+    <div class="coach-skeleton"></div>
+    <div class="coach-skeleton"></div>
+    <div class="coach-skeleton"></div>
+    <p class="coach-loading-msg">Ο Coach ετοιμάζει τις δράσεις σου για αυτή την εβδομάδα…</p>
+  </div>
+
+  <!-- Error state -->
+  <div id="coach-error" class="coach-error" style="display:none">
+    <p>Κάτι πήγε στραβά. <a href="" onclick="location.reload()">Δοκίμασε ξανά</a></p>
+  </div>
+
+  <!-- Day cards -->
+  <div id="coach-cards" class="coach-cards" style="display:none">
+
+    <!-- MONDAY -->
+    <div class="day-card" id="card-monday" data-day="monday">
+      <div class="day-card-header">
+        <div class="day-label-row">
+          <span class="day-pill day-pill-mon">Δευτέρα · Δράση 1</span>
+          <span class="day-badge-free">ΔΩΡΕΑΝ</span>
+          <span class="done-checkmark" id="done-monday" style="display:none">✓ Ολοκληρώθηκε</span>
+        </div>
+        <h2 class="day-card-title">Γράψε ένα άρθρο για την επιχείρησή σου</h2>
+        <span class="time-badge">10-15 λεπτά</span>
+      </div>
+      <div class="day-card-body" id="monday-body">
+        <p class="day-explanation">Τα AI engines μαθαίνουν ποια είναι η επιχείρησή σου από αυτά που γράφεις στο διαδίκτυο. Ένα άρθρο που απαντά σε μια ερώτηση πελάτη είναι η πιο αποτελεσματική κίνηση που μπορείς να κάνεις σήμερα. Το eureach έχει ήδη γράψει 5 ιδέες για σένα — διάλεξε αυτή που σου αρέσει περισσότερο και άνοιξε τον Article Generator.</p>
+
+        <div class="suggestions-grid" id="suggestions-grid"></div>
+
+        <div id="open-generator-wrap" style="display:none">
+          <button class="btn btn-primary btn-open-gen" id="open-generator-btn" onclick="openArticleGenerator()">
+            Άνοιξε στον Article Generator →
+          </button>
+        </div>
+
+        <div class="fb-post-section">
+          <h3 class="section-label">Ή δημοσίευσε αυτό το post αν δεν έχεις χρόνο για άρθρο:</h3>
+          <div class="copy-box" id="monday-fb-box">
+            <div class="copy-box-text" id="monday-fb-text"></div>
+            <button class="copy-btn" onclick="copyOrShare('monday-fb-text')">Αντιγραφή</button>
+          </div>
+        </div>
+      </div>
+      <div class="day-card-footer" id="monday-footer">
+        <button class="btn-done" id="done-btn-monday" onclick="markDone('monday')">
+          ✓ Σημείωσε ως ολοκληρωμένη
+        </button>
+        <div class="done-msg" id="done-msg-monday" style="display:none">
+          Τέλεια! Η δράση καταγράφηκε. Ελέγξαμε αν το eureach εντοπίζει το νέο σου περιεχόμενο.
+        </div>
+      </div>
+    </div>
+
+    <!-- WEDNESDAY -->
+    <div class="day-card" id="card-wednesday" data-day="wednesday">
+      <div class="day-card-header">
+        <div class="day-label-row">
+          <span class="day-pill day-pill-wed">Τετάρτη · Δράση 2</span>
+          <span class="day-badge-members" id="badge-wednesday">MEMBERS ONLY</span>
+          <span class="done-checkmark" id="done-wednesday" style="display:none">✓ Ολοκληρώθηκε</span>
+        </div>
+        <h2 class="day-card-title">Ζήτα 3 κριτικές και απάντησε σε μια ερώτηση πελατών</h2>
+        <span class="time-badge">7-10 λεπτά</span>
+      </div>
+      <div class="day-card-body" id="wednesday-body">
+        <!-- Locked overlay (for free users) -->
+        <div class="locked-overlay" id="locked-wednesday" style="display:none">
+          <div class="locked-blur-content">
+            <p>Στείλε αυτό το μήνυμα σε 3 ικανοποιημένους πελάτες σήμερα...</p>
+            <p>Δημοσίευσε ένα FAQ post που απαντά σε ερωτήσεις πελατών...</p>
+          </div>
+          <div class="locked-cta">
+            <p class="locked-cta-title">Ξεκλείδωσε τις δράσεις Τετάρτης και Παρασκευής</p>
+            <p class="locked-cta-price">Pro Plan · €29/μήνα</p>
+            <p class="locked-cta-sub">Ακύρωση οποτεδήποτε · Εγγύηση 7 ημερών</p>
+            <a href="/upgrade" class="btn btn-primary">Αναβάθμισε σε Pro →</a>
+          </div>
+        </div>
+
+        <!-- Actual content (for paid users) -->
+        <div id="wednesday-content">
+          <div class="sub-action">
+            <h3 class="sub-action-title">Α. Μήνυμα για Google κριτική</h3>
+            <p class="day-explanation">Οι Google κριτικές που αναφέρουν το όνομα της επιχείρησής σου και τι κάνεις είναι ανεξάρτητες αναφορές — ακριβώς αυτό που χρειάζονται τα AI engines για να σε συνδέσουν με την κατηγορία σου. Στείλε αυτό το μήνυμα σε 3 ικανοποιημένους πελάτες σήμερα.</p>
+            <div class="copy-box" id="wed-review-box">
+              <div class="copy-box-text" id="wed-review-text"></div>
+              <button class="copy-btn" onclick="copyOrShare('wed-review-text')">Αντιγραφή</button>
+            </div>
+            <p class="copy-steps">Βήμα 1: Αντέγραψε. Βήμα 2: Στείλε σε 3 πελάτες στο WhatsApp. Βήμα 3: Βάλε τον σύνδεσμο του Google Business Profile σου.</p>
+          </div>
+
+          <div class="sub-action">
+            <h3 class="sub-action-title">Β. FAQ Post για Facebook</h3>
+            <p class="day-explanation">Δημοσίευσε ένα post που απαντά σε μια ερώτηση που σου κάνουν συχνά οι πελάτες. Το 73% των AI citations προέρχεται από περιεχόμενο που απαντά σε ερωτήσεις.</p>
+            <div class="copy-box" id="wed-faq-box">
+              <div class="copy-box-text" id="wed-faq-text"></div>
+              <div class="copy-box-actions">
+                <button class="copy-btn" onclick="copyOrShare('wed-faq-text')">Αντιγραφή</button>
+                <button class="share-btn" onclick="shareToFacebook('wed-faq-text')">Δημοσίευση στο Facebook</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="day-card-footer" id="wednesday-footer">
+        <button class="btn-done" id="done-btn-wednesday" onclick="markDone('wednesday')">
+          ✓ Σημείωσε ως ολοκληρωμένη
+        </button>
+        <div class="done-msg" id="done-msg-wednesday" style="display:none">
+          Τέλεια! Αν στείλεις 3 μηνύματα και δημοσιεύσεις το FAQ post, τα AI engines θα το παρατηρήσουν.
+        </div>
+      </div>
+    </div>
+
+    <!-- FRIDAY -->
+    <div class="day-card" id="card-friday" data-day="friday">
+      <div class="day-card-header">
+        <div class="day-label-row">
+          <span class="day-pill day-pill-fri">Παρασκευή · Δράση 3</span>
+          <span class="day-badge-members" id="badge-friday">MEMBERS ONLY</span>
+          <span class="done-checkmark" id="done-friday" style="display:none">✓ Ολοκληρώθηκε</span>
+        </div>
+        <h2 class="day-card-title">Δημοσίευσε στο LinkedIn και δες τα αποτελέσματά σου</h2>
+        <span class="time-badge">5-7 λεπτά</span>
+      </div>
+      <div class="day-card-body" id="friday-body">
+        <!-- Locked overlay (for free users) -->
+        <div class="locked-overlay" id="locked-friday" style="display:none">
+          <div class="locked-blur-content">
+            <p>Το LinkedIn ευρετηριάζεται από το Perplexity σε ώρες — ένα post σήμερα μπορεί να εμφανιστεί...</p>
+            <p>Κάθε Παρασκευή ελέγχουμε αυτόματα αν η ορατότητά σου στα AI engines έχει αλλάξει...</p>
+          </div>
+          <div class="locked-cta">
+            <p class="locked-cta-title">Ξεκλείδωσε τις δράσεις Τετάρτης και Παρασκευής</p>
+            <p class="locked-cta-price">Pro Plan · €29/μήνα</p>
+            <p class="locked-cta-sub">Ακύρωση οποτεδήποτε · Εγγύηση 7 ημερών</p>
+            <a href="/upgrade" class="btn btn-primary">Αναβάθμισε σε Pro →</a>
+          </div>
+        </div>
+
+        <!-- Actual content (for paid users) -->
+        <div id="friday-content">
+          <div class="sub-action">
+            <h3 class="sub-action-title">Α. LinkedIn Post</h3>
+            <p class="day-explanation">Το LinkedIn ευρετηριάζεται από το Perplexity σε ώρες — είναι η ταχύτερη πλατφόρμα για AI citation. Ένα post σήμερα μπορεί να εμφανιστεί σε αποτελέσματα Perplexity αυτή την εβδομάδα.</p>
+            <div class="lang-toggle">
+              <button class="lang-toggle-btn active" id="li-btn-el" onclick="setLinkedInLang('el')">Ελληνικά</button>
+              <button class="lang-toggle-btn" id="li-btn-en" onclick="setLinkedInLang('en')">English</button>
+            </div>
+            <div class="copy-box" id="fri-linkedin-box">
+              <div class="copy-box-text" id="fri-linkedin-text"></div>
+              <button class="copy-btn" onclick="copyOrShare('fri-linkedin-text')">Αντιγραφή</button>
+            </div>
+          </div>
+
+          <div class="sub-action">
+            <h3 class="sub-action-title">Β. Εβδομαδιαία αναφορά ορατότητας</h3>
+            <p class="day-explanation">Κάθε Παρασκευή ελέγχουμε αυτόματα αν η ορατότητά σου στα AI engines έχει αλλάξει αυτή την εβδομάδα.</p>
+            <div id="visibility-report" class="visibility-report">
+              <div class="vis-loading">Φόρτωση ορατότητας…</div>
+            </div>
+          </div>
+
+          <div class="week-summary" id="week-summary" style="display:none">
+            <p id="week-summary-text"></p>
+            <p id="total-summary-text"></p>
+          </div>
+        </div>
+      </div>
+      <div class="day-card-footer" id="friday-footer">
+        <button class="btn-done" id="done-btn-friday" onclick="markDone('friday')">
+          ✓ Σημείωσε ως ολοκληρωμένη
+        </button>
+        <div class="done-msg" id="done-msg-friday" style="display:none">
+          Εξαιρετικό! Ολοκλήρωσες και τις 3 δράσεις αυτής της εβδομάδας. Συνέχισε έτσι!
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /coach-cards -->
+
+</div><!-- /coach-page -->
+
+<script src="js/coach.js?v=1"></script>
+<script src="/js/api.js?v=5"></script>
+<script src="/js/trial-banner.js"></script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

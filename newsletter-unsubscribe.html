@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unsubscribed — eureach.eu</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{background:#1e293b;border-radius:12px;padding:48px 40px;max-width:480px;width:100%;text-align:center;border:1px solid #334155}
+.logo{font-size:1.3rem;font-weight:900;color:#fff;margin-bottom:32px}
+.logo span{color:#c9a227}
+.icon{font-size:3rem;margin-bottom:20px}
+h1{font-size:1.3rem;font-weight:800;margin-bottom:12px;color:#fff}
+p{color:#94a3b8;line-height:1.6;margin-bottom:24px;font-size:.92rem}
+.btn{display:inline-block;background:#334155;color:#e2e8f0;text-decoration:none;padding:11px 28px;border-radius:6px;font-weight:700;font-size:.9rem;transition:background .15s}
+.btn:hover{background:#475569}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">eureach<span>.</span>eu</div>
+  <div id="content"></div>
+</div>
+<script>
+const p = new URLSearchParams(location.search).get('status');
+const el = document.getElementById('content');
+if (p === 'ok') {
+  el.innerHTML = `
+    <div class="icon">👋</div>
+    <h1>You've been unsubscribed</h1>
+    <p>You won't receive any more emails from eureach.eu. If this was a mistake, you can always sign up again from our homepage.</p>
+    <a href="/" class="btn">Back to eureach.eu</a>`;
+} else if (p === 'invalid') {
+  el.innerHTML = `
+    <div class="icon">🔗</div>
+    <h1>Link not found</h1>
+    <p>This unsubscribe link is invalid or has already been used. If you're still receiving emails, contact us at hello@eureach.eu.</p>
+    <a href="/" class="btn">Back to eureach.eu</a>`;
+} else {
+  el.innerHTML = `
+    <div class="icon">⚠️</div>
+    <h1>Something went wrong</h1>
+    <p>We couldn't process your request. Please contact us at hello@eureach.eu and we'll remove you immediately.</p>
+    <a href="/" class="btn">Back to eureach.eu</a>`;
+}
+</script>
+</body>
+</html>

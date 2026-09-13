@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assignment — YouTuber Portal</title>
+<link rel="stylesheet" href="/css/style.css?v=2">
+<link rel="stylesheet" href="/css/youtube-portal.css?v=1">
+<script src="/js/translations.js?v=5"></script>
+<script src="/js/i18n.js?v=5"></script>
+</head>
+<body class="yt-page">
+
+<nav class="yt-nav">
+  <a href="/" class="yt-nav-logo">eureach.eu</a>
+  <a href="/youtube" class="yt-nav-back" data-i18n="ytasgn.back">← Portal</a>
+  <div class="yt-nav-right">
+    <span id="saveIndicator" class="yt-save-indicator"></span>
+  </div>
+</nav>
+
+<main class="yt-main">
+  <div id="loadingState" class="yt-loading" data-i18n="ytasgn.loading">Φόρτωση assignment...</div>
+  <div id="errorState" class="yt-empty" style="display:none">
+    <p data-i18n="ytasgn.notFound">Δεν βρέθηκε το assignment.</p>
+    <a href="/youtube" class="yt-btn yt-btn-primary">← Portal</a>
+  </div>
+
+  <div id="workflowWrap" style="display:none">
+    <div class="yt-workflow-header">
+      <div>
+        <h1 id="workflowTitle">Assignment</h1>
+        <p id="workflowBrand" class="yt-subtitle"></p>
+      </div>
+      <div class="yt-step-indicator" id="stepIndicator"></div>
+    </div>
+
+    <!-- Step progress bar -->
+    <div class="yt-step-track">
+      <div id="stepTrackFill" class="yt-step-track-fill"></div>
+    </div>
+
+    <!-- Step labels -->
+    <div class="yt-step-labels">
+      <span id="ytStepLbl0">Brief</span><span id="ytStepLbl1">Θέμα</span><span id="ytStepLbl2">Τίτλος</span>
+      <span id="ytStepLbl3">Tags</span><span id="ytStepLbl4">Αναφορά</span><span id="ytStepLbl5">Transcript</span><span id="ytStepLbl6">Submit</span>
+    </div>
+
+    <!-- Step content panels -->
+    <div class="yt-step-content" id="stepContent"></div>
+
+    <!-- Nav buttons -->
+    <div class="yt-step-nav">
+      <button id="btnBack" class="yt-btn yt-btn-ghost" onclick="stepBack()" style="display:none" data-i18n="ytasgn.back">← Πίσω</button>
+      <button id="btnNext" class="yt-btn yt-btn-primary" onclick="stepNext()" data-i18n="ytasgn.continue">Συνέχεια →</button>
+    </div>
+  </div>
+
+  <!-- Submit success -->
+  <div id="submitSuccess" class="yt-submit-success" style="display:none">
+    <div class="yt-success-icon">✓</div>
+    <h2 data-i18n="ytasgn.successTitle">Η υποβολή σου παραλήφθηκε!</h2>
+    <p data-i18n="ytasgn.successSub">Θα κάνουμε review εντός 24 ωρών και θα λάβεις email.</p>
+    <a href="/youtube" class="yt-btn yt-btn-primary" data-i18n="ytasgn.backPortal">← Πίσω στο Portal</a>
+  </div>
+</main>
+
+<script src="/js/api.js?v=5"></script>
+<script>
+function T(k){var l=window.euLang?window.euLang():"en";var t=window.EUREACH_T;return(t&&t[l]&&t[l][k])||k;}
+function applyStepLabels(){var labels=T("ytasgn.stepLabels").split(",");labels.forEach(function(l,i){var el=document.getElementById("ytStepLbl"+i);if(el)el.textContent=l;});}
+const ASSIGNMENT_ID = new URLSearchParams(location.search).get('id') || location.pathname.split('/').pop();
+let assignment = null;
+let currentStep = 1;
+const TOTAL_STEPS = 7;
+
+const SUGGESTED_TOPICS = [
+  'Top 5 εργαλεία για επαγγελματίες', 'Πώς να αναπτύξεις την ψηφιακή σου παρουσία',
+  'Λάθη που κάνουν οι αρχάριοι', 'Τάσεις του κλάδου για το 2025',
+  'Οδηγός για αρχάριους'
+];
+
+const SUGGESTED_TAGS = [
+  'ελλάδα', 'επιχειρήσεις', 'marketing', 'ψηφιακό marketing', 'tips', 'tutorial',
+  'review', 'σύγκριση', 'vlog', 'how-to', 'ελληνικό youtube', 'sponsored'
+];
+
+const CHECKLIST_ITEMS = [
+  'Διάβασα προσεκτικά το brief και κατανοώ τι ζητείται',
+  'Το βίντεο έχει διάρκεια τουλάχιστον 5 λεπτών',
+  'Η αναφορά γίνεται μεταξύ 1ου και 3ου λεπτού',
+  'Ανέφερα την URL/brand name τουλάχιστον μία φορά',
+  'Ο τίτλος και η περιγραφή είναι SEO-friendly',
+  'Χρησιμοποίησα τα approved tags',
+  'Το βίντεο είναι public (όχι unlisted)',
+  'Πρόσθεσα το timestamp mention στο description'
+];
+
+let stepData = {};
+let savePending = false;
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Step renderers ──────────────────────────────────────────────────────────
+
+function renderStep1() {
+  const b = assignment.brief_data || {};
+  const status = assignment.status;
+  return `
+    <div class="yt-step-panel">
+      <h2>Βήμα 1 — Διάβασε το Brief</h2>
+      <div class="yt-brief-block">
+        ${b.brand_name || b.business_name ? `<div class="yt-brief-row"><label>Brand:</label><span>${escHtml(b.brand_name||b.business_name)}</span></div>` : ''}
+        ${b.category ? `<div class="yt-brief-row"><label>Κατηγορία:</label><span>${escHtml(b.category)}</span></div>` : ''}
+        ${b.website ? `<div class="yt-brief-row"><label>Website:</label><a href="${escHtml(b.website)}" target="_blank">${escHtml(b.website)}</a></div>` : ''}
+        ${b.description ? `<div class="yt-brief-row yt-brief-full"><label>Περιγραφή:</label><p>${escHtml(b.description)}</p></div>` : ''}
+        ${b.example_phrases ? `<div class="yt-brief-row yt-brief-full"><label>Παράδειγμα αναφοράς:</label><div class="yt-brief-example">${escHtml(b.example_phrases)}</div></div>` : ''}
+        ${b.restrictions ? `<div class="yt-brief-row yt-brief-full yt-brief-warn"><label>Περιορισμοί:</label><p>${escHtml(b.restrictions)}</p></div>` : ''}
+        <div class="yt-brief-row"><label>Πληρωμή:</label><span class="yt-pay-highlight">€${assignment.payment_amount || 80} μετά την έγκριση</span></div>
+      </div>
+      ${status === 'new' ? '<p class="yt-step-hint">Πάτησε "Συνέχεια" αφού διαβάσεις το brief.</p>' : ''}
+    </div>`;
+}
+
+function renderStep2() {
+  const saved = stepData.topic || '';
+  return `
+    <div class="yt-step-panel">
+      <h2>Βήμα 2 — Επίλεξε Θέμα</h2>
+      <p class="yt-step-hint">Επίλεξε ένα από τα προτεινόμενα θέματα ή γράψε το δικό σου.</p>
+      <div class="yt-pills" id="topicPills">
+        ${SUGGESTED_TOPICS.map(t => `<button type="button" class="yt-pill${saved===t?' yt-pill-active':''}" onclick="selectTopic(this,'${escHtml(t)}')">${escHtml(t)}</button>`).join('')}
+      </div>
+      <div class="yt-field" style="margin-top:1rem">
+        <label>Ή γράψε δικό σου θέμα</label>
+        <input type="text" id="topicCustom" class="yt-input" placeholder="π.χ. Πώς να χρησιμοποιήσω..." value="${escHtml(saved)}" oninput="clearPills()">
+      </div>
+    </div>`;
+}
+
+function renderStep3() {
+  const title = stepData.title || '';
+  const desc  = stepData.description || '';
+  return `
+    <div class="yt-step-panel">
+      <h2>Βήμα 3 — Τίτλος & Περιγραφή</h2>
+      <div class="yt-field">
+        <label>Τίτλος βίντεο <span class="yt-counter" id="titleCounter">${title.length}/100</span></label>
+        <input type="text" id="titleInput" class="yt-input" maxlength="100" placeholder="Γράψε τον τίτλο..." value="${escHtml(title)}" oninput="document.getElementById('titleCounter').textContent=this.value.length+'/100'">
+      </div>
+      <div class="yt-field">
+        <label>Περιγραφή <span class="yt-counter" id="descCounter">${desc.length}/500</span></label>
+        <textarea id="descInput" class="yt-textarea" rows="6" maxlength="500" placeholder="Γράψε την περιγραφή του βίντεο..." oninput="document.getElementById('descCounter').textContent=this.value.length+'/500'">${escHtml(desc)}</textarea>
+      </div>
+    </div>`;
+}
+
+function renderStep4() {
+  const saved = stepData.tags || [];
+  return `
+    <div class="yt-step-panel">
+      <h2>Βήμα 4 — Tags</h2>
+      <p class="yt-step-hint">Επίλεξε τα κατάλληλα tags για το βίντεο (επιλογή πολλαπλών).</p>
+      <div class="yt-pills" id="tagPills">
+        ${SUGGESTED_TAGS.map(t => `<button type="button" class="yt-pill${saved.includes(t)?' yt-pill-active':''}" onclick="toggleTag(this,'${t}')">${escHtml(t)}</button>`).join('')}
+      </div>
+      <p class="yt-step-hint" style="margin-top:0.5rem">Επιλεγμένα: <span id="tagCount">${saved.length}</span></p>
+    </div>`;
+}
+
+function renderStep5() {
+  const saved = stepData.mention_plan || '';
+  const wc    = saved.trim() ? saved.trim().split(/\s+/).length : 0;
+  return `
+    <div class="yt-step-panel">
+      <h2>Βήμα 5 — Σχεδίασε την Αναφορά</h2>
+      <p class="yt-step-hint">Γράψε πώς θα αναφέρεις το brand. Στόχος: 40–60 λέξεις.</p>
+      <div class="yt-field">
+        <label>Πλάνο αναφοράς <span class="yt-counter" id="mentionCounter">${wc} λέξεις</span></label>
+        <textarea id="mentionInput" class="yt-textarea" rows="5" placeholder="π.χ. Στο 2ο λεπτό θα πω..." oninput="updateWordCount(this,'mentionCounter')">${escHtml(saved)}</textarea>
+      </div>
+      <div class="yt-wc-bar">
+        <div class="yt-wc-fill" id="mentionWcFill" style="width:${Math.min(100,wc/60*100)}%"></div>
+      </div>
+      <p class="yt-wc-hint">Στόχος: 40–60 λέξεις</p>
+    </div>`;
+}
+
+function renderStep6() {
+  const transcript = stepData.transcript || '';
+  const chapters   = stepData.chapters || '';
+  return `
+    <div class="yt-step-panel">
+      <h2>Βήμα 6 — Transcript & Κεφάλαια</h2>
+      <div class="yt-field">
+        <label>Transcript (κείμενο βίντεο)</label>
+        <textarea id="transcriptInput" class="yt-textarea" rows="8" placeholder="Γράψε ή επικόλλησε το transcript...">${escHtml(transcript)}</textarea>
+      </div>
+      <div class="yt-field">
+        <label>Κεφάλαια (Chapters)</label>
+        <textarea id="chaptersInput" class="yt-textarea" rows="4" placeholder="00:00 Εισαγωγή&#10;02:30 Κεφάλαιο 1&#10;...">${escHtml(chapters)}</textarea>
+      </div>
+    </div>`;
+}
+
+function renderStep7() {
+  const checklist  = stepData.checklist || [];
+  const video_url  = stepData.video_url || assignment.video_url || '';
+  const timestamp  = stepData.timestamp_mention || assignment.timestamp_mention || '';
+  const submitted  = assignment.status === 'submitted' || assignment.status === 'approved' || assignment.status === 'paid';
+  return `
+    <div class="yt-step-panel">
+      <h2>Βήμα 7 — Checklist & Υποβολή</h2>
+      <p class="yt-step-hint">Βεβαιώσου ότι έχεις ελέγξει όλα πριν υποβάλεις.</p>
+      <div class="yt-checklist">
+        ${CHECKLIST_ITEMS.map((item,i) => `
+          <label class="yt-check-item">
+            <input type="checkbox" id="chk${i}" ${checklist.includes(i)?'checked':''} onchange="updateChecklist()">
+            <span>${escHtml(item)}</span>
+          </label>`).join('')}
+      </div>
+      <div class="yt-field" style="margin-top:1.5rem">
+        <label>YouTube URL <span class="yt-req">*</span></label>
+        <input type="url" id="videoUrl" class="yt-input" placeholder="https://youtu.be/..." value="${escHtml(video_url)}" ${submitted?'disabled':''}>
+      </div>
+      <div class="yt-field">
+        <label>Timestamp αναφοράς (π.χ. 2:34)</label>
+        <input type="text" id="timestampInput" class="yt-input" placeholder="1:45" value="${escHtml(timestamp)}" ${submitted?'disabled':''}>
+      </div>
+      ${submitted ? '<div class="yt-submitted-notice">Έχεις ήδη υποβάλει αυτό το assignment.</div>' : ''}
+      ${!submitted ? `<button class="yt-btn yt-btn-primary yt-submit-btn" id="submitBtn" onclick="submitAssignment()">Υποβολή βίντεο</button>` : ''}
+    </div>`;
+}
+
+// ── Helper functions ────────────────────────────────────────────────────────
+
+function selectTopic(el, val) {
+  document.querySelectorAll('#topicPills .yt-pill').forEach(p => p.classList.remove('yt-pill-active'));
+  el.classList.add('yt-pill-active');
+  document.getElementById('topicCustom').value = val;
+}
+function clearPills() {
+  document.querySelectorAll('#topicPills .yt-pill').forEach(p => p.classList.remove('yt-pill-active'));
+}
+function toggleTag(el, val) {
+  if (!stepData.tags) stepData.tags = [];
+  if (el.classList.contains('yt-pill-active')) {
+    el.classList.remove('yt-pill-active');
+    stepData.tags = stepData.tags.filter(t => t !== val);
+  } else {
+    el.classList.add('yt-pill-active');
+    stepData.tags.push(val);
+  }
+  document.getElementById('tagCount').textContent = stepData.tags.length;
+}
+function updateWordCount(el, counterId) {
+  const words = el.value.trim() ? el.value.trim().split(/\s+/).length : 0;
+  document.getElementById(counterId).textContent = words + ' λέξεις';
+  const fill = document.getElementById('mentionWcFill');
+  if (fill) fill.style.width = Math.min(100, words/60*100) + '%';
+}
+function updateChecklist() {
+  stepData.checklist = [];
+  CHECKLIST_ITEMS.forEach((_,i) => {
+    if (document.getElementById('chk'+i)?.checked) stepData.checklist.push(i);
+  });
+}
+
+// ── Collect data from current step ─────────────────────────────────────────
+
+function collectCurrentStep() {
+  if (currentStep === 2) {
+    stepData.topic = document.getElementById('topicCustom')?.value || '';
+  } else if (currentStep === 3) {
+    stepData.title       = document.getElementById('titleInput')?.value || '';
+    stepData.description = document.getElementById('descInput')?.value || '';
+  } else if (currentStep === 5) {
+    stepData.mention_plan = document.getElementById('mentionInput')?.value || '';
+  } else if (currentStep === 6) {
+    stepData.transcript = document.getElementById('transcriptInput')?.value || '';
+    stepData.chapters   = document.getElementById('chaptersInput')?.value || '';
+  } else if (currentStep === 7) {
+    stepData.video_url        = document.getElementById('videoUrl')?.value || '';
+    stepData.timestamp_mention = document.getElementById('timestampInput')?.value || '';
+    updateChecklist();
+  }
+}
+
+// ── Save to API ─────────────────────────────────────────────────────────────
+
+async function saveProgress(nextStep) {
+  collectCurrentStep();
+  const payload = { step_data: { ...stepData }, current_step: nextStep };
+  if (assignment.status === 'new' && currentStep === 1) payload.status = 'in_progress';
+  try {
+    const r = await api.put('/api/youtube/assignments/' + ASSIGNMENT_ID, payload);
+    assignment = r.assignment;
+    showSaveIndicator();
+  } catch (e) {
+    console.error('Save failed', e);
+  }
+}
+
+function showSaveIndicator() {
+  const el = document.getElementById('saveIndicator');
+  el.textContent = '✓ Αποθηκεύτηκε';
+  el.classList.add('yt-save-visible');
+  setTimeout(() => el.classList.remove('yt-save-visible'), 2000);
+}
+
+// ── Step navigation ─────────────────────────────────────────────────────────
+
+function renderCurrentStep() {
+  const renders = [null, renderStep1, renderStep2, renderStep3, renderStep4, renderStep5, renderStep6, renderStep7];
+  document.getElementById('stepContent').innerHTML = renders[currentStep]();
+  document.getElementById('stepIndicator').textContent = 'Βήμα ' + currentStep + ' / ' + TOTAL_STEPS;
+  document.getElementById('stepTrackFill').style.width = ((currentStep-1)/(TOTAL_STEPS-1)*100) + '%';
+  document.getElementById('btnBack').style.display = currentStep > 1 ? '' : 'none';
+  const isLast = currentStep === TOTAL_STEPS;
+  const isSubmitted = ['submitted','approved','paid'].includes(assignment.status);
+  document.getElementById('btnNext').style.display = (isLast || isSubmitted) ? 'none' : '';
+}
+
+async function stepNext() {
+  if (currentStep >= TOTAL_STEPS) return;
+  await saveProgress(currentStep + 1);
+  currentStep++;
+  renderCurrentStep();
+  window.scrollTo(0, 0);
+}
+
+async function stepBack() {
+  if (currentStep <= 1) return;
+  collectCurrentStep();
+  currentStep--;
+  renderCurrentStep();
+  window.scrollTo(0, 0);
+}
+
+// ── Submit ──────────────────────────────────────────────────────────────────
+
+async function submitAssignment() {
+  collectCurrentStep();
+  const url = document.getElementById('videoUrl')?.value?.trim();
+  if (!url) { alert('Παρακαλώ εισάγετε το YouTube URL.'); return; }
+
+  if (stepData.checklist?.length < CHECKLIST_ITEMS.length) {
+    if (!confirm('Δεν έχεις ελέγξει όλα τα στοιχεία του checklist. Να συνεχίσω;')) return;
+  }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Υποβολή...';
+
+  try {
+    await api.post('/api/youtube/assignments/' + ASSIGNMENT_ID + '/submit', {
+      video_url: url,
+      timestamp_mention: document.getElementById('timestampInput')?.value || ''
+    });
+    document.getElementById('workflowWrap').style.display = 'none';
+    document.getElementById('submitSuccess').style.display = 'block';
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Υποβολή βίντεο';
+    alert('Σφάλμα: ' + (e.message || 'Δοκίμασε ξανά'));
+  }
+}
+
+// ── Init ────────────────────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    const data = await api.get('/api/youtube/assignments/' + ASSIGNMENT_ID);
+    assignment  = data.assignment;
+    stepData    = { ...(assignment.step_data || {}) };
+    currentStep = assignment.current_step || 1;
+
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('workflowTitle').textContent  = 'Assignment #' + assignment.id;
+    const brand = (assignment.brief_data || {}).brand_name || (assignment.brief_data || {}).business_name || '';
+    if (brand) document.getElementById('workflowBrand').textContent = brand;
+
+    document.getElementById('workflowWrap').style.display = 'block';
+  applyStepLabels();
+    renderCurrentStep();
+  } catch (e) {
+    document.getElementById('loadingState').style.display  = 'none';
+    document.getElementById('errorState').style.display    = 'block';
+    if (e.status === 403) window.location.href = '/signin.html?next=' + location.pathname + location.search;
+  }
+}
+
+init();
+</script>
+</body>
+</html>

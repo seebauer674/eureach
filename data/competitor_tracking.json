@@ -1,1 +1,2771 @@
-[]
+[
+  {
+    "id": "17cffbe7e719eb7ff3afd8e8",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Eureach",
+    "competitorUrl": "eureach.eu",
+    "industry": "marketing",
+    "shareToken": "78db428c27925c328365417e7189724cddd22ef248a0b1814f0343e1d873121b",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-25T19:06:38.648Z",
+        "score": 23,
+        "breakdown": {
+          "ai_visibility": 18,
+          "content_quality": 25,
+          "local_seo": 15,
+          "schema_markup": 20,
+          "citation_readiness": 22
+        },
+        "recommendations": [
+          "Publish consistent, in-depth content (case studies, guides, whitepapers) targeting specific European marketing topics to build topical authority that AI systems can reference",
+          "Submit business data to major European and global directories (Clutch, G2, LinkedIn Company Page, Google Business Profile) to establish citation signals",
+          "Implement structured schema markup including Organization, LocalBusiness, and Service schemas to help AI crawlers parse business identity and offerings",
+          "Earn mentions in marketing trade publications and industry roundups — even a few authoritative citations dramatically improve AI retrievability",
+          "Build a clearly defined brand narrative on the website: who you serve, where you operate, and what results you deliver — AI models prioritize specificity and clarity of purpose"
+        ],
+        "strengths": [
+          "Operates in the marketing industry, which has high search demand and well-understood content formats",
+          "EU-focused domain (.eu) provides geographic clarity for European market targeting",
+          "Marketing businesses typically have service pages that can support structured content",
+          "Niche regional positioning (European reach) could differentiate from global competitors"
+        ],
+        "weaknesses": [
+          "Eureach is not a recognized or widely cited brand in AI training data or major marketing publications, severely limiting AI visibility",
+          "The .eu TLD and relatively obscure brand name mean minimal backlink profile and citation presence across authoritative sources",
+          "No evidence of thought leadership content, blog posts, or industry contributions that AI models use to surface businesses",
+          "Local SEO signals appear weak — no clear city/region anchor, Google Business Profile presence is uncertain, and NAP consistency is unknown"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:31:49.558Z",
+        "score": 64,
+        "breakdown": {
+          "ai_visibility": 59,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 25,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement schema markup to enhance search engine understanding of the website's content",
+          "Establish a presence on relevant social media platforms to increase brand visibility",
+          "Add the business to local directories and citations to improve local SEO",
+          "Claim and optimize the Google Maps listing to enhance local search visibility",
+          "Consider adding more AI-related keywords to the website's content to improve AI search visibility"
+        ],
+        "strengths": [
+          "High-quality content",
+          "Clear meta description",
+          "Well-structured headings"
+        ],
+        "weaknesses": [
+          "Lack of schema markup",
+          "No social media presence",
+          "Low citation readiness"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:17:49.394Z",
+        "score": 61,
+        "breakdown": {
+          "ai_visibility": 55,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement schema markup to enhance search engine understanding of the website's content and structure",
+          "Establish a strong social media presence by creating profiles on relevant platforms and engaging with the target audience",
+          "Add a Google Maps link to the website to improve local search visibility and make it easier for customers to find the business"
+        ],
+        "strengths": [
+          "High-quality content as indicated by the perfect content quality score",
+          "Strong local SEO with a score of 70, suggesting effective targeting of the European market",
+          "Clear and concise meta description that effectively communicates the business's value proposition"
+        ],
+        "weaknesses": [
+          "Low schema markup score, indicating a lack of structured data on the website",
+          "Limited social media presence, with no profiles on major platforms like Facebook, Instagram, or LinkedIn",
+          "No Google Maps link, which can hinder local search visibility"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:17:49.439Z",
+        "score": 61,
+        "breakdown": {
+          "ai_visibility": 55,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement schema markup on the website to improve search engine understanding and visibility",
+          "Establish a presence on relevant social media platforms to expand reach and engagement",
+          "Add a Google Maps link to the website to enhance local search visibility and credibility",
+          "Optimize the website's AI visibility by incorporating more AI-related keywords and content",
+          "Develop a sitemap.xml file to improve website crawlability and search engine indexing"
+        ],
+        "strengths": [
+          "High-quality content, as indicated by the content quality score of 100",
+          "Strong local SEO presence, with a score of 70, suggesting effective targeting of the European market",
+          "Clear and concise page title and meta description, effectively communicating the business's value proposition"
+        ],
+        "weaknesses": [
+          "Low schema markup score of 15, indicating a lack of structured data on the website",
+          "Limited social media presence, with no accounts on major platforms like Facebook, Instagram, or LinkedIn",
+          "No Google Maps link, which could hinder local search visibility"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-25T19:06:38.648Z",
+    "isMyBusiness": true
+  },
+  {
+    "id": "b5b8e541ecc295772cc36fcc",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "BrainWave™ Digital Agency | Digital Marketing & Advertising",
+    "competitorUrl": "brainwave.gr",
+    "industry": "Digital Marketing",
+    "shareToken": "fe8b493323532b8b494168c4a3a8390ef502ee45796ae4bffb7ea708b232a43d",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-28T14:44:04.667Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 25,
+          "content_quality": 60,
+          "local_seo": 30,
+          "schema_markup": 20,
+          "citation_readiness": 50
+        },
+        "recommendations": [
+          "Implement comprehensive schema markup for services and business information",
+          "Develop a robust content strategy focusing on AI-friendly, long-tail keywords",
+          "Enhance local SEO by listing the business in international directories and improving Google My Business profile"
+        ],
+        "strengths": [
+          "Specialized industry expertise in digital marketing",
+          "Potential for high-quality, informative content",
+          "Greek market focus allows for targeted approach"
+        ],
+        "weaknesses": [
+          "Limited global online presence",
+          "Outdated or missing schema markup",
+          "Insufficient local SEO signals for non-Greek searchers"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:01.526Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup on the website to provide search engines with structured data and improve search visibility",
+          "Optimize the website for local SEO by adding a Google Maps link, creating a sitemap.xml file, and including location-specific keywords",
+          "Add H1 headings to the website to improve user experience, accessibility, and search engine ranking",
+          "Consider adding more OG tags to the website to enhance social media sharing and improve brand visibility",
+          "Regularly update and refine the website's content to maintain high content quality and ai_visibility scores"
+        ],
+        "strengths": [
+          "Strong citation readiness with a perfect score of 100, indicating excellent brand presence across the web",
+          "High content quality score of 85, suggesting well-written and engaging content on the website",
+          "Good ai_visibility score of 82, implying effective use of AI-driven strategies in digital marketing"
+        ],
+        "weaknesses": [
+          "Low schema markup score of 65, indicating a lack of structured data on the website",
+          "Limited local SEO efforts with a score of 70, which may hinder local search visibility",
+          "No H1 headings found on the website, which can negatively impact search engine ranking and user experience"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:17:51.016Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement H1 headings to improve content structure and SEO",
+          "Claim and optimize Google Maps listing to enhance local SEO and visibility",
+          "Add schema markup to key pages and entities, such as business hours, reviews, and services, to improve search engine understanding"
+        ],
+        "strengths": [
+          "High citation readiness, indicating strong online presence and consistency across directories",
+          "Strong content quality, suggesting well-crafted and engaging website content",
+          "Good AI visibility, implying effective use of AI-driven strategies and terminology"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings, which can impact SEO and content structure",
+          "Insufficient local SEO efforts, with no Google Maps link and a relatively low score",
+          "Low schema markup score, indicating missed opportunities for search engine understanding and rich snippets"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:17:50.547Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Add H1 headings to the website to improve structure and accessibility",
+          "Implement schema markup to help search engines understand the business and its services",
+          "Optimize the website for local SEO by adding a Google Maps link and geotargeted content",
+          "Create and submit a sitemap.xml to improve website crawlability and indexing",
+          "Consider adding more location-specific information to the website to enhance local search visibility"
+        ],
+        "strengths": [
+          "High citation readiness, indicating strong online presence",
+          "Good content quality, suggesting well-written and engaging website content",
+          "Strong social media presence, with profiles on Facebook, Instagram, and LinkedIn"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings, potentially affecting website structure and accessibility",
+          "Low local SEO score, suggesting insufficient optimization for local search",
+          "No schema markup or Google Maps link, hindering search engine understanding of the business"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-28T14:44:04.667Z",
+    "isMyBusiness": false
+  },
+  {
+    "id": "51e6a1d54784d74cc5138b6f",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "DMSS",
+    "competitorUrl": "www.digitalspecialist.gr",
+    "industry": "Digital Marketing",
+    "shareToken": "12500be6960e1401262fa250ca8572fd0a37e6079e3a98ef435623ed89bc5dca",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-29T17:13:03.336Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 35,
+          "content_quality": 50,
+          "local_seo": 60,
+          "schema_markup": 20,
+          "citation_readiness": 30
+        },
+        "recommendations": [
+          "Implement multilingual support for website to reach broader audience",
+          "Add schema markup for services, reviews, and business hours to improve search engine understanding",
+          "Develop high-quality, keyword-optimized content to enhance AI visibility and authority in digital marketing industry"
+        ],
+        "strengths": [
+          "Localized website for Greek market",
+          "Basic digital marketing services offered",
+          "Simple website design"
+        ],
+        "weaknesses": [
+          "Lack of English content for broader audience",
+          "Insufficient schema markup for search engines",
+          "Limited online presence beyond local market"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:08.940Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Add H1 headings to the website to improve structure and accessibility",
+          "Claim and optimize the Google Maps listing to enhance local SEO",
+          "Implement schema markup to help search engines understand the website's content and improve search results",
+          "Create and submit a sitemap.xml file to help search engines discover and crawl the website's content",
+          "Consider adding more specific and targeted keywords to the meta description to improve search engine ranking"
+        ],
+        "strengths": [
+          "High citation readiness, indicating strong online presence and credibility",
+          "Good content quality, suggesting well-written and engaging content",
+          "Strong social media presence, with accounts on Facebook, Instagram, and LinkedIn"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings, which can negatively impact search engine ranking and accessibility",
+          "Limited local SEO efforts, with no Google Maps link and a relatively low score",
+          "Insufficient schema markup, which can hinder search engine understanding of the website's content"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:17:53.070Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Add H1 headings to the website to improve structure and search engine optimization",
+          "Claim and optimize the Google Maps listing to enhance local SEO and improve visibility in map search results",
+          "Implement schema.org markup to provide search engines with additional context and improve rich snippet display",
+          "Create and submit a sitemap.xml file to help search engines discover and crawl the website's content",
+          "Conduct a technical SEO audit to identify and address any other potential issues or areas for improvement"
+        ],
+        "strengths": [
+          "High content quality score, indicating well-written and engaging content",
+          "Excellent citation readiness, suggesting strong online presence and reputation",
+          "Strong social media presence across multiple platforms"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings, which can negatively impact search engine ranking and user experience",
+          "Limited local SEO efforts, as evidenced by the absence of a Google Maps link",
+          "Incomplete technical SEO setup, with no sitemap.xml file and unknown schema.org types"
+        ],
+        "lastUpdated": "Sun, 21 Jun 2026 13:37:48 GMT",
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:17:52.575Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Add H1 headings to the website to improve page structure and content hierarchy, enhancing search engine understanding and user experience",
+          "Optimize local SEO by including name, address, and phone number (NAP) consistently across the web, and consider adding a Google Maps link to the website",
+          "Implement schema markup to improve search engine understanding of the website's content and structure, and enhance search result appearances",
+          "Develop a sitemap.xml to help search engines understand the website's structure and content, and improve crawlability and indexation"
+        ],
+        "strengths": [
+          "High citation readiness with a perfect score of 100, indicating strong online presence and reputation",
+          "Good content quality score of 85, suggesting well-written and relevant content",
+          "Strong presence on major social media platforms, including Facebook, Instagram, and LinkedIn"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings, which can impact search engine understanding of page structure and content hierarchy",
+          "Low local SEO score of 70, indicating potential issues with geotargeting and local search visibility",
+          "Absence of Google Maps link, which can hinder local search and navigation"
+        ],
+        "lastUpdated": "Sun, 21 Jun 2026 13:37:48 GMT",
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-29T17:13:03.336Z",
+    "isMyBusiness": false
+  },
+  {
+    "id": "70a35908e9599b96cb77bdef",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Irongate Marketing",
+    "competitorUrl": "irongate-marketing.com",
+    "industry": "marketing",
+    "shareToken": "5a44e3d6206bbdb33ece1dd3b8542f93afe25748be0f779942971ac29c9fa1d8",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T09:48:17.950Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 50,
+          "local_seo": 20,
+          "schema_markup": 40,
+          "citation_readiness": 60
+        },
+        "recommendations": [
+          "Develop a comprehensive content strategy focusing on unique, AI-optimized blog posts and guides",
+          "Implement robust local SEO techniques, including Google My Business verification and location-specific keyword targeting",
+          "Enhance schema markup signals to improve search engine understanding of the business and its services"
+        ],
+        "strengths": [
+          "Established online presence",
+          "Relevant industry expertise",
+          "Basic website structure"
+        ],
+        "weaknesses": [
+          "Limited unique content",
+          "Inadequate local search optimization",
+          "Insufficient schema markup implementation"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:15.842Z",
+        "score": 34,
+        "breakdown": {
+          "ai_visibility": 29,
+          "content_quality": 40,
+          "local_seo": 45,
+          "schema_markup": 5,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Add a meta description and OG title to the website to improve search engine results page (SERP) appearance and click-through rates",
+          "Implement schema markup to help search engines understand the website's content and context, and to potentially improve search rankings",
+          "Enhance social media presence by creating profiles on LinkedIn and Instagram, and regularly posting engaging content to increase brand awareness and drive website traffic",
+          "Develop a robust local SEO strategy, including creating a Google Maps link and optimizing the website for location-based searches",
+          "Create a comprehensive content strategy, including regular blog posts and resource pages, to improve content quality and increase the website's authority in the marketing industry"
+        ],
+        "strengths": [
+          "Established trust with 172+ leading brands",
+          "Presence of trackable revenue, indicating a level of success",
+          "Email contact information is available on the website"
+        ],
+        "weaknesses": [
+          "Missing meta description, OG title, and H1 headings, which can negatively impact search engine understanding and user experience",
+          "Lack of schema markup, which can make it difficult for search engines to understand the content and context of the website",
+          "Insufficient social media presence, with only Facebook being utilized"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:17:55.859Z",
+        "score": 36,
+        "breakdown": {
+          "ai_visibility": 33,
+          "content_quality": 40,
+          "local_seo": 45,
+          "schema_markup": 15,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Add a meta description to the website to improve SERP click-through rates and provide a brief summary of the page's content",
+          "Implement schema markup to enhance search engine understanding of the website's content and improve visibility in search results",
+          "Expand social media presence to include LinkedIn and Instagram, and ensure consistency across all platforms",
+          "Create a sitemap.xml file to help search engines discover and crawl the website's pages more efficiently",
+          "Consider adding a Google Maps link to improve local SEO and make it easier for clients to find the business"
+        ],
+        "strengths": [
+          "Trusted by a significant number of leading brands (172+), indicating a strong reputation",
+          "Achieved 8 figures in trackable revenue, showing success in performance marketing",
+          "Presence of a clear and professional brand statement in H2 headings"
+        ],
+        "weaknesses": [
+          "Missing meta description, which can negatively impact search engine results page (SERP) click-through rates",
+          "Lack of schema markup, making it harder for search engines to understand the website's content and context",
+          "Insufficient social media presence, with only Facebook being utilized"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:17:55.491Z",
+        "score": 36,
+        "breakdown": {
+          "ai_visibility": 33,
+          "content_quality": 40,
+          "local_seo": 45,
+          "schema_markup": 15,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Add a meta description to the website to improve SERP click-through rates and provide a brief summary of the business",
+          "Implement schema markup (e.g. Organization, LocalBusiness) to enhance search engine understanding of the website's content",
+          "Create H1 headings to improve the website's structure, accessibility, and search engine optimization (SEO)",
+          "Consider adding a Google Maps link and creating a sitemap.xml to improve local SEO and website crawlability",
+          "Establish a presence on LinkedIn to expand the business's social media reach and professional networking opportunities"
+        ],
+        "strengths": [
+          "Trusted by a large number of leading brands (172+), indicating a strong reputation",
+          "Presence of trackable revenue (8 figures) suggests a successful business model",
+          "Email contact information is available on the website, allowing for easy communication"
+        ],
+        "weaknesses": [
+          "Missing meta description, which can hurt search engine results page (SERP) click-through rates",
+          "Lack of schema markup, making it harder for search engines to understand the website's content",
+          "No H1 headings, which can negatively impact the website's structure and accessibility"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T09:48:17.950Z",
+    "isMyBusiness": false
+  },
+  {
+    "id": "c1b0224aafb157a57918fc98",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Digital Challenge",
+    "competitorUrl": "dicha.gr",
+    "industry": "marketing",
+    "shareToken": "820b823dca6b79f7a2e8d50557a7a9f7de92b47febee87b0f6335d48fc414efd",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T09:53:31.367Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 50,
+          "local_seo": 20,
+          "schema_markup": 10,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Conduct keyword research and optimize website content for AI-powered search engines",
+          "Implement schema markup and structured data to enhance search engine understanding",
+          "Develop a comprehensive local SEO strategy, including online directory listings and reviews"
+        ],
+        "strengths": [
+          "Basic online presence established",
+          "Industry relevance for marketing-related searches",
+          "Potential for content creation and thought leadership"
+        ],
+        "weaknesses": [
+          "Lack of optimized content for AI-powered search engines",
+          "Insufficient schema markup and structured data",
+          "Limited local SEO efforts and online directory presence"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:21.396Z",
+        "score": 83,
+        "breakdown": {
+          "ai_visibility": 84,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 55,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup to enhance search engine understanding and display of the website's content",
+          "Optimize the website for local SEO by adding location-specific keywords, creating a Google My Business listing, and embedding a Google Maps link",
+          "Create and upload robots.txt and sitemap.xml files to improve website crawlability and indexing",
+          "Consider expanding social media presence to other relevant platforms to further increase online visibility"
+        ],
+        "strengths": [
+          "High-quality content that resonates with the target audience",
+          "Strong online presence with profiles on major social media platforms",
+          "Excellent citation readiness with accurate contact information"
+        ],
+        "weaknesses": [
+          "Lack of schema markup implementation, which can impact search engine understanding of the content",
+          "Insufficient local SEO efforts, which can negatively affect visibility in local search results",
+          "Missing essential technical SEO elements such as robots.txt and sitemap.xml files"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:17:57.917Z",
+        "score": 86,
+        "breakdown": {
+          "ai_visibility": 88,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Add a Google Maps link to the website to improve local SEO and increase visibility in local search results",
+          "Implement schema markup with relevant types, such as 'LocalBusiness' or 'Ecommerce', to enhance search engine understanding of the website's content",
+          "Create and submit a sitemap.xml file to help search engines discover and index all pages on the website"
+        ],
+        "strengths": [
+          "High-quality content that is engaging and well-structured",
+          "Excellent AI visibility, indicating a strong presence in search engine results",
+          "Strong citation readiness, with accurate and up-to-date contact information"
+        ],
+        "weaknesses": [
+          "Limited local SEO efforts, with no Google Maps link and a relatively low score",
+          "Room for improvement in schema markup, with unknown types and a score of 65",
+          "No sitemap.xml file, which can hinder search engine crawling and indexing"
+        ],
+        "lastUpdated": "Wed, 01 Jul 2026 08:32:27 GMT",
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:17:57.622Z",
+        "score": 86,
+        "breakdown": {
+          "ai_visibility": 88,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup for key pages such as the homepage, about page, and contact page to improve search engine understanding",
+          "Optimize the website for local SEO by adding location-specific keywords, creating a Google My Business listing, and getting listed in local directories",
+          "Add a Google Maps link to the website to help customers find the business location and improve local search visibility",
+          "Create and submit a sitemap.xml file to help search engines discover and crawl the website's pages more efficiently",
+          "Consider adding more H2 headings to break up content and improve readability"
+        ],
+        "strengths": [
+          "High-quality content that resonates with the target audience",
+          "Strong online presence with active social media profiles on Facebook, Instagram, and LinkedIn",
+          "Good phone and email support for customers to get in touch"
+        ],
+        "weaknesses": [
+          "Limited local SEO efforts, which could be improved for better local search visibility",
+          "Lack of schema markup implementation, which can enhance search engine understanding of the website's content",
+          "No Google Maps link, which can make it harder for customers to find the business location"
+        ],
+        "lastUpdated": "Sat, 01 Aug 2026 05:32:31 GMT",
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T09:53:31.368Z",
+    "isMyBusiness": false
+  },
+  {
+    "id": "d271c5ddb30061e103700181",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Iteractive AI",
+    "competitorUrl": "iteractive.ai",
+    "industry": "marketing",
+    "shareToken": "be8ce44aa2a55bdd8fe7b15a5e61436fd1eca82188ef0ea71a4f5d0c0a95246c",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T10:07:05.716Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 60,
+          "content_quality": 30,
+          "local_seo": 10,
+          "schema_markup": 80,
+          "citation_readiness": 20
+        },
+        "recommendations": [
+          "Add H1 and H2 headings to the website to improve content structure and accessibility",
+          "Include a clear call-to-action with contact information, such as a phone number and email address",
+          "Claim and optimize the Google My Business listing to improve local SEO and citation potential",
+          "Encourage customers to leave reviews on social media and other platforms to increase citation potential"
+        ],
+        "strengths": [
+          "Effective use of schema.org types, including Organization and SoftwareApplication",
+          "Presence on major social media platforms, including Facebook, Instagram, and LinkedIn",
+          "Clear and concise meta description and OG description"
+        ],
+        "weaknesses": [
+          "Lack of H1 and H2 headings, which can negatively impact content structure and accessibility",
+          "Insufficient local SEO signals, including no phone number, email, or Google Maps link",
+          "Limited citation potential due to missing contact information and lack of external reviews"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:25.562Z",
+        "score": 71,
+        "breakdown": {
+          "ai_visibility": 83,
+          "content_quality": 75,
+          "local_seo": 30,
+          "schema_markup": 100,
+          "citation_readiness": 70
+        },
+        "recommendations": [
+          "Optimize the website for local SEO by adding a Google Maps link, NAP (name, address, phone number) consistency, and location-based keywords",
+          "Add prominent contact information, such as phone numbers and email addresses, to the website to improve customer engagement and support",
+          "Implement a clear page structure with H1 and H2 headings to enhance accessibility, readability, and search engine crawling"
+        ],
+        "strengths": [
+          "Strong AI search visibility due to relevant industry and keyword targeting",
+          "Effective use of schema markup to provide search engines with structured data",
+          "Well-established social media presence across multiple platforms"
+        ],
+        "weaknesses": [
+          "Lack of local SEO optimization, which may hinder visibility for location-based searches",
+          "Insufficient contact information on the website, making it difficult for customers to get in touch",
+          "Absence of H1 and H2 headings, which can negatively impact page structure and accessibility"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:18:06.551Z",
+        "score": 40,
+        "breakdown": {
+          "ai_visibility": 20,
+          "content_quality": 30,
+          "local_seo": 10,
+          "schema_markup": 10,
+          "citation_readiness": 20
+        },
+        "recommendations": [
+          "Conduct a thorough website audit to identify technical SEO opportunities",
+          "Develop a high-quality, AI-focused content strategy to improve search visibility",
+          "Implement schema markup and optimize for local SEO to increase online presence"
+        ],
+        "strengths": [
+          "Relevant business name for AI-focused industry",
+          "Clear and memorable website domain"
+        ],
+        "weaknesses": [
+          "Lack of available website crawl data for analysis",
+          "Unclear content strategy and quality",
+          "Potential lack of local SEO and schema markup implementation"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:06.372Z",
+        "score": 40,
+        "breakdown": {
+          "ai_visibility": 60,
+          "content_quality": 30,
+          "local_seo": 20,
+          "schema_markup": 10,
+          "citation_readiness": 20
+        },
+        "recommendations": [
+          "Conduct a thorough website audit to assess content quality and structure",
+          "Develop a comprehensive local SEO strategy to target relevant geographic regions",
+          "Implement schema markup on the website to enhance search engine understanding and visibility",
+          "Establish high-quality citations on relevant directories and platforms to improve citation readiness"
+        ],
+        "strengths": [
+          "Relevant industry expertise in marketing",
+          "Keyword-rich company name with 'AI' inclusion",
+          "Simple and memorable domain name"
+        ],
+        "weaknesses": [
+          "Unknown website content and structure",
+          "Unclear local SEO presence and targeting",
+          "Potential lack of schema markup and citation signals"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T10:07:05.717Z",
+    "isMyBusiness": false
+  },
+  {
+    "id": "cad89fa2b1a4c99e2b718537",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Luminelle",
+    "competitorUrl": "luminelleai.com",
+    "industry": "marketing",
+    "shareToken": "89384e3ec05a75f61105be6cdbb8a3f9251a309f11b4bdb8730d604fc9d072d5",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T10:09:04.300Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 60,
+          "content_quality": 50,
+          "local_seo": 20,
+          "schema_markup": 0,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement schema markup to provide structured data for search engines",
+          "Expand social media presence to include LinkedIn and Instagram",
+          "Add a Google Maps link to improve local SEO and citation readiness",
+          "Create a sitemap.xml file to help search engines understand the website's structure"
+        ],
+        "strengths": [
+          "Clear and descriptive page title and meta description",
+          "Presence of contact information such as phone and email",
+          "Simple and straightforward H1 and H2 headings"
+        ],
+        "weaknesses": [
+          "Lack of schema markup, which can greatly improve AI search visibility",
+          "Insufficient social media presence, with no LinkedIn or Instagram accounts",
+          "No Google Maps link, which can harm local SEO"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:32.759Z",
+        "score": 65,
+        "breakdown": {
+          "ai_visibility": 60,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 60
+        },
+        "recommendations": [
+          "Implement schema markup to help search engines better understand the website's content and improve search visibility",
+          "Expand social media presence to include LinkedIn and other relevant platforms to increase brand awareness and customer engagement",
+          "Add a Google Maps link to the website to improve local SEO and make it easier for customers to find the business"
+        ],
+        "strengths": [
+          "High-quality content that effectively communicates the value of Luminelle's AI website chatbot",
+          "Well-structured page with clear headings that outline the benefits and functionality of the product",
+          "Presence of phone and email contact information for easy customer support"
+        ],
+        "weaknesses": [
+          "Lack of schema markup, which can hinder search engine understanding of the website's content and structure",
+          "Insufficient social media presence, with only Facebook being utilized",
+          "No Google Maps link, which can make it difficult for customers to find the business's physical location"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:18:08.802Z",
+        "score": 65,
+        "breakdown": {
+          "ai_visibility": 60,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 60
+        },
+        "recommendations": [
+          "Implement schema markup to improve search engine understanding and potentially increase rich snippet display in search results",
+          "Expand social media presence to include LinkedIn and potentially other platforms to increase brand visibility and drive traffic",
+          "Add a Google Maps link to the website to improve local SEO and make it easier for customers to find the business"
+        ],
+        "strengths": [
+          "High-quality content as indicated by the content_quality score of 100",
+          "Effective use of metadata with a clear page title and meta description",
+          "Presence of contact information such as phone and email"
+        ],
+        "weaknesses": [
+          "Lack of schema markup which can hinder search engine understanding of the site's content",
+          "Limited social media presence with only Facebook being utilized",
+          "No Google Maps link which can negatively impact local search visibility"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:08.690Z",
+        "score": 65,
+        "breakdown": {
+          "ai_visibility": 60,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 60
+        },
+        "recommendations": [
+          "Implement schema markup, particularly for business and organization types, to enhance search engine understanding and visibility",
+          "Expand social media presence to include LinkedIn and Instagram, to increase brand reach and engagement",
+          "Create and submit a sitemap.xml to improve crawlability and indexation of the website's pages"
+        ],
+        "strengths": [
+          "High-quality content with a well-structured page title and meta description",
+          "Strong phone and email presence for customer support",
+          "Effective use of H1 and H2 headings for content organization"
+        ],
+        "weaknesses": [
+          "Lack of schema markup implementation, hindering search engine understanding of the business",
+          "Insufficient social media presence, with only Facebook being utilized",
+          "Absence of a Google Maps link and sitemap.xml, impacting local SEO and crawlability"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T10:09:04.300Z"
+  },
+  {
+    "id": "ba17a67581efbd91c62e76f4",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Synapsis",
+    "competitorUrl": "synapsis.io",
+    "industry": "marketing",
+    "shareToken": "4022e401d19545a07d4b67add238f134f5bacdac1ddfc1498d0e1f7315ceac8e",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T10:10:04.055Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 50,
+          "local_seo": 20,
+          "schema_markup": 40,
+          "citation_readiness": 60
+        },
+        "recommendations": [
+          "Develop and publish high-quality, informative content on the website to improve content quality and AI visibility",
+          "Claim and optimize local business listings to enhance local SEO",
+          "Implement schema markup on the website to provide search engines with structured data and improve visibility",
+          "Establish a strong online presence through social media and other marketing channels to increase citation readiness"
+        ],
+        "strengths": [
+          "Presence in marketing industry with potential for high relevance",
+          "IO domain suggests some level of technical expertise",
+          "Name 'Synapsis' is unique and memorable"
+        ],
+        "weaknesses": [
+          "Lack of publicly available information on business operations and services",
+          "Unknown website structure and content quality",
+          "Low inferred local SEO presence"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:40.504Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 0,
+          "local_seo": 0,
+          "schema_markup": 0,
+          "citation_readiness": 10
+        },
+        "recommendations": [
+          "Conduct a website crawl to assess content quality, structure, and SEO",
+          "Develop a comprehensive content strategy to improve AI search visibility",
+          "Claim and optimize online directories and citations to improve citation readiness"
+        ],
+        "strengths": [
+          "Synapsis has a clear and memorable brand name",
+          "The company has a dedicated website, synapsis.io"
+        ],
+        "weaknesses": [
+          "Lack of website crawl data, making it difficult to assess content quality and SEO",
+          "No information available on Synapsis' online presence and marketing efforts"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:18:14.999Z",
+        "score": 40,
+        "breakdown": {
+          "ai_visibility": 20,
+          "content_quality": 30,
+          "local_seo": 10,
+          "schema_markup": 20,
+          "citation_readiness": 50
+        },
+        "recommendations": [
+          "Conduct a thorough website crawl and audit to identify areas for optimization and improvement.",
+          "Develop a content strategy that incorporates AI-friendly elements, such as natural language processing and entity-based content.",
+          "Implement schema markup on the website to enhance search engine understanding and visibility.",
+          "Leverage industry expertise to create high-quality, informative content that demonstrates thought leadership and attracts links from authoritative sources.",
+          "Claim and optimize the business's Google My Business listing to improve local SEO and online visibility."
+        ],
+        "strengths": [
+          "The business has a clear and memorable name, Synapsis, which can aid in brand recognition.",
+          "The industry, marketing, is highly relevant to search engine optimization and AI search visibility, indicating potential expertise.",
+          "The business has a dedicated website, synapsis.io, which is the foundation for online presence."
+        ],
+        "weaknesses": [
+          "Without a website crawl, it's unclear if the website is optimized for search engines, potentially hindering AI search visibility.",
+          "The business may not be leveraging its industry expertise to create high-quality, AI-friendly content.",
+          "Local SEO appears to be underutilized, which could impact visibility in location-based search results."
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:14.175Z",
+        "score": 40,
+        "breakdown": {
+          "ai_visibility": 20,
+          "content_quality": 30,
+          "local_seo": 10,
+          "schema_markup": 10,
+          "citation_readiness": 20
+        },
+        "recommendations": [
+          "Conduct a thorough website audit to identify technical SEO issues and optimize for crawlability",
+          "Develop a high-quality, AI-optimized content strategy focusing on marketing industry trends and topics",
+          "Claim and optimize the business's Google My Business listing to improve local SEO visibility"
+        ],
+        "strengths": [
+          "Presence in a competitive industry",
+          "Memorable business name",
+          "Top-level domain (.io) which can be beneficial for tech-related businesses"
+        ],
+        "weaknesses": [
+          "Lack of available website crawl data",
+          "Unclear content strategy",
+          "Potential lack of local SEO optimization"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T10:10:04.055Z"
+  },
+  {
+    "id": "04f39ff7e5b15937e7e6a798",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "SaaS Lab",
+    "competitorUrl": "saaslab.co",
+    "industry": "marketing",
+    "shareToken": "fe35bf1b1902baa715135900a31744df5699447f051c561be1276d181a3e32ea",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T10:12:29.578Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 50,
+          "local_seo": 20,
+          "schema_markup": 0,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Add H1 headings to main pages to improve content hierarchy and accessibility",
+          "Implement schema markup (e.g., organization, local business) to enhance search engine understanding of the website",
+          "Establish a presence on relevant social media platforms (e.g., LinkedIn, Twitter) to increase online visibility and engagement",
+          "Claim and verify the business's Google My Business listing to improve local SEO"
+        ],
+        "strengths": [
+          "Clear meta description that describes the business's purpose",
+          "Presence of basic contact information (phone and email)",
+          "Well-structured website with a sitemap.xml"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings, which can hurt content hierarchy and accessibility",
+          "No schema markup, making it difficult for search engines to understand the website's content",
+          "No social media presence, which can limit the business's online visibility"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:48.212Z",
+        "score": 55,
+        "breakdown": {
+          "ai_visibility": 49,
+          "content_quality": 75,
+          "local_seo": 70,
+          "schema_markup": 25,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement schema markup on the website to improve search engine understanding and visibility",
+          "Create and maintain active social media profiles to enhance brand presence and drive traffic to the website",
+          "Add H1 headings to the website to improve accessibility and SEO, and consider restructuring content to better utilize header tags",
+          "Optimize the website's meta description to better reflect the business and its services, and ensure it is within the recommended character limit",
+          "Claim and verify Google My Business listing to improve local SEO and provide accurate business information to customers"
+        ],
+        "strengths": [
+          "Well-established content quality with a score of 75, indicating high-quality and relevant content on the website",
+          "Strong local SEO presence with a score of 70, suggesting accurate and up-to-date business listings",
+          "Presence of essential contact information such as phone number and email address"
+        ],
+        "weaknesses": [
+          "Low schema markup score of 25, indicating a lack of structured data to help search engines understand the website's content",
+          "Limited social media presence with no active profiles on major platforms",
+          "Absence of H1 headings, which can negatively impact the website's accessibility and SEO"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:46:05.616Z",
+        "score": 52,
+        "breakdown": {
+          "ai_visibility": 45,
+          "content_quality": 75,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement schema markup on the website to provide search engines with structured data and improve AI visibility",
+          "Optimize the website's content and meta tags to better align with AI-driven search engine algorithms",
+          "Establish a presence on relevant social media platforms, such as LinkedIn, to increase brand awareness and reach a wider audience",
+          "Create and submit a sitemap.xml file to help search engines discover and crawl the website's pages",
+          "Consider adding H1 headings and other header tags to improve the website's structure and accessibility"
+        ],
+        "strengths": [
+          "High content quality score, indicating well-written and engaging content on the website",
+          "Strong local SEO presence, suggesting effective optimization for location-based searches",
+          "Presence of contact information such as phone and email, facilitating communication with potential customers"
+        ],
+        "weaknesses": [
+          "Low schema markup score, indicating a lack of structured data on the website",
+          "Poor AI visibility score, suggesting limited optimization for AI-driven search engines",
+          "No social media presence, making it difficult to reach a wider audience and build brand awareness"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-07-01T10:18:16.448Z",
+        "score": 56,
+        "breakdown": {
+          "ai_visibility": 49,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement schema markup to improve search engine understanding and enhance search results",
+          "Add H1 headings to improve page structure and accessibility",
+          "Establish a strong social media presence and link to relevant platforms to increase online visibility"
+        ],
+        "strengths": [
+          "High content quality score, indicating well-written and engaging content",
+          "Presence of a clear and concise meta description",
+          "Having a phone number and email address readily available for customers"
+        ],
+        "weaknesses": [
+          "Lack of schema markup, which can negatively impact search engine understanding",
+          "No H1 headings found, potentially hindering page structure and accessibility",
+          "Missing social media presence and Google Maps link, limiting online visibility"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:15.720Z",
+        "score": 56,
+        "breakdown": {
+          "ai_visibility": 49,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement schema markup to enhance search engine result pages and improve AI visibility",
+          "Develop a social media presence on relevant platforms to increase brand awareness and drive traffic",
+          "Optimize the website with H1 headings and other semantic HTML elements to improve content structure and AI understanding",
+          "Create and submit a sitemap.xml to help search engines discover and crawl the website's content",
+          "Consider adding a Google Maps link to improve local SEO and citation readiness"
+        ],
+        "strengths": [
+          "High content quality score, indicating well-written and engaging content",
+          "Good local SEO score, suggesting some optimization for local search",
+          "Presence of essential contact information such as phone and email"
+        ],
+        "weaknesses": [
+          "Low AI visibility score, indicating potential issues with search engine understanding",
+          "Lack of schema markup, which can hinder search engine result page (SERP) enhancements",
+          "No social media presence, which can limit brand awareness and online reputation"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T10:12:29.578Z"
+  },
+  {
+    "id": "c3289631176a269e97ec9726",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "NetPlanet",
+    "competitorUrl": "netplanet.gr",
+    "industry": "marketing",
+    "shareToken": "72acc0b14932c57129dbb2e9d7dfafac70c1294bc832c033663c2b0cf7dba8ba",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T10:13:22.670Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 20,
+          "content_quality": 50,
+          "local_seo": 60,
+          "schema_markup": 30,
+          "citation_readiness": 70
+        },
+        "recommendations": [
+          "Implement H1 headings to improve content structure and accessibility",
+          "Expand schema markup to include types like LocalBusiness and WebPage",
+          "Create and submit a sitemap.xml to search engines and implement a robots.txt file to guide crawlers"
+        ],
+        "strengths": [
+          "Strong social media presence",
+          "Clear meta description",
+          "Local SEO signals with Google Maps link"
+        ],
+        "weaknesses": [
+          "Missing H1 headings",
+          "Lack of comprehensive schema markup",
+          "No sitemap.xml and robots.txt files"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:51.693Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 74,
+          "content_quality": 75,
+          "local_seo": 100,
+          "schema_markup": 55,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Add H1 headings to the website to improve its structure and accessibility, and to help search engines understand the content's hierarchy",
+          "Implement more comprehensive schema markup to provide search engines with additional context about the business and its services",
+          "Create and upload robots.txt and sitemap.xml files to facilitate search engine crawling and indexing, and to ensure that all important pages are being crawled and indexed"
+        ],
+        "strengths": [
+          "Strong local SEO presence with a perfect score, indicating effective use of location-based keywords and mapping integration",
+          "Excellent citation readiness, suggesting consistent and accurate business listings across the web",
+          "Well-structured meta description that effectively summarizes the business's services"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings, which can negatively impact the website's structure and accessibility",
+          "Insufficient schema markup, which can limit the website's ability to provide rich snippets and enhance search engine results",
+          "Missing robots.txt and sitemap.xml files, which can hinder search engine crawling and indexing"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:18:17.926Z",
+        "score": 83,
+        "breakdown": {
+          "ai_visibility": 78,
+          "content_quality": 75,
+          "local_seo": 100,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Add H1 headings to the webpage to improve content structure and search engine understanding",
+          "Implement additional schema markup types to enhance structured data and improve ai_visibility score",
+          "Create and submit a sitemap.xml file to facilitate search engine crawling and indexing",
+          "Optimize meta description to better match the page title and improve click-through rates",
+          "Consider adding more specific and relevant OG title to improve social media sharing and search engine understanding"
+        ],
+        "strengths": [
+          "Excellent local SEO with a perfect score of 100, indicating strong location-based search visibility",
+          "Strong citation readiness with a score of 100, suggesting consistent and accurate online presence",
+          "Effective use of social media with presence on Facebook, Instagram, and LinkedIn"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings on the webpage, which can negatively impact search engine understanding of the content",
+          "Low schema markup score of 65, indicating potential for improvement in structured data implementation",
+          "Missing sitemap.xml file, which can hinder search engine crawling and indexing"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:17.227Z",
+        "score": 83,
+        "breakdown": {
+          "ai_visibility": 78,
+          "content_quality": 75,
+          "local_seo": 100,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement H1 headings to structure and organize content, improving search engine understanding and user experience",
+          "Enhance schema markup to include types beyond just Organization, such as LocalBusiness or WebPage, to provide search engines with more context about the website and its content",
+          "Create and submit a sitemap.xml file to facilitate search engine crawling and indexing of the website, ensuring all relevant pages are discovered and included in search results"
+        ],
+        "strengths": [
+          "Strong local SEO presence with a perfect score, indicating effective targeting of local audience",
+          "Good citation readiness, suggesting a robust online presence across directories and citations",
+          "Active social media presence across multiple platforms, including Facebook, Instagram, and LinkedIn"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings on the website, which can negatively impact search engine understanding of the content structure",
+          "Low schema markup score, indicating a potential missed opportunity for enhanced search engine results and improved user experience",
+          "Missing sitemap.xml file, which can hinder search engine crawling and indexing of the website"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T10:13:22.671Z"
+  },
+  {
+    "id": "6130e22072b29b9bbd9c5884",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Roadcube",
+    "competitorUrl": "roadcube.com",
+    "industry": "marketing",
+    "shareToken": "b5d422c714fbf7f2e99c61e554103b227e97f8b42e26e54b08515fecabc33e2f",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T10:14:03.543Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 60,
+          "local_seo": 20,
+          "schema_markup": 0,
+          "citation_readiness": 80
+        },
+        "recommendations": [
+          "add schema markup to the website to provide structured data for search engines",
+          "create a Google Maps link to improve local SEO",
+          "generate and submit a sitemap.xml to facilitate crawling and indexing",
+          "optimize content to better match AI-powered search engine algorithms",
+          "consider adding more descriptive and keyword-rich H2 headings"
+        ],
+        "strengths": [
+          "clear and concise meta description",
+          "presence on major social media platforms",
+          "phone and email contact information available"
+        ],
+        "weaknesses": [
+          "lack of schema markup",
+          "no Google Maps link",
+          "absence of sitemap.xml",
+          "limited optimization for AI-powered search engines"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:32:56.871Z",
+        "score": 74,
+        "breakdown": {
+          "ai_visibility": 70,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup on the website to improve search engine understanding and visibility",
+          "Optimize the website for local SEO by including name, address, and phone number (NAP) consistently across the web, and creating content that is relevant to the local audience",
+          "Add a Google Maps link to the website to enhance customer experience and improve local search visibility",
+          "Consider adding a sitemap.xml file to the website to help search engines crawl and index the site's content more efficiently"
+        ],
+        "strengths": [
+          "High-quality content on the website, with a content quality score of 100",
+          "Strong citation readiness, with a score of 100, indicating a solid online presence",
+          "Good AI visibility, with a score of 70, suggesting a decent presence in AI-driven search results"
+        ],
+        "weaknesses": [
+          "Lack of schema markup, with a score of 15, which can negatively impact search engine understanding of the website's content",
+          "Limited local SEO, with a score of 70, which may hinder the website's visibility in local search results",
+          "No Google Maps link, which can make it harder for customers to find the business's physical location"
+        ]
+      },
+      {
+        "date": "2026-05-31T13:50:31.856Z",
+        "score": 74,
+        "breakdown": {
+          "ai_visibility": 70,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup to help search engines understand the structure and content of the website",
+          "Add a Google Maps link to improve local SEO and make it easier for customers to find the business",
+          "Optimize the website's content and meta tags to better match AI-search algorithms and improve AI visibility",
+          "Consider adding a sitemap.xml file to help search engines crawl and index the website's pages more efficiently",
+          "Enhance local SEO efforts by including name, address, and phone number consistently across the web"
+        ],
+        "strengths": [
+          "High-quality content on the website",
+          "Strong citation readiness with complete contact information",
+          "Presence on multiple social media platforms"
+        ],
+        "weaknesses": [
+          "Lack of schema markup which can impact search engine understanding of the content",
+          "Limited local SEO efforts with no Google Maps link",
+          "Room for improvement in AI visibility to enhance search engine ranking"
+        ],
+        "lastUpdated": "Fri, 24 Apr 2026 08:55:26 GMT",
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-07-01T10:18:19.326Z",
+        "score": 74,
+        "breakdown": {
+          "ai_visibility": 70,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup to enhance search engine understanding of the website's content and structure, particularly for AI-related marketing services",
+          "Add a Google Maps link to improve local search visibility and make it easier for customers to find the business",
+          "Create and submit a sitemap.xml to help search engines discover and crawl all pages of the website, ensuring that all relevant content is indexed and visible"
+        ],
+        "strengths": [
+          "High-quality content that effectively communicates the benefits of Roadcube's marketing platform",
+          "Strong presence on major social media platforms, including Facebook, Instagram, and LinkedIn",
+          "Excellent citation readiness, with easily accessible contact information such as phone number and email"
+        ],
+        "weaknesses": [
+          "Limited schema markup, which may hinder search engines' ability to understand the structure and content of the website",
+          "No Google Maps link, which could negatively impact local search visibility",
+          "Lack of sitemap.xml, which may affect search engine crawling and indexing of the website"
+        ],
+        "lastUpdated": "Fri, 24 Apr 2026 08:55:26 GMT",
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:18.509Z",
+        "score": 74,
+        "breakdown": {
+          "ai_visibility": 70,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup on the website to improve search engines' understanding of the content and context",
+          "Optimize the website for local SEO by adding location-based keywords, creating a Google My Business listing, and including a Google Maps link",
+          "Consider adding a sitemap.xml file to help search engines crawl and index the website's pages more efficiently",
+          "Enhance AI visibility by leveraging AI-generated content, such as blog posts or social media updates, to improve the website's discoverability"
+        ],
+        "strengths": [
+          "High-quality content on the website, indicating well-written and relevant information for users",
+          "Good citation readiness, suggesting accurate and up-to-date contact information",
+          "Strong presence on major social media platforms, including Facebook, Instagram, and LinkedIn"
+        ],
+        "weaknesses": [
+          "Lack of schema markup, which can hinder search engines' ability to understand the website's content and context",
+          "Limited local SEO efforts, which may hinder visibility in local search results",
+          "No Google Maps link, making it harder for users to find the business's location"
+        ],
+        "lastUpdated": "Fri, 24 Apr 2026 08:55:26 GMT",
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T10:14:03.543Z"
+  },
+  {
+    "id": "429b90ebfa3bb014438c73d0",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "SNS",
+    "competitorUrl": "snsagency.gr",
+    "industry": "marketing",
+    "shareToken": "2b5d2f3ee6a5ccac42807a0abfdb1128fc9651d79da6998bd20acf3bde24b9b9",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T10:15:48.106Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 50,
+          "local_seo": 60,
+          "schema_markup": 0,
+          "citation_readiness": 80
+        },
+        "recommendations": [
+          "Implement schema markup types relevant to the marketing industry (e.g., 'ProfessionalService', 'DigitalMarketingAgency') to enhance AI search visibility",
+          "Optimize the meta description to provide a clear and concise summary of the agency's services and expertise",
+          "Create and submit a sitemap.xml file to improve search engine crawling and indexing"
+        ],
+        "strengths": [
+          "Clear and consistent branding across social media platforms",
+          "Presence of essential contact information (phone, email, and social media handles)",
+          "Google Maps link integration for better local search visibility"
+        ],
+        "weaknesses": [
+          "Lack of schema markup implementation, making it harder for AI search engines to understand the website's context",
+          "Meta description appears to be focused on a specific service (Google Ads) rather than providing a comprehensive overview of the agency",
+          "Missing sitemap.xml file, which can hinder search engine crawling and indexing"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:33:05.106Z",
+        "score": 92,
+        "breakdown": {
+          "ai_visibility": 88,
+          "content_quality": 100,
+          "local_seo": 100,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup on the website to enhance search engine understanding of the content and improve AI visibility",
+          "Optimize the heading hierarchy by filling in the empty H2 headings and creating a clear content structure",
+          "Consider adding a sitemap.xml file to the website to improve crawlability and search engine indexing"
+        ],
+        "strengths": [
+          "High content quality score indicates well-written and relevant content on the website",
+          "Excellent local SEO score due to the presence of Google Maps link and other location-specific signals",
+          "Strong citation readiness with a score of 100, indicating consistent business information across the web"
+        ],
+        "weaknesses": [
+          "Low schema markup score, indicating a lack of structured data on the website",
+          "Incomplete heading hierarchy, with empty H2 headings that could be utilized for better content organization"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:18:25.812Z",
+        "score": 92,
+        "breakdown": {
+          "ai_visibility": 88,
+          "content_quality": 100,
+          "local_seo": 100,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup on the website to enhance search engine results and provide users with more informative search snippets",
+          "Create and submit a sitemap.xml file to Google Search Console to improve website crawling and indexing",
+          "Optimize H2 headings to provide a clear structure and hierarchy of content, improving user experience and search engine understanding"
+        ],
+        "strengths": [
+          "High-quality content with a well-structured page title and meta description",
+          "Strong local SEO presence with a Google Maps link and complete contact information",
+          "Active social media presence across multiple platforms"
+        ],
+        "weaknesses": [
+          "Lack of schema markup implementation, which can improve search engine understanding of the website's content",
+          "Missing sitemap.xml file, which can hinder search engine crawling and indexing"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:21.174Z",
+        "score": 92,
+        "breakdown": {
+          "ai_visibility": 88,
+          "content_quality": 100,
+          "local_seo": 100,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement schema markup on the website to improve search engine understanding and visibility",
+          "Create and submit a sitemap.xml file to Google Search Console to improve crawlability and indexing",
+          "Optimize H2 headings to provide clearer structure and organization of content on the website"
+        ],
+        "strengths": [
+          "High-quality content on the website",
+          "Excellent local SEO with a Google Maps link and complete contact information",
+          "Strong social media presence on multiple platforms"
+        ],
+        "weaknesses": [
+          "Lack of schema markup implementation, which can improve search engine understanding of the website's content",
+          "Missing sitemap.xml file, which can hinder search engine crawlability and indexing"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T10:15:48.106Z"
+  },
+  {
+    "id": "c1543fd251e8b2229df36912",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Gim",
+    "competitorUrl": "gimagency.gr",
+    "industry": "marketing",
+    "shareToken": "767a1c4537bacb82ee43bf482b1ed86e028c70ccd59efde0335af29886285fbf",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T10:34:03.138Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 50,
+          "local_seo": 20,
+          "schema_markup": 10,
+          "citation_readiness": 60
+        },
+        "recommendations": [
+          "Implement schema markup on the website to improve search engine understanding",
+          "Develop a comprehensive content strategy targeting Greek and international audiences",
+          "Optimize the website for local SEO to improve visibility in Greek search results"
+        ],
+        "strengths": [
+          "Established local presence",
+          "Potential for industry-specific content creation",
+          "Greek language support for local audience"
+        ],
+        "weaknesses": [
+          "Limited international recognition",
+          "Insufficient schema markup implementation",
+          "Unclear content strategy"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:33:19.477Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 0,
+          "local_seo": 5,
+          "schema_markup": 0,
+          "citation_readiness": 5
+        },
+        "recommendations": [
+          "Conduct a thorough website crawl and technical SEO audit to identify and fix potential issues",
+          "Develop high-quality, AI-optimized content to improve search engine rankings and user engagement",
+          "Implement schema markup to enhance search engine results and provide users with additional information",
+          "Improve local SEO by creating and optimizing a Google My Business listing and encouraging customer reviews",
+          "Increase citation readiness by listing the business in relevant marketing directories and citation platforms"
+        ],
+        "strengths": [
+          "Industry identification as marketing, which has a large online presence",
+          "Basic website presence with a .gr domain"
+        ],
+        "weaknesses": [
+          "No website crawl available, indicating potential technical issues or lack of optimization",
+          "Unknown content quality and schema markup implementation",
+          "Limited online presence and citation readiness"
+        ]
+      },
+      {
+        "date": "2026-05-31T13:46:34.225Z",
+        "score": 68,
+        "breakdown": {
+          "ai_visibility": 67,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Claim and optimize social media profiles, especially LinkedIn, to increase online presence and engagement",
+          "Implement schema markup to help search engines understand the website's content and improve search results",
+          "Focus on building high-quality citations and online mentions to improve local SEO and overall online visibility",
+          "Create and submit a sitemap.xml file to help search engines crawl and index the website's content more efficiently",
+          "Add a Google Maps link to the website to improve local SEO and make it easier for customers to find the business"
+        ],
+        "strengths": [
+          "High content quality score, indicating well-written and engaging content",
+          " Presence of phone and email contact information, making it easy for customers to get in touch",
+          "Decent local SEO score, suggesting some optimization for local search"
+        ],
+        "weaknesses": [
+          "Lack of social media presence, which can hinder online visibility and engagement",
+          "Absence of schema markup, making it harder for search engines to understand the website's content",
+          "Low citation readiness score, indicating a need for more online citations and mentions"
+        ],
+        "lastUpdated": "Sun, 31 May 2026 09:33:01 GMT",
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-07-01T10:18:30.492Z",
+        "score": 68,
+        "breakdown": {
+          "ai_visibility": 67,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Add H1 headings to the page to improve its structure and accessibility",
+          "Establish a presence on relevant social media platforms to increase brand visibility and engagement",
+          "Implement schema markup to enhance search engine understanding of the agency's services and improve local SEO",
+          "Create and submit a sitemap.xml to help search engines discover and crawl the website's pages",
+          "Improve citation readiness by listing the agency in local directories and ensuring consistency in name, address, and phone number (NAP) across the web"
+        ],
+        "strengths": [
+          "High-quality content as indicated by the content quality score",
+          "Presence of essential contact information such as phone and email",
+          "Well-structured meta description that provides an overview of the agency's services"
+        ],
+        "weaknesses": [
+          "Lack of H1 headings which can affect the page's structure and accessibility",
+          "Absence of social media presence which can limit brand awareness and engagement",
+          "Low citation readiness score indicating a need for improvement in local directory listings"
+        ],
+        "lastUpdated": "Wed, 01 Jul 2026 06:34:17 GMT",
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:25.432Z",
+        "score": 68,
+        "breakdown": {
+          "ai_visibility": 67,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Establish a strong social media presence by creating profiles on Facebook, Instagram, and LinkedIn, and regularly posting updates and engaging with followers",
+          "Implement H1 headings to improve page structure and provide clear headers for search engines and users",
+          "Add schema markup to the website to enhance search engine understanding and provide additional context for users",
+          "Claim and optimize the Google Maps listing to improve local SEO and make it easier for customers to find the business",
+          "Increase online citations by listing the business in relevant directories and encouraging customers to leave reviews"
+        ],
+        "strengths": [
+          "High content quality score, indicating well-written and engaging content",
+          " Presence of meta description, which is essential for search engine results",
+          "Contact information available, including phone and email, for easy customer reach"
+        ],
+        "weaknesses": [
+          "Lack of social media presence, which is crucial for modern marketing and brand awareness",
+          "No H1 headings found, which can impact page structure and search engine understanding",
+          "Low citation readiness score, indicating a need for more online mentions and directories"
+        ],
+        "lastUpdated": "Sat, 01 Aug 2026 08:30:57 GMT",
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T10:34:03.138Z"
+  },
+  {
+    "id": "cd8c138e70c84cc2e40128d1",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Sellence AI",
+    "competitorUrl": "sellence-ai.com",
+    "industry": "marketing",
+    "shareToken": "a0df9417dd5e6f8c0158cd4646c21e459659dbc92ce06ae9ecb8cd605823d558",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T12:23:33.995Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 40,
+          "local_seo": 20,
+          "schema_markup": 60,
+          "citation_readiness": 50
+        },
+        "recommendations": [
+          "Implement H1 and H2 headings to improve content structure and accessibility",
+          "Expand social media presence to other relevant platforms (Facebook, Instagram)",
+          "Add a Google Maps link to enhance local SEO and visibility",
+          "Consider adding more schema.org types to provide additional context about the business"
+        ],
+        "strengths": [
+          "Proper schema.org types used",
+          "Presence of crucial contact information (phone, email)",
+          "Well-structured meta description"
+        ],
+        "weaknesses": [
+          "Lack of H1 and H2 headings for better content organization",
+          "Insufficient social media presence (only LinkedIn)",
+          "No Google Maps link, potentially affecting local search visibility"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:33:24.841Z",
+        "score": 77,
+        "breakdown": {
+          "ai_visibility": 80,
+          "content_quality": 75,
+          "local_seo": 70,
+          "schema_markup": 100,
+          "citation_readiness": 60
+        },
+        "recommendations": [
+          "Add H1 and H2 headings to improve content structure and help search engines understand the website's content hierarchy",
+          "Expand social media presence to include other platforms, such as Facebook and Instagram, to increase brand visibility and engagement",
+          "Claim and optimize the Google Maps listing to improve local search visibility and provide customers with accurate location information"
+        ],
+        "strengths": [
+          "Strong schema markup implementation with 100 score, indicating excellent structure and organization of website data",
+          "High AI visibility score of 80, suggesting effective incorporation of AI-related keywords and topics",
+          "Presence of essential contact information, including phone and email"
+        ],
+        "weaknesses": [
+          "Lack of H1 and H2 headings, which can negatively impact content organization and search engine understanding",
+          "Limited social media presence, with only LinkedIn profile found, which can hinder brand awareness and engagement",
+          "No Google Maps link, which can make it harder for customers to find the business location"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:18:31.871Z",
+        "score": 77,
+        "breakdown": {
+          "ai_visibility": 80,
+          "content_quality": 75,
+          "local_seo": 70,
+          "schema_markup": 100,
+          "citation_readiness": 60
+        },
+        "recommendations": [
+          "Implement H1 and H2 headings to improve content structure and SEO",
+          "Expand social media presence to include Facebook and Instagram, and ensure consistency across all platforms",
+          "Claim and optimize local business listings, and submit to relevant online directories to improve citation readiness"
+        ],
+        "strengths": [
+          "Strong schema markup implementation with 100% score, indicating proper use of Organization and Website types",
+          "High AI visibility score of 80, suggesting effective incorporation of AI-related terms and themes",
+          "Presence of essential contact information, including phone and email"
+        ],
+        "weaknesses": [
+          "Lack of H1 and H2 headings, which may hinder content structure and readability",
+          "Limited social media presence, with only LinkedIn profile found",
+          "Low citation readiness score, indicating potential gaps in local business listings and online directories"
+        ],
+        "lastUpdated": "2025-09-26",
+        "recentUpdates": [
+          "2025-09-26",
+          "2025-09-26",
+          "2025-09-26"
+        ]
+      },
+      {
+        "date": "2026-08-01T10:18:27.471Z",
+        "score": 77,
+        "breakdown": {
+          "ai_visibility": 84,
+          "content_quality": 90,
+          "local_seo": 45,
+          "schema_markup": 75,
+          "citation_readiness": 85
+        },
+        "recommendations": [
+          "Improve local SEO by adding a Google Maps link, optimizing the website for location-specific keywords, and creating content that targets local audiences",
+          "Implement schema markup to help search engines understand the website's content and structure, which can improve search engine rankings",
+          "Add a clear and visible phone number to the website to improve customer contact and conversion rates"
+        ],
+        "strengths": [
+          "High-quality content that effectively communicates the business's value proposition",
+          "Strong AI search visibility, indicating a good understanding of search engine algorithms",
+          "Established social media presence across multiple platforms"
+        ],
+        "weaknesses": [
+          "Poor local SEO, which may hinder visibility in location-based searches",
+          "Lack of schema markup implementation, which can impact search engine understanding of the website's content",
+          "No clear contact information, such as a phone number, which can deter potential customers"
+        ],
+        "lastUpdated": "2026-06-18",
+        "recentUpdates": [
+          "2026-06-18",
+          "2026-06-18",
+          "2026-06-04"
+        ]
+      }
+    ],
+    "createdAt": "2026-05-31T12:23:33.996Z"
+  },
+  {
+    "id": "d5246218255e2c1fbcd3c6d9",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Doitforme",
+    "competitorUrl": "doitforme.eu",
+    "industry": "marketing",
+    "shareToken": "d7bf73aa8cb4f94574a2189029f47e6430e0ce59903236aea8a237d87fb718b9",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T12:24:44.687Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 55,
+          "local_seo": 20,
+          "schema_markup": 40,
+          "citation_readiness": 50
+        },
+        "recommendations": [
+          "Implement more comprehensive schema markup (e.g., Organization, LocalBusiness, Review)",
+          "Create and submit a sitemap.xml file to search engines",
+          "Claim and optimize Google My Business listing",
+          "Expand social media presence to include Instagram and LinkedIn",
+          "Consider adding phone number and physical address to the website for improved local SEO"
+        ],
+        "strengths": [
+          "Clear and concise meta description",
+          "Presence of Facebook profile",
+          "Contact information available on the website"
+        ],
+        "weaknesses": [
+          "Limited schema markup (only BreadcrumbList)",
+          "No sitemap.xml file",
+          "No Google Maps link or local SEO optimization",
+          "No Instagram or LinkedIn presence"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:31:25.766Z",
+        "score": 69,
+        "breakdown": {
+          "ai_visibility": 74,
+          "content_quality": 100,
+          "local_seo": 45,
+          "schema_markup": 65,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Enhance local SEO by including location-specific keywords, creating content targeted at the local audience, and claiming online directories like Google My Business",
+          "Expand schema markup to include additional types like Organization, Person, or Event, to provide search engines with a better understanding of the website's content and context",
+          "Add a Google Maps link to the website and improve citation readiness by listing the business in local directories and ensuring consistency in name, address, and phone number (NAP) across the web"
+        ],
+        "strengths": [
+          "High-quality content with a score of 100, indicating well-written and engaging page copy",
+          "Strong AI visibility with a score of 74, suggesting effective keyword targeting and optimization",
+          "Presence of essential meta tags like page title and meta description, providing a clear description of the website's content"
+        ],
+        "weaknesses": [
+          "Weak local SEO with a score of 45, indicating a lack of location-specific optimization and potentially impacting local search visibility",
+          "Limited schema markup with a score of 65, suggesting opportunities to add more structured data to enhance search engine understanding of the website's content",
+          "No Google Maps link and a low citation readiness score of 45, hindering the website's ability to appear in local search results and directories"
+        ]
+      },
+      {
+        "date": "2026-05-31T12:33:31.214Z",
+        "score": 69,
+        "breakdown": {
+          "ai_visibility": 74,
+          "content_quality": 100,
+          "local_seo": 45,
+          "schema_markup": 65,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Improve local SEO by creating content targeted at the local audience, including name, address, and phone number (NAP) consistently across the web, and by adding a Google Maps link to the website",
+          "Enhance schema markup by adding more types, such as 'LocalBusiness' or 'Organization', to provide search engines with richer context about the business",
+          "Develop a comprehensive social media strategy to establish a presence on multiple platforms, including Instagram and LinkedIn, to expand reach and engagement"
+        ],
+        "strengths": [
+          "High-quality content as indicated by the pre-computed content_quality score of 100",
+          "Strong AI visibility with a score of 74, suggesting effective optimization for search engines",
+          "Presence of essential metadata such as page title, meta description, and OG title, which helps with search engine understanding"
+        ],
+        "weaknesses": [
+          "Limited local SEO efforts, with a score of 45, which may hinder visibility in local search results",
+          "Insufficient schema markup, with a score of 65, which could be improved to provide search engines with more context about the business",
+          "Lack of comprehensive social media presence, with only Facebook being utilized, and no presence on Instagram or LinkedIn"
+        ]
+      },
+      {
+        "date": "2026-05-31T13:46:07.287Z",
+        "score": 69,
+        "breakdown": {
+          "ai_visibility": 74,
+          "content_quality": 100,
+          "local_seo": 45,
+          "schema_markup": 65,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Implement additional schema markup types, such as LocalBusiness or Organization, to enhance search engine results",
+          "Optimize the website for local SEO by including name, address, and phone number (NAP) consistently across the web",
+          "Add a Google Maps link to the website to improve user experience and local search visibility",
+          "Consider adding more social media profiles, such as LinkedIn, to increase online presence and citation readiness",
+          "Create a sitemap.xml file to help search engines understand the website's structure and improve crawlability"
+        ],
+        "strengths": [
+          "High content quality, indicating well-written and engaging website content",
+          "Strong AI visibility, suggesting effective optimization for search engines",
+          "Clear and descriptive meta description, effectively summarizing the website's purpose"
+        ],
+        "weaknesses": [
+          "Low local SEO score, indicating a lack of optimization for local search results",
+          "Limited schema markup, missing opportunities for enhanced search engine results",
+          "No Google Maps link, making it difficult for users to find the business's physical location"
+        ],
+        "lastUpdated": "Thu, 02 Oct 2025 11:30:49 GMT",
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-07-01T10:18:35.891Z",
+        "score": 69,
+        "breakdown": {
+          "ai_visibility": 74,
+          "content_quality": 100,
+          "local_seo": 45,
+          "schema_markup": 65,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Enhance local SEO by adding location-specific keywords, creating a Google My Business listing, and including a Google Maps link on the website",
+          "Expand social media presence to include LinkedIn and Instagram, and ensure consistency across all platforms",
+          "Improve schema markup by adding more types such as LocalBusiness, and increase citation readiness by listing the business in local directories and citations"
+        ],
+        "strengths": [
+          "High-quality content as indicated by the perfect content quality score",
+          "Strong AI visibility score, suggesting good optimization for search engines",
+          "Effective use of meta descriptions and page titles for search engine result pages"
+        ],
+        "weaknesses": [
+          "Low local SEO score, indicating a potential lack of localization and geographical targeting",
+          "Limited social media presence, with only Facebook being utilized",
+          "Insufficient schema markup and citation readiness, which can impact search engine understanding and local business visibility"
+        ],
+        "lastUpdated": "Thu, 02 Oct 2025 11:30:49 GMT",
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:29.105Z",
+        "score": 69,
+        "breakdown": {
+          "ai_visibility": 74,
+          "content_quality": 100,
+          "local_seo": 45,
+          "schema_markup": 65,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Implement a comprehensive local SEO strategy, including adding a Google Maps link and optimizing the website for location-based searches",
+          "Expand schema markup to include additional types, such as Business and Organisation, to help search engines better understand the website's content and structure",
+          "Develop a citation building plan to increase the business's online presence and reputation, including listing the business in relevant directories and encouraging customer reviews"
+        ],
+        "strengths": [
+          "High-quality content that effectively communicates the business's value proposition",
+          "Strong AI visibility score, indicating a good foundation for search engine understanding",
+          "Clear and descriptive meta tags, such as the page title and meta description, that help search engines understand the website's content"
+        ],
+        "weaknesses": [
+          "Limited local SEO efforts, which may hinder the business's ability to attract local customers",
+          "Insufficient schema markup, which can make it harder for search engines to understand the website's structure and content",
+          "Lack of citation readiness, which can negatively impact the business's online reputation and visibility"
+        ],
+        "lastUpdated": "Fri, 31 Jul 2026 11:24:02 GMT",
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T12:24:44.688Z"
+  },
+  {
+    "id": "233e513a7a9a8b45bb877131",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "instup",
+    "competitorUrl": "instup.gr",
+    "industry": "marketing",
+    "shareToken": "e71dbae26092e9372cb4ca71f01387bc769bd001152e1740f323d5c44705537d",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T12:31:00.808Z",
+        "score": 30,
+        "breakdown": {
+          "ai_visibility": 20,
+          "content_quality": 40,
+          "local_seo": 10,
+          "schema_markup": 10,
+          "citation_readiness": 20
+        },
+        "recommendations": [
+          "Conduct a thorough website crawl and technical SEO audit to identify areas for improvement",
+          "Develop a comprehensive local SEO strategy, including Google My Business optimization and local citation building",
+          "Implement schema markup on the website to enhance search engine understanding and visibility",
+          "Create high-quality, targeted content to improve content quality and AI search visibility",
+          "Monitor and analyze website performance using tools like Google Analytics and Search Console"
+        ],
+        "strengths": [
+          "Operating in a specific industry (marketing) which can help with targeted search queries",
+          "Having a dedicated website (instup.gr) for online presence",
+          "Potential for creating high-quality content related to marketing"
+        ],
+        "weaknesses": [
+          "Lack of available website crawl data, making it difficult to assess current optimization",
+          "Unclear local SEO strategy, potentially limiting local search visibility",
+          "No apparent schema markup or citation readiness, which can impact search engine understanding of the business"
+        ]
+      },
+      {
+        "date": "2026-05-31T13:46:20.183Z",
+        "score": 28,
+        "breakdown": {
+          "ai_visibility": 26,
+          "content_quality": 45,
+          "local_seo": 30,
+          "schema_markup": 15,
+          "citation_readiness": 10
+        },
+        "recommendations": [
+          "Implement schema markup to help search engines understand website content and structure",
+          "Create and submit a sitemap.xml file to improve website crawlability",
+          "Add meta description, OG title, and other relevant meta tags to enhance search engine results",
+          "Establish a presence on relevant social media platforms and add contact information to the website",
+          "Claim and optimize the Google My Business listing to improve local SEO"
+        ],
+        "strengths": [
+          "High content quality score indicates well-written and engaging content",
+          "Presence of robots.txt file helps search engines crawl the website"
+        ],
+        "weaknesses": [
+          "Lack of schema markup hinders search engines' ability to understand website content",
+          "Absence of social media presence and contact information makes it difficult for customers to get in touch",
+          "Missing meta description and OG title can negatively impact search engine results"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-05-31T13:50:56.678Z",
+        "score": 28,
+        "breakdown": {
+          "ai_visibility": 26,
+          "content_quality": 45,
+          "local_seo": 30,
+          "schema_markup": 15,
+          "citation_readiness": 10
+        },
+        "recommendations": [
+          "Implement proper and descriptive metadata such as page title, meta description, and OG title to enhance search engine understanding and user click-through rates",
+          "Establish a presence on relevant social media platforms and ensure consistency in branding across these channels",
+          "Add schema markup to the website to improve search engine result page (SERP) visibility and provide users with richer search results",
+          "Create and submit a sitemap.xml to facilitate easier crawling and indexing by search engines",
+          "Ensure all pages are accessible and not forbidden, and develop high-quality, engaging content to increase content quality score"
+        ],
+        "strengths": [
+          "Industry relevance in marketing",
+          "Presence of a robots.txt file for crawl guidance"
+        ],
+        "weaknesses": [
+          "Lack of crucial metadata such as page title, meta description, and OG title",
+          "Absence of social media presence and contact information",
+          "Insufficient use of schema markup for search engine understanding"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-07-01T10:18:38.087Z",
+        "score": 28,
+        "breakdown": {
+          "ai_visibility": 26,
+          "content_quality": 45,
+          "local_seo": 30,
+          "schema_markup": 15,
+          "citation_readiness": 10
+        },
+        "recommendations": [
+          "Implement schema markup to improve AI visibility and search engine understanding",
+          "Create high-quality, descriptive metadata such as page title, meta description, and OG title",
+          "Establish a strong social media presence and include contact information on the website",
+          "Develop a comprehensive local SEO strategy to improve the local search visibility",
+          "Create and submit a sitemap.xml to help search engines crawl and index the website's content"
+        ],
+        "strengths": [
+          "Strong potential for content quality with a score of 45",
+          "Robots.txt is present, indicating basic SEO considerations"
+        ],
+        "weaknesses": [
+          "Poor AI visibility with a score of 26, indicating potential issues with search engine understanding",
+          "Lack of essential metadata such as meta description, OG title, and schema markup",
+          "No clear contact information or social media presence"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:30.766Z",
+        "score": 28,
+        "breakdown": {
+          "ai_visibility": 26,
+          "content_quality": 45,
+          "local_seo": 30,
+          "schema_markup": 15,
+          "citation_readiness": 10
+        },
+        "recommendations": [
+          "Implement a robust and descriptive page title, meta description, and OG title to enhance search engine results",
+          "Incorporate schema markup to provide search engines with a clear understanding of the website's content and improve search visibility",
+          "Establish a presence on relevant social media platforms and include a Google Maps link to increase online visibility and engagement"
+        ],
+        "strengths": [
+          "Has a clear industry definition as a marketing company",
+          "Has a registered domain and website"
+        ],
+        "weaknesses": [
+          "Lack of crucial metadata such as page title, meta description, and OG title",
+          "No schema markup, which hinders search engine understanding of the site's content",
+          "Absence of social media presence and Google Maps link, limiting online visibility"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T12:31:00.808Z"
+  },
+  {
+    "id": "ce18ebd5706d8c76be785827",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Babylovegrowth",
+    "competitorUrl": "babylovegrowth.ai",
+    "industry": "marketing",
+    "shareToken": "daf4520544d5d62874515a7852591a388f5d0d42072e80def695f49521c1a598",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T12:46:54.831Z",
+        "score": 30,
+        "breakdown": {
+          "ai_visibility": 20,
+          "content_quality": 10,
+          "local_seo": 0,
+          "schema_markup": 0,
+          "citation_readiness": 0
+        },
+        "recommendations": [
+          "Conduct a thorough website audit to identify areas for improvement and ensure the website is crawlable and optimized for search engines.",
+          "Develop a content strategy that showcases the business's expertise in marketing and AI, and creates high-quality, engaging content for the target audience.",
+          "Establish a strong online presence by creating social media profiles and listing the business in relevant directories, to increase visibility and credibility."
+        ],
+        "strengths": [
+          "The business has a clear and memorable name, Babylovegrowth, which can help with brand recognition.",
+          "The website domain, babylovegrowth.ai, is modern and indicates a focus on artificial intelligence, which is relevant to the marketing industry."
+        ],
+        "weaknesses": [
+          "There is no available website crawl data, which makes it difficult to assess the website's structure, content, and optimization.",
+          "The business may not have a strong online presence, as there is limited information available about it."
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-05-31T13:00:43.996Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 0,
+          "local_seo": 0,
+          "schema_markup": 0,
+          "citation_readiness": 0
+        },
+        "recommendations": [
+          "Conduct a thorough website crawl and technical SEO audit",
+          "Develop high-quality, AI-focused content to increase visibility",
+          "Implement schema markup and optimize for local SEO if applicable"
+        ],
+        "strengths": [
+          "Unique domain name with AI relevance",
+          "Industry marketing expertise"
+        ],
+        "weaknesses": [
+          "Lack of website crawl data",
+          "Unknown content quality and SEO practices"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-05-31T13:07:10.781Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 0,
+          "local_seo": 0,
+          "schema_markup": 0,
+          "citation_readiness": 0
+        },
+        "recommendations": [
+          "Conduct a thorough website audit to identify technical SEO issues and optimize content for search engines",
+          "Develop a content strategy that incorporates AI-related keywords and topics to improve AI visibility",
+          "Establish a strong online presence by creating high-quality, engaging content and promoting the website through social media and other channels"
+        ],
+        "strengths": [
+          "Unique domain name incorporating 'AI' which could be beneficial for AI-related search queries",
+          "New business with potential for growth and development in the marketing industry"
+        ],
+        "weaknesses": [
+          "Unknown website content and structure due to lack of crawl data",
+          "Unclear online presence and visibility in search engine results"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-05-31T13:11:32.091Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 0,
+          "local_seo": 0,
+          "schema_markup": 0,
+          "citation_readiness": 0
+        },
+        "recommendations": [
+          "Conduct a website crawl and technical SEO audit to identify and fix potential issues",
+          "Develop high-quality, AI-focused content to improve content quality and relevance",
+          "Implement schema markup and optimize for local SEO to improve search engine understanding and visibility"
+        ],
+        "strengths": [
+          "Unique website domain with 'ai' extension, potentially targeting AI-related searches",
+          "Industry is 'marketing', which may have a high demand for AI search visibility"
+        ],
+        "weaknesses": [
+          "No website crawl available, indicating potential website or crawl issues",
+          "Lack of available data on content quality, local SEO, schema markup, and citation readiness"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-05-31T13:14:58.985Z",
+        "score": 40,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 50,
+          "local_seo": 20,
+          "schema_markup": 10,
+          "citation_readiness": 30
+        },
+        "recommendations": [
+          "Conduct a thorough website technical audit to ensure proper indexing and crawling by search engines",
+          "Develop high-quality, AI-related marketing content to increase relevance and search visibility",
+          "Implement schema markup on the website to provide search engines with additional context about the business and its services"
+        ],
+        "strengths": [
+          "Unique domain name that incorporates AI, which may help with search visibility in the AI-related marketing niche",
+          "Potential for high relevance in search results for AI-related marketing queries"
+        ],
+        "weaknesses": [
+          "Lack of available website crawl data, which may indicate poor website technical setup or non-indexing by search engines",
+          "Unclear content quality and quantity without a website crawl"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-05-31T13:23:04.745Z",
+        "score": 30,
+        "breakdown": {
+          "ai_visibility": 60,
+          "content_quality": 20,
+          "local_seo": 10,
+          "schema_markup": 0,
+          "citation_readiness": 20
+        },
+        "recommendations": [
+          "Perform a website crawl to identify and fix technical issues",
+          "Develop high-quality, keyword-optimized content to improve search visibility",
+          "Implement schema markup to provide search engines with better understanding of the website's content"
+        ],
+        "strengths": [
+          "Relevant industry keyword 'marketing' is present",
+          "Domain name includes 'ai', which is a relevant and modern term"
+        ],
+        "weaknesses": [
+          "No website crawl available, indicating potential website issues",
+          "Unknown content quality and lack of schema markup"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-07-01T10:18:41.016Z",
+        "score": 72,
+        "breakdown": {
+          "ai_visibility": 69,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 25,
+          "citation_readiness": 80
+        },
+        "recommendations": [
+          "Implement schema markup on the website to provide search engines with additional context about the content and improve AI search visibility",
+          "Optimize the website for local SEO by adding a Google Maps link, creating content relevant to the target location, and building high-quality local citations",
+          "Refine the heading structure by using a single, descriptive H1 heading per page and organizing subheadings with H2-H6 tags to improve content clarity and search engine understanding"
+        ],
+        "strengths": [
+          "High-quality content with a score of 100, indicating well-written and engaging articles",
+          " Strong citation readiness with a score of 80, showing a good presence in online directories",
+          "Clear and concise meta description and page title, effectively communicating the website's purpose"
+        ],
+        "weaknesses": [
+          "Low schema markup score of 25, indicating a lack of structured data to help search engines understand the website's content",
+          "Limited local SEO score of 70, suggesting room for improvement in location-based search visibility",
+          "Inconsistent H1 headings, with multiple headings on the same page, potentially causing confusion for search engines"
+        ],
+        "lastUpdated": "2026-07-01",
+        "recentUpdates": [
+          "2026-07-01",
+          "2026-07-01",
+          "2026-07-01"
+        ]
+      },
+      {
+        "date": "2026-08-01T10:18:32.974Z",
+        "score": 90,
+        "breakdown": {
+          "ai_visibility": 95,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 100,
+          "citation_readiness": 80
+        },
+        "recommendations": [
+          "Claim and optimize the Google My Business listing to improve local SEO and increase visibility in location-based searches",
+          "Add a Google Maps link to the website to enhance local search engine optimization",
+          "Consider expanding social media presence to include Facebook, to increase brand visibility and reach a broader audience"
+        ],
+        "strengths": [
+          "Exceptional content quality, with a well-structured and descriptive page title and meta description",
+          "High AI visibility score, indicating effective optimization for AI search engines",
+          "Robust schema markup, providing search engines with valuable information about the business"
+        ],
+        "weaknesses": [
+          "Local SEO score is relatively low, indicating potential issues with location-based search visibility",
+          "Lack of Google Maps link, which could hinder local search engine optimization"
+        ],
+        "lastUpdated": "2026-07-31",
+        "recentUpdates": [
+          "2026-07-31",
+          "2026-07-31",
+          "2026-07-31"
+        ]
+      }
+    ],
+    "createdAt": "2026-05-31T12:46:54.832Z"
+  },
+  {
+    "id": "f98586bf8c50aab7fd9c4ae7",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "tanganica",
+    "competitorUrl": "tanganica.com",
+    "industry": "marketing",
+    "shareToken": "658308569fab95e50f85e2ed34cba239c0889e65fb737dcbbd021cde2736600d",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T12:56:45.573Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 0,
+          "local_seo": 0,
+          "schema_markup": 0,
+          "citation_readiness": 10
+        },
+        "recommendations": [
+          "Conduct a thorough website audit to identify technical SEO issues and areas for improvement",
+          "Develop a content strategy that showcases industry expertise and provides value to potential customers",
+          "Implement schema markup and optimize website structure to enhance search engine understanding and visibility"
+        ],
+        "strengths": [
+          "Unique business name that could be leveraged for branding",
+          "Industry expertise in marketing, which could be an asset for content creation"
+        ],
+        "weaknesses": [
+          "Lack of available website crawl data, making it difficult to assess current SEO efforts",
+          "Unknown content quality and relevance, potentially affecting search engine rankings"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-05-31T13:01:01.282Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 20,
+          "local_seo": 10,
+          "schema_markup": 10,
+          "citation_readiness": 10
+        },
+        "recommendations": [
+          "Conduct a thorough website crawl and analysis to identify technical SEO issues",
+          "Develop a comprehensive content strategy focused on high-quality, industry-relevant content",
+          "Implement schema markup to enhance search engine understanding of the website's content and structure",
+          "Establish a strong local SEO presence through Google My Business and local citations",
+          "Utilize AI-powered tools to optimize and refine the website's content and metadata for improved search visibility"
+        ],
+        "strengths": [
+          "Established website with a clear industry focus",
+          "Simple and memorable brand name"
+        ],
+        "weaknesses": [
+          "Lack of available data for website crawl and analysis",
+          "Unclear content strategy and quality",
+          "No clear indication of local SEO efforts or schema markup implementation"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-07-01T10:18:50.279Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 5,
+          "local_seo": 2,
+          "schema_markup": 1,
+          "citation_readiness": 2
+        },
+        "recommendations": [
+          "Conduct a comprehensive website audit to identify and address any technical SEO issues",
+          "Develop a content strategy that incorporates keyword research and optimization to improve ai search visibility",
+          "Claim and optimize online directories and citations to enhance local seo and citation readiness"
+        ],
+        "strengths": [
+          "Tanganica operates in the marketing industry, which suggests a strong understanding of digital strategies",
+          "The business has a simple and memorable website domain, tanganica.com, which can aid in brand recognition"
+        ],
+        "weaknesses": [
+          "Lack of website crawl data indicates potential issues with website accessibility or search engine indexing",
+          "The business may not be leveraging its marketing expertise to optimize its own online presence"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:34.230Z",
+        "score": 59,
+        "breakdown": {
+          "ai_visibility": 52,
+          "content_quality": 75,
+          "local_seo": 70,
+          "schema_markup": 5,
+          "citation_readiness": 80
+        },
+        "recommendations": [
+          "Implement schema markup on the website to improve search engine understanding and visibility",
+          "Expand social media presence to include LinkedIn and other relevant platforms",
+          "Add H1 and H2 headings to the website to improve content structure and accessibility",
+          "Create and submit a sitemap.xml file to help search engines crawl and index the website's content",
+          "Develop a robust robots.txt file to guide search engine crawlers and improve website indexing"
+        ],
+        "strengths": [
+          "High citation readiness score, indicating a strong presence in online directories",
+          "Good content quality score, suggesting engaging and relevant content on the website",
+          "Local SEO efforts are decent, with a score of 70"
+        ],
+        "weaknesses": [
+          "Low schema markup score, which can negatively impact search engine understanding of the website's content",
+          "Limited social media presence, with only two platforms being utilized",
+          "No H1 or H2 headings found on the website, which can affect content structure and accessibility"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T12:56:45.573Z"
+  },
+  {
+    "id": "97a585597ac62f2153eaf0bc",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Intactus",
+    "competitorUrl": "intactus.marketing",
+    "industry": "marketing",
+    "shareToken": "292062b4df909a15a658d860d16741d9bb6cd7add3b896646ee2a5be8ccc1814",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T13:56:28.975Z",
+        "score": 88,
+        "breakdown": {
+          "ai_visibility": 91,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 75,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Add a Google Maps link to the website to improve local SEO and search visibility",
+          "Implement more comprehensive schema markup to help search engines better understand the business's content and services",
+          "Optimize the meta description to be concise, descriptive, and free of non-English characters to improve search engine crawling and indexing"
+        ],
+        "strengths": [
+          "High-quality content that effectively communicates the business's services and values",
+          "Strong online presence with accurate and consistent social media profiles",
+          "Good phone and email availability for customer inquiries"
+        ],
+        "weaknesses": [
+          "Lack of Google Maps link, hindering local search visibility",
+          "Insufficient schema markup, potentially limiting search engine understanding of the business's content and services",
+          "Meta description is too long and includes non-English characters, which may not be effectively crawled or indexed by search engines"
+        ],
+        "lastUpdated": "2026-05-31",
+        "recentUpdates": [
+          "2026-05-31",
+          "2026-05-31",
+          "2024-04-21"
+        ]
+      },
+      {
+        "date": "2026-05-31T13:56:55.704Z",
+        "score": 88,
+        "breakdown": {
+          "ai_visibility": 91,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 75,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Improve local SEO by adding a Google Maps link to the website and optimizing for location-based keywords",
+          "Enhance schema markup by adding more types and ensuring accurate implementation",
+          "Consider adding more structured data to the website to improve AI visibility and local SEO"
+        ],
+        "strengths": [
+          "High-quality content with a score of 100",
+          "Excellent citation readiness with a score of 100",
+          "Strong AI visibility with a score of 91"
+        ],
+        "weaknesses": [
+          "Local SEO score is relatively low at 70",
+          "Schema markup score is 75, indicating room for improvement"
+        ],
+        "lastUpdated": "2026-05-31",
+        "recentUpdates": [
+          "2026-05-31",
+          "2026-05-31",
+          "2024-04-21"
+        ]
+      },
+      {
+        "date": "2026-07-01T10:18:55.438Z",
+        "score": 88,
+        "breakdown": {
+          "ai_visibility": 91,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 75,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Add a Google Maps link to the website to improve local SEO and help customers find the business location",
+          "Implement schema markup for the business, such as NAP (name, address, phone number) and review schema, to enhance search engine understanding and display",
+          "Consider adding more location-specific keywords to the website's content to further improve local SEO"
+        ],
+        "strengths": [
+          "Excellent content quality with a comprehensive meta description and well-structured H1 and H2 headings",
+          "Strong AI visibility with a well-optimized page title and OG title",
+          "Good citation readiness with a clear presence of contact information such as phone number and email"
+        ],
+        "weaknesses": [
+          "Local SEO can be improved as there is no Google Maps link present on the website",
+          "Schema markup is not fully utilized, which can impact search engine understanding of the website's content"
+        ],
+        "lastUpdated": "2026-06-10",
+        "recentUpdates": [
+          "2026-06-10",
+          "2026-06-10",
+          "2024-04-21"
+        ]
+      },
+      {
+        "date": "2026-08-01T10:18:36.221Z",
+        "score": 88,
+        "breakdown": {
+          "ai_visibility": 91,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 75,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Claim and optimize the Google Maps listing to improve local search visibility and provide users with accurate location information",
+          "Enhance schema markup to include additional types, such as business hours, reviews, and services, to provide more detailed information to search engines and users",
+          "Conduct a local citation audit to ensure consistency and completeness across online directories and citations"
+        ],
+        "strengths": [
+          "High-quality content that effectively communicates the company's services and mission",
+          "Strong AI search visibility, indicating effective optimization for search engines",
+          "Excellent citation readiness, with a clear and consistent online presence"
+        ],
+        "weaknesses": [
+          "Limited local SEO efforts, with no Google Maps link and potentially incomplete local directory listings",
+          "Schema markup could be improved to provide more detailed information to search engines and users"
+        ],
+        "lastUpdated": "2026-06-10",
+        "recentUpdates": [
+          "2026-06-10",
+          "2026-06-10",
+          "2024-04-21"
+        ]
+      }
+    ],
+    "createdAt": "2026-05-31T13:56:28.975Z"
+  },
+  {
+    "id": "498ffbe5edcfb37c9c2a3347",
+    "userId": "669c87088f8594eb7a72398c",
+    "competitorName": "Soro",
+    "competitorUrl": "trysos.com",
+    "industry": "marketing",
+    "shareToken": "a07813afbf7719d1091975af520fcb29d904e7de8db80f0eacfc112475b70371",
+    "alert": false,
+    "snapshots": [
+      {
+        "date": "2026-05-31T13:58:31.348Z",
+        "score": 40,
+        "breakdown": {
+          "ai_visibility": 20,
+          "content_quality": 30,
+          "local_seo": 10,
+          "schema_markup": 10,
+          "citation_readiness": 20
+        },
+        "recommendations": [
+          "Conduct a thorough website crawl and technical SEO audit to identify areas for improvement",
+          "Develop a comprehensive content strategy that incorporates relevant keywords, meta tags, and high-quality content to enhance AI search visibility",
+          "Establish a strong online presence by claiming and optimizing the business's Google My Business listing and other relevant directories"
+        ],
+        "strengths": [
+          "The business has a unique and memorable name, Soro, which can help with branding and recognition",
+          "The industry, marketing, suggests that the business has expertise in online promotion and may have a good understanding of search visibility principles"
+        ],
+        "weaknesses": [
+          "The website, trysos.com, may not be well-established or optimized for search engines, which could hinder AI search visibility",
+          "Without a website crawl, it's difficult to assess the site's technical SEO and content quality, which could be a major weakness"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-05-31T13:58:49.532Z",
+        "score": 40,
+        "breakdown": {
+          "ai_visibility": 20,
+          "content_quality": 30,
+          "local_seo": 10,
+          "schema_markup": 0,
+          "citation_readiness": 20
+        },
+        "recommendations": [
+          "Conduct a thorough website crawl and technical SEO audit to identify and fix crawlability issues",
+          "Implement schema markup on the website to enhance search engine understanding and visibility",
+          "Develop a content strategy focused on high-quality, AI-friendly content to improve content quality and relevance"
+        ],
+        "strengths": [
+          "Part of the marketing industry, which is likely to have existing knowledge and resources on SEO and AI search visibility",
+          "A dedicated website (trysos.com) is present, which can be optimized for search"
+        ],
+        "weaknesses": [
+          "No website crawl available, suggesting lack of recent optimization or crawlability issues",
+          "No initial data on schema markup, indicating potential lack of structured data implementation"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-07-01T10:18:56.184Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 0,
+          "local_seo": 0,
+          "schema_markup": 0,
+          "citation_readiness": 0
+        },
+        "recommendations": [
+          "Conduct a thorough website crawl and technical SEO audit to identify areas for improvement",
+          "Develop high-quality, AI-optimized content showcasing marketing expertise and thought leadership",
+          "Implement schema markup and other structured data to enhance search engine understanding of the website and business"
+        ],
+        "strengths": [
+          "Unique business name, potentially beneficial for brand recognition",
+          "Industry expertise in marketing, which could be leveraged for content creation"
+        ],
+        "weaknesses": [
+          "Lack of website crawl data, hindering ability to assess current optimization",
+          "Unclear online presence beyond the website URL"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-08-01T10:18:37.077Z",
+        "score": 20,
+        "breakdown": {
+          "ai_visibility": 10,
+          "content_quality": 5,
+          "local_seo": 2,
+          "schema_markup": 1,
+          "citation_readiness": 2
+        },
+        "recommendations": [
+          "Perform a comprehensive website audit to ensure crawlability and indexing by search engines",
+          "Develop high-quality, AI-optimized content to improve visibility in search results",
+          "Implement schema markup on the website to enhance search engine understanding of the business and its services",
+          "Establish a strong online presence through directory listings and citations to improve local SEO"
+        ],
+        "strengths": [
+          "Unique business name that can be leveraged for branding",
+          "Presence in the marketing industry, which is a highly competitive and visible space"
+        ],
+        "weaknesses": [
+          "No website crawl available, indicating potential issues with website accessibility or indexing",
+          "Lack of available data to assess content quality, schema markup, and citation readiness"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      }
+    ],
+    "createdAt": "2026-05-31T13:58:31.348Z"
+  }
+]

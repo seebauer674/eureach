@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Competitors — eureach.eu</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.app-nav { background: rgba(7,13,31,0.98); }
+.cl-page { min-height: 100vh; padding-top: 64px; }
+.cl-header { background: linear-gradient(135deg, rgba(37,99,235,0.12), rgba(124,58,237,0.08)); border-bottom: 1px solid var(--border); padding: 28px 0; }
+.cl-header-inner { max-width: 960px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.cl-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.3px; }
+.cl-body { max-width: 960px; margin: 0 auto; padding: 28px 24px 80px; }
+.cl-new-btn { background: linear-gradient(135deg, var(--blue), var(--purple)); color: #fff; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.88rem; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; box-shadow: 0 4px 16px rgba(37,99,235,0.3); font-family: inherit; }
+
+/* Section labels */
+.cl-section-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin: 24px 0 10px; }
+
+/* Compact list */
+.cl-list { display: flex; flex-direction: column; gap: 6px; }
+.cl-row {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+  border: 1px solid var(--border); border-radius: 12px;
+  padding: 13px 18px; cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.cl-row:hover { border-color: rgba(99,102,241,.4); background: rgba(99,102,241,.05); }
+.cl-threat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.threat-high   { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,.5); }
+.threat-medium { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,.4); }
+.threat-low    { background: #10b981; box-shadow: 0 0 6px rgba(16,185,129,.4); }
+.cl-row-name { font-size: 0.92rem; font-weight: 700; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-row-contact { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.cl-contact-link { font-size: 0.78rem; color: #60a5fa; text-decoration: none; display: flex; align-items: center; gap: 4px; }
+.cl-contact-link:hover { color: #93c5fd; text-decoration: underline; }
+.cl-contact-phone { font-size: 0.78rem; color: var(--muted); }
+.cl-row-arrow { color: var(--muted); font-size: 0.8rem; flex-shrink: 0; margin-left: 4px; }
+
+/* Empty */
+.cl-empty { text-align: center; padding: 60px 24px; color: var(--muted); }
+.cl-empty-title { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.cl-empty-sub { font-size: 0.875rem; margin-bottom: 20px; }
+
+/* ── Detail Panel ─────────────────────────────────────── */
+.dp-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 900; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.dp-overlay.open { opacity: 1; pointer-events: all; }
+.dp-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 560px; max-width: 100vw;
+  background: #0d1526; border-left: 1px solid var(--border);
+  z-index: 901; display: flex; flex-direction: column;
+  transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+.dp-overlay.open .dp-panel { transform: translateX(0); }
+.dp-panel-head {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 22px 24px 18px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.dp-threat-badge { padding: 5px 14px; border-radius: 20px; font-size: 0.92rem; font-weight: 700; flex-shrink: 0; margin-top: 3px; }
+.badge-high   { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+.badge-medium { background: rgba(245,158,11,.12); color: #fbbf24; border: 1px solid rgba(245,158,11,.25); }
+.badge-low    { background: rgba(16,185,129,.12); color: #34d399; border: 1px solid rgba(16,185,129,.25); }
+.dp-head-info { flex: 1; min-width: 0; }
+.dp-name { font-size: 1.4rem; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+.dp-meta { font-size: 1rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 12px; }
+.dp-meta a { color: #60a5fa; text-decoration: none; }
+.dp-meta a:hover { text-decoration: underline; }
+.dp-close { background: rgba(255,255,255,.06); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 6px 12px; flex-shrink: 0; transition: background .15s; }
+.dp-close:hover { background: rgba(255,255,255,.1); color: var(--text); }
+.dp-body { flex: 1; overflow-y: auto; padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 18px; }
+
+/* Analysis card */
+.dp-analysis { background: rgba(255,255,255,.03); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+.dp-a-label { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.dp-a-date { font-size: 0.85rem; color: var(--muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+.dp-sg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.dp-sg-col h4 { font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px; }
+.dp-sg-col.strengths h4 { color: #34d399; }
+.dp-sg-col.gaps h4 { color: #f87171; }
+.dp-sg-col ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.dp-sg-col ul li { font-size: 0.95rem; color: var(--muted); padding-left: 14px; position: relative; line-height: 1.5; }
+.dp-sg-col ul li::before { content: "•"; position: absolute; left: 0; }
+.strengths li::before { color: #34d399; }
+.gaps li::before { color: #f87171; }
+.dp-action { background: rgba(37,99,235,.07); border: 1px solid rgba(37,99,235,.2); border-radius: 8px; padding: 12px 16px; font-size: 1rem; color: var(--text); line-height: 1.5; }
+.dp-action::before { content: "👉 "; }
+.dp-summary { font-size: 1rem; color: var(--muted); line-height: 1.6; margin-top: 12px; font-style: italic; }
+
+/* Re-analyse button */
+.dp-reanalyse-btn {
+  width: 100%; padding: 14px; background: linear-gradient(135deg, var(--blue), var(--purple));
+  border: none; border-radius: 10px; color: #fff; font-size: 1rem; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: opacity .15s;
+}
+.dp-reanalyse-btn:hover { opacity: .88; }
+.dp-reanalyse-btn:disabled { opacity: .4; cursor: not-allowed; }
+.dp-reanalyse-msg { font-size: 0.95rem; text-align: center; min-height: 20px; }
+
+/* History */
+.dp-history-label { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 10px; }
+.dp-history-list { display: flex; flex-direction: column; gap: 8px; }
+.dp-history-item { background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.06); border-radius: 10px; padding: 14px 16px; }
+.dp-history-date { font-size: 0.88rem; color: var(--muted); margin-bottom: 8px; }
+
+/* Manual notes */
+.dp-notes { font-size: 1rem; color: var(--muted); line-height: 1.6; background: rgba(255,255,255,.02); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+
+@media (max-width: 600px) {
+  .dp-panel { width: 100vw; }
+  .cl-row-contact { display: none; }
+  .dp-sg-grid { grid-template-columns: 1fr; }
+}
+</style>
+  <script src="/js/translations.js"></script>
+  <script src="/js/i18n.js"></script>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html" data-i18n="nav.leads">Lead Finder</a>
+      <a href="articles.html" data-i18n="nav.articles">Articles</a>
+      <a href="fb-posts.html" data-i18n="nav.fb_posts">FB Posts</a>
+      <a href="templates.html" data-i18n="nav.templates">Templates</a>
+      <a href="membership.html" data-i18n="nav.membership">Membership</a>
+    
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; My Profile</a>
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="nav.sign_in">Sign in</a>
+      <a href="signup.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">Free trial →</a>
+    </div>
+  </div>
+</nav>
+<div class="sub-nav">
+  <div class="sub-nav-inner">
+    <a href="leads.html" class="sub-nav-link" data-i18n="subnav.search_leads">&#128269; Search Leads</a>
+    <a href="crm.html" class="sub-nav-link" data-i18n="subnav.crm">&#128203; CRM</a>
+    <a href="competitors.html" class="sub-nav-link" data-i18n="subnav.ai_visibility">&#128202; AI Visibility</a>
+    <a href="competitor-search.html" class="sub-nav-link" data-i18n="subnav.competitor_search">&#128373; Competitor Search</a>
+    <a href="competitor-history.html" class="sub-nav-link active" data-i18n="subnav.my_competitors">&#128202; My Competitors</a>
+  </div>
+</div>
+
+<div class="cl-page">
+  <div class="cl-header">
+    <div class="cl-header-inner">
+      <div class="cl-title" data-i18n="subnav.my_competitors">&#128202; My Competitors</div>
+      <a href="competitor-search.html" class="cl-new-btn" data-i18n="comp.new_search">+ New search</a>
+    </div>
+  </div>
+  <div class="cl-body">
+    <div id="cl-content"><div style="text-align:center;padding:60px;color:var(--muted)">&#9203; Loading…</div></div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="dp-overlay" id="dp-overlay" onclick="panelOverlayClick(event)">
+  <div class="dp-panel" id="dp-panel">
+    <div class="dp-panel-head">
+      <span class="dp-threat-badge" id="dp-badge">—</span>
+      <div class="dp-head-info">
+        <div class="dp-name" id="dp-name">—</div>
+        <div class="dp-meta" id="dp-meta"></div>
+      </div>
+      <button class="dp-close" onclick="closePanel()">&#10005;</button>
+    </div>
+    <div class="dp-body" id="dp-body"></div>
+  </div>
+</div>
+
+<script src="/js/api.js?v=5"></script>
+<script src="/js/main.js"></script>
+<script>
+let me = null;
+let allData = null;
+let currentComp = null;
+let compRegistry = [];
+
+function esc(s) { const d = document.createElement('div'); d.textContent = String(s || ''); return d.innerHTML; }
+
+function threatClass(t) { return t === 'high' ? 'threat-high' : t === 'low' ? 'threat-low' : 'threat-medium'; }
+function badgeClass(t)  { return t === 'high' ? 'badge-high'  : t === 'low' ? 'badge-low'  : 'badge-medium'; }
+function badgeLabel(t)  { return t === 'high' ? window.t('hist.threat_high','🔴 High threat') : t === 'low' ? window.t('hist.threat_low','🟢 Low threat') : window.t('hist.threat_medium','🟡 Medium threat'); }
+
+function renderRow(c) {
+  const idx = compRegistry.push(c) - 1;
+  const website = c.website
+    ? `<a class="cl-contact-link" href="${esc(c.website.startsWith('http') ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">&#127760; ${esc(new URL(c.website.startsWith('http') ? c.website : 'https://' + c.website).hostname)}</a>`
+    : '';
+  const phone = c.phone ? `<span class="cl-contact-phone">&#128222; ${esc(c.phone)}</span>` : '';
+  return `<div class="cl-row" onclick="openPanel(${idx})">
+    <div class="cl-threat-dot ${threatClass(c.threatLevel)}"></div>
+    <div class="cl-row-name">${esc(c.name)}</div>
+    <div class="cl-row-contact">${website}${phone}</div>
+    <div class="cl-row-arrow">›</div>
+  </div>`;
+}
+
+function render(data) {
+  compRegistry = [];
+  const { aiFound, manual, reanalysis } = data;
+  if (!aiFound.length && !manual.length) {
+    document.getElementById('cl-content').innerHTML = `
+      <div class="cl-empty">
+        <div class="cl-empty-title">No competitors yet</div>
+        <div class="cl-empty-sub">Run your first competitor search to build your list.</div>
+        <a href="competitor-search.html" class="cl-new-btn">Start a search</a>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  if (aiFound.length) {
+    html += `<div class="cl-section-label">&#129302; AI-found competitors (${aiFound.length})</div>
+    <div class="cl-list">${aiFound.map(renderRow).join('')}</div>`;
+  }
+  if (manual.length) {
+    html += `<div class="cl-section-label">&#128221; Manually added (${manual.length})</div>
+    <div class="cl-list">${manual.map(renderRow).join('')}</div>`;
+  }
+  document.getElementById('cl-content').innerHTML = html;
+}
+
+function openPanel(idx) {
+  currentComp = compRegistry[idx];
+  const c = currentComp;
+  const reanalysis = (allData?.reanalysis || {})[c.id] || [];
+
+  // Head
+  const badge = document.getElementById('dp-badge');
+  badge.textContent = badgeLabel(c.threatLevel);
+  badge.className = 'dp-threat-badge ' + badgeClass(c.threatLevel);
+  document.getElementById('dp-name').textContent = c.name;
+
+  const metaParts = [];
+  if (c.address) metaParts.push(`&#128205; ${esc(c.address)}`);
+  if (c.rating)  metaParts.push(`&#11088; ${c.rating} (${c.reviewCount || 0} reviews)`);
+  if (c.website) metaParts.push(`<a href="${esc(c.website.startsWith('http') ? c.website : 'https://' + c.website)}" target="_blank" rel="noopener">&#127760; Website</a>`);
+  if (c.phone)   metaParts.push(`&#128222; ${esc(c.phone)}`);
+  document.getElementById('dp-meta').innerHTML = metaParts.join(' &nbsp;·&nbsp; ');
+
+  // Body
+  document.getElementById('dp-body').innerHTML = buildPanelBody(c, reanalysis);
+  document.getElementById('dp-overlay').classList.add('open');
+}
+
+function buildAnalysisCard(a, label) {
+  const date = a.analysedAt ? new Date(a.analysedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  return `<div class="dp-analysis">
+    <div class="dp-a-label">${label}<span class="dp-a-date">${date}</span></div>
+    ${(a.strengths?.length || a.gaps?.length) ? `<div class="dp-sg-grid">
+      <div class="dp-sg-col strengths"><h4 data-i18n="hist.strengths">What they do well</h4><ul>${(a.strengths || []).map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>
+      <div class="dp-sg-col gaps"><h4 data-i18n="hist.gaps">Your opening</h4><ul>${(a.gaps || []).map(g => `<li>${esc(g)}</li>`).join('')}</ul></div>
+    </div>` : ''}
+    ${a.recommendedAction ? `<div class="dp-action">${esc(a.recommendedAction)}</div>` : ''}
+    ${a.summary ? `<div class="dp-summary">${esc(a.summary)}</div>` : ''}
+  </div>`;
+}
+
+function buildPanelBody(c, reanalysis) {
+  let html = '';
+
+  // Current analysis (from search)
+  if (!c.isManual && (c.strengths?.length || c.gaps?.length || c.recommendedAction)) {
+    html += buildAnalysisCard(c, window.t('hist.latest_from_search','Latest analysis from search'));
+  }
+  if (c.isManual && c.notes) {
+    html += `<div><div class="dp-history-label">Your notes</div><div class="dp-notes">${esc(c.notes)}</div></div>`;
+  }
+
+  // Re-analyse button
+  html += `<div style="display:flex;flex-direction:column;gap:8px">
+    <button class="dp-reanalyse-btn" id="dp-reanalyse-btn" onclick="reanalyse()">&#129302; Analyse again with AI</button>
+    <div class="dp-reanalyse-msg" id="dp-reanalyse-msg"></div>
+  </div>`;
+
+  // Re-analysis history
+  if (reanalysis.length) {
+    html += `<div><div class="dp-history-label">Analysis history (${reanalysis.length})</div>
+    <div class="dp-history-list" id="dp-history-list">
+      ${reanalysis.map((r, i) => `<div class="dp-history-item">${buildAnalysisCard(r, i === 0 ? window.t('hist.recent_reanalysis','Most recent re-analysis') : window.t('hist.prev_analysis','Previous analysis'))}</div>`).join('')}
+    </div></div>`;
+  } else {
+    html += `<div id="dp-history-list"></div>`;
+  }
+
+  return html;
+}
+
+async function reanalyse() {
+  if (!currentComp || !me) return;
+  const btn = document.getElementById('dp-reanalyse-btn');
+  const msg = document.getElementById('dp-reanalyse-msg');
+  btn.disabled = true; btn.textContent = window.t('hist.analysing','⏳ Analysing…'); msg.textContent = '';
+
+  try {
+    const r = await fetch('/api/competitors/reanalyse', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ competitor: currentComp, businessProfile: me }),
+    });
+    const d = await r.json();
+    if (r.ok && d.success) {
+      msg.style.color = '#4ade80'; msg.textContent = window.t('hist.analysis_updated','✓ Analysis updated');
+      // Update allData reanalysis cache
+      if (!allData.reanalysis) allData.reanalysis = {};
+      allData.reanalysis[currentComp.id] = d.history || [d.data];
+      // Update panel body
+      document.getElementById('dp-body').innerHTML = buildPanelBody(currentComp, d.history || [d.data]);
+    } else {
+      msg.style.color = '#f87171'; msg.textContent = d.error || 'Analysis failed.';
+      btn.disabled = false; btn.textContent = window.t('hist.reanalyse','🤖 Analyse again with AI');
+    }
+  } catch {
+    msg.style.color = '#f87171'; msg.textContent = 'Network error.';
+    btn.disabled = false; btn.textContent = '🤖 Analyse again with AI';
+  }
+}
+
+function closePanel() { document.getElementById('dp-overlay').classList.remove('open'); }
+function panelOverlayClick(e) { if (e.target === document.getElementById('dp-overlay')) closePanel(); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+(async () => {
+  try {
+    const [meRes, listRes] = await Promise.all([
+      fetch('/api/auth/me').then(r => r.json()).catch(() => ({})),
+      fetch('/api/competitors/list').then(r => r.json()).catch(() => ({})),
+    ]);
+    if (!meRes.user) { window.location.href = 'signin.html'; return; }
+    me = meRes.user;
+    if (window.syncLangFromProfile) window.syncLangFromProfile(me);
+    if (!listRes.success) throw new Error(listRes.error || 'Failed to load');
+    allData = listRes.data;
+    render(allData);
+  } catch (e) {
+    document.getElementById('cl-content').innerHTML = `<div style="color:#f87171;text-align:center;padding:60px">&#10060; ${esc(e.message)}</div>`;
+  }
+})();
+</script>
+<script src="/js/trial-banner.js"></script>
+<script src="js/nav-init.js"></script>
+</body>
+</html>

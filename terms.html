@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="/js/translations.js"></script>
+  <script src="/js/i18n.js"></script>
+  <style>
+    .legal-page { max-width: 760px; margin: 0 auto; padding: 100px 24px 80px; }
+    .legal-page h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
+    .legal-page .updated { font-size: 0.82rem; color: var(--muted); margin-bottom: 48px; }
+    .legal-page h2 { font-size: 1.05rem; font-weight: 700; margin: 36px 0 10px; color: var(--white); }
+    .legal-page p, .legal-page li { font-size: 0.9rem; color: var(--text); line-height: 1.8; }
+    .legal-page ul { padding-left: 20px; margin: 8px 0; }
+    .legal-page a { color: var(--blue2); }
+  </style>
+</head>
+<body>
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-lang">
+      <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px" data-i18n="nav.sign_in">Sign in</a>
+    </div>
+  </div>
+</nav>
+<div class="legal-page">
+  <h1>Terms of Service</h1>
+  <p class="updated">Last updated: May 2026</p>
+
+  <h2>1. Acceptance of Terms</h2>
+  <p>By creating an account or using eureach.eu ("the Service"), you agree to these Terms of Service. If you do not agree, do not use the Service.</p>
+
+  <h2>2. Description of Service</h2>
+  <p>eureach.eu is an AI-powered outreach and content platform that helps businesses find leads, generate articles, audit AI visibility, and track competitors. Features are gated by the subscription plan you choose.</p>
+
+  <h2>3. Account & Credits</h2>
+  <ul>
+    <li>You are responsible for keeping your account credentials secure.</li>
+    <li>AI credits reset monthly on your billing date and do not roll over.</li>
+    <li>Unused credits on cancellation are forfeited.</li>
+  </ul>
+
+  <h2>4. Acceptable Use</h2>
+  <p>You agree not to use the Service to send spam, scrape data for resale, violate any applicable law, or reverse-engineer any part of the platform.</p>
+
+  <h2>5. Payment & Refunds</h2>
+  <p>Paid plans are billed monthly or annually in advance. We offer a 7-day money-back guarantee for first-time upgrades. Contact <a href="mailto:hello@eureach.eu">hello@eureach.eu</a> to request a refund.</p>
+
+  <h2>6. Termination</h2>
+  <p>You may cancel at any time. Your account reverts to the Free plan at the end of the billing period. We reserve the right to suspend accounts that violate these terms.</p>
+
+  <h2>7. Limitation of Liability</h2>
+  <p>The Service is provided "as is". We are not liable for indirect, incidental, or consequential damages arising from your use of the Service.</p>
+
+  <h2>8. Changes to Terms</h2>
+  <p>We may update these terms from time to time. Continued use of the Service after changes constitutes acceptance.</p>
+
+  <h2>9. Contact</h2>
+  <p>Questions? Email us at <a href="mailto:hello@eureach.eu">hello@eureach.eu</a>.</p>
+</div>
+<script>
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 10);
+});
+</script>
+</body>
+</html>

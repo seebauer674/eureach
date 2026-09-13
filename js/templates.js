@@ -1,3 +1,6 @@
+/* ── i18n helper ────────────────────────────────────────── */
+function T(k,fb){var l=window.euLang?window.euLang():'en';var t=window.EUREACH_T;return(t&&t[l]&&t[l][k])||fb||k;}
+
 /* ── eureach.eu — Email Templates ───────────────────── */
 (function () {
 
@@ -71,8 +74,8 @@
     const tone         = document.getElementById("et-tone").value;
     const context      = document.getElementById("et-context").value.trim();
 
-    if (!name) { setStatus("et-form-status", "err", "Please enter a template name."); return; }
-    if (!context) { setStatus("et-form-status", "err", "Please enter a business context."); return; }
+    if (!name) { setStatus("et-form-status", "err", T("et.nameRequired","Please enter a template name.")); return; }
+    if (!context) { setStatus("et-form-status", "err", T("et.contextRequired","Please enter a business context.")); return; }
 
     // Check credits
     if (templatesLeft !== null && templatesLeft !== -1 && templatesLeft <= 0) {
@@ -83,7 +86,7 @@
     setStatus("et-form-status", "", "");
     const btn = document.getElementById("et-generate-btn");
     btn.disabled = true;
-    btn.textContent = "Generating…";
+    btn.textContent = T("et.generating","Generating…");
 
     // Show spinner, hide preview
     document.getElementById("et-preview-section").style.display = "none";
@@ -106,7 +109,7 @@
           setStatus("et-form-status", "err", data.error || "Generation failed.");
         }
         btn.disabled = false;
-        btn.textContent = "✨ Generate Template";
+        btn.textContent = T("et.generateBtn","✨ Generate Template");
         return;
       }
 
@@ -125,7 +128,7 @@
     }
 
     btn.disabled = false;
-    btn.textContent = "✨ Generate Template";
+    btn.textContent = T("et.generateBtn","✨ Generate Template");
   }
 
   function renderPreview(tmpl) {
@@ -140,11 +143,11 @@
     // Wire save button
     const saveBtn = document.getElementById("et-save-btn");
     saveBtn.disabled = false;
-    saveBtn.textContent = "💾 Template Saved";
+    saveBtn.textContent = T("et.saved","💾 Template Saved");
     saveBtn.classList.remove("saved");
     saveBtn.onclick = null;
     // Already saved on generate — just show confirmation
-    saveBtn.textContent = "✓ Saved";
+    saveBtn.textContent = T("et.saved","✓ Saved");
     saveBtn.disabled = true;
 
     // Wire discard (new) button
@@ -157,17 +160,17 @@
   /* ── List ────────────────────────────────────────── */
   async function loadList() {
     const container = document.getElementById("et-list-body");
-    container.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:20px">Loading…</div>';
+    container.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;padding:20px">${T("et.loading","Loading…")}</div>';
     try {
       const res = await fetch("/api/templates");
       if (res.status === 401) {
-        container.innerHTML = '<div class="et-empty"><div class="et-empty-icon">✉</div><div class="et-empty-title">Please sign in</div><div class="et-empty-sub"><a href="signin.html" style="color:#93c5fd">Sign in</a> to view your templates</div></div>';
+        container.innerHTML = '<div class="et-empty"><div class="et-empty-icon">✉</div><div class="et-empty-title">${T("et.signInTitle","Please sign in")}</div><div class="et-empty-sub"><a href="signin.html" style="color:#93c5fd">Sign in</a> to view your templates</div></div>';
         return;
       }
       const data = await res.json();
       const list = data.templates || [];
       if (!list.length) {
-        container.innerHTML = '<div class="et-empty"><div class="et-empty-icon">✉</div><div class="et-empty-title">No templates yet</div><div class="et-empty-sub">Generate your first template to get started</div></div>';
+        container.innerHTML = '<div class="et-empty"><div class="et-empty-icon">✉</div><div class="et-empty-title">${T("et.noTemplates","No templates yet")}</div><div class="et-empty-sub">${T("et.noTemplatesSub","Generate your first template to get started")}</div></div>';
         return;
       }
       container.innerHTML = '<div class="et-grid-cards">' + list.map(cardHTML).join("") + '</div>';
@@ -178,7 +181,7 @@
         btn.addEventListener("click", () => copyTemplate(btn.dataset.id, list));
       });
     } catch {
-      container.innerHTML = '<div class="et-empty"><div class="et-empty-icon">⚠</div><div class="et-empty-title">Failed to load</div></div>';
+      container.innerHTML = '<div class="et-empty"><div class="et-empty-icon">⚠</div><div class="et-empty-title">${T("et.failedLoad","Failed to load")}</div></div>';
     }
   }
 

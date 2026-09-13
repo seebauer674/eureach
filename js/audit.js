@@ -1,3 +1,6 @@
+/* ── i18n helper ────────────────────────────────────────── */
+function T(k,fb){var l=window.euLang?window.euLang():"en";var t=window.EUREACH_T;return(t&&t[l]&&t[l][k])||fb||k;}
+
 /* ── eureach.eu — AI Visibility Audit ──────────────────── */
 
 let audits       = [];
@@ -43,10 +46,10 @@ function scoreColor(n) {
 }
 
 function scoreBlurb(n) {
-  if (n >= 80) return "Strong AI search visibility. This business is well-positioned to appear in ChatGPT, Perplexity, and Google AI results.";
-  if (n >= 60) return "Moderate AI visibility. Targeted improvements could significantly boost presence in AI-powered search results.";
-  if (n >= 40) return "Limited AI visibility. Clear opportunities exist to improve how AI search engines discover and cite this business.";
-  return "Weak AI visibility. This business is largely invisible to AI-powered search engines. Immediate action is recommended.";
+  if (n >= 80) return T("au.scoreHigh","Strong AI search visibility.");
+  if (n >= 60) return T("au.scoreMid","Moderate AI visibility.");
+  if (n >= 40) return T("au.scoreLow","Limited AI visibility.");
+  return T("au.scoreVLow","Weak AI visibility.");
 }
 
 function fmtDate(iso) {
@@ -85,13 +88,25 @@ async function loadAudits() {
 async function loadUserCaps() {
   try {
     const res  = await fetch("/api/auth/me");
-    if (!res.ok) return;
+    if (!res.ok) {
+      const profileBtn = document.getElementById("nav-profile-btn");
+      if (profileBtn) profileBtn.style.display = "none";
+      return;
+    }
     const { user } = await res.json();
-    if (!user) return;
-    if (user.auditsLeft === 0) {
+    if (!user) { const pb = document.getElementById("nav-profile-btn"); if (pb) pb.style.display = "none"; return; }
+
+    // Nav auth state
+    const signInBtn  = document.querySelector('a[href="signin.html"].btn-ghost');
+    const profileBtn = document.getElementById("nav-profile-btn");
+    if (signInBtn)  signInBtn.style.display  = "none";
+    if (profileBtn) profileBtn.textContent   = (user.firstName?.[0] || user.email?.[0] || "U").toUpperCase();
+
+    // Credit gate
+    if (user.creditsLeft !== -1 && user.creditsLeft < 5) {
       limitBanner.style.display = "";
       runBtn.disabled = true;
-      runBtn.textContent = "Upgrade to Run Audit";
+      runBtn.textContent = T("au.notEnoughCr","Not enough credits");
     }
   } catch {}
 }
@@ -99,7 +114,7 @@ async function loadUserCaps() {
 /* ── Render history ──────────────────────────────────────── */
 function renderHistory() {
   if (!audits.length) {
-    histList.innerHTML = `<div class="au-history-empty">No audits yet.<br>Run your first audit above.</div>`;
+    histList.innerHTML = `<div class="au-history-empty">${T("au.noAudits","No audits yet. Run your first audit above.")}</div>`;
     return;
   }
   histList.innerHTML = "";
@@ -140,16 +155,17 @@ function renderHistory() {
 /* ── Run audit ───────────────────────────────────────────── */
 form.addEventListener("submit", async e => {
   e.preventDefault();
+  const runBtnLabel = runBtn.textContent; // capture translated label before overwriting
   const name = bizName.value.trim();
   if (!name) {
-    formErr.textContent = "Business name is required.";
+    formErr.textContent = T("au.busRequired","Business name is required.");
     formErr.classList.add("visible");
     bizName.focus();
     return;
   }
   formErr.classList.remove("visible");
   runBtn.disabled = true;
-  runBtn.textContent = "Analyzing…";
+  runBtn.textContent = T("au.analyzing","Analyzing…");
 
   showLoading(name);
 
@@ -166,7 +182,7 @@ form.addEventListener("submit", async e => {
     const data = await res.json();
 
     if (!res.ok) {
-      if (res.status === 403 && data.error === "limit_reached") {
+      if (res.status === 403 && data.error === "insufficient_credits") {
         showLimitError();
       } else {
         showMainError(data.error || "Audit failed. Please try again.");
@@ -188,7 +204,7 @@ form.addEventListener("submit", async e => {
     showMainError("Network error. Please try again.");
   } finally {
     runBtn.disabled = false;
-    runBtn.textContent = "Run Audit →";
+    runBtn.textContent = runBtnLabel;
   }
 });
 
@@ -328,7 +344,7 @@ function renderReport(audit) {
       copyText(outreachEl.textContent).then(() => {
         copyMsgBtn.textContent = "✓ Copied!";
         copyMsgBtn.classList.add("copied");
-        setTimeout(() => { copyMsgBtn.textContent = "Copy Message"; copyMsgBtn.classList.remove("copied"); }, 2000);
+        setTimeout(() => { copyMsgBtn.textContent = T("au.copyMsg","Copy Message"); copyMsgBtn.classList.remove("copied"); }, 2000);
       });
     });
   }
@@ -343,13 +359,13 @@ function updateOutreachMsg(el, audit) {
 /* ── Create share link ───────────────────────────────────── */
 async function createShare(id) {
   const btn = document.getElementById("au-share-create-btn");
-  if (btn) { btn.disabled = true; btn.textContent = "Generating…"; }
+  if (btn) { btn.disabled = true; btn.textContent = T("au.generating","Generating…"); }
 
   try {
     const res  = await fetch(`/api/audit/${id}/share`, { method: "POST" });
     const data = await res.json();
     if (!res.ok) {
-      if (btn) { btn.disabled = false; btn.textContent = "Create Share Link"; }
+      if (btn) { btn.disabled = false; btn.textContent = T("au.createShare","Create Share Link"); }
       return;
     }
 
@@ -376,7 +392,7 @@ async function createShare(id) {
 
     renderHistory();
   } catch {
-    if (btn) { btn.disabled = false; btn.textContent = "Create Share Link"; }
+    if (btn) { btn.disabled = false; btn.textContent = T("au.createShare","Create Share Link"); }
   }
 }
 
@@ -402,8 +418,8 @@ function showEmpty() {
   mainEl.innerHTML = `
   <div class="au-empty">
     <div class="au-empty-icon">🔭</div>
-    <div class="au-empty-title">Run your first AI Visibility Audit</div>
-    <div class="au-empty-sub">Enter any business name and we'll score how visible they are in ChatGPT, Perplexity, and Google AI results.</div>
+    <div class="au-empty-title">${T("au.emptyTitle","Run your first AI Visibility Audit")}</div>
+    <div class="au-empty-sub">${T("au.emptySub","Enter any business name and we'll score how visible they are in ChatGPT, Perplexity, and Google AI results.")}</div>
   </div>`;
 }
 
@@ -411,7 +427,7 @@ function showLoading(name) {
   mainEl.innerHTML = `
   <div class="au-loading">
     <div class="au-loading-spinner"></div>
-    <div class="au-loading-title">Analyzing AI visibility…</div>
+    <div class="au-loading-title">${T("au.loadingTitle","Analyzing AI visibility…")}</div>
     <div class="au-loading-sub">Scoring ${esc(name)} across 5 AI search dimensions</div>
   </div>`;
 }
@@ -429,11 +445,11 @@ function showLimitError() {
   mainEl.innerHTML = `
   <div class="au-empty">
     <div class="au-empty-icon">🔒</div>
-    <div class="au-empty-title">Audit limit reached</div>
-    <div class="au-empty-sub">Free plan includes 1 lifetime audit. <a href="membership.html" style="color:var(--blue2)">Upgrade to run more →</a></div>
+    <div class="au-empty-title">${T("au.limitTitle","Audit limit reached")}</div>
+    <div class="au-empty-sub">You don't have enough AI credits to run an audit (costs 5 credits). <a href="membership.html" style="color:var(--blue2)">Upgrade your plan →</a></div>
   </div>`;
   runBtn.disabled = true;
-  runBtn.textContent = "Upgrade to Run More";
+  runBtn.textContent = T("au.upgradeBtn","Upgrade to Run More");
   if (limitBanner) limitBanner.style.display = "";
 }
 
@@ -441,7 +457,7 @@ function showAuthNotice() {
   mainEl.innerHTML = `
   <div class="au-empty">
     <div class="au-empty-icon">🔒</div>
-    <div class="au-empty-title">Sign in to run audits</div>
+    <div class="au-empty-title">${T("au.signInTitle","Sign in to run audits")}</div>
     <div class="au-empty-sub"><a href="signin.html" style="color:var(--blue2)">Sign in</a> to access the AI Visibility Audit.</div>
   </div>`;
   form.querySelector("button").disabled = true;
