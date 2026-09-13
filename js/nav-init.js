@@ -89,6 +89,7 @@
         ) +
 
         section(t('sb.manage', 'Manage'),
+          item('dashboard.html', '📊', t('sb.dashboard', 'Dashboard')) +
           item('crm.html',       '\ud83d\uddc2\ufe0f',  t('sb.crm',       'CRM')) +
           item('pipeline.html',  '\ud83d\udcca',         t('sb.pipeline',  'Pipeline')) +
           item('outreach.html',  '\ud83d\udce4',         t('sb.outreach',  'Outreach')) +
