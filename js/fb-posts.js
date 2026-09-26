@@ -140,7 +140,7 @@ function renderTemplates() {
           <button class="fb-icon-btn fb-icon-del" onclick="deleteTemplate('${t.id}')">✕</button>
         </div>
       </div>
-      <div class="fb-tpl-body">${esc(t.content)}</div>
+      <div class="fb-tpl-body">${esc(t.text || t.content)}</div>
     </div>`
   ).join('');
 }
@@ -285,7 +285,7 @@ async function openPostNow(targetId) {
   }
   const res  = await fetch(`/api/fb/post/${targetId}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: postContent }) });
   const data = await res.json();
-  if (res.ok) { alert(`✓ Posted! FB Post ID: ${data.fbPostId || 'N/A'}`); await loadTargets(); }
+  if (res.ok) { alert(`✓ Posted! FB Post ID: ${data.postId || 'N/A'}`); await loadTargets(); }
   else { alert('Error: ' + (data.error || 'Unknown error')); }
 }
 
@@ -299,7 +299,7 @@ function openTplModal(id) {
   document.getElementById('tpl-edit-id').value   = t ? t.id      : '';
   document.getElementById('tpl-name').value      = t ? t.name    : '';
   document.getElementById('tpl-niche').value     = t ? t.niche   : '';
-  document.getElementById('tpl-content').value   = t ? t.content : '';
+  document.getElementById('tpl-content').value   = t ? (t.text || t.content || '') : '';
   editTplType = t ? t.targetType : 'group';
   editTplWeek = t ? t.week : 1;
   document.querySelectorAll('#tpl-modal .fb-type-btn').forEach(b => b.classList.toggle('active', b.dataset.type === editTplType));
@@ -343,7 +343,7 @@ document.getElementById('tpl-save-btn').onclick = async () => {
     targetType: document.getElementById('tpl-target-type').value,
     name:    document.getElementById('tpl-name').value.trim(),
     niche:   document.getElementById('tpl-niche').value.trim(),
-    content: document.getElementById('tpl-content').value.trim(),
+    text: document.getElementById('tpl-content').value.trim(),
     week:    parseInt(document.getElementById('tpl-week').value),
   };
   const errEl = document.getElementById('tpl-err');
