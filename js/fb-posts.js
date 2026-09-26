@@ -479,22 +479,25 @@ async function runAgent() {
 }
 // ── Group Finder ────────────────────────────────────────
 async function searchFbGroups() {
-  const keyword = (document.getElementById('finder-keyword').value || '').trim();
-  const type    = document.getElementById('finder-type').value;
-  const results = document.getElementById('finder-results');
+  const keyword  = (document.getElementById('finder-keyword').value || '').trim();
+  const locEl    = document.getElementById('finder-location');
+  const location = locEl ? locEl.value.trim() : '';
+  const query    = location ? keyword + ' ' + location : keyword;
+  const type     = document.getElementById('finder-type').value;
+  const results  = document.getElementById('finder-results');
   if (!keyword) { results.innerHTML = '<p style="color:#f87171">Enter a keyword first.</p>'; return; }
 
   results.innerHTML = '<div class="fb-spinner">\u23f3 Searching\u2026</div>';
 
   const fbSearchType = type === 'page' ? 'pages' : 'groups';
-  const fbUrl = 'https://www.facebook.com/search/' + fbSearchType + '/?q=' + encodeURIComponent(keyword);
+  const fbUrl = 'https://www.facebook.com/search/' + fbSearchType + '/?q=' + encodeURIComponent(query);
 
   let hereRows = '';
   try {
     const hereRes = await fetch('/api/leads/search', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ subcatLabel: keyword, city: '', country: '' })
+      body: JSON.stringify({ subcatLabel: keyword, city: location, country: '' })
     });
     if (hereRes.ok) {
       const hereData = await hereRes.json();
@@ -515,7 +518,7 @@ async function searchFbGroups() {
 
   results.innerHTML =
     '<div style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px">' +
-      '<div style="font-weight:600;margin-bottom:10px;font-size:0.9rem">\ud83d\udd0d Facebook search results for "<em>' + esc(keyword) + '</em>"</div>' +
+      '<div style="font-weight:600;margin-bottom:10px;font-size:0.9rem">\ud83d\udd0d Facebook search results for "<em>' + esc(query) + '</em>"</div>' +
       '<p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px">' +
         'Open Facebook and browse the results. Copy the group/page ID from the URL and use "Add Target" to save it.' +
       '</p>' +

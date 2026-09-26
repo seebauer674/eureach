@@ -275,12 +275,15 @@
     <div style="max-width:700px">
       <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px">Search Facebook for groups and pages relevant to your niche. Save them as targets to post to.</p>
 
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <input type="text" id="finder-keyword" placeholder="e.g. dating Europe, kink community, adult dating…" style="flex:1;box-sizing:border-box" onkeydown="if(event.key==='Enter')searchFbGroups()">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" id="finder-keyword" placeholder="Keyword — e.g. dating, kink community, adult…" style="flex:1;box-sizing:border-box" onkeydown="if(event.key==='Enter')searchFbGroups()">
         <select id="finder-type" style="width:130px">
           <option value="group">Groups</option>
           <option value="page">Pages</option>
         </select>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="text" id="finder-location" placeholder="Location (optional) — e.g. Paris, Greece, Europe…" style="flex:1;box-sizing:border-box" onkeydown="if(event.key==='Enter')searchFbGroups()">
         <button onclick="searchFbGroups()" id="finder-btn" style="padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;white-space:nowrap">Search</button>
       </div>
 
