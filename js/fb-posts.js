@@ -455,66 +455,115 @@ function bindAgentRun() {
 }
 
 async function runAgent() {
-  // No FB API call - generate copy/download content from templates and targets
-  document.getElementById('run-overlay').classList.add('open');
-  document.getElementById('run-modal').classList.add('open');
-  document.getElementById('run-modal-title').textContent = '\u2b07 Prepare Posts';
-  document.getElementById('run-progress').innerHTML = '<div class="fb-spinner">\u23f3 Loading templates\u2026</div>';
-  document.getElementById('run-results').style.display = 'none';
-  document.getElementById('run-close-btn').style.display = 'none';
+  const modal    = document.getElementById('run-modal');
+  const overlay  = document.getElementById('run-overlay');
+  const titleEl  = document.getElementById('run-modal-title');
+  const progress = document.getElementById('run-progress');
+  const results  = document.getElementById('run-results');
+
+  overlay.classList.add('open');
+  modal.classList.add('open');
+  titleEl.textContent = '\u2b07 Prepare Posts';
+  progress.innerHTML  = '<div class="fb-spinner">\u23f3 Loading\u2026</div>';
+  results.style.display = 'none';
+  results.innerHTML = '';
 
   await loadTemplates();
   await loadTargets();
 
-  const targets   = (fbTargets).filter(t => t.active !== false);
-  const templates = (fbTemplates);
+  progress.innerHTML = '';
 
-  document.getElementById('run-progress').innerHTML = '';
+  const targets   = fbTargets.filter(t => t.active !== false);
+  const templates = fbTemplates;
 
   if (!templates.length) {
-    document.getElementById('run-results').innerHTML = '<div class="fb-run-error">No templates found. Add a template first.</div>';
-    document.getElementById('run-results').style.display = 'block';
-    document.getElementById('run-close-btn').style.display = 'inline-block';
+    results.innerHTML = '<div class="fb-run-error">\u26a0\ufe0f No templates found. Add a template first in the Templates tab.</div>';
+    results.style.display = 'block';
     return;
   }
   if (!targets.length) {
-    document.getElementById('run-results').innerHTML = '<div class="fb-run-error">No active targets found. Add targets first.</div>';
-    document.getElementById('run-results').style.display = 'block';
-    document.getElementById('run-close-btn').style.display = 'inline-block';
+    results.innerHTML = '<div class="fb-run-error">\u26a0\ufe0f No active targets. Add groups or pages in the Groups & Pages tab.</div>';
+    results.style.display = 'block';
     return;
   }
 
+  // Week rotation: week 1-4 based on day of month
+  const weekNum = Math.min(4, Math.ceil(new Date().getDate() / 7));
+
+  function pickTemplate(type) {
+    // 1. Match type + current week
+    let tpl = templates.find(t => t.targetType === type && parseInt(t.week) === weekNum);
+    // 2. Match type any week
+    if (!tpl) tpl = templates.find(t => t.targetType === type);
+    // 3. All-target template for current week
+    if (!tpl) tpl = templates.find(t => t.targetType === 'all' && parseInt(t.week) === weekNum);
+    // 4. Any template
+    if (!tpl) tpl = templates[0];
+    return tpl;
+  }
+
   let allText = '';
-  const rows = targets.map(t => {
-    const tpl = templates.find(tp => tp.targetType === t.type) || templates[0];
-    const msg = tpl ? (tpl.text || tpl.content || tpl.bodyText || '') : '';
+  // Use a counter-indexed id per row for copy buttons
+  window._runRows = [];
+
+  const rows = targets.map((t, i) => {
+    const tpl = pickTemplate(t.type);
+    const msg = tpl ? (tpl.text || tpl.content || '') : '';
     const url = t.type === 'page'
       ? 'https://www.facebook.com/' + t.entityId
       : 'https://www.facebook.com/groups/' + t.entityId;
-    allText += '--- ' + t.name + ' ---\n' + msg + '\n\n';
-    return '<div class="fb-run-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:12px 0;border-bottom:1px solid var(--border)">' +
-      '<div style="display:flex;align-items:center;gap:8px;width:100%">' +
-        '<span style="font-weight:600">' + esc(t.name) + '</span>' +
-        '<span class="fb-tpl-type ' + (t.type === 'page' ? 'fb-tpl-page' : 'fb-tpl-group') + '">' + (t.type === 'page' ? '\ud83d\udcc4 Page' : '\ud83d\udc65 Group') + '</span>' +
-        '<a href="' + url + '" target="_blank" rel="noopener" style="margin-left:auto;font-size:0.8rem;color:#60a5fa">Open on Facebook \u2197</a>' +
+    const tplLabel = tpl ? ('Week ' + tpl.week + (tpl.name ? ' \u2014 ' + tpl.name : '')) : 'No match';
+    allText += '=== ' + t.name + ' ===\n' + msg + '\n\n';
+    window._runRows.push(msg);
+    const rowId = 'rrow-' + i;
+    return '<div style="padding:14px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<span style="font-weight:600;font-size:0.9rem">' + esc(t.name) + '</span>' +
+        '<span class="fb-tpl-type ' + (t.type === 'page' ? 'fb-tpl-page' : 'fb-tpl-group') + '">' +
+          (t.type === 'page' ? '\ud83d\udcc4 Page' : '\ud83d\udc65 Group') + '</span>' +
+        '<span style="font-size:0.74rem;color:var(--muted);margin-left:4px">' + esc(tplLabel) + '</span>' +
+        '<a href="' + esc(url) + '" target="_blank" rel="noopener" ' +
+          'style="margin-left:auto;font-size:0.8rem;color:#60a5fa;white-space:nowrap">Open Facebook \u2197</a>' +
       '</div>' +
-      '<textarea readonly style="width:100%;box-sizing:border-box;height:80px;font-size:0.82rem;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:6px;resize:vertical">' + esc(msg) + '</textarea>' +
-      '<button onclick="navigator.clipboard.writeText(this.previousElementSibling.value).then(function(){var b=this;b.textContent=\'\u2713 Copied!\';setTimeout(function(){b.textContent=\'Copy text\'},1500)}.bind(this))" style="font-size:0.78rem;padding:4px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer">Copy text</button>' +
-      '</div>';
-  }).join('');
+      '<textarea id="' + rowId + '" readonly rows="4" ' +
+        'style="width:100%;box-sizing:border-box;font-size:0.82rem;background:rgba(0,0,0,0.2);' +
+        'color:var(--fg,#e2e8f0);border:1px solid rgba(255,255,255,0.1);border-radius:6px;' +
+        'padding:8px;resize:vertical;font-family:inherit">' + esc(msg) + '</textarea>' +
+      '<button onclick="copyRunRow(\'' + rowId + '\', this)" ' +
+        'style="margin-top:6px;font-size:0.78rem;padding:4px 14px;background:#2563eb;' +
+        'color:#fff;border:none;border-radius:6px;cursor:pointer">\ud83d\udccb Copy text</button>' +
+    '</div>';
+  });
 
-  const blob   = new Blob([allText], {type:'text/plain'});
-  const dlUrl  = URL.createObjectURL(blob);
+  const blob  = new Blob([allText], { type: 'text/plain' });
+  const dlUrl = URL.createObjectURL(blob);
 
-  document.getElementById('run-modal-title').textContent = '\u2b07 Ready to Post';
-  document.getElementById('run-results').innerHTML =
-    '<p style="font-size:0.82rem;color:var(--muted);text-align:left;margin-bottom:12px">' +
-      'Copy each post text, open the link, and paste it on Facebook. ' +
-      'Or <a href="' + dlUrl + '" download="fb-posts.txt" style="color:#60a5fa">download all as .txt</a>.' +
-    '</p>' + rows;
-  document.getElementById('run-results').style.display = 'block';
-  document.getElementById('run-close-btn').style.display = 'inline-block';
+  titleEl.textContent = '\u2b07 Ready to Post \u2014 ' + targets.length + ' target' + (targets.length === 1 ? '' : 's');
+
+  results.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;' +
+      'background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;margin-bottom:16px">' +
+      '<span style="font-size:0.82rem;color:var(--muted)">Copy each post, open the link, paste on Facebook.</span>' +
+      '<a href="' + dlUrl + '" download="fb-posts-week' + weekNum + '.txt" ' +
+        'style="font-size:0.82rem;color:#60a5fa;white-space:nowrap;text-decoration:none;' +
+        'padding:5px 12px;border:1px solid #2563eb;border-radius:6px">\u2b07 Download all .txt</a>' +
+    '</div>' +
+    rows.join('');
+  results.style.display = 'block';
 }
+
+function copyRunRow(id, btn) {
+  const ta = document.getElementById(id);
+  if (!ta) return;
+  navigator.clipboard.writeText(ta.value).then(function() {
+    btn.textContent = '\u2713 Copied!';
+    setTimeout(function() { btn.innerHTML = '\ud83d\udccb Copy text'; }, 1600);
+  }).catch(function() {
+    ta.select();
+    document.execCommand('copy');
+  });
+}
+
 // ── Group Finder ────────────────────────────────────────
 async function searchFbGroups() {
   const keyword  = (document.getElementById('finder-keyword').value || '').trim();

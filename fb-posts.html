@@ -438,15 +438,15 @@
 </div>
 
 <!-- ── Agent Run Modal ──────────────────────────────── -->
-<div class="fb-overlay" id="run-overlay"></div>
-<div class="fb-modal" id="run-modal" style="max-width:500px;text-align:center">
-  <div class="fb-modal-header" style="justify-content:center;border:none;padding-bottom:0">
-    <div class="fb-modal-title" id="run-modal-title">⬇ Preparing Posts…</div>
+<div class="fb-overlay" id="run-overlay" onclick="closeRunModal()"></div>
+<div class="fb-modal" id="run-modal" style="max-width:740px;text-align:left">
+  <div class="fb-modal-header">
+    <div class="fb-modal-title" id="run-modal-title">⬇ Prepare Posts</div>
+    <button class="fb-modal-close" onclick="closeRunModal()">✕</button>
   </div>
-  <div class="fb-modal-body" style="padding:16px 28px 28px">
+  <div class="fb-modal-body" style="padding:16px 24px 24px">
     <div id="run-progress" class="fb-run-progress"></div>
     <div id="run-results" class="fb-run-results" style="display:none"></div>
-    <button class="fb-save-btn" id="run-close-btn" style="display:none;margin:16px auto 0" onclick="closeRunModal()">Close</button>
   </div>
 </div>
 
