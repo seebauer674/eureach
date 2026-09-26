@@ -351,7 +351,7 @@ function openTplModal(id) {
   document.getElementById('tpl-target-type').value = editTplType;
   document.querySelectorAll('.fb-week-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.week) === editTplWeek));
   document.getElementById('tpl-week').value = editTplWeek;
-  document.getElementById('tpl-chars').textContent = `${(t?.content || '').length} / 63206`;
+  document.getElementById('tpl-chars').textContent = `${(t ? (t.text || t.content || '') : '').length} / 63206`;
   document.getElementById('tpl-err').textContent = '';
   document.getElementById('tpl-overlay').classList.add('open');
   document.getElementById('tpl-modal').classList.add('open');
@@ -392,7 +392,7 @@ document.getElementById('tpl-save-btn').onclick = async () => {
     week:    parseInt(document.getElementById('tpl-week').value),
   };
   const errEl = document.getElementById('tpl-err');
-  if (!payload.content) { errEl.textContent = 'Content is required.'; return; }
+  if (!payload.text) { errEl.textContent = 'Post content is required.'; return; }
   const btn = document.getElementById('tpl-save-btn');
   btn.disabled = true; btn.textContent = 'Saving…';
   const url = id ? `/api/fb/templates/${id}` : '/api/fb/templates';
