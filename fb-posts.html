@@ -180,6 +180,7 @@
           <img id="brand-logo-preview" src="" style="display:none;max-height:48px;margin-top:8px;border-radius:6px">
         </div>
 
+        <!-- Background / Accent / Outline colors -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
           <div class="fb-field">
             <label style="font-size:0.8rem;color:var(--muted)">Background</label>
@@ -192,26 +193,59 @@
             <input type="text" id="brand-accent-hex" value="#2563eb" placeholder="#2563eb" style="width:100%;box-sizing:border-box;margin-top:4px;font-size:0.78rem">
           </div>
           <div class="fb-field">
-            <label style="font-size:0.8rem;color:var(--muted)">Text</label>
-            <input type="color" id="brand-text" value="#ffffff" style="width:100%;height:36px;cursor:pointer;border-radius:6px">
-            <input type="text" id="brand-text-hex" value="#ffffff" placeholder="#ffffff" style="width:100%;box-sizing:border-box;margin-top:4px;font-size:0.78rem">
+            <label style="font-size:0.8rem;color:var(--muted)">Outline</label>
+            <input type="color" id="brand-outline" value="#2563eb" style="width:100%;height:36px;cursor:pointer;border-radius:6px">
+            <input type="text" id="brand-outline-hex" value="#2563eb" placeholder="#2563eb" style="width:100%;box-sizing:border-box;margin-top:4px;font-size:0.78rem">
           </div>
         </div>
 
-        <div class="fb-field" style="margin-bottom:14px">
-          <label style="font-size:0.8rem;color:var(--muted)">Font size</label>
-          <select id="brand-fontsize" style="width:100%">
-            <option value="22">Small (22px)</option>
-            <option value="26">Medium (26px)</option>
-            <option value="30" selected>Default (30px)</option>
-            <option value="36">Large (36px)</option>
-            <option value="42">X-Large (42px)</option>
-          </select>
+        <!-- Header -->
+        <div class="fb-field" style="margin-bottom:10px">
+          <label style="font-size:0.8rem;color:var(--muted)">Header</label>
+          <input type="text" id="brand-header-text" placeholder="Main heading…" style="width:100%;box-sizing:border-box" oninput="renderBrandCanvas()">
+          <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+            <input type="color" id="brand-header-color" value="#ffffff" style="width:40px;height:30px;cursor:pointer;border-radius:4px;flex-shrink:0">
+            <input type="text" id="brand-header-color-hex" value="#ffffff" placeholder="#ffffff" style="width:80px;box-sizing:border-box;font-size:0.78rem">
+            <select id="brand-header-size" style="flex:1">
+              <option value="32">32px</option>
+              <option value="38">38px</option>
+              <option value="44" selected>44px</option>
+              <option value="52">52px</option>
+              <option value="62">62px</option>
+            </select>
+          </div>
         </div>
 
+        <!-- Subtitle -->
+        <div class="fb-field" style="margin-bottom:10px">
+          <label style="font-size:0.8rem;color:var(--muted)">Subtitle</label>
+          <input type="text" id="brand-subtitle-text" placeholder="Subtitle text…" style="width:100%;box-sizing:border-box" oninput="renderBrandCanvas()">
+          <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+            <input type="color" id="brand-subtitle-color" value="#94a3b8" style="width:40px;height:30px;cursor:pointer;border-radius:4px;flex-shrink:0">
+            <input type="text" id="brand-subtitle-color-hex" value="#94a3b8" placeholder="#94a3b8" style="width:80px;box-sizing:border-box;font-size:0.78rem">
+            <select id="brand-subtitle-size" style="flex:1">
+              <option value="20">20px</option>
+              <option value="24">24px</option>
+              <option value="28" selected>28px</option>
+              <option value="34">34px</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Description -->
         <div class="fb-field" style="margin-bottom:14px">
-          <label style="font-size:0.8rem;color:var(--muted)">Preview text</label>
-          <textarea id="brand-preview-text" rows="3" placeholder="Type sample post text to preview…" style="width:100%;box-sizing:border-box;resize:vertical" oninput="renderBrandCanvas()"></textarea>
+          <label style="font-size:0.8rem;color:var(--muted)">Description</label>
+          <textarea id="brand-preview-text" rows="3" placeholder="Body / description text…" style="width:100%;box-sizing:border-box;resize:vertical" oninput="renderBrandCanvas()"></textarea>
+          <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+            <input type="color" id="brand-desc-color" value="#e2e8f0" style="width:40px;height:30px;cursor:pointer;border-radius:4px;flex-shrink:0">
+            <input type="text" id="brand-desc-color-hex" value="#e2e8f0" placeholder="#e2e8f0" style="width:80px;box-sizing:border-box;font-size:0.78rem">
+            <select id="brand-desc-size" style="flex:1">
+              <option value="18">18px</option>
+              <option value="22" selected>22px</option>
+              <option value="26">26px</option>
+              <option value="30">30px</option>
+            </select>
+          </div>
         </div>
 
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">

@@ -613,8 +613,11 @@ async function searchFbTargets() {
 // ── Branding Tab ─────────────────────────────────────────
 const brandState = {
   name: '', logoUrl: '', logoImg: null,
-  bg: '#0d1630', accent: '#2563eb', textColor: '#ffffff',
-  fontSize: 30, credit: true
+  bg: '#0d1630', accent: '#2563eb', outlineColor: '#2563eb',
+  headerText: '', headerColor: '#ffffff', headerSize: 44,
+  subtitleText: '', subtitleColor: '#94a3b8', subtitleSize: 28,
+  descColor: '#e2e8f0', descSize: 22,
+  credit: true
 };
 
 async function loadBranding() {
@@ -624,10 +627,17 @@ async function loadBranding() {
   if (b.logoUrl)   { brandState.logoUrl = b.logoUrl;     document.getElementById('brand-logo-url').value = b.logoUrl;
                      const p = document.getElementById('brand-logo-preview'); p.src = b.logoUrl; p.style.display = 'block';
                      loadBrandLogo(b.logoUrl); }
-  if (b.bg)        { brandState.bg = b.bg;               syncColor('brand-bg', b.bg); }
-  if (b.accent)    { brandState.accent = b.accent;       syncColor('brand-accent', b.accent); }
-  if (b.textColor) { brandState.textColor = b.textColor; syncColor('brand-text', b.textColor); }
-  if (b.fontSize)  { brandState.fontSize = parseInt(b.fontSize); document.getElementById('brand-fontsize').value = b.fontSize; }
+  if (b.bg)            { brandState.bg = b.bg;                       syncColor('brand-bg', b.bg); }
+  if (b.accent)        { brandState.accent = b.accent;               syncColor('brand-accent', b.accent); }
+  if (b.outlineColor)  { brandState.outlineColor = b.outlineColor;   syncColor('brand-outline', b.outlineColor); }
+  if (b.headerText)    { brandState.headerText = b.headerText;       document.getElementById('brand-header-text').value = b.headerText; }
+  if (b.headerColor)   { brandState.headerColor = b.headerColor;     syncColor('brand-header-color', b.headerColor); }
+  if (b.headerSize)    { brandState.headerSize = parseInt(b.headerSize); document.getElementById('brand-header-size').value = b.headerSize; }
+  if (b.subtitleText)  { brandState.subtitleText = b.subtitleText;   document.getElementById('brand-subtitle-text').value = b.subtitleText; }
+  if (b.subtitleColor) { brandState.subtitleColor = b.subtitleColor; syncColor('brand-subtitle-color', b.subtitleColor); }
+  if (b.subtitleSize)  { brandState.subtitleSize = parseInt(b.subtitleSize); document.getElementById('brand-subtitle-size').value = b.subtitleSize; }
+  if (b.descColor)     { brandState.descColor = b.descColor;         syncColor('brand-desc-color', b.descColor); }
+  if (b.descSize)      { brandState.descSize = parseInt(b.descSize); document.getElementById('brand-desc-size').value = b.descSize; }
   if (b.credit !== undefined) { brandState.credit = b.credit; document.getElementById('brand-credit').checked = b.credit; }
   renderBrandCanvas();
 }
@@ -650,14 +660,11 @@ function renderBrandCanvas() {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const W = 1200, H = 630;
+  const PAD = 60;
 
   // Background
   ctx.fillStyle = brandState.bg;
   ctx.fillRect(0, 0, W, H);
-
-  // Accent bar left edge
-  ctx.fillStyle = brandState.accent;
-  ctx.fillRect(0, 0, 8, H);
 
   // Subtle gradient overlay
   const grad = ctx.createLinearGradient(0, 0, W, H);
@@ -666,58 +673,95 @@ function renderBrandCanvas() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
+  // Outline border
+  const OW = 8;
+  ctx.strokeStyle = brandState.outlineColor;
+  ctx.lineWidth = OW;
+  ctx.strokeRect(OW / 2, OW / 2, W - OW, H - OW);
+
+  // Accent bar left edge
+  ctx.fillStyle = brandState.accent;
+  ctx.fillRect(0, 0, OW, H);
+
   // Logo
-  let logoBottom = 60;
+  let curY = 60;
   if (brandState.logoImg) {
-    const lh = 80, lw = Math.round(brandState.logoImg.width * (lh / brandState.logoImg.height));
-    const lx = 60, ly = 50;
-    ctx.drawImage(brandState.logoImg, lx, ly, Math.min(lw, 300), lh);
-    logoBottom = ly + lh + 24;
+    const lh = 72, lw = Math.round(brandState.logoImg.width * (lh / brandState.logoImg.height));
+    ctx.drawImage(brandState.logoImg, PAD, curY, Math.min(lw, 280), lh);
+    curY += lh + 20;
   }
 
   // Brand name
   if (brandState.name) {
     ctx.fillStyle = brandState.accent;
-    ctx.font = 'bold 28px system-ui, sans-serif';
-    ctx.fillText(brandState.name, 60, brandState.logoImg ? logoBottom : 80);
-    logoBottom = (brandState.logoImg ? logoBottom : 80) + 40;
+    ctx.font = 'bold 26px system-ui, sans-serif';
+    ctx.fillText(brandState.name, PAD, curY + 20);
+    curY += 48;
   }
 
-  // Post text
-  const text = (document.getElementById('brand-preview-text') || {}).value || 'Your post text will appear here…';
-  ctx.fillStyle = brandState.textColor;
-  ctx.font = `${brandState.fontSize}px system-ui, sans-serif`;
-  const maxW = W - 120;
-  const lineH = brandState.fontSize * 1.5;
-  const words = text.split(' ');
-  let line = '', y = Math.max(logoBottom + 40, 180);
-  for (const word of words) {
-    const test = line ? line + ' ' + word : word;
-    if (ctx.measureText(test).width > maxW && line) {
-      ctx.fillText(line, 60, y);
-      line = word; y += lineH;
-      if (y > H - 120) { ctx.fillText(line + '…', 60, y); line = ''; break; }
-    } else { line = test; }
+  curY = Math.max(curY, 130);
+
+  // Header
+  const headerText = brandState.headerText || (document.getElementById('brand-header-text') || {}).value || '';
+  if (headerText) {
+    ctx.fillStyle = brandState.headerColor;
+    ctx.font = `bold ${brandState.headerSize}px system-ui, sans-serif`;
+    curY = drawWrapped(ctx, headerText, PAD, curY, W - PAD * 2, brandState.headerSize * 1.3, H - 140);
+    curY += 16;
   }
-  if (line) ctx.fillText(line, 60, y);
+
+  // Subtitle
+  const subtitleText = brandState.subtitleText || (document.getElementById('brand-subtitle-text') || {}).value || '';
+  if (subtitleText) {
+    ctx.fillStyle = brandState.subtitleColor;
+    ctx.font = `${brandState.subtitleSize}px system-ui, sans-serif`;
+    curY = drawWrapped(ctx, subtitleText, PAD, curY, W - PAD * 2, brandState.subtitleSize * 1.4, H - 140);
+    curY += 12;
+  }
+
+  // Description
+  const descText = (document.getElementById('brand-preview-text') || {}).value || '';
+  if (descText) {
+    ctx.fillStyle = brandState.descColor;
+    ctx.font = `${brandState.descSize}px system-ui, sans-serif`;
+    drawWrapped(ctx, descText, PAD, curY, W - PAD * 2, brandState.descSize * 1.5, H - 140);
+  }
 
   // Accent bottom bar
   ctx.fillStyle = brandState.accent;
-  ctx.fillRect(0, H - 6, W, 6);
+  ctx.fillRect(0, H - OW, W, OW);
 
   // Footer credit
   if (brandState.credit) {
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = '22px system-ui, sans-serif';
-    ctx.fillText('Created by eureach.eu', 60, H - 24);
+    ctx.font = '20px system-ui, sans-serif';
+    ctx.fillText('Created by eureach.eu', PAD, H - 22);
   }
+}
+
+function drawWrapped(ctx, text, x, y, maxW, lineH, maxY) {
+  const words = text.split(' ');
+  let line = '';
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, y);
+      line = word; y += lineH;
+      if (y > maxY) { ctx.fillText(line + '…', x, y); return y; }
+    } else { line = test; }
+  }
+  if (line) { ctx.fillText(line, x, y); y += lineH; }
+  return y;
 }
 
 // Wire up all controls
 // ── Branding event wiring (runs immediately — DOM ready at bottom of body) ─
 (function initBranding() {
 // Colour pickers ↔ hex inputs
-[['brand-bg','bg'],['brand-accent','accent'],['brand-text','textColor']].forEach(([id, key]) => {
+[
+  ['brand-bg','bg'],['brand-accent','accent'],['brand-outline','outlineColor'],
+  ['brand-header-color','headerColor'],['brand-subtitle-color','subtitleColor'],['brand-desc-color','descColor']
+].forEach(([id, key]) => {
   document.getElementById(id).addEventListener('input', function() {
     brandState[key] = this.value;
     document.getElementById(id + '-hex').value = this.value;
@@ -735,8 +779,21 @@ function renderBrandCanvas() {
 document.getElementById('brand-name').addEventListener('input', function() {
   brandState.name = this.value; renderBrandCanvas();
 });
-document.getElementById('brand-fontsize').addEventListener('change', function() {
-  brandState.fontSize = parseInt(this.value); renderBrandCanvas();
+document.getElementById('brand-header-size').addEventListener('change', function() {
+  brandState.headerSize = parseInt(this.value); renderBrandCanvas();
+});
+document.getElementById('brand-subtitle-size').addEventListener('change', function() {
+  brandState.subtitleSize = parseInt(this.value); renderBrandCanvas();
+});
+document.getElementById('brand-desc-size').addEventListener('change', function() {
+  brandState.descSize = parseInt(this.value); renderBrandCanvas();
+});
+// Wire header/subtitle text inputs
+document.getElementById('brand-header-text').addEventListener('input', function() {
+  brandState.headerText = this.value; renderBrandCanvas();
+});
+document.getElementById('brand-subtitle-text').addEventListener('input', function() {
+  brandState.subtitleText = this.value; renderBrandCanvas();
 });
 document.getElementById('brand-credit').addEventListener('change', function() {
   brandState.credit = this.checked; renderBrandCanvas();
@@ -763,8 +820,11 @@ document.getElementById('brand-save-btn').addEventListener('click', async functi
   const payload = {
     name: document.getElementById('brand-name').value.trim(),
     logoUrl: brandState.logoUrl,
-    bg: brandState.bg, accent: brandState.accent, textColor: brandState.textColor,
-    fontSize: brandState.fontSize, credit: brandState.credit
+    bg: brandState.bg, accent: brandState.accent, outlineColor: brandState.outlineColor,
+    headerText: brandState.headerText, headerColor: brandState.headerColor, headerSize: brandState.headerSize,
+    subtitleText: brandState.subtitleText, subtitleColor: brandState.subtitleColor, subtitleSize: brandState.subtitleSize,
+    descColor: brandState.descColor, descSize: brandState.descSize,
+    credit: brandState.credit
   };
   await fetch('/api/fb/branding', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
   btn.textContent = 'Save Branding'; btn.disabled = false;
