@@ -205,6 +205,42 @@ function bindAddButtons() {
   document.getElementById('btn-add-template').onclick = () => openTplModal(null);
 }
 
+function parseFbUrl(raw) {
+  try {
+    const str = raw.trim().replace(/^(?!https?:\/\/)/, 'https://');
+    const u = new URL(str);
+    if (!u.hostname.includes('facebook.com')) return null;
+    const parts = u.pathname.replace(/\/$/, '').split('/').filter(Boolean);
+    if (!parts.length) return null;
+    // /groups/ID or /groups/slug
+    if (parts[0] === 'groups' && parts[1])
+      return { type: 'group', id: parts[1], url: 'https://www.facebook.com/groups/' + parts[1] };
+    // /pages/slug/ID
+    if (parts[0] === 'pages' && parts[2] && /^\d+$/.test(parts[2]))
+      return { type: 'page', id: parts[2], url: 'https://www.facebook.com/pages/' + parts[1] + '/' + parts[2] };
+    // /profile.php?id=123
+    if (parts[0] === 'profile.php') {
+      const id = u.searchParams.get('id');
+      if (id) return { type: 'page', id, url: 'https://www.facebook.com/profile.php?id=' + id };
+    }
+    // /pagename or /pagename/
+    if (parts.length >= 1)
+      return { type: 'page', id: parts[0], url: 'https://www.facebook.com/' + parts[0] };
+  } catch(e) {}
+  return null;
+}
+
+function slugToName(slug) {
+  return slug.replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function setTargetType(type) {
+  editTargetType = type;
+  document.getElementById('target-type').value = type;
+  document.querySelectorAll('#target-modal .fb-type-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.type === type));
+}
+
 function openTargetModal(id) {
   const t = id ? fbTargets.find(x => x.id === id) : null;
   document.getElementById('target-modal-title').textContent = t ? 'Edit Target' : 'Add Target';
@@ -214,14 +250,14 @@ function openTargetModal(id) {
   document.getElementById('target-url').value        = t ? t.url        : '';
   document.getElementById('target-niche').value      = t ? t.niche      : '';
   document.getElementById('target-join-status').value = t ? t.joinStatus : 'joined';
-  editTargetType = t ? t.type : 'group';
-  document.querySelectorAll('.fb-type-btn').forEach(b => {
-    b.classList.toggle('active', b.closest('#target-modal') && b.dataset.type === editTargetType);
-  });
-  document.getElementById('target-type').value = editTargetType;
+  document.getElementById('target-url-paste').value  = '';
+  document.getElementById('target-url-detected').style.display = 'none';
+  document.getElementById('target-url-paste-wrap').style.display = t ? 'none' : '';
+  setTargetType(t ? t.type : 'group');
   document.getElementById('target-err').textContent = '';
   document.getElementById('target-overlay').classList.add('open');
   document.getElementById('target-modal').classList.add('open');
+  if (!t) setTimeout(() => document.getElementById('target-url-paste').focus(), 50);
 }
 
 function closeTargetModal() {
@@ -229,14 +265,23 @@ function closeTargetModal() {
   document.getElementById('target-modal').classList.remove('open');
 }
 
-document.querySelectorAll('#target-modal .fb-type-btn').forEach(b => {
-  b.onclick = () => {
-    document.querySelectorAll('#target-modal .fb-type-btn').forEach(x => x.classList.remove('active'));
-    b.classList.add('active');
-    editTargetType = b.dataset.type;
-    document.getElementById('target-type').value = editTargetType;
-  };
+document.getElementById('target-url-paste').addEventListener('input', function() {
+  const val = this.value.trim();
+  const det = document.getElementById('target-url-detected');
+  if (!val) { det.style.display = 'none'; return; }
+  const parsed = parseFbUrl(val);
+  if (!parsed) { det.style.display = ''; det.style.color = '#f87171'; det.textContent = 'Could not parse URL — fill fields manually below.'; return; }
+  setTargetType(parsed.type);
+  document.getElementById('target-id').value  = parsed.id;
+  document.getElementById('target-url').value = parsed.url;
+  if (!document.getElementById('target-name').value)
+    document.getElementById('target-name').value = slugToName(parsed.id.replace(/^\d+$/, '') || '');
+  det.style.display = '';
+  det.style.color = '#4ade80';
+  det.textContent = '\u2713 Detected: ' + (parsed.type === 'group' ? '\ud83d\udc65 Group' : '\ud83d\udcc4 Page') + ' — ID: ' + parsed.id;
 });
+
+document.querySelectorAll('#target-modal .fb-type-btn').forEach(b => { b.onclick = () => setTargetType(b.dataset.type); });
 
 document.getElementById('target-save-btn').onclick = async () => {
   const id = document.getElementById('target-edit-id').value;

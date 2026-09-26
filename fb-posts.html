@@ -275,6 +275,12 @@
   </div>
   <div class="fb-modal-body">
     <input type="hidden" id="target-edit-id">
+    <div class="fb-field" id="target-url-paste-wrap">
+      <label>Paste Facebook URL <span style="color:var(--muted);font-weight:400">(auto-fills everything)</span></label>
+      <input type="text" id="target-url-paste" placeholder="https://facebook.com/groups/… or facebook.com/pagename" autocomplete="off">
+      <div id="target-url-detected" style="display:none;margin-top:6px;font-size:0.78rem;color:#4ade80"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px"><div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div><span style="font-size:0.72rem;color:var(--muted)">or fill manually</span><div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div></div>
     <div class="fb-field">
       <label>Type</label>
       <div class="fb-type-toggle">
