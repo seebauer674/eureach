@@ -131,7 +131,7 @@ function renderTemplates() {
   list.innerHTML = filtered.map(t => `
     <div class="fb-tpl-card">
       <div class="fb-tpl-head">
-        <span class="fb-tpl-type ${t.targetType === 'page' ? 'fb-tpl-page' : 'fb-tpl-group'}">${t.targetType === 'page' ? '📄 Page' : '👥 Group'}</span>
+        <span class="fb-tpl-type ${t.targetType === 'page' ? 'fb-tpl-page' : t.targetType === 'group' ? 'fb-tpl-group' : 'fb-tpl-all'}">${t.targetType === 'page' ? '📄 Page' : t.targetType === 'group' ? '👥 Group' : '🔀 All'}</span>
         <span class="fb-tpl-week">Week ${t.week}</span>
         ${t.niche ? `<span class="fb-tpl-niche">${esc(t.niche)}</span>` : ''}
         <span class="fb-tpl-name">${esc(t.name || '')}</span>
@@ -278,10 +278,10 @@ async function openPostNow(targetId) {
   if (!postContent) {
     const now = new Date();
     const weekNum = (Math.ceil((now - new Date(now.getFullYear(), 0, 1)) / (7 * 86400000)) % 4) + 1;
-    const pool = fbTemplates.filter(t => t.targetType === target.type);
+    const pool = fbTemplates.filter(t => !t.targetType || t.targetType === target.type);
     const tpl  = pool.find(t => t.week === weekNum) || pool[0];
     if (!tpl) { alert('No template found for this target type. Add one in the Templates tab.'); return; }
-    postContent = tpl.content;
+    postContent = tpl.text || tpl.content || "";
   }
   const res  = await fetch(`/api/fb/post/${targetId}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ content: postContent }) });
   const data = await res.json();
@@ -372,40 +372,119 @@ function bindAgentRun() {
 }
 
 async function runAgent() {
+  // No FB API call - generate copy/download content from templates and targets
   document.getElementById('run-overlay').classList.add('open');
   document.getElementById('run-modal').classList.add('open');
-  document.getElementById('run-modal-title').textContent = '▶ Running Agent…';
-  document.getElementById('run-progress').innerHTML = '<div class="fb-spinner">⏳ Posting to due targets…</div>';
+  document.getElementById('run-modal-title').textContent = '\u2b07 Prepare Posts';
+  document.getElementById('run-progress').innerHTML = '<div class="fb-spinner">\u23f3 Loading templates\u2026</div>';
   document.getElementById('run-results').style.display = 'none';
   document.getElementById('run-close-btn').style.display = 'none';
 
-  const res  = await fetch('/api/fb/agent/run', { method:'POST' });
-  const data = await res.json();
+  await loadTemplates();
+  await loadTargets();
+
+  const targets   = (fbTargets).filter(t => t.active !== false);
+  const templates = (fbTemplates);
 
   document.getElementById('run-progress').innerHTML = '';
-  document.getElementById('run-modal-title').textContent = res.ok ? '✓ Agent Complete' : '✗ Agent Error';
 
-  if (!res.ok) {
-    document.getElementById('run-results').innerHTML = `<div class="fb-run-error">${esc(data.error || 'Unknown error')}</div>`;
-  } else {
-    const rows = (data.results || []).map(r => {
-      const icon = r.status === 'posted' ? '✅' : r.status === 'error' ? '❌' : '⏭';
-      return `<div class="fb-run-row"><span>${icon}</span><span>${esc(r.target)}</span><span class="fb-run-reason">${esc(r.reason || r.fbPostId || '')}</span></div>`;
-    }).join('');
-    document.getElementById('run-results').innerHTML = `
-      <div class="fb-run-summary">
-        <span>✅ Posted: <strong>${data.posted}</strong></span>
-        <span>⏭ Skipped: <strong>${data.skipped}</strong></span>
-        <span>❌ Errors: <strong>${data.errors}</strong></span>
-      </div>
-      ${rows}
-      ${data.message ? `<div class="fb-run-msg">${esc(data.message)}</div>` : ''}`;
+  if (!templates.length) {
+    document.getElementById('run-results').innerHTML = '<div class="fb-run-error">No templates found. Add a template first.</div>';
+    document.getElementById('run-results').style.display = 'block';
+    document.getElementById('run-close-btn').style.display = 'inline-block';
+    return;
   }
+  if (!targets.length) {
+    document.getElementById('run-results').innerHTML = '<div class="fb-run-error">No active targets found. Add targets first.</div>';
+    document.getElementById('run-results').style.display = 'block';
+    document.getElementById('run-close-btn').style.display = 'inline-block';
+    return;
+  }
+
+  let allText = '';
+  const rows = targets.map(t => {
+    const tpl = templates.find(tp => tp.targetType === t.type) || templates[0];
+    const msg = tpl ? (tpl.text || tpl.content || tpl.bodyText || '') : '';
+    const url = t.type === 'page'
+      ? 'https://www.facebook.com/' + t.entityId
+      : 'https://www.facebook.com/groups/' + t.entityId;
+    allText += '--- ' + t.name + ' ---\n' + msg + '\n\n';
+    return '<div class="fb-run-row" style="flex-direction:column;align-items:flex-start;gap:6px;padding:12px 0;border-bottom:1px solid var(--border)">' +
+      '<div style="display:flex;align-items:center;gap:8px;width:100%">' +
+        '<span style="font-weight:600">' + esc(t.name) + '</span>' +
+        '<span class="fb-tpl-type ' + (t.type === 'page' ? 'fb-tpl-page' : 'fb-tpl-group') + '">' + (t.type === 'page' ? '\ud83d\udcc4 Page' : '\ud83d\udc65 Group') + '</span>' +
+        '<a href="' + url + '" target="_blank" rel="noopener" style="margin-left:auto;font-size:0.8rem;color:#60a5fa">Open on Facebook \u2197</a>' +
+      '</div>' +
+      '<textarea readonly style="width:100%;box-sizing:border-box;height:80px;font-size:0.82rem;background:var(--panel);color:var(--fg);border:1px solid var(--border);border-radius:6px;padding:6px;resize:vertical">' + esc(msg) + '</textarea>' +
+      '<button onclick="navigator.clipboard.writeText(this.previousElementSibling.value).then(function(){var b=this;b.textContent=\'\u2713 Copied!\';setTimeout(function(){b.textContent=\'Copy text\'},1500)}.bind(this))" style="font-size:0.78rem;padding:4px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer">Copy text</button>' +
+      '</div>';
+  }).join('');
+
+  const blob   = new Blob([allText], {type:'text/plain'});
+  const dlUrl  = URL.createObjectURL(blob);
+
+  document.getElementById('run-modal-title').textContent = '\u2b07 Ready to Post';
+  document.getElementById('run-results').innerHTML =
+    '<p style="font-size:0.82rem;color:var(--muted);text-align:left;margin-bottom:12px">' +
+      'Copy each post text, open the link, and paste it on Facebook. ' +
+      'Or <a href="' + dlUrl + '" download="fb-posts.txt" style="color:#60a5fa">download all as .txt</a>.' +
+    '</p>' + rows;
   document.getElementById('run-results').style.display = 'block';
   document.getElementById('run-close-btn').style.display = 'inline-block';
-  await loadTargets();
-  await loadLog();
 }
+// ── Group Finder ────────────────────────────────────────
+async function searchFbGroups() {
+  const keyword = (document.getElementById('finder-keyword').value || '').trim();
+  const type    = document.getElementById('finder-type').value;
+  const results = document.getElementById('finder-results');
+  if (!keyword) { results.innerHTML = '<p style="color:#f87171">Enter a keyword first.</p>'; return; }
+
+  results.innerHTML = '<div class="fb-spinner">\u23f3 Searching\u2026</div>';
+
+  const fbSearchType = type === 'page' ? 'pages' : 'groups';
+  const fbUrl = 'https://www.facebook.com/search/' + fbSearchType + '/?q=' + encodeURIComponent(keyword);
+
+  let hereRows = '';
+  try {
+    const hereRes = await fetch('/api/leads/search', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ subcatLabel: keyword, city: '', country: '' })
+    });
+    if (hereRes.ok) {
+      const hereData = await hereRes.json();
+      const leads = (hereData.leads || []).slice(0, 10);
+      if (leads.length) {
+        hereRows = '<div style="margin-top:20px">' +
+          '<div style="font-weight:600;margin-bottom:8px;font-size:0.9rem">\ud83d\udccd Local businesses found (' + leads.length + ')</div>' +
+          leads.map(function(l) {
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">' +
+              '<div><div style="font-weight:500">' + esc(l.name || '') + '</div>' +
+              '<div style="font-size:0.78rem;color:var(--muted)">' + esc(l.address || l.city || '') + '</div></div>' +
+              (l.website ? '<a href="' + esc(l.website) + '" target="_blank" rel="noopener" style="font-size:0.78rem;color:#60a5fa;white-space:nowrap">Visit \u2197</a>' : '') +
+              '</div>';
+          }).join('') + '</div>';
+      }
+    }
+  } catch(e) { /* HERE search failed silently */ }
+
+  results.innerHTML =
+    '<div style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px">' +
+      '<div style="font-weight:600;margin-bottom:10px;font-size:0.9rem">\ud83d\udd0d Facebook search results for "<em>' + esc(keyword) + '</em>"</div>' +
+      '<p style="font-size:0.82rem;color:var(--muted);margin-bottom:12px">' +
+        'Open Facebook and browse the results. Copy the group/page ID from the URL and use "Add Target" to save it.' +
+      '</p>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<a href="' + fbUrl + '" target="_blank" rel="noopener" style="display:inline-block;padding:8px 18px;background:#1877f2;color:#fff;border-radius:8px;font-weight:600;text-decoration:none;font-size:0.88rem">' +
+          '\ud83d\udd0d Search Facebook ' + (type === 'page' ? 'Pages' : 'Groups') + ' \u2197' +
+        '</a>' +
+      '</div>' +
+      '<div style="margin-top:14px;font-size:0.78rem;color:var(--muted)">' +
+        'Tip: In the Facebook URL the group/page ID is the number or name after /groups/ or the page username.' +
+      '</div>' +
+    '</div>' + hereRows;
+}
+
 
 function closeRunModal() {
   document.getElementById('run-overlay').classList.remove('open');
@@ -426,4 +505,34 @@ function showMsg(id, msg, isErr) {
   el.textContent  = msg;
   el.style.color  = isErr ? '#f87171' : '#4ade80';
   if (!isErr) setTimeout(() => el.textContent = '', 3000);
+}
+
+// ── Manual token form (Connect tab) ─────────────────────
+function toggleManualTokenForm() {
+  const form = document.getElementById('fb-manual-form');
+  form.style.display = form.style.display === 'none' ? '' : 'none';
+}
+
+async function submitManualToken() {
+  const token = (document.getElementById('fb-manual-token').value || '').trim();
+  const name  = (document.getElementById('fb-manual-name').value  || '').trim();
+  const errEl = document.getElementById('fb-manual-err');
+  const btn   = document.getElementById('fb-manual-save');
+  if (!token) { errEl.textContent = 'Please paste a token.'; errEl.style.display = ''; return; }
+  errEl.style.display = 'none';
+  btn.textContent = 'Connecting\u2026'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/fb/connection/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, name })
+    }).then(r => r.json());
+    if (res.error) throw new Error(res.error);
+    await loadConnection();
+  } catch(e) {
+    errEl.textContent = e.message || 'Failed to save token.';
+    errEl.style.display = '';
+  } finally {
+    btn.textContent = '\u2713 Connect with this token'; btn.disabled = false;
+  }
 }

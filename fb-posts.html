@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FB Post Agent — eureach.eu</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/fb-posts.css">
+  <script src="/js/api.js"></script>
   <script src="/js/translations.js"></script>
   <script src="/js/i18n.js"></script>
 </head>
@@ -26,7 +27,7 @@
       <a href="citations.html">Citations</a>
     
       <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="nav.dashboard">Dashboard</a>
     </div>
     <div class="nav-cta">
       <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; My Profile</a>
@@ -48,30 +49,58 @@
       <div class="fb-title">📘 FB Post Agent</div>
       <div class="fb-subtitle">Auto-post to your Facebook groups and pages on a weekly rotation</div>
     </div>
-    <button class="btn btn-primary" id="fb-run-btn" style="font-size:0.85rem;padding:10px 22px">▶ Run Agent Now</button>
+    <button class="btn btn-primary" id="fb-run-btn" style="font-size:0.85rem;padding:10px 22px">⬇ Prepare &amp; Download</button>
   </div>
 
   <!-- Tabs -->
   <div class="fb-tabs">
-    <button class="fb-tab active" data-tab="connect">🔗 Connect</button>
-    <button class="fb-tab" data-tab="targets">📍 Groups & Pages <span class="fb-tab-badge" id="tab-badge-targets">0</span></button>
+    <button class="fb-tab" data-tab="connect">🔗 Connect</button>
+    <button class="fb-tab active" data-tab="targets">📍 Groups & Pages <span class="fb-tab-badge" id="tab-badge-targets">0</span></button>
     <button class="fb-tab" data-tab="templates">📝 Templates <span class="fb-tab-badge" id="tab-badge-templates">0</span></button>
+    <button class="fb-tab" data-tab="branding">🎨 Branding</button>
+    <button class="fb-tab" data-tab="finder">🔍 Group Finder</button>
     <button class="fb-tab" data-tab="log">📋 Agent Log</button>
   </div>
 
   <!-- ── Connect Tab ───────────────────────────────────── -->
-  <div class="fb-tab-panel active" id="tab-connect">
+  <div class="fb-tab-panel" id="tab-connect">
 
     <!-- Not connected state -->
     <div class="fb-oauth-wrap" id="fb-not-connected">
-      <div class="fb-oauth-icon">&#128172;</div>
+      <div class="fb-oauth-icon">&#128273;</div>
       <div class="fb-oauth-title">Connect your Facebook account</div>
-      <div class="fb-oauth-desc">One click and we handle everything — no tokens, no developer accounts needed. We request only the permissions needed to post to your groups and pages.</div>
-      <a href="/api/auth/facebook" class="fb-oauth-btn">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-        Connect with Facebook
-      </a>
-      <div class="fb-oauth-note">You will be redirected to Facebook to authorise access. We store your token securely and never post without your action.</div>
+      <div class="fb-oauth-desc">Get your access token from Facebook and paste it below. Takes about 1 minute.</div>
+
+      <!-- Step-by-step instructions -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px 20px;margin:16px 0;text-align:left">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">How to get your token</div>
+        <ol style="margin:0;padding-left:18px;font-size:0.85rem;color:var(--fg);line-height:1.9">
+          <li>Open <a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener" style="color:#60a5fa">Graph API Explorer</a></li>
+          <li>Click <strong>Generate Access Token</strong> &amp; log in with Facebook</li>
+          <li>Copy the token that appears</li>
+          <li>Paste it below and click Connect</li>
+        </ol>
+      </div>
+
+      <!-- Token form — primary flow -->
+      <div style="text-align:left">
+        <div class="fb-field">
+          <label style="font-size:0.8rem;color:var(--muted)">Your name (optional)</label>
+          <input type="text" id="fb-manual-name" placeholder="e.g. John's Facebook" style="width:100%;box-sizing:border-box">
+        </div>
+        <div class="fb-field" style="margin-top:10px">
+          <label style="font-size:0.8rem;color:var(--muted)">Access token</label>
+          <textarea id="fb-manual-token" rows="3" placeholder="Paste your access token here…" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:0.78rem;resize:vertical"></textarea>
+        </div>
+        <div id="fb-manual-err" style="color:#e74c3c;font-size:0.82rem;margin-top:6px;display:none"></div>
+        <button class="fb-save-btn" id="fb-manual-save" onclick="submitManualToken()" style="margin-top:12px;width:100%">🔗 Connect with this token</button>
+      </div>
+
+      <!-- OAuth as secondary -->
+      <div style="margin-top:18px;border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;text-align:center">
+        <span style="font-size:0.78rem;color:var(--muted)">Or try one-click connect (admin accounts only): </span>
+        <a href="/api/auth/facebook" style="font-size:0.78rem;color:#60a5fa">Connect via OAuth ↗</a>
+      </div>
     </div>
 
     <!-- Connected state -->
@@ -100,7 +129,7 @@
   </div>
 
   <!-- ── Groups & Pages Tab ────────────────────────────── -->
-  <div class="fb-tab-panel" id="tab-targets">
+  <div class="fb-tab-panel active" id="tab-targets">
     <div class="fb-toolbar">
       <div class="fb-filter-tabs">
         <button class="fb-filter active" data-filter="all">All</button>
@@ -127,6 +156,102 @@
     <div class="fb-tpl-hint">The agent picks templates by <strong>week number (1–4)</strong> on a rotating 4-week cycle. Set separate templates for groups and pages.</div>
     <div id="templates-list" class="fb-templates-list">
       <div class="fb-empty">No templates yet. Click "+ New Template" to write one.</div>
+    </div>
+  </div>
+
+
+  <!-- ── Branding Tab ─────────────────────────────────── -->
+  <div class="fb-tab-panel" id="tab-branding">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px">
+
+      <!-- Left: controls -->
+      <div>
+        <div class="fb-field" style="margin-bottom:14px">
+          <label style="font-size:0.8rem;color:var(--muted)">Brand / Account name</label>
+          <input type="text" id="brand-name" placeholder="e.g. Eureach" style="width:100%;box-sizing:border-box">
+        </div>
+
+        <div class="fb-field" style="margin-bottom:14px">
+          <label style="font-size:0.8rem;color:var(--muted)">Logo — upload file or paste URL</label>
+          <input type="file" id="brand-logo-file" accept="image/*" style="width:100%;box-sizing:border-box;margin-bottom:8px">
+          <div style="display:flex;gap:8px">
+            <input type="text" id="brand-logo-url" placeholder="https://…/logo.png" style="flex:1;box-sizing:border-box">
+            <button onclick="var url=document.getElementById('brand-logo-url').value.trim();if(url){brandState.logoUrl=url;var p=document.getElementById('brand-logo-preview');p.src=url;p.style.display='block';loadBrandLogo(url);}" style="padding:6px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:0.82rem;white-space:nowrap">Load URL</button>
+          </div>
+          <img id="brand-logo-preview" src="" style="display:none;max-height:48px;margin-top:8px;border-radius:6px">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="fb-field">
+            <label style="font-size:0.8rem;color:var(--muted)">Background</label>
+            <input type="color" id="brand-bg" value="#0d1630" style="width:100%;height:36px;cursor:pointer;border-radius:6px">
+            <input type="text" id="brand-bg-hex" value="#0d1630" placeholder="#0d1630" style="width:100%;box-sizing:border-box;margin-top:4px;font-size:0.78rem">
+          </div>
+          <div class="fb-field">
+            <label style="font-size:0.8rem;color:var(--muted)">Accent</label>
+            <input type="color" id="brand-accent" value="#2563eb" style="width:100%;height:36px;cursor:pointer;border-radius:6px">
+            <input type="text" id="brand-accent-hex" value="#2563eb" placeholder="#2563eb" style="width:100%;box-sizing:border-box;margin-top:4px;font-size:0.78rem">
+          </div>
+          <div class="fb-field">
+            <label style="font-size:0.8rem;color:var(--muted)">Text</label>
+            <input type="color" id="brand-text" value="#ffffff" style="width:100%;height:36px;cursor:pointer;border-radius:6px">
+            <input type="text" id="brand-text-hex" value="#ffffff" placeholder="#ffffff" style="width:100%;box-sizing:border-box;margin-top:4px;font-size:0.78rem">
+          </div>
+        </div>
+
+        <div class="fb-field" style="margin-bottom:14px">
+          <label style="font-size:0.8rem;color:var(--muted)">Font size</label>
+          <select id="brand-fontsize" style="width:100%">
+            <option value="22">Small (22px)</option>
+            <option value="26">Medium (26px)</option>
+            <option value="30" selected>Default (30px)</option>
+            <option value="36">Large (36px)</option>
+            <option value="42">X-Large (42px)</option>
+          </select>
+        </div>
+
+        <div class="fb-field" style="margin-bottom:14px">
+          <label style="font-size:0.8rem;color:var(--muted)">Preview text</label>
+          <textarea id="brand-preview-text" rows="3" placeholder="Type sample post text to preview…" style="width:100%;box-sizing:border-box;resize:vertical" oninput="renderBrandCanvas()"></textarea>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px">
+          <input type="checkbox" id="brand-credit" checked>
+          <label for="brand-credit" style="font-size:0.82rem;color:var(--muted);cursor:pointer">Show "Created by eureach.eu" footer</label>
+        </div>
+
+        <div style="display:flex;gap:8px">
+          <button id="brand-save-btn" style="flex:1;padding:10px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600">Save Branding</button>
+          <button id="brand-download" style="flex:1;padding:10px;background:#1e293b;color:#e2e8f0;border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer">⬇ Download PNG</button>
+        </div>
+        <div id="brand-save-msg" style="font-size:0.82rem;color:#4ade80;margin-top:8px;min-height:18px"></div>
+      </div>
+
+      <!-- Right: canvas preview -->
+      <div>
+        <label style="font-size:0.8rem;color:var(--muted);display:block;margin-bottom:8px">Live preview (1200×630)</label>
+        <canvas id="brand-canvas" width="1200" height="630" style="width:100%;border-radius:8px;border:1px solid rgba(255,255,255,0.1)"></canvas>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ── Group Finder Tab ─────────────────────────────── -->
+  <div class="fb-tab-panel" id="tab-finder">
+    <div style="max-width:700px">
+      <p style="font-size:0.85rem;color:var(--muted);margin-bottom:16px">Search Facebook for groups and pages relevant to your niche. Save them as targets to post to.</p>
+
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="text" id="finder-keyword" placeholder="e.g. dating Europe, kink community, adult dating…" style="flex:1;box-sizing:border-box" onkeydown="if(event.key==='Enter')searchFbGroups()">
+        <select id="finder-type" style="width:130px">
+          <option value="group">Groups</option>
+          <option value="page">Pages</option>
+        </select>
+        <button onclick="searchFbGroups()" id="finder-btn" style="padding:8px 18px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;white-space:nowrap">Search</button>
+      </div>
+
+      <div id="finder-results"></div>
     </div>
   </div>
 
@@ -239,7 +364,7 @@
 <div class="fb-overlay" id="run-overlay"></div>
 <div class="fb-modal" id="run-modal" style="max-width:500px;text-align:center">
   <div class="fb-modal-header" style="justify-content:center;border:none;padding-bottom:0">
-    <div class="fb-modal-title" id="run-modal-title">▶ Running Agent…</div>
+    <div class="fb-modal-title" id="run-modal-title">⬇ Preparing Posts…</div>
   </div>
   <div class="fb-modal-body" style="padding:16px 28px 28px">
     <div id="run-progress" class="fb-run-progress"></div>
@@ -249,6 +374,6 @@
 </div>
 
 <script src="js/fb-posts.js"></script>
-<script src="js/nav-init.js?v=2"></script>
+<script src="js/nav-init.js?v=3"></script>
 </body>
 </html>
