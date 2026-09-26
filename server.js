@@ -75,6 +75,15 @@ const DASHBOARD_SITES_FILE     = path.join(ROOT, "data/dashboard-sites.json");
 const DASHBOARD_RECURRING_FILE = path.join(ROOT, "data/dashboard-recurring.json");
 const DASHBOARD_INSTANCES_FILE = path.join(ROOT, "data/dashboard-instances.json");
 const DASHBOARD_JOB_TYPES_FILE = path.join(ROOT, "data/dashboard-job-types.json");
+const TODOS_FILE               = path.join(ROOT, "data/todos.json");
+const FB_CONNECTIONS_FILE  = path.join(ROOT, 'data/fb_connections.json');
+const FB_BRANDING_FILE     = path.join(ROOT, 'data/fb_branding.json');
+const FB_TARGETS_FILE      = path.join(ROOT, 'data/fb_targets.json');
+const FB_TEMPLATES_FILE    = path.join(ROOT, 'data/fb_templates.json');
+const FB_LOG_FILE          = path.join(ROOT, 'data/fb_post_log.json');
+const FB_APP_ID            = process.env.FB_APP_ID || '';
+const FB_APP_SECRET        = process.env.FB_APP_SECRET || '';
+const FB_REDIRECT_URI      = (process.env.SITE_URL || 'https://eureach.eu') + '/api/auth/facebook/callback';
 
 
 
@@ -339,7 +348,7 @@ function isTrialExpired(user) {
 }
 
 function isPaidUser(user) {
-  return user.plan === "paid";
+  return ["paid","beginners","starter","pro","agency"].includes(user.plan) || user.role === "admin";
 }
 
 
@@ -359,8 +368,8 @@ function getDaysRemainingInTrial(user) {
 }
 
 function getModel(user) {
-  if (isPaidUser(user)) return "claude-sonnet-4-6";
-  return "claude-haiku-4-5-20251001"; // trial and free users use haiku
+  if (["paid","starter","pro","agency"].includes(user.plan) || (isTrialActive(user))) return "claude-sonnet-4-6";
+  return "claude-haiku-4-5-20251001";
 }
 
 // Auto-expire trial if webhook was missed; mutates users array in place, returns updated user
@@ -440,7 +449,7 @@ async function handleSignup(req, res) {
     return json(res, 400, { error: "Password must contain at least one uppercase letter and one number." });
   }
 
-  const validPlans = Object.keys(PLAN_LIMITS);
+  const validPlans = Object.keys(PLAN_LIMITS.plans);
   const chosenPlan = validPlans.includes(plan) ? plan : "free";
 
   const users = readJSON(USERS_FILE);
@@ -463,7 +472,8 @@ async function handleSignup(req, res) {
     creditMonth:  currentMonth(),
     sites:        [],
     createdAt:    new Date().toISOString(),
-    freeExpiresAt: chosenPlan === 'free' ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : null,
+    freeExpiresAt: chosenPlan === 'free' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+    preferredLang: 'el',
   };
 
   users.push(user);
@@ -628,9 +638,13 @@ function handleMe(req, res) {
     creditsLeft,
     creditsMax,
     resetDate:    resetDateLabel(),
-    canOutreach:  true,
-    canWhatsApp:  true,
-    canCompetitors: true,
+    canOutreach:    plan.canOutreach    || false,
+    canWhatsApp:    plan.canWhatsApp    || false,
+    canCompetitors: (plan.maxCompetitors || 0) > 0,
+    maxCompetitors: plan.maxCompetitors || 0,
+    canEmailVerify: plan.canEmailVerify || false,
+    monthlyLeadSearches: plan.monthlyLeadSearches || plan.freeLeadSearches || 3,
+    monthlyAudits:  plan.monthlyAudits  || plan.freeAudits || 1,
     crmLeadsMax:           plan.crmLeads,
     canWordPress:          plan.wordpress,
     sitesMax:              plan.sites,
@@ -676,6 +690,131 @@ function handleProfileStats(req, res) {
 }
 
 // ── Support email endpoint ────────────────────────────────────────────────────
+// ── Todo handlers ────────────────────────────────────────────────────────────
+function handleTodosGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const url = new URL("http://x" + req.url);
+  const date   = url.searchParams.get("date") || "";
+  const siteId = url.searchParams.get("siteId") || "";
+  const all = Array.isArray(readJSON(TODOS_FILE)) ? readJSON(TODOS_FILE) : [];
+  let todos = all.filter(t => t.userId === user.id);
+  if (date)   todos = todos.filter(t => t.date === date);
+  if (siteId && siteId !== "all") todos = todos.filter(t => t.siteId === siteId);
+  json(res, 200, { todos });
+}
+async function handleTodoCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const { text, date, siteId } = body;
+  if (!text || !date) return json(res, 400, { error: "text and date required." });
+  const all = Array.isArray(readJSON(TODOS_FILE)) ? readJSON(TODOS_FILE) : [];
+  const todo = { id: crypto.randomUUID(), userId: user.id, text: text.trim(), date, siteId: siteId || null, done: false, createdAt: new Date().toISOString() };
+  all.push(todo);
+  writeJSON(TODOS_FILE, all);
+  json(res, 201, { todo });
+}
+async function handleTodoUpdate(req, res, id) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const all = Array.isArray(readJSON(TODOS_FILE)) ? readJSON(TODOS_FILE) : [];
+  const idx = all.findIndex(t => t.id === id && t.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: "Not found." });
+  if (body.done   !== undefined) all[idx].done   = body.done;
+  if (body.text   !== undefined) all[idx].text   = body.text;
+  if (body.siteId !== undefined) all[idx].siteId = body.siteId;
+  writeJSON(TODOS_FILE, all);
+  json(res, 200, { todo: all[idx] });
+}
+function handleTodoDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all = Array.isArray(readJSON(TODOS_FILE)) ? readJSON(TODOS_FILE) : [];
+  const filtered = all.filter(t => !(t.id === id && t.userId === user.id));
+  if (filtered.length === all.length) return json(res, 404, { error: "Not found." });
+  writeJSON(TODOS_FILE, filtered);
+  json(res, 200, { ok: true });
+}
+
+
+
+// -- Todo AI Generate
+async function handleTodosAIGenerate(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const { period, goal } = body;
+  if (!period || !goal) return json(res, 400, { error: 'period and goal required.' });
+
+  const periodDays = { today: 1, '3days': 3, week: 7, '2weeks': 14, month: 30 };
+  const days = periodDays[period] || 7;
+  const startDate = new Date();
+  const dates = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(startDate);
+    d.setDate(d.getDate() + i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  const dateRange = days === 1 ? dates[0] : dates[0] + ' to ' + dates[dates.length - 1];
+
+  const systemPrompt = `You are a productivity assistant for eureach.eu, a B2B marketing platform.
+Create a practical, actionable daily to-do list for the specified period and goal.
+Output ONLY lines in this exact format (one task per line):
+YYYY-MM-DD: Task description
+No headers, no explanations, no empty lines, no numbering. Just the tasks.`;
+
+  const userMsg = `Goal: ${goal}
+Period: ${dateRange} (${days} day${days > 1 ? 's' : ''})
+Available dates: ${dates.join(', ')}
+
+Create a focused to-do list spread across these dates. 2-4 tasks per day max. Be specific and actionable.`;
+
+  try {
+    let text = '';
+    const anthropicKey = getAnthropicKey();
+    if (anthropicKey) {
+      const r = await callClaude(anthropicKey, systemPrompt, userMsg, 1500);
+      text = r.content?.[0]?.text || '';
+    } else {
+      const groqKey = getGroqKey();
+      if (!groqKey) return json(res, 500, { error: 'No AI service configured.' });
+      const r = await callGroq(groqKey, systemPrompt, userMsg, 1500);
+      text = r.choices?.[0]?.message?.content || '';
+    }
+    if (!text) return json(res, 500, { error: 'AI returned empty response.' });
+    json(res, 200, { text: text.trim() });
+  } catch (err) {
+    json(res, 500, { error: 'AI generation failed: ' + err.message });
+  }
+}
+
+// -- Todo Bulk Import
+async function handleTodosBulkImport(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const { todos } = body;
+  if (!Array.isArray(todos) || !todos.length) return json(res, 400, { error: 'todos array required.' });
+  const all = Array.isArray(readJSON(TODOS_FILE)) ? readJSON(TODOS_FILE) : [];
+  const created = [];
+  for (const t of todos.slice(0, 200)) {
+    if (!t.text || !t.date) continue;
+    const todo = { id: crypto.randomUUID(), userId: user.id, text: t.text.trim().slice(0, 200), date: t.date, siteId: t.siteId || null, done: false, createdAt: new Date().toISOString() };
+    all.push(todo);
+    created.push(todo);
+  }
+  writeJSON(TODOS_FILE, all);
+  json(res, 201, { created: created.length });
+}
+
 async function handleSupportEmail(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
@@ -718,6 +857,18 @@ async function handleVerifyEmail(req, res) {
   const email = (body.email || "").trim().toLowerCase();
   if (!email || !/^[^@]+@[^@]+\.[^@]+$/.test(email)) {
     return json(res, 400, { error: "Invalid email address." });
+  }
+
+  const evPlan = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
+  if (!evPlan.canEmailVerify) return json(res, 403, { error: "Email verification is not available on the free plan. Upgrade to Beginners or Pro." });
+
+  const evUsers = readJSON(USERS_FILE);
+  const evIdx   = evUsers.findIndex(u => u.id === user.id);
+  if (evIdx !== -1) {
+    const evCost   = PLAN_LIMITS.costs.emailVerify;
+    const evResult = deductCredits(evUsers, evIdx, evCost, 'Email Verify');
+    if (!evResult.ok) return insufficientCredits(res, evResult.creditsLeft, evResult.creditsMax, evCost);
+    writeJSON(USERS_FILE, evUsers);
   }
 
   const apiKey = getZeroBounceKey();
@@ -793,7 +944,7 @@ function getGroqKey() {
   } catch { return null; }
 }
 
-function callGroq(apiKey, systemPrompt, userMessage, maxTokens = 1024, model = "llama-3.3-70b-versatile") {
+function callGroq(apiKey, systemPrompt, userMessage, maxTokens = 1024, model = "qwen/qwen3.8-27b") {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model,
@@ -857,6 +1008,10 @@ async function handleOutreach(req, res) {
   const outUsers = readJSON(USERS_FILE);
   const outIdx   = outUsers.findIndex(u => u.id === user.id);
   if (outIdx === -1) return json(res, 404, { error: "User not found." });
+
+  const outPlan = PLAN_LIMITS.plans[outUsers[outIdx].plan] || PLAN_LIMITS.plans.free;
+  if (!outPlan.canOutreach) return json(res, 403, { error: "Outreach is not available on the free plan. Upgrade to Beginners or Pro." });
+
   const outCost   = PLAN_LIMITS.costs.outreach;
   const outResult = deductCredits(outUsers, outIdx, outCost, 'Outreach Email');
   if (!outResult.ok) return insufficientCredits(res, outResult.creditsLeft, outResult.creditsMax, outCost);
@@ -988,6 +1143,9 @@ async function handleWhatsApp(req, res) {
   const waUsers = readJSON(USERS_FILE);
   const waIdx   = waUsers.findIndex(u => u.id === user.id);
   if (waIdx === -1) return json(res, 404, { error: "User not found." });
+  const waPlan = PLAN_LIMITS.plans[waUsers[waIdx].plan] || PLAN_LIMITS.plans.free;
+  if (!waPlan.canWhatsApp) return json(res, 403, { error: "WhatsApp campaigns are not available on the free plan. Upgrade to Beginners or Pro." });
+
   const waCost   = PLAN_LIMITS.costs.whatsapp;
   const waResult = deductCredits(waUsers, waIdx, waCost, 'WhatsApp Message');
   if (!waResult.ok) return insufficientCredits(res, waResult.creditsLeft, waResult.creditsMax, waCost);
@@ -1378,6 +1536,24 @@ function claudeText(aiRes) {
   if (aiRes && aiRes.type === "error") throw new Error((aiRes.error && aiRes.error.message) || "AI error");
   return (aiRes && aiRes.content && aiRes.content[0] && aiRes.content[0].text) || "";
 }
+// Sanitize raw newlines/tabs inside JSON string values so JSON.parse succeeds
+function sanitizeJSONStrings(raw) {
+  let out = "";
+  let inStr = false;
+  let esc = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i];
+    if (esc) { out += c; esc = false; continue; }
+    if (c === "\\" && inStr) { out += c; esc = true; continue; }
+    if (c === "\"") { out += c; inStr = !inStr; continue; }
+    if (inStr && c === "\n") { out += "\\n"; continue; }
+    if (inStr && c === "\r") { out += "\\r"; continue; }
+    if (inStr && c === "\t") { out += "\\t"; continue; }
+    out += c;
+  }
+  return out;
+}
+
 function claudeJSON(aiRes) {
   const text = claudeText(aiRes);
   const cleaned = text.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
@@ -1512,9 +1688,9 @@ async function handleArticleAutomate(req, res, articleId, action) {
         const queries = claudeJSON(aiRes);
         const visibility = readJSON(ARTICLE_VISIBILITY_FILE) || [];
         const trackingId = Date.now();
-        visibility.push({ id: trackingId, articleId, userId: user.id, title, queries: Array.isArray(queries) ? queries : [], appeared: false, createdAt: new Date().toISOString(), nextCheck: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() });
+        visibility.push({ id: trackingId, articleId, userId: user.id, title, queries: Array.isArray(queries) ? queries : [], appeared: false, createdAt: new Date().toISOString(), nextCheck: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() });
         writeJSON(ARTICLE_VISIBILITY_FILE, visibility);
-        result = { tracking_id: trackingId, queries_to_track: Array.isArray(queries) ? queries : [], message: "Tracking started — you will be notified when this article appears in AI search results.", next_check: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() };
+        result = { tracking_id: trackingId, queries_to_track: Array.isArray(queries) ? queries : [], message: "Tracking started — you will be notified when this article appears in AI search results.", next_check: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() };
         automations[key].results.track = Object.assign({}, result, { createdAt: new Date().toISOString() });
         break;
       }
@@ -1675,6 +1851,112 @@ Rules:
     return json(res, 200, { result: parsed });
   } catch (err) {
     return json(res, 500, { error: "AI request failed: " + err.message });
+  }
+}
+
+// -- Article generation -------------------------------------------------------
+
+async function handleArticleGenerate(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: "AI not configured." });
+
+  const body = await readBody(req);
+  const { topic, brief, articleType, language, readingLevel, audience,
+    primaryKeyword, secondaryKeywords, searchIntent, funnelStage,
+    geoTarget, articleLength, tones, conversionGoal, cta, ctaUrl,
+    siteDomain, siteName, siteNiche, model: modelChoice,
+    includeFaq, includeToc, includeSnippet } = body;
+
+  if (!topic) return json(res, 400, { error: "topic is required." });
+
+  const wcTarget = { XS: 650, S: 1000, M: 1750, L: 3000, XL: 4200 }[articleLength || "M"] || 1750;
+  const toneList = Array.isArray(tones) && tones.length ? tones.join(", ") : "Professional, Friendly";
+  const lang     = language || "English";
+
+  const sysLines = [
+    "You are an expert content writer and SEO strategist. Write real specific high-quality content based exactly on the subject and instructions provided.",
+    "",
+    "CRITICAL RULES:",
+    "1. The TITLE/SUBJECT is the actual topic. Write about exactly that subject and nothing else.",
+    "2. USER INSTRUCTIONS are the highest-priority directive. Follow them verbatim. They override all defaults.",
+    "3. DO NOT fabricate statistics, prices, percentages, plans, testimonials or numbers not provided by the user.",
+    "4. DO NOT use generic filler: no Whether you are a business owner or consumer, no Plans start from EUR29/month, no 3x better outcomes, no cost-per-acquisition — unless those are the actual topic.",
+    "5. Geographic target describes the AUDIENCE only and never determines the language to write in.",
+    "6. SEO keywords optimize the content but do not replace the subject matter.",
+    "7. Write every word in: " + lang + ". Do not mix languages.",
+    "8. Only mention the site domain in the CTA section if a CTA URL is explicitly provided.",
+    "",
+    "CONTENT TYPE: " + (articleType || "Article"),
+    "WRITING TONE: " + toneList,
+    "READING LEVEL: " + (readingLevel || "Intermediate"),
+    "WORD COUNT TARGET: " + wcTarget + " words",
+    "FUNNEL STAGE: " + (funnelStage || "TOFU"),
+    "SEARCH INTENT: " + (searchIntent || "Informational"),
+    "GEOGRAPHIC AUDIENCE: " + (geoTarget || "Not specified") + " (audience context only, does NOT affect language)",
+    (siteNiche ? "SITE NICHE: " + siteNiche : ""),
+    "",
+    "Return ONLY valid JSON. No markdown fences. No text outside the JSON. Use this exact structure: {\"article\":{\"h1\":\"heading\",\"featured_snippet\":\"snippet\",\"toc\":[\"s1\"],\"intro\":\"intro\",\"sections\":[{\"h2\":\"h\",\"content\":\"body paragraph\"}],\"conclusion\":\"conc\",\"cta_block\":\"\",\"faq\":[{\"q\":\"q\",\"a\":\"a\"}]},\"seo\":{\"title_tag\":\"t\",\"meta_description\":\"d\",\"slug\":\"s\",\"og_title\":\"t\",\"og_description\":\"d\",\"primary_keyword\":\"k\",\"search_intent\":\"i\",\"estimated_word_count\":1750,\"secondary_keywords\":[\"k\"],\"lsi_keywords\":[\"l\"]},\"audits\":{\"market\":{\"keyword_difficulty\":\"Medium\",\"monthly_searches_estimate\":\"500-2000/mo\",\"competitors\":[\"C\"],\"gaps\":[\"G\"],\"topic_cluster\":[\"T\"]},\"cro\":{\"score\":80,\"strengths\":[\"s\"],\"weaknesses\":[\"w\"],\"recommendations\":[\"r\"]},\"eu_ai_act\":{\"requires_disclosure\":true,\"risk_level\":\"Low\",\"reasoning\":\"AI-assisted content.\",\"disclosure_text\":\"This article was produced with AI assistance. EU AI Act Article 50 compliant.\"},\"ai_citation\":{\"overall_score\":80,\"chatgpt_score\":80,\"perplexity_score\":82,\"google_ai_score\":78}}}",
+  ];
+
+  const systemPrompt = sysLines.filter(l => l !== undefined).join("\n");
+
+  const userParts = ["ARTICLE TITLE / SUBJECT: " + topic];
+  if (brief && brief.trim())
+    userParts.push("\nUSER INSTRUCTIONS (HIGHEST PRIORITY - follow these exactly):\n" + brief.trim());
+  if (audience)           userParts.push("\nTARGET AUDIENCE: " + audience);
+  if (primaryKeyword)     userParts.push("PRIMARY KEYWORD: " + primaryKeyword);
+  if (secondaryKeywords)  userParts.push("SECONDARY KEYWORDS: " + secondaryKeywords);
+  if (cta)                userParts.push("CALL TO ACTION TEXT: " + cta);
+  if (ctaUrl)             userParts.push("CALL TO ACTION URL: " + ctaUrl);
+  if (conversionGoal)     userParts.push("CONVERSION GOAL: " + conversionGoal);
+  if (includeFaq    !== false) userParts.push("\nINCLUDE FAQ: yes - add 3-5 relevant Q&A pairs");
+  if (includeToc    !== false) userParts.push("INCLUDE TABLE OF CONTENTS: yes");
+  if (includeSnippet !== false) userParts.push("INCLUDE FEATURED SNIPPET: yes");
+  userParts.push("\nWrite the complete " + lang + "-language content about: \"" + topic + "\"");
+
+  const userMessage = userParts.join("\n");
+  const tokenBudget = { XS: 3000, S: 4500, M: 7500, L: 8000, XL: 8000 }[articleLength || "M"] || 5000;
+  const claudeModel = modelChoice === "haiku" ? "claude-haiku-4-5-20251001" : "claude-sonnet-4-6";
+
+  try {
+    const aiRes  = await callClaude(apiKey, systemPrompt, userMessage, tokenBudget, claudeModel);
+    const rawText = claudeText(aiRes);
+    // Robust parse: strip fences, try direct parse, then fall back to extracting article/seo blocks
+    let parsed = null;
+    const cleaned = sanitizeJSONStrings(rawText.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim());
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (e1) {
+      // Attempt recovery: close any unclosed strings/brackets from truncated response
+      try {
+        let inStr = false, esc = false;
+        const stack = [];
+        for (const c of cleaned) {
+          if (esc) { esc = false; continue; }
+          if (c === '\\' && inStr) { esc = true; continue; }
+          if (c === '"') { inStr = !inStr; continue; }
+          if (inStr) continue;
+          if (c === '{') stack.push('}');
+          else if (c === '[') stack.push(']');
+          else if (c === '}' || c === ']') stack.pop();
+        }
+        const repaired = cleaned + (inStr ? '"' : '') + stack.reverse().join('');
+        parsed = JSON.parse(repaired);
+        console.warn("[article-generate] used recovered partial JSON");
+      } catch (e2) {
+        // Recovery also failed
+      }
+      if (!parsed) throw new Error("AI returned unparseable JSON: " + e1.message);
+    }
+    if (!parsed || !parsed.article) throw new Error("AI returned invalid structure");
+    return json(res, 200, parsed);
+  } catch (err) {
+    console.error("[article-generate]", err.message);
+    return json(res, 500, { error: err.message || "Article generation failed." });
   }
 }
 
@@ -2081,15 +2363,15 @@ async function handleCompetitorCreate(req, res) {
   autoExpireTrialIfNeeded(compUsers, compIdx);
   compIdx = compUsers.findIndex(u => u.id === user.id); // re-find after potential write
 
-  // Trial competitor search limit (1 total during trial)
-  if (isTrialActive(compUsers[compIdx])) {
-    const usage = getTrialUsage(compUsers[compIdx]);
-    if (usage.competitorSearches >= 1) {
-      return json(res, 403, {
-        success: false, error: "trial_competitor_limit",
-        message: "Your free trial includes 1 competitor search. Upgrade to €20/month for unlimited searches.",
-        upgradeUrl: "/upgrade",
-      });
+  // Competitor tracking cap per plan
+  const compPlan = PLAN_LIMITS.plans[compUsers[compIdx].plan] || PLAN_LIMITS.plans.free;
+  if (compPlan.maxCompetitors === 0) {
+    return json(res, 403, { success: false, error: "plan_limit", message: "Competitor tracking is not available on the free plan. Upgrade to Beginners or Pro.", upgradeUrl: "/upgrade" });
+  }
+  if (compPlan.maxCompetitors > 0) {
+    const existing = (compUsers[compIdx].competitors || []).length;
+    if (existing >= compPlan.maxCompetitors) {
+      return json(res, 403, { success: false, error: "plan_limit", message: `Your plan allows up to ${compPlan.maxCompetitors} tracked competitors. Upgrade to track more.`, upgradeUrl: "/upgrade" });
     }
   }
 
@@ -2206,40 +2488,44 @@ async function handleCompetitorSearch(req, res) {
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
 
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return json(res, 503, { error: "no_places_key", message: "Google Places API key not configured. Add GOOGLE_PLACES_API_KEY to .env on the server." });
+  const apiKey = process.env.HERE_PLACES_API_KEY;
+  if (!apiKey) return json(res, 503, { error: "no_places_key", message: "HERE Places API key not configured." });
 
   const body    = await readBody(req);
   const { niche, city, country } = body;
   if (!niche || !city || !country) return json(res, 400, { error: "niche, city and country are required." });
 
-  const cleanCountry = country.replace(/^\S+\s/, ""); // strip flag emoji
-  const query = `${niche} in ${city}, ${cleanCountry}`;
+  const COUNTRY_CODES = {
+    "greece": "GRC", "germany": "DEU", "austria": "AUT",
+    "switzerland": "CHE", "united kingdom": "GBR", "cyprus": "CYP",
+  };
+  const cleanCountry = country.replace(/^\S+\s/, "").trim();
+  const countryCode  = COUNTRY_CODES[cleanCountry.toLowerCase()] || "GRC";
+  const query = `${niche} ${city}`;
 
   try {
-    const gRes = await fetch("https://places.googleapis.com/v1/places:searchText", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.websiteUri,places.rating,places.userRatingCount,places.nationalPhoneNumber",
-      },
-      body: JSON.stringify({ textQuery: query, maxResultCount: 10, languageCode: "en" }),
-    });
-    const data = await gRes.json();
-    if (!gRes.ok) return json(res, 502, { error: data.error?.message || "Google Places API error." });
+    const geoUrl = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(city + ',' + cleanCountry)}&apiKey=${apiKey}`;
+    const geoRes = await fetch(geoUrl);
+    const geoData = await geoRes.json();
+    const pos = geoData.items?.[0]?.position;
+    if (!pos) return json(res, 502, { error: "Could not geocode city: " + city });
 
-    const results = (data.places || []).map(p => ({
-      name:    p.displayName?.text   || "",
-      address: p.formattedAddress    || "",
-      website: (p.websiteUri || "").replace(/^https?:\/\//, "").replace(/\/$/, ""),
-      phone:   p.nationalPhoneNumber || "",
-      rating:  p.rating              || null,
-      reviews: p.userRatingCount     || 0,
+    const discUrl = `https://discover.search.hereapi.com/v1/discover?q=${encodeURIComponent(niche)}&at=${pos.lat},${pos.lng}&limit=100&lang=en&apiKey=${apiKey}`;
+    const hRes = await fetch(discUrl);
+    const data = await hRes.json();
+    if (!hRes.ok) return json(res, 502, { error: data.title || "HERE Places API error." });
+
+    const results = (data.items || []).map(p => ({
+      name:    p.title              || "",
+      address: p.address?.label    || "",
+      website: (p.contacts?.[0]?.www?.[0]?.value || "").replace(/^https?:\/\//, "").replace(/\/$/, ""),
+      phone:   p.contacts?.[0]?.phone?.[0]?.value || "",
+      rating:  null,
+      reviews: 0,
     }));
     json(res, 200, { results, query });
   } catch (err) {
-    json(res, 502, { error: "Failed to reach Google Places API: " + err.message });
+    json(res, 502, { error: "Failed to reach HERE Places API: " + err.message });
   }
 }
 
@@ -2633,12 +2919,28 @@ async function handleJobUpdate(req, res, jobId) {
     allInstances[idx].status = body.status;
     allInstances[idx].completed_at = body.status === 'done' ? new Date().toISOString() : null;
   }
+  if (body.job_type !== undefined) {
+    const jobTypesMap = {};
+    getJobTypes().forEach(jt => { jobTypesMap[jt.key] = jt; });
+    if (jobTypesMap[body.job_type]) allInstances[idx].job_type = body.job_type;
+  }
+  if (body.job_type !== undefined) {
+    const _jtMap = {};
+    getJobTypes().forEach(jt => { _jtMap[jt.key] = jt; });
+    if (_jtMap[body.job_type]) allInstances[idx].job_type = body.job_type;
+  }
   if (body.notes !== undefined) {
     allInstances[idx].notes = sanitizeString(String(body.notes || '')).slice(0, 2000);
   }
 
   writeJSON(DASHBOARD_INSTANCES_FILE, allInstances);
-  json(res, 200, { job: allInstances[idx] });
+  const _ji = allInstances[idx];
+  const _jtMap2 = {};
+  getJobTypes().forEach(t => { _jtMap2[t.key] = t; });
+  const _jt2 = _jtMap2[_ji.job_type] || { action_kind: 'none', action_label: '', action_url_template: '', icon: '', label: _ji.job_type };
+  const _site2 = getDashboardSites().find(s => s.id === _ji.site_id) || {};
+  const _url2 = resolveActionUrl(_jt2.action_url_template, { site_id: _ji.site_id, domain: _site2.domain || '', job_id: _ji.id, title: _ji.title });
+  json(res, 200, { job: { ..._ji, action_kind: _jt2.action_kind || 'none', action_label: _jt2.action_label || '', action_url: _url2, job_type_icon: _jt2.icon || '', job_type_label: _jt2.label || _ji.job_type } });
 }
 
 async function handleJobCreate(req, res) {
@@ -2683,6 +2985,359 @@ async function handleJobCreate(req, res) {
   writeJSON(DASHBOARD_INSTANCES_FILE, allInstances);
   json(res, 201, { job: instance });
 }
+
+// ════════════════════════════════════════════════════════
+// FACEBOOK OAUTH + API
+// ════════════════════════════════════════════════════════
+function getFbConnections() { return Array.isArray(readJSON(FB_CONNECTIONS_FILE)) ? readJSON(FB_CONNECTIONS_FILE) : []; }
+function saveFbConnections(arr) { writeJSON(FB_CONNECTIONS_FILE, arr); }
+function getUserFbConn(userId) { return getFbConnections().find(c => c.userId === userId) || null; }
+
+function handleFbOauthStart(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) { res.writeHead(302, { Location: '/signin.html' }); res.end(); return; }
+  if (!FB_APP_ID) { res.writeHead(302, { Location: '/fb-posts.html?fb=error' }); res.end(); return; }
+  const scopes = 'pages_manage_posts,pages_read_engagement,pages_show_list';
+  const url = 'https://www.facebook.com/v21.0/dialog/oauth?client_id=' + FB_APP_ID + '&redirect_uri=' + encodeURIComponent(FB_REDIRECT_URI) + '&scope=' + scopes + '&response_type=code&state=' + user.id;
+  res.writeHead(302, { Location: url });
+  res.end();
+}
+
+async function handleFbOauthCallback(req, res) {
+  const url = new URL('http://x' + req.url);
+  const code = url.searchParams.get('code');
+  const error = url.searchParams.get('error');
+  const userId = url.searchParams.get('state');
+  if (error || !code || !userId) { res.writeHead(302, { Location: '/fb-posts.html?fb=denied' }); res.end(); return; }
+  try {
+    const tokenUrl = 'https://graph.facebook.com/v21.0/oauth/access_token?client_id=' + FB_APP_ID + '&redirect_uri=' + encodeURIComponent(FB_REDIRECT_URI) + '&client_secret=' + FB_APP_SECRET + '&code=' + code;
+    const tokenRes = await fetch(tokenUrl).then(r => r.json());
+    if (tokenRes.error || !tokenRes.access_token) throw new Error((tokenRes.error && tokenRes.error.message) || 'Token exchange failed');
+    const llUrl = 'https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=' + FB_APP_ID + '&client_secret=' + FB_APP_SECRET + '&fb_exchange_token=' + tokenRes.access_token;
+    const llRes = await fetch(llUrl).then(r => r.json());
+    const longToken = llRes.access_token || tokenRes.access_token;
+    const expiresIn = llRes.expires_in || 5183944;
+    const meRes = await fetch('https://graph.facebook.com/v21.0/me?fields=id,name&access_token=' + longToken).then(r => r.json());
+    const pagesRes = await fetch('https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token&access_token=' + longToken).then(r => r.json());
+    const pages = (pagesRes.data || []).map(p => ({ id: p.id, name: p.name, token: p.access_token }));
+    const conn = { userId, fbUserId: meRes.id, fbUserName: meRes.name, accessToken: longToken, expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(), pages, connectedAt: new Date().toISOString() };
+    const all = getFbConnections().filter(c => c.userId !== userId);
+    all.push(conn);
+    saveFbConnections(all);
+    res.writeHead(302, { Location: '/fb-posts.html?fb=connected' }); res.end();
+  } catch (e) {
+    console.error('[fb oauth]', e.message);
+    res.writeHead(302, { Location: '/fb-posts.html?fb=error' }); res.end();
+  }
+}
+
+function handleFbConnectionGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const conn = getUserFbConn(user.id);
+  if (!conn) return json(res, 200, { connected: false });
+  const daysLeft = Math.max(0, Math.floor((new Date(conn.expiresAt) - Date.now()) / 86400000));
+  json(res, 200, { connected: true, fbUserName: conn.fbUserName, daysLeft, pages: conn.pages || [], connectedAt: conn.connectedAt });
+}
+
+function handleFbConnectionDelete(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  saveFbConnections(getFbConnections().filter(c => c.userId !== user.id));
+  json(res, 200, { ok: true });
+}
+
+
+async function handleFbConnectionManual(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  let body = '';
+  req.on('data', d => body += d);
+  await new Promise(r => req.on('end', r));
+  let data;
+  try { data = JSON.parse(body); } catch(e) { return json(res, 400, { error: 'Invalid JSON.' }); }
+  const token = (data.token || '').trim();
+  const name = (data.name || '').trim();
+  if (!token) return json(res, 400, { error: 'Token required.' });
+  // Save token directly without FB API validation
+  const conn = {
+    userId: user.id,
+    fbUserId: 'manual',
+    fbUserName: name || 'Manual Connection',
+    accessToken: token,
+    expiresAt: new Date(Date.now() + 60 * 86400000).toISOString(),
+    pages: [],
+    connectedAt: new Date().toISOString(),
+    manual: true
+  };
+  const all = getFbConnections().filter(c => c.userId !== user.id);
+  all.push(conn);
+  saveFbConnections(all);
+  json(res, 200, { ok: true, fbUserName: conn.fbUserName, pages: [] });
+}
+
+
+async function handleFbGroupSearch(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const conn = getUserFbConn(user.id);
+  if (!conn) return json(res, 403, { error: 'No Facebook connection. Please connect first.' });
+  const body = await readBody(req);
+  const keyword = (body.keyword || '').trim();
+  const type    = (body.type || 'group');
+  if (!keyword) return json(res, 400, { error: 'Keyword required.' });
+  try {
+    const fields = type === 'page'
+      ? 'name,description,fan_count,link,category'
+      : 'name,description,member_count,privacy';
+    const url = `https://graph.facebook.com/v21.0/search?type=${type}&q=${encodeURIComponent(keyword)}&fields=${fields}&limit=20&access_token=${conn.accessToken}`;
+    const r = await fetch(url);
+    const d = await r.json();
+    if (d.error) return json(res, 400, { error: d.error.message || 'Facebook API error.' });
+    json(res, 200, { results: d.data || [], type });
+  } catch(e) {
+    json(res, 502, { error: 'Failed to reach Facebook API: ' + e.message });
+  }
+}
+
+function handleFbBrandingGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const all = Array.isArray(readJSON(FB_BRANDING_FILE)) ? readJSON(FB_BRANDING_FILE) : [];
+  const b = all.find(x => x.userId === user.id) || {};
+  json(res, 200, { branding: b });
+}
+
+async function handleFbBrandingSave(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const all = Array.isArray(readJSON(FB_BRANDING_FILE)) ? readJSON(FB_BRANDING_FILE) : [];
+  const idx = all.findIndex(x => x.userId === user.id);
+  const branding = { userId: user.id, logoUrl: body.logoUrl || '', name: body.name || '', bg: body.bg || '#0d1630', accent: body.accent || '#2563eb', textColor: body.textColor || '#ffffff', fontSize: body.fontSize || 30, credit: body.credit !== false, updatedAt: new Date().toISOString() };
+  if (idx >= 0) all[idx] = branding; else all.push(branding);
+  writeJSON(FB_BRANDING_FILE, all);
+  json(res, 200, { ok: true });
+}
+
+async function handleFbLogoUpload(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const chunks = [];
+  req.on('data', d => chunks.push(d));
+  await new Promise(r => req.on('end', r));
+  const buf = Buffer.concat(chunks);
+  const ct = req.headers['content-type'] || '';
+  const ext = ct.includes('png') ? 'png' : ct.includes('gif') ? 'gif' : 'jpg';
+  const fname = 'logo_' + user.id + '_' + Date.now() + '.' + ext;
+  const fpath = path.join(ROOT, 'public', 'uploads', fname);
+  require('fs').mkdirSync(path.join(ROOT, 'public', 'uploads'), { recursive: true });
+  require('fs').writeFileSync(fpath, buf);
+  json(res, 200, { url: '/uploads/' + fname });
+}
+
+function handleFbTargetsGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const all = Array.isArray(readJSON(FB_TARGETS_FILE)) ? readJSON(FB_TARGETS_FILE) : [];
+  json(res, 200, { targets: all.filter(t => t.userId === user.id) });
+}
+
+async function handleFbTargetSave(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const all = Array.isArray(readJSON(FB_TARGETS_FILE)) ? readJSON(FB_TARGETS_FILE) : [];
+  const pathId = req.url.split('/').pop().split('?')[0];
+  const lookupId = body.id || (pathId !== 'targets' ? pathId : null);
+  if (lookupId) {
+    const idx = all.findIndex(t => t.id === lookupId && t.userId === user.id);
+    if (idx === -1) return json(res, 404, { error: 'Not found.' });
+    all[idx] = { ...all[idx], ...body, userId: user.id };
+    writeJSON(FB_TARGETS_FILE, all);
+    return json(res, 200, { target: all[idx] });
+  }
+  const target = { id: generateId(), userId: user.id, name: body.name || '', type: body.type || 'page', entityId: body.targetId || body.entityId || '', url: body.url || '', niche: body.niche || '', joinStatus: body.joinStatus || 'joined', usePageToken: !!body.usePageToken, active: true, createdAt: new Date().toISOString() };
+  all.push(target);
+  writeJSON(FB_TARGETS_FILE, all);
+  json(res, 201, { target });
+}
+
+function handleFbTargetDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const all = Array.isArray(readJSON(FB_TARGETS_FILE)) ? readJSON(FB_TARGETS_FILE) : [];
+  writeJSON(FB_TARGETS_FILE, all.filter(t => !(t.id === id && t.userId === user.id)));
+  json(res, 200, { ok: true });
+}
+
+function handleFbTemplatesGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const all = Array.isArray(readJSON(FB_TEMPLATES_FILE)) ? readJSON(FB_TEMPLATES_FILE) : [];
+  json(res, 200, { templates: all.filter(t => t.userId === user.id) });
+}
+
+async function handleFbTemplateSave(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const all = Array.isArray(readJSON(FB_TEMPLATES_FILE)) ? readJSON(FB_TEMPLATES_FILE) : [];
+  if (body.id) {
+    const idx = all.findIndex(t => t.id === body.id && t.userId === user.id);
+    if (idx === -1) return json(res, 404, { error: 'Not found.' });
+    all[idx] = { ...all[idx], ...body, userId: user.id };
+    writeJSON(FB_TEMPLATES_FILE, all);
+    return json(res, 200, { template: all[idx] });
+  }
+  const tpl = { id: generateId(), userId: user.id, name: body.name || '', text: body.content || body.text || '', targetType: body.targetType || '', week: parseInt(body.week) || 0, tags: body.tags || [], createdAt: new Date().toISOString() };
+  all.push(tpl);
+  writeJSON(FB_TEMPLATES_FILE, all);
+  json(res, 201, { template: tpl });
+}
+
+function handleFbTemplateDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const all = Array.isArray(readJSON(FB_TEMPLATES_FILE)) ? readJSON(FB_TEMPLATES_FILE) : [];
+  writeJSON(FB_TEMPLATES_FILE, all.filter(t => !(t.id === id && t.userId === user.id)));
+  json(res, 200, { ok: true });
+}
+
+function handleFbLogGet(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const all = Array.isArray(readJSON(FB_LOG_FILE)) ? readJSON(FB_LOG_FILE) : [];
+  json(res, 200, { log: all.filter(e => e.userId === user.id).slice(-100).reverse() });
+}
+
+function handleFbLogClear(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const all = Array.isArray(readJSON(FB_LOG_FILE)) ? readJSON(FB_LOG_FILE) : [];
+  writeJSON(FB_LOG_FILE, all.filter(e => e.userId !== user.id));
+  json(res, 200, { ok: true });
+}
+
+async function handleFbPost(req, res, targetId) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const conn = getUserFbConn(user.id);
+  if (!conn) return json(res, 400, { error: 'Facebook not connected.' });
+  const targets = Array.isArray(readJSON(FB_TARGETS_FILE)) ? readJSON(FB_TARGETS_FILE) : [];
+  const target = targets.find(t => t.id === targetId && t.userId === user.id);
+  if (!target) return json(res, 404, { error: 'Target not found.' });
+  const body = await readBody(req);
+  const content = (body.content || '').trim();
+  if (!content) return json(res, 400, { error: 'content required.' });
+  let token = conn.accessToken;
+  if (target.type === 'page') {
+    const page = (conn.pages || []).find(p => p.id === target.entityId);
+    if (page && page.token) token = page.token;
+  }
+  try {
+    const fbRes = await fetch('https://graph.facebook.com/v21.0/' + target.entityId + '/feed', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: content, access_token: token })
+    }).then(r => r.json());
+    if (fbRes.error) throw new Error(fbRes.error.message);
+    const log = Array.isArray(readJSON(FB_LOG_FILE)) ? readJSON(FB_LOG_FILE) : [];
+    log.push({ id: generateId(), userId: user.id, targetId, targetName: target.name, content: content.slice(0,300), postId: fbRes.id, postedAt: new Date().toISOString(), status: 'ok' });
+    writeJSON(FB_LOG_FILE, log);
+    json(res, 200, { ok: true, postId: fbRes.id });
+  } catch (e) {
+    const log = Array.isArray(readJSON(FB_LOG_FILE)) ? readJSON(FB_LOG_FILE) : [];
+    log.push({ id: generateId(), userId: user.id, targetId, targetName: target.name, content: content.slice(0,300), postId: null, postedAt: new Date().toISOString(), status: 'error', error: e.message });
+    writeJSON(FB_LOG_FILE, log);
+    json(res, 500, { error: e.message });
+  }
+}
+
+async function handleFbAgentRun(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const conn = getUserFbConn(user.id);
+  if (!conn) return json(res, 400, { error: 'Facebook not connected.' });
+  const targets = (Array.isArray(readJSON(FB_TARGETS_FILE)) ? readJSON(FB_TARGETS_FILE) : []).filter(t => t.userId === user.id);
+  const templates = (Array.isArray(readJSON(FB_TEMPLATES_FILE)) ? readJSON(FB_TEMPLATES_FILE) : []).filter(t => t.userId === user.id);
+  if (!targets.length) return json(res, 400, { error: 'No targets configured.' });
+  if (!templates.length) return json(res, 400, { error: 'No templates configured.' });
+  const results = [];
+  for (const target of targets) {
+    const tpl = templates[Math.floor(Math.random() * templates.length)];
+    let token = conn.accessToken;
+    if (target.type === 'page') {
+      const page = (conn.pages || []).find(p => p.id === target.entityId);
+      if (page && page.token) token = page.token;
+    }
+    try {
+      const fbRes = await fetch('https://graph.facebook.com/v21.0/' + target.entityId + '/feed', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: tpl.content || tpl.text, access_token: token })
+      }).then(r => r.json());
+      if (fbRes.error) throw new Error(fbRes.error.message);
+      results.push({ target: target.name, status: 'posted', postId: fbRes.id });
+      const log = Array.isArray(readJSON(FB_LOG_FILE)) ? readJSON(FB_LOG_FILE) : [];
+      log.push({ id: generateId(), userId: user.id, targetId: target.id, targetName: target.name, content: (tpl.content || tpl.text || '').slice(0,300), postId: fbRes.id, postedAt: new Date().toISOString(), status: 'ok' });
+      writeJSON(FB_LOG_FILE, log);
+    } catch (e) {
+      console.error('[fb agent]', target.name, e.message); results.push({ target: target.name, status: 'error', error: e.message, content: tpl.content || tpl.text || '', targetUrl: target.url || '' });
+    }
+  }
+  const posted  = results.filter(r => r.status === 'posted').length;
+  const errors   = results.filter(r => r.status === 'error').length;
+  const skipped  = results.filter(r => r.status === 'skipped').length;
+  json(res, 200, { results, posted, skipped, errors });
+}
+
+
+async function handleJobsBulkCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const { site_id, jobs } = body;
+  if (!Array.isArray(jobs) || !jobs.length) return json(res, 400, { error: 'jobs array required.' });
+  const allSites = getDashboardSites();
+  const site = allSites.find(s => s.id === site_id && s.user_id === user.id && !s.archived_at);
+  if (!site) return json(res, 404, { error: 'Site not found.' });
+  const allInstances = getDashboardInstances();
+  const created = [];
+  for (const j of jobs.slice(0, 300)) {
+    if (!j.title || !j.due_date) continue;
+    const instance = {
+      id: generateId(), user_id: user.id, site_id: site.id, recurring_job_id: null,
+      due_date: j.due_date, title: String(j.title).slice(0, 300),
+      channel: j.channel || 'General', job_type: j.job_type || 'generic',
+      est_minutes: j.est_minutes || 30, status: 'pending', completed_at: null,
+      notes: j.notes ? String(j.notes).slice(0, 2000) : null,
+      action_payload: null, created_at: new Date().toISOString()
+    };
+    allInstances.push(instance);
+    created.push(instance);
+  }
+  writeJSON(DASHBOARD_INSTANCES_FILE, allInstances);
+  json(res, 201, { created: created.length });
+}
+
 
 function handleRecurringJobsGet(req, res) {
   const cookies = parseCookies(req);
@@ -2823,8 +3478,8 @@ async function handleLeadSearch(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return json(res, 503, { error: "no_places_key", message: "Google Places API key not configured." });
+  const apiKey = process.env.HERE_PLACES_API_KEY;
+  if (!apiKey) return json(res, 503, { error: "no_places_key", message: "HERE Places API key not configured." });
 
   const body = await readBody(req);
   const { subcatLabel, city, country } = body;
@@ -2856,36 +3511,43 @@ async function handleLeadSearch(req, res) {
     writeJSON(USERS_FILE, freeUsers);
   }
 
-  const cleanCountry = country.replace(/^\S+\s/, ""); // strip flag emoji
-  const query = `${subcatLabel} in ${city}, ${cleanCountry}`;
+
+  const COUNTRY_CODES = {
+    "greece": "GRC", "germany": "DEU", "austria": "AUT",
+    "switzerland": "CHE", "united kingdom": "GBR", "cyprus": "CYP",
+  };
+  const cleanCountry = country.replace(/^\S+\s/, "").trim();
+  const countryCode  = COUNTRY_CODES[cleanCountry.toLowerCase()] || "GRC";
+  const query = `${subcatLabel} ${city}`;
 
   try {
-    const gRes = await fetch("https://places.googleapis.com/v1/places:searchText", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "places.displayName,places.formattedAddress,places.websiteUri,places.rating,places.userRatingCount,places.nationalPhoneNumber",
-      },
-      body: JSON.stringify({ textQuery: query, maxResultCount: 20, languageCode: "en" }),
-    });
-    const data = await gRes.json();
-    if (!gRes.ok) return json(res, 502, { error: data.error?.message || "Google Places API error." });
+    // Step 1: geocode city to get coordinates
+    const geoUrl = `https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(city + ',' + cleanCountry)}&apiKey=${apiKey}`;
+    const geoRes = await fetch(geoUrl);
+    const geoData = await geoRes.json();
+    const pos = geoData.items?.[0]?.position;
+    if (!pos) return json(res, 502, { error: "Could not geocode city: " + city });
 
-    const leads = (data.places || []).map((p, i) => ({
+    // Step 2: discover businesses near city center
+    const discUrl = `https://discover.search.hereapi.com/v1/discover?q=${encodeURIComponent(subcatLabel)}&at=${pos.lat},${pos.lng}&limit=100&lang=en&apiKey=${apiKey}`;
+    const hRes = await fetch(discUrl);
+    const data = await hRes.json();
+    if (!hRes.ok) return json(res, 502, { error: data.title || "HERE Places API error." });
+
+    const leads = (data.items || []).map((p, i) => ({
       id:      i + 1,
-      name:    p.displayName?.text   || "",
-      address: p.formattedAddress    || "",
-      website: (p.websiteUri || "").replace(/^https?:\/\//, "").replace(/\/$/, ""),
-      phone:   p.nationalPhoneNumber || null,
-      rating:  p.rating              || null,
-      reviews: p.userRatingCount     || 0,
+      name:    p.title              || "",
+      address: p.address?.label    || "",
+      website: (p.contacts?.[0]?.www?.[0]?.value || "").replace(/^https?:\/\//, "").replace(/\/$/, ""),
+      phone:   p.contacts?.[0]?.phone?.[0]?.value || null,
+      rating:  null,
+      reviews: 0,
       email:   null,
       status:  "new",
     }));
-    json(res, 200, { leads, query });
+    json(res, 200, { leads, query: `${query} (${cleanCountry})` });
   } catch (err) {
-    json(res, 502, { error: "Failed to reach Google Places API: " + err.message });
+    json(res, 502, { error: "Failed to reach HERE Places API: " + err.message });
   }
 }
 
@@ -3877,8 +4539,13 @@ async function handleTrialStart(req, res) {
       invoice_settings: { default_payment_method: paymentMethodId },
     });
 
-    const priceId = process.env.STRIPE_PRICE_ID;
-    if (!priceId) return json(res, 500, { error: "STRIPE_PRICE_ID not configured." });
+    const chosenTier = body.tier || "pro";
+    const priceId = chosenTier === "beginners"
+      ? process.env.STRIPE_BEGINNERS_PRICE_ID
+      : process.env.STRIPE_PRICE_ID;
+    if (!priceId) return json(res, 500, { error: "Price not configured for selected plan." });
+    // Store chosen tier so webhook can set correct plan
+    const tierForPlan = chosenTier;
 
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
@@ -3895,7 +4562,7 @@ async function handleTrialStart(req, res) {
     const idx   = users.findIndex(u => u.id === user.id);
     if (idx === -1) return json(res, 404, { error: "User not found." });
 
-    users[idx].plan                  = "trial";
+    users[idx].plan                  = tierForPlan === "beginners" ? "beginners" : "trial";
     users[idx].trialStatus           = "active";
     users[idx].trialStartedAt        = now.toISOString();
     users[idx].trialEndsAt           = trialEndsAt;
@@ -4126,6 +4793,73 @@ async function handleBillingUpgradeNow(req, res) {
     json(res, 500, { error: "Failed to upgrade: " + (err.message || "Unknown error") });
   }
 }
+
+// ── PayPal subscription billing ───────────────────────────────────────────────────
+
+async function handlePayPalBillingInfo(req, res) {
+  const params = new URLSearchParams(req.url.split("?")[1] || "");
+  const plan   = params.get("plan") || "pro";
+  const planId = plan === "beginners"
+    ? (process.env.PAYPAL_BEGINNERS_PLAN_ID || null)
+    : (process.env.PAYPAL_PLAN_ID           || null);
+  json(res, 200, {
+    clientId: process.env.PAYPAL_CLIENT_ID || null,
+    planId,
+  });
+}
+
+async function handlePayPalSubscriptionActivate(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const body = await readBody(req);
+  const { subscriptionId } = body;
+  if (!subscriptionId) return json(res, 400, { error: "subscriptionId required." });
+
+  const pp = await getPayPalToken();
+  if (!pp) return json(res, 500, { error: "PayPal not configured." });
+
+  try {
+    const r   = await fetch(pp.base + "/v1/billing/subscriptions/" + subscriptionId, {
+      headers: { "Authorization": "Bearer " + pp.token },
+    });
+    const sub = await r.json();
+    if (!r.ok || !["ACTIVE", "APPROVAL_PENDING"].includes(sub.status)) {
+      return json(res, 400, { error: "Subscription not active: " + sub.status });
+    }
+
+    const now         = new Date();
+    const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const users = readJSON(USERS_FILE);
+    const idx   = users.findIndex(u => u.id === user.id);
+    if (idx === -1) return json(res, 404, { error: "User not found." });
+
+    const ppTier = body.tier || "pro";
+    users[idx].plan                 = ppTier === "beginners" ? "beginners" : "trial";
+    users[idx].trialStatus          = "active";
+    users[idx].trialStartedAt       = now.toISOString();
+    users[idx].trialEndsAt          = trialEndsAt;
+    users[idx].paypalSubscriptionId = subscriptionId;
+    users[idx].billingProvider      = "paypal";
+    users[idx].billingEmail         = user.email;
+    users[idx].trialUsage           = users[idx].trialUsage || { competitorSearches: 0, articlesGenerated: 0, auditsToday: 0, auditsTodayDate: null };
+    writeJSON(USERS_FILE, users);
+
+    const trialEndDate = new Date(trialEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    sendSystemEmail(
+      user.email,
+      "Your eureach trial has started — 7 days free",
+      `Hi ${user.firstName || "there"},\n\nYour 7-day free trial is now active via PayPal.\n\nTrial ends: ${trialEndDate}\nIf you don't cancel before then, your PayPal will be charged €20/month.\n\nCancel anytime at: https://eureach.eu/billing\n\n– The eureach team`
+    ).catch(() => {});
+
+    json(res, 200, { success: true, trialEndsAt, daysRemaining: 7 });
+  } catch (e) {
+    json(res, 500, { error: e.message });
+  }
+}
+
 
 // ── Startup migration — add trial fields to existing users ────────────────────
 (function migrateUsers() {
@@ -4748,7 +5482,8 @@ setInterval(async () => {
   const now = new Date();
   if (now.getDay() !== 1 || now.getHours() !== 8) return;
   const apiKey = getAnthropicKey();
-  if (!apiKey) return;
+  const groqKey = getGroqKey();
+  if (!apiKey && !groqKey) return;
   const campaigns = Array.isArray(readJSON(CITATION_CAMPAIGNS_FILE)) ? readJSON(CITATION_CAMPAIGNS_FILE) : [];
   const snapshots = Array.isArray(readJSON(CITATION_SNAPSHOTS_FILE)) ? readJSON(CITATION_SNAPSHOTS_FILE) : [];
   const users     = Array.isArray(readJSON(USERS_FILE)) ? readJSON(USERS_FILE) : [];
@@ -5653,7 +6388,7 @@ async function handlePublicAuditEmailSave(req, res) {
       creditMonth:  currentMonth(),
       sites:        [],
       createdAt:    new Date().toISOString(),
-      freeExpiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      freeExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       emailOnly:    true,
     };
     users.push(user);
@@ -6539,6 +7274,13 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/auth/profile" && method === "PATCH") return handleUpdateProfile(req, res);
   if (urlPath === "/api/profile"       && method === "GET")  return handleProfileStats(req, res);
   if (urlPath === "/api/support-email" && method === "POST") return handleSupportEmail(req, res);
+  if (urlPath === "/api/todos" && method === "GET")  return handleTodosGet(req, res);
+  if (urlPath === "/api/todos/ai-generate" && method === "POST") return handleTodosAIGenerate(req, res);
+  if (urlPath === "/api/todos/bulk" && method === "POST") return handleTodosBulkImport(req, res);
+  if (urlPath === "/api/todos" && method === "POST") return handleTodoCreate(req, res);
+  { const _tm = urlPath.match(/^\/api\/todos\/([^\/]+)$/);
+    if (_tm && method === "PATCH")  return handleTodoUpdate(req, res, _tm[1]);
+    if (_tm && method === "DELETE") return handleTodoDelete(req, res, _tm[1]); }
 
   // Trial / Billing routes
   if (urlPath === "/api/trial/start"          && method === "POST") return handleTrialStart(req, res);
@@ -6547,11 +7289,18 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/billing/status"       && method === "GET")  return handleBillingStatus(req, res);
   if (urlPath === "/api/billing/update-card"  && method === "POST") return handleBillingUpdateCard(req, res);
   if (urlPath === "/api/billing/upgrade-now"  && method === "POST") return handleBillingUpgradeNow(req, res);
-  if (urlPath === "/api/billing/stripe-key"   && method === "GET")  return json(res, 200, { publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || null });
+  if (urlPath === "/api/billing/stripe-key"   && method === "GET")  return json(res, 200, {
+    publishableKey:   process.env.STRIPE_PUBLISHABLE_KEY       || null,
+    priceIdPro:       process.env.STRIPE_PRICE_ID              || null,
+    priceIdBeginners: process.env.STRIPE_BEGINNERS_PRICE_ID    || null,
+  });
+  if (urlPath === "/api/billing/paypal-info"              && method === "GET")  return handlePayPalBillingInfo(req, res);
+  if (urlPath === "/api/billing/paypal/activate"          && method === "POST") return handlePayPalSubscriptionActivate(req, res);
   if (urlPath === "/api/leads/search"        && method === "POST") return handleLeadsSearch(req, res);
   if (urlPath === "/api/leads/verify-email" && method === "POST") return handleVerifyEmail(req, res);
   if (urlPath === "/api/leads/score"         && method === "POST") return handleLeadsScore(req, res);
   if (urlPath === "/api/leads/score/cache" && method === "GET")  return handleLeadsScoreCache(req, res);
+  if (urlPath === "/api/articles/generate"  && method === "POST") return handleArticleGenerate(req, res);
   if (urlPath === "/api/articles/deduct"   && method === "POST") return handleArticlesDeduct(req, res);
 
   // WordPress API routes
@@ -6619,6 +7368,30 @@ async function handleRequest(req, res) {
   if (urlPath === '/api/dashboard/job-types'                   && method === 'GET')    return handleJobTypesGet(req, res);
   if (urlPath === '/api/jobs'                                  && method === 'GET')    return handleJobsGet(req, res);
   if (urlPath === '/api/jobs'                                  && method === 'POST')   return handleJobCreate(req, res);
+  if (urlPath === '/api/jobs/bulk'                             && method === 'POST')   return handleJobsBulkCreate(req, res);
+  // Facebook OAuth
+  if (urlPath === '/api/auth/facebook'          && method === 'GET')  return handleFbOauthStart(req, res);
+  if (urlPath === '/api/auth/facebook/callback' && method === 'GET')  return handleFbOauthCallback(req, res);
+  if (urlPath === '/api/fb/branding'            && method === 'GET')  return handleFbBrandingGet(req, res);
+  if (urlPath === '/api/fb/branding'            && method === 'POST') return handleFbBrandingSave(req, res);
+  if (urlPath === '/api/fb/logo'                && method === 'POST') return handleFbLogoUpload(req, res);
+    if (urlPath === '/api/fb/connection'          && method === 'GET')  return handleFbConnectionGet(req, res);
+  if (urlPath === '/api/fb/connection/manual'    && method === 'POST')  return handleFbConnectionManual(req, res);
+  if (urlPath === '/api/fb/connection'          && method === 'DELETE') return handleFbConnectionDelete(req, res);
+  if (urlPath === '/api/fb/group-search'       && method === 'POST') return handleFbGroupSearch(req, res);
+  if (urlPath === '/api/fb/targets'             && method === 'GET')  return handleFbTargetsGet(req, res);
+  if (urlPath === '/api/fb/targets'             && method === 'POST') return handleFbTargetSave(req, res);
+  if (urlPath.startsWith('/api/fb/targets/')    && method === 'PUT')  return handleFbTargetSave(req, res);
+  if (urlPath.startsWith('/api/fb/targets/')    && method === 'POST') return handleFbTargetSave(req, res);
+  if (urlPath.startsWith('/api/fb/targets/')    && method === 'DELETE') return handleFbTargetDelete(req, res, urlPath.split('/').pop());
+  if (urlPath === '/api/fb/templates'           && method === 'GET')  return handleFbTemplatesGet(req, res);
+  if (urlPath === '/api/fb/templates'           && method === 'POST') return handleFbTemplateSave(req, res);
+  if (urlPath.startsWith('/api/fb/templates/')  && method === 'POST') return handleFbTemplateSave(req, res);
+  if (urlPath.startsWith('/api/fb/templates/')  && method === 'DELETE') return handleFbTemplateDelete(req, res, urlPath.split('/').pop());
+  if (urlPath === '/api/fb/log'                 && method === 'GET')    return handleFbLogGet(req, res);
+  if (urlPath === '/api/fb/log'                 && method === 'DELETE') return handleFbLogClear(req, res);
+  if (urlPath.startsWith('/api/fb/post/')       && method === 'POST') return handleFbPost(req, res, urlPath.split('/').pop());
+  if (urlPath === '/api/fb/agent/run'           && method === 'POST') return handleFbAgentRun(req, res);
   if (urlPath === '/api/recurring-jobs'                        && method === 'GET')    return handleRecurringJobsGet(req, res);
   if (urlPath === '/api/recurring-jobs'                        && method === 'POST')   return handleRecurringJobCreate(req, res);
   { const _m = urlPath.match(/^\/api\/dashboard\/sites\/([^\/]+)\/seed$/);
@@ -6802,6 +7575,26 @@ async function handleRequest(req, res) {
   if (urlPath.startsWith('/api/newsletter-campaign/') && urlPath.endsWith('/send') && method === 'POST')   return handleNLCampaignSend(req, res, urlPath.slice(25, -5));
   if (urlPath.startsWith('/api/newsletter-campaign/')                               && method === 'PUT')    return handleNLCampaignSave(req, res, urlPath.slice(25));
   if (urlPath.startsWith('/api/newsletter-campaign/')                               && method === 'DELETE') return handleNLCampaignDelete(req, res, urlPath.slice(25));
+
+  // ── eureach.eu Newsletter Lists + Presets + AI ──────────────────────────────
+  if (urlPath === '/api/nl-unsubscribe' && method === 'GET')                                                  return euNlListUnsubscribe(req, res);
+  if (urlPath === '/api/nl-lists'       && method === 'GET')                                                  return euNlListsList(req, res);
+  if (urlPath === '/api/nl-lists'       && method === 'POST')                                                 return euNlListCreate(req, res);
+  if (urlPath.startsWith('/api/nl-lists/') && urlPath.endsWith('/contacts') && method === 'GET')              return euNlListContacts(req, res, urlPath.slice(13, -9));
+  if (urlPath.startsWith('/api/nl-lists/') && urlPath.endsWith('/import')   && method === 'POST')             return euNlListImport(req, res, urlPath.slice(13, -7));
+  if (urlPath.startsWith('/api/nl-lists/') && urlPath.endsWith('/broadcast') && method === 'POST')            return euNlListBroadcast(req, res, urlPath.slice(13, -10));
+  if (urlPath.startsWith('/api/nl-lists/') && urlPath.endsWith('/bulk')     && method === 'POST')             return euNlListBulk(req, res, urlPath.slice(13, -5));
+  if (urlPath.startsWith('/api/nl-lists/') && urlPath.endsWith('/rename')   && method === 'PATCH')            return euNlListRename(req, res, urlPath.slice(13, -7));
+  if (urlPath.startsWith('/api/nl-lists/') && method === 'DELETE' && !urlPath.includes('/contacts/'))        return euNlListDelete(req, res, urlPath.slice(13));
+  if (urlPath.match(/^\/api\/nl-lists\/[^/]+\/contacts\/[^/]+$/) && method === 'PATCH')  { const p=urlPath.slice(13).split('/contacts/'); return euNlListContactPatch(req, res, p[0], p[1]); }
+  if (urlPath.match(/^\/api\/nl-lists\/[^/]+\/contacts\/[^/]+$/) && method === 'DELETE') { const p=urlPath.slice(13).split('/contacts/'); return euNlListContactDelete(req, res, p[0], p[1]); }
+  if (urlPath === '/api/nl-presets'     && method === 'GET')                                                  return euNlPresetsList(req, res);
+  if (urlPath === '/api/nl-presets'     && method === 'POST')                                                 return euNlPresetCreate(req, res);
+  if (urlPath.startsWith('/api/nl-presets/') && urlPath.endsWith('/default') && method === 'POST')            return euNlPresetSetDefault(req, res, urlPath.slice(16, -8));
+  if (urlPath.startsWith('/api/nl-presets/') && method === 'PUT')                                            return euNlPresetUpdate(req, res, urlPath.slice(16));
+  if (urlPath.startsWith('/api/nl-presets/') && method === 'DELETE')                                         return euNlPresetDelete(req, res, urlPath.slice(16));
+  if (urlPath === '/api/nl-ai-generate' && method === 'POST')                                                 return euNlAiGenerate(req, res);
+
   // Growth Plan
   if (urlPath === '/api/growth-plan/status'   && method === 'GET')  return handleGrowthPlanStatus(req, res);
   if (urlPath === '/api/growth-plan/activate' && method === 'POST') return handleGrowthPlanActivate(req, res);
@@ -6840,6 +7633,268 @@ async function handleRequest(req, res) {
     return handleInternalMarketingGenerate(req, res, platform);
   }
 
+
+// ════════════════════════════════════════════════════════════════════════════
+// eureach.eu Newsletter — Contact Lists + Presets + AI (Phases 1-5)
+// ════════════════════════════════════════════════════════════════════════════
+let _euGroq = null;
+function _getEuGroq() {
+  if (!_euGroq) { const Groq = require('groq-sdk'); _euGroq = new Groq({ apiKey: process.env.GROQ_API_KEY }); }
+  return _euGroq;
+}
+function _euUnsubToken(ownerUserId, email) {
+  return crypto.createHmac('sha256', process.env.EUREACH_UNSUB_SECRET || 'change-me')
+    .update(String(ownerUserId) + ':' + email.toLowerCase()).digest('hex').slice(0, 32);
+}
+
+// ── Lists ────────────────────────────────────────────────────────────────────
+async function euNlListsList(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const r = await agoraPool.query(
+    `SELECT id, name, created_at,
+       (SELECT COUNT(*) FROM eu_nl_list_contacts WHERE list_id=l.id AND is_excluded=false) AS contact_count
+     FROM eu_nl_lists l WHERE owner_user_id=$1 ORDER BY created_at DESC`, [user.id]);
+  return json(res, 200, { lists: r.rows });
+}
+
+async function euNlListCreate(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const { name } = await readBody(req);
+  if (!name || !name.trim()) return json(res, 400, { error: 'Name required.' });
+  const r = await agoraPool.query(
+    'INSERT INTO eu_nl_lists (owner_user_id, name) VALUES ($1,$2) RETURNING *', [user.id, name.trim()]);
+  return json(res, 200, { list: r.rows[0] });
+}
+
+async function euNlListDelete(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  await agoraPool.query('DELETE FROM eu_nl_lists WHERE id=$1 AND owner_user_id=$2', [id, user.id]);
+  return json(res, 200, { ok: true });
+}
+
+async function euNlListRename(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const { name } = await readBody(req);
+  if (!name || !name.trim()) return json(res, 400, { error: 'Name required.' });
+  await agoraPool.query('UPDATE eu_nl_lists SET name=$1 WHERE id=$2 AND owner_user_id=$3', [name.trim(), id, user.id]);
+  return json(res, 200, { ok: true });
+}
+
+async function euNlListImport(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const { rows } = await readBody(req);
+  if (!Array.isArray(rows) || !rows.length) return json(res, 400, { error: 'No rows.' });
+  const chk = await agoraPool.query('SELECT id FROM eu_nl_lists WHERE id=$1 AND owner_user_id=$2', [id, user.id]);
+  if (!chk.rows.length) return json(res, 404, { error: 'List not found.' });
+  let imported = 0, skipped = 0;
+  for (const row of rows) {
+    const email = (row.email || '').trim().toLowerCase();
+    const name  = (row.name  || '').trim().slice(0, 200);
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { skipped++; continue; }
+    try {
+      await agoraPool.query(
+        'INSERT INTO eu_nl_list_contacts (list_id,email,name) VALUES ($1,$2,$3) ON CONFLICT (list_id,email) DO NOTHING',
+        [id, email, name || null]);
+      imported++;
+    } catch { skipped++; }
+  }
+  return json(res, 200, { imported, skipped });
+}
+
+async function euNlListContacts(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const chk = await agoraPool.query('SELECT id FROM eu_nl_lists WHERE id=$1 AND owner_user_id=$2', [id, user.id]);
+  if (!chk.rows.length) return json(res, 404, { error: 'List not found.' });
+  const qs     = new URL('http://x' + req.url).searchParams;
+  const page   = Math.max(1, parseInt(qs.get('page') || '1'));
+  const limit  = 50;
+  const offset = (page - 1) * limit;
+  const search = (qs.get('search') || '').trim();
+  const filter = qs.get('filter') || 'all';
+  let where = 'list_id=$1';
+  const params = [id];
+  if (filter === 'active')   { where += ' AND is_excluded=false'; }
+  if (filter === 'excluded') { where += ' AND is_excluded=true'; }
+  if (search) { params.push('%' + search + '%'); where += ` AND (email ILIKE $${params.length} OR name ILIKE $${params.length})`; }
+  const total = parseInt((await agoraPool.query(`SELECT COUNT(*) FROM eu_nl_list_contacts WHERE ${where}`, params)).rows[0].count);
+  const rows  = (await agoraPool.query(`SELECT id,email,name,is_excluded,created_at FROM eu_nl_list_contacts WHERE ${where} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${offset}`, params)).rows;
+  const stats = (await agoraPool.query('SELECT COUNT(*) FILTER(WHERE is_excluded=false) AS active, COUNT(*) FILTER(WHERE is_excluded=true) AS excluded FROM eu_nl_list_contacts WHERE list_id=$1', [id])).rows[0];
+  return json(res, 200, { contacts: rows, total, page, pages: Math.ceil(total/limit), stats });
+}
+
+async function euNlListContactPatch(req, res, listId, cid) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const sets = []; const vals = [cid, listId];
+  if (body.name  !== undefined) { vals.push(body.name.trim().slice(0,200)); sets.push(`name=$${vals.length}`); }
+  if (body.email !== undefined) { const e=body.email.trim().toLowerCase(); if(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)){vals.push(e);sets.push(`email=$${vals.length}`);} }
+  if (body.is_excluded !== undefined) { vals.push(!!body.is_excluded); sets.push(`is_excluded=$${vals.length}`); }
+  if (!sets.length) return json(res, 400, { error: 'Nothing to update.' });
+  const r = await agoraPool.query(
+    `UPDATE eu_nl_list_contacts c SET ${sets.join(',')}
+     FROM eu_nl_lists l WHERE c.id=$1 AND c.list_id=$2 AND l.id=c.list_id AND l.owner_user_id='${user.id}' RETURNING c.*`, vals);
+  return json(res, 200, { contact: r.rows[0] });
+}
+
+async function euNlListContactDelete(req, res, listId, cid) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  await agoraPool.query(
+    `DELETE FROM eu_nl_list_contacts c USING eu_nl_lists l
+     WHERE c.id=$1 AND c.list_id=$2 AND l.id=c.list_id AND l.owner_user_id=$3`, [cid, listId, user.id]);
+  return json(res, 200, { ok: true });
+}
+
+async function euNlListBulk(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const { action, ids } = await readBody(req);
+  if (!Array.isArray(ids) || !ids.length) return json(res, 400, { error: 'No ids.' });
+  const chk = await agoraPool.query('SELECT id FROM eu_nl_lists WHERE id=$1 AND owner_user_id=$2', [id, user.id]);
+  if (!chk.rows.length) return json(res, 404, { error: 'List not found.' });
+  if (action === 'delete')  await agoraPool.query(`DELETE FROM eu_nl_list_contacts WHERE list_id=$1 AND id=ANY($2::bigint[])`, [id, ids]);
+  if (action === 'exclude') await agoraPool.query(`UPDATE eu_nl_list_contacts SET is_excluded=true  WHERE list_id=$1 AND id=ANY($2::bigint[])`, [id, ids]);
+  if (action === 'include') await agoraPool.query(`UPDATE eu_nl_list_contacts SET is_excluded=false WHERE list_id=$1 AND id=ANY($2::bigint[])`, [id, ids]);
+  return json(res, 200, { ok: true });
+}
+
+// Phase 3: broadcast from list
+async function euNlListBroadcast(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const chk = await agoraPool.query('SELECT id FROM eu_nl_lists WHERE id=$1 AND owner_user_id=$2', [id, user.id]);
+  if (!chk.rows.length) return json(res, 404, { error: 'List not found.' });
+  const { subject, html, fromName } = await readBody(req);
+  if (!subject || !html) return json(res, 400, { error: 'subject and html required.' });
+  const conns = readJSON(path.join(__dirname, 'data/smtp_connections.json'));
+  const conn  = conns.find(c => c.userId === user.id);
+  if (!conn) return json(res, 400, { error: 'No SMTP configured. Go to Settings → Email.' });
+  let smtpPwd;
+  try { smtpPwd = decryptStr(conn.passwordEnc); } catch { return json(res, 500, { error: 'Failed to decrypt SMTP credentials.' }); }
+  const contacts = (await agoraPool.query(
+    `SELECT c.email, c.name FROM eu_nl_list_contacts c
+     WHERE c.list_id=$1 AND c.is_excluded=false
+       AND NOT EXISTS(SELECT 1 FROM eu_nl_suppressions s WHERE s.owner_user_id=$2 AND s.email=c.email)`,
+    [id, user.id])).rows;
+  if (!contacts.length) return json(res, 400, { error: 'No active contacts.' });
+  json(res, 200, { ok: true, total: contacts.length });
+  (async () => {
+    for (const c of contacts) {
+      const token   = _euUnsubToken(user.id, c.email);
+      const unsubUrl = `https://eureach.eu/api/nl-unsubscribe?t=${token}&e=${encodeURIComponent(c.email)}&o=${encodeURIComponent(user.id)}`;
+      const finalHtml = html
+        .replace(/{{unsubscribe_url}}/g, unsubUrl)
+        .replace(/https?:\/\/[^"]*\/api\/nl-unsubscribe\?token=\{\{unsubscribe_url\}\}/g, unsubUrl);
+      try {
+        await smtpSend({ host: conn.host, port: conn.port, username: conn.username,
+          password: smtpPwd, from: conn.from, fromName: fromName || conn.fromName || '',
+          to: c.email, subject, html: finalHtml, body: '' });
+      } catch(e) { console.error('[eu-nl-broadcast] failed:', c.email, e.message); }
+      await new Promise(r => setTimeout(r, 80));
+    }
+  })();
+}
+
+// Phase 3: public unsubscribe
+async function euNlListUnsubscribe(req, res) {
+  const qs = new URL('http://x' + req.url).searchParams;
+  const token = qs.get('t') || ''; const email = qs.get('e') || ''; const ownerId = qs.get('o') || '';
+  const PAGE = (ok) => `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Unsubscribe</title>
+  <style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f8f9fa;margin:0}
+  .box{background:#fff;border-radius:10px;padding:2.5rem 2rem;max-width:420px;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+  h2{margin:0 0 .5rem}p{color:#555}</style></head><body><div class="box">
+  ${ok ? '<h2>✅ Unsubscribed</h2><p>You have been removed from this mailing list.</p>'
+       : '<h2>❌ Invalid link</h2><p>This unsubscribe link is invalid or expired.</p>'}
+  <p><a href="https://eureach.eu">eureach.eu</a></p></div></body></html>`;
+  if (!token || !email || !ownerId) { res.writeHead(400, {'Content-Type':'text/html'}); return res.end(PAGE(false)); }
+  const expected = _euUnsubToken(ownerId, email.toLowerCase());
+  if (token !== expected) { res.writeHead(400, {'Content-Type':'text/html'}); return res.end(PAGE(false)); }
+  try {
+    await agoraPool.query('INSERT INTO eu_nl_suppressions(owner_user_id,email) VALUES($1,$2) ON CONFLICT DO NOTHING', [ownerId, email.toLowerCase()]);
+    await agoraPool.query('UPDATE eu_nl_list_contacts c SET is_excluded=true FROM eu_nl_lists l WHERE l.id=c.list_id AND l.owner_user_id=$1 AND c.email=$2', [ownerId, email.toLowerCase()]);
+  } catch(e) { console.error('[eu-unsub]', e.message); }
+  res.writeHead(200, {'Content-Type':'text/html; charset=utf-8'}); res.end(PAGE(true));
+}
+
+// Phase 4: header presets
+async function euNlPresetsList(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const r = await agoraPool.query('SELECT * FROM eu_nl_presets WHERE owner_user_id=$1 ORDER BY created_at ASC', [user.id]);
+  return json(res, 200, { presets: r.rows });
+}
+
+async function euNlPresetCreate(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const { name, config } = await readBody(req);
+  if (!name || !name.trim()) return json(res, 400, { error: 'Name required.' });
+  const r = await agoraPool.query(
+    `INSERT INTO eu_nl_presets (owner_user_id, name, config) VALUES ($1,$2,$3)
+     ON CONFLICT (owner_user_id, name) DO UPDATE SET config=EXCLUDED.config, updated_at=now()
+     RETURNING *`,
+    [user.id, name.trim(), JSON.stringify(config || {})]);
+  return json(res, 200, { preset: r.rows[0] });
+}
+
+async function euNlPresetUpdate(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const sets = []; const vals = [id, user.id];
+  if (body.name !== undefined) { vals.push(body.name.trim()); sets.push(`name=$${vals.length}`); }
+  if (body.config !== undefined) { vals.push(JSON.stringify(body.config)); sets.push(`config=$${vals.length}`); }
+  if (!sets.length) return json(res, 400, { error: 'Nothing to update.' });
+  const r = await agoraPool.query(
+    `UPDATE eu_nl_presets SET ${sets.join(',')}, updated_at=now() WHERE id=$1 AND owner_user_id=$2 RETURNING *`, vals);
+  return json(res, 200, { preset: r.rows[0] });
+}
+
+async function euNlPresetDelete(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  await agoraPool.query('DELETE FROM eu_nl_presets WHERE id=$1 AND owner_user_id=$2', [id, user.id]);
+  return json(res, 200, { ok: true });
+}
+
+async function euNlPresetSetDefault(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  await agoraPool.query('UPDATE eu_nl_presets SET is_default=false WHERE owner_user_id=$1', [user.id]);
+  await agoraPool.query('UPDATE eu_nl_presets SET is_default=true  WHERE id=$1 AND owner_user_id=$2', [id, user.id]);
+  return json(res, 200, { ok: true });
+}
+
+// Phase 5: AI generate
+async function euNlAiGenerate(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const { prompt, tone = 'friendly', genSubject = true } = await readBody(req);
+  if (!prompt || !prompt.trim()) return json(res, 400, { error: 'prompt required' });
+  const toneMap = { friendly: 'friendly and warm', professional: 'professional', urgent: 'urgent and compelling' };
+  const toneDesc = toneMap[tone] || toneMap.friendly;
+  const systemPrompt = `You are an expert at writing email newsletters for business growth platforms. Write in the language the user specifies or defaults to English. Return ONLY valid JSON with fields: "subject" (if requested) and "html" (content without html/body tags, ready for email).`;
+  const userPrompt   = `Write an email newsletter with a ${toneDesc} tone.${genSubject ? '\nAlso generate a subject line.' : ''}\nInstructions: ${prompt}\n\nResponse JSON: { ${genSubject ? '"subject": "...", ' : ''}"html": "..." }`;
+  try {
+    const completion = await _getEuGroq().chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+      temperature: 0.7, max_tokens: 2048, response_format: { type: 'json_object' }
+    });
+    const text = completion.choices[0].message.content;
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { html: text }; }
+    return json(res, 200, parsed);
+  } catch(e) { console.error('euNlAiGenerate:', e); return json(res, 500, { error: e.message }); }
+}
+
   // Static files
   let filePath = path.join(ROOT, urlPath === "/" ? "/index.html" : urlPath);
   const ext    = path.extname(filePath);
@@ -6872,11 +7927,15 @@ http.createServer((req, res) => {
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 setInterval(async () => {
   const apiKey = getAnthropicKey();
-  if (!apiKey) return;
+  const groqKey = getGroqKey();
+  if (!apiKey && !groqKey) return;
   const all   = readJSON(COMPETITOR_FILE);
   const now   = Date.now();
   let changed = false;
+  let audited = 0;
+  const MAX_PER_RUN = 5;
   for (const comp of all) {
+    if (audited >= MAX_PER_RUN) break;
     if (!comp.snapshots || !comp.snapshots.length) continue;
     const lastSnap = comp.snapshots[comp.snapshots.length - 1];
     if (now - new Date(lastSnap.date).getTime() < THIRTY_DAYS_MS) continue;
@@ -6887,10 +7946,12 @@ setInterval(async () => {
       comp.snapshots.push(snapshot);
       comp.alert = (prevScore - result.overall_score) > 10;
       changed = true;
+      audited++;
       console.log(`[scheduler] Re-audited competitor: ${comp.competitorName} → ${result.overall_score}`);
     } catch (err) {
       console.error(`[scheduler] Audit failed for ${comp.competitorName}:`, err.message);
     }
+    if (audited < MAX_PER_RUN) await new Promise(r => setTimeout(r, 65000));
   }
   if (changed) writeJSON(COMPETITOR_FILE, all);
 }, 24 * 60 * 60 * 1000);

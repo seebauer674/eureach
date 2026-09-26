@@ -293,6 +293,16 @@
 
   <!-- ── Log Tab ──────────────────────────────────────── -->
   <div class="fb-tab-panel" id="tab-log">
+    <div class="fb-toolbar" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:0.88rem;color:var(--muted)">Recent post activity</span>
+        <span id="log-count" style="font-size:0.78rem;background:rgba(255,255,255,0.06);padding:2px 8px;border-radius:10px;color:var(--muted)"></span>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="loadLog()" style="padding:6px 14px;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.12);border-radius:7px;cursor:pointer;font-size:0.82rem">&#8635; Refresh</button>
+        <button id="log-clear-btn" onclick="clearLog()" style="padding:6px 14px;background:transparent;color:#f87171;border:1px solid rgba(248,113,113,0.25);border-radius:7px;cursor:pointer;font-size:0.82rem">Clear Log</button>
+      </div>
+    </div>
     <div id="log-list" class="fb-log-list">
       <div class="fb-empty">No posts yet.</div>
     </div>

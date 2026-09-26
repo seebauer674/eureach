@@ -150,15 +150,35 @@ async function loadLog() {
   const res = await fetch('/api/fb/log').then(r => r.json()).catch(() => ({ log: [] }));
   const log = res.log || [];
   const list = document.getElementById('log-list');
-  if (!log.length) { list.innerHTML = '<div class="fb-empty">No posts yet.</div>'; return; }
+  const countEl = document.getElementById('log-count');
+  if (countEl) countEl.textContent = log.length ? log.length + ' entr' + (log.length === 1 ? 'y' : 'ies') : '';
+  if (!log.length) { list.innerHTML = '<div class="fb-empty">No posts logged yet. Run the agent to see activity here.</div>'; return; }
+
+  // Group by date label
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+  let lastLabel = null;
+
   list.innerHTML = log.map(e => {
-    const dt  = new Date(e.postedAt);
-    const ok  = !e.error;
-    return `<div class="fb-log-row ${ok ? '' : 'fb-log-err'}">
+    const dt   = new Date(e.postedAt);
+    const ok   = !e.error;
+    const text = (e.text || e.content || '').trim();
+    const dtDay = new Date(dt); dtDay.setHours(0,0,0,0);
+    let label = null;
+    if (dtDay.getTime() === today.getTime())     label = 'Today';
+    else if (dtDay.getTime() === yesterday.getTime()) label = 'Yesterday';
+    else label = dt.toLocaleDateString(undefined, { weekday:'long', day:'numeric', month:'long' });
+    const showLabel = label !== lastLabel;
+    lastLabel = label;
+
+    const id = 'log-row-' + Math.random().toString(36).slice(2);
+    return (showLabel ? `<div class="fb-log-day-label">${label}</div>` : '') +
+    `<div class="fb-log-row ${ok ? '' : 'fb-log-err'}" onclick="toggleLogRow('${id}')">
       <div class="fb-log-icon">${e.type === 'page' ? '📄' : '👥'}</div>
       <div class="fb-log-info">
         <div class="fb-log-name">${esc(e.targetName || '—')}</div>
-        <div class="fb-log-content">${esc((e.content || '').slice(0, 100))}…</div>
+        <div class="fb-log-content" id="${id}-preview">${esc(text.slice(0, 120))}${text.length > 120 ? '…' : ''}</div>
+        <div class="fb-log-full" id="${id}-full" style="display:none;margin-top:6px;font-size:0.82rem;color:var(--text);white-space:pre-wrap;word-break:break-word">${esc(text)}</div>
       </div>
       <div class="fb-log-meta">
         <span class="fb-log-status ${ok ? 'fb-log-ok' : 'fb-log-fail'}">${ok ? '✓ Posted' : '✗ Failed'}</span>
@@ -167,6 +187,24 @@ async function loadLog() {
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleLogRow(id) {
+  const preview = document.getElementById(id + '-preview');
+  const full    = document.getElementById(id + '-full');
+  if (!preview || !full) return;
+  const isOpen = full.style.display !== 'none';
+  full.style.display    = isOpen ? 'none'  : 'block';
+  preview.style.display = isOpen ? 'block' : 'none';
+}
+
+async function clearLog() {
+  if (!confirm('Clear all log entries? This cannot be undone.')) return;
+  const btn = document.getElementById('log-clear-btn');
+  if (btn) { btn.textContent = 'Clearing…'; btn.disabled = true; }
+  await fetch('/api/fb/log', { method: 'DELETE' }).catch(() => {});
+  if (btn) { btn.textContent = 'Clear Log'; btn.disabled = false; }
+  loadLog();
 }
 
 // ── Tabs ─────────────────────────────────────────────────
