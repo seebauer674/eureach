@@ -714,73 +714,73 @@ function renderBrandCanvas() {
 }
 
 // Wire up all controls
-document.addEventListener('DOMContentLoaded', function() {
-  // Colour pickers ↔ hex inputs
-  [['brand-bg','bg'],['brand-accent','accent'],['brand-text','textColor']].forEach(([id, key]) => {
-    document.getElementById(id).addEventListener('input', function() {
+// ── Branding event wiring (runs immediately — DOM ready at bottom of body) ─
+(function initBranding() {
+// Colour pickers ↔ hex inputs
+[['brand-bg','bg'],['brand-accent','accent'],['brand-text','textColor']].forEach(([id, key]) => {
+  document.getElementById(id).addEventListener('input', function() {
+    brandState[key] = this.value;
+    document.getElementById(id + '-hex').value = this.value;
+    renderBrandCanvas();
+  });
+  document.getElementById(id + '-hex').addEventListener('input', function() {
+    if (/^#[0-9a-fA-F]{6}$/.test(this.value)) {
       brandState[key] = this.value;
-      document.getElementById(id + '-hex').value = this.value;
+      document.getElementById(id).value = this.value;
       renderBrandCanvas();
-    });
-    document.getElementById(id + '-hex').addEventListener('input', function() {
-      if (/^#[0-9a-fA-F]{6}$/.test(this.value)) {
-        brandState[key] = this.value;
-        document.getElementById(id).value = this.value;
-        renderBrandCanvas();
-      }
-    });
+    }
   });
-
-  document.getElementById('brand-name').addEventListener('input', function() {
-    brandState.name = this.value; renderBrandCanvas();
-  });
-  document.getElementById('brand-fontsize').addEventListener('change', function() {
-    brandState.fontSize = parseInt(this.value); renderBrandCanvas();
-  });
-  document.getElementById('brand-credit').addEventListener('change', function() {
-    brandState.credit = this.checked; renderBrandCanvas();
-  });
-
-  // Logo file upload
-  document.getElementById('brand-logo-file').addEventListener('change', function() {
-    const file = this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      brandState.logoUrl = e.target.result;
-      const p = document.getElementById('brand-logo-preview');
-      p.src = e.target.result; p.style.display = 'block';
-      loadBrandLogo(e.target.result);
-    };
-    reader.readAsDataURL(file);
-  });
-
-  // Save branding
-  document.getElementById('brand-save-btn').addEventListener('click', async function() {
-    const btn = this;
-    btn.textContent = 'Saving\u2026'; btn.disabled = true;
-    const payload = {
-      name: document.getElementById('brand-name').value.trim(),
-      logoUrl: brandState.logoUrl,
-      bg: brandState.bg, accent: brandState.accent, textColor: brandState.textColor,
-      fontSize: brandState.fontSize, credit: brandState.credit
-    };
-    await fetch('/api/fb/branding', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    btn.textContent = 'Save Branding'; btn.disabled = false;
-    const msg = document.getElementById('brand-save-msg');
-    msg.textContent = '\u2713 Saved'; setTimeout(() => msg.textContent = '', 2500);
-  });
-
-  // Download PNG
-  document.getElementById('brand-download').addEventListener('click', function() {
-    const canvas = document.getElementById('brand-canvas');
-    canvas.toBlob(blob => {
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'fb-post-' + Date.now() + '.png';
-      a.click();
-    }, 'image/png');
-  });
-
-  loadBranding();
 });
+
+document.getElementById('brand-name').addEventListener('input', function() {
+  brandState.name = this.value; renderBrandCanvas();
+});
+document.getElementById('brand-fontsize').addEventListener('change', function() {
+  brandState.fontSize = parseInt(this.value); renderBrandCanvas();
+});
+document.getElementById('brand-credit').addEventListener('change', function() {
+  brandState.credit = this.checked; renderBrandCanvas();
+});
+
+// Logo file upload
+document.getElementById('brand-logo-file').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    brandState.logoUrl = e.target.result;
+    const p = document.getElementById('brand-logo-preview');
+    p.src = e.target.result; p.style.display = 'block';
+    loadBrandLogo(e.target.result);
+  };
+  reader.readAsDataURL(file);
+});
+
+// Save branding
+document.getElementById('brand-save-btn').addEventListener('click', async function() {
+  const btn = this;
+  btn.textContent = 'Saving\u2026'; btn.disabled = true;
+  const payload = {
+    name: document.getElementById('brand-name').value.trim(),
+    logoUrl: brandState.logoUrl,
+    bg: brandState.bg, accent: brandState.accent, textColor: brandState.textColor,
+    fontSize: brandState.fontSize, credit: brandState.credit
+  };
+  await fetch('/api/fb/branding', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+  btn.textContent = 'Save Branding'; btn.disabled = false;
+  const msg = document.getElementById('brand-save-msg');
+  msg.textContent = '\u2713 Saved'; setTimeout(() => msg.textContent = '', 2500);
+});
+
+// Download PNG
+document.getElementById('brand-download').addEventListener('click', function() {
+  const canvas = document.getElementById('brand-canvas');
+  canvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'fb-post-' + Date.now() + '.png';
+    a.click();
+  }, 'image/png');
+});
+
+})();
