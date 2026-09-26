@@ -10,7 +10,7 @@ const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 (async () => {
   const meRes = await fetch('/api/auth/me').then(r => r.json()).catch(() => ({}));
   if (!meRes.user) { window.location.href = '/signin.html'; return; }
-  await Promise.all([loadConnection(), loadTargets(), loadTemplates()]);
+  await Promise.all([loadConnection(), loadTargets(), loadTemplates(), loadBranding()]);
   bindTabs();
   bindFilters();
   bindAddButtons();
@@ -609,3 +609,178 @@ async function searchFbTargets() {
   results.innerHTML = rows;
   btn.disabled = false; btn.textContent = '\ud83d\udd0d Search';
 }
+
+// ── Branding Tab ─────────────────────────────────────────
+const brandState = {
+  name: '', logoUrl: '', logoImg: null,
+  bg: '#0d1630', accent: '#2563eb', textColor: '#ffffff',
+  fontSize: 30, credit: true
+};
+
+async function loadBranding() {
+  const res = await fetch('/api/fb/branding').then(r => r.json()).catch(() => ({}));
+  const b = res.branding || {};
+  if (b.name)      { brandState.name = b.name;           document.getElementById('brand-name').value = b.name; }
+  if (b.logoUrl)   { brandState.logoUrl = b.logoUrl;     document.getElementById('brand-logo-url').value = b.logoUrl;
+                     const p = document.getElementById('brand-logo-preview'); p.src = b.logoUrl; p.style.display = 'block';
+                     loadBrandLogo(b.logoUrl); }
+  if (b.bg)        { brandState.bg = b.bg;               syncColor('brand-bg', b.bg); }
+  if (b.accent)    { brandState.accent = b.accent;       syncColor('brand-accent', b.accent); }
+  if (b.textColor) { brandState.textColor = b.textColor; syncColor('brand-text', b.textColor); }
+  if (b.fontSize)  { brandState.fontSize = parseInt(b.fontSize); document.getElementById('brand-fontsize').value = b.fontSize; }
+  if (b.credit !== undefined) { brandState.credit = b.credit; document.getElementById('brand-credit').checked = b.credit; }
+  renderBrandCanvas();
+}
+
+function syncColor(id, val) {
+  document.getElementById(id).value = val;
+  document.getElementById(id + '-hex').value = val;
+}
+
+function loadBrandLogo(url) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload  = () => { brandState.logoImg = img; renderBrandCanvas(); };
+  img.onerror = () => { brandState.logoImg = null; renderBrandCanvas(); };
+  img.src = url;
+}
+
+function renderBrandCanvas() {
+  const canvas = document.getElementById('brand-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = 1200, H = 630;
+
+  // Background
+  ctx.fillStyle = brandState.bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Accent bar left edge
+  ctx.fillStyle = brandState.accent;
+  ctx.fillRect(0, 0, 8, H);
+
+  // Subtle gradient overlay
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, 'rgba(255,255,255,0.03)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.15)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Logo
+  let logoBottom = 60;
+  if (brandState.logoImg) {
+    const lh = 80, lw = Math.round(brandState.logoImg.width * (lh / brandState.logoImg.height));
+    const lx = 60, ly = 50;
+    ctx.drawImage(brandState.logoImg, lx, ly, Math.min(lw, 300), lh);
+    logoBottom = ly + lh + 24;
+  }
+
+  // Brand name
+  if (brandState.name) {
+    ctx.fillStyle = brandState.accent;
+    ctx.font = 'bold 28px system-ui, sans-serif';
+    ctx.fillText(brandState.name, 60, brandState.logoImg ? logoBottom : 80);
+    logoBottom = (brandState.logoImg ? logoBottom : 80) + 40;
+  }
+
+  // Post text
+  const text = (document.getElementById('brand-preview-text') || {}).value || 'Your post text will appear here…';
+  ctx.fillStyle = brandState.textColor;
+  ctx.font = `${brandState.fontSize}px system-ui, sans-serif`;
+  const maxW = W - 120;
+  const lineH = brandState.fontSize * 1.5;
+  const words = text.split(' ');
+  let line = '', y = Math.max(logoBottom + 40, 180);
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, 60, y);
+      line = word; y += lineH;
+      if (y > H - 120) { ctx.fillText(line + '…', 60, y); line = ''; break; }
+    } else { line = test; }
+  }
+  if (line) ctx.fillText(line, 60, y);
+
+  // Accent bottom bar
+  ctx.fillStyle = brandState.accent;
+  ctx.fillRect(0, H - 6, W, 6);
+
+  // Footer credit
+  if (brandState.credit) {
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.fillText('Created by eureach.eu', 60, H - 24);
+  }
+}
+
+// Wire up all controls
+document.addEventListener('DOMContentLoaded', function() {
+  // Colour pickers ↔ hex inputs
+  [['brand-bg','bg'],['brand-accent','accent'],['brand-text','textColor']].forEach(([id, key]) => {
+    document.getElementById(id).addEventListener('input', function() {
+      brandState[key] = this.value;
+      document.getElementById(id + '-hex').value = this.value;
+      renderBrandCanvas();
+    });
+    document.getElementById(id + '-hex').addEventListener('input', function() {
+      if (/^#[0-9a-fA-F]{6}$/.test(this.value)) {
+        brandState[key] = this.value;
+        document.getElementById(id).value = this.value;
+        renderBrandCanvas();
+      }
+    });
+  });
+
+  document.getElementById('brand-name').addEventListener('input', function() {
+    brandState.name = this.value; renderBrandCanvas();
+  });
+  document.getElementById('brand-fontsize').addEventListener('change', function() {
+    brandState.fontSize = parseInt(this.value); renderBrandCanvas();
+  });
+  document.getElementById('brand-credit').addEventListener('change', function() {
+    brandState.credit = this.checked; renderBrandCanvas();
+  });
+
+  // Logo file upload
+  document.getElementById('brand-logo-file').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      brandState.logoUrl = e.target.result;
+      const p = document.getElementById('brand-logo-preview');
+      p.src = e.target.result; p.style.display = 'block';
+      loadBrandLogo(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Save branding
+  document.getElementById('brand-save-btn').addEventListener('click', async function() {
+    const btn = this;
+    btn.textContent = 'Saving\u2026'; btn.disabled = true;
+    const payload = {
+      name: document.getElementById('brand-name').value.trim(),
+      logoUrl: brandState.logoUrl,
+      bg: brandState.bg, accent: brandState.accent, textColor: brandState.textColor,
+      fontSize: brandState.fontSize, credit: brandState.credit
+    };
+    await fetch('/api/fb/branding', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    btn.textContent = 'Save Branding'; btn.disabled = false;
+    const msg = document.getElementById('brand-save-msg');
+    msg.textContent = '\u2713 Saved'; setTimeout(() => msg.textContent = '', 2500);
+  });
+
+  // Download PNG
+  document.getElementById('brand-download').addEventListener('click', function() {
+    const canvas = document.getElementById('brand-canvas');
+    canvas.toBlob(blob => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'fb-post-' + Date.now() + '.png';
+      a.click();
+    }, 'image/png');
+  });
+
+  loadBranding();
+});
