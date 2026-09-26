@@ -275,12 +275,37 @@
   </div>
   <div class="fb-modal-body">
     <input type="hidden" id="target-edit-id">
-    <div class="fb-field" id="target-url-paste-wrap">
-      <label>Paste Facebook URL <span style="color:var(--muted);font-weight:400">(auto-fills everything)</span></label>
+    <div id="target-url-paste-wrap">
+      <!-- Search -->
+      <div class="fb-field">
+        <label>Search Facebook</label>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="target-search-kw" placeholder="e.g. plumbers Athens, fitness groups..." style="flex:1" autocomplete="off">
+          <select id="target-search-type" class="fb-select" style="width:90px">
+            <option value="groups">Groups</option>
+            <option value="pages">Pages</option>
+          </select>
+          <button class="fb-save-btn" id="target-search-btn" onclick="searchFbTargets()" style="padding:8px 14px;white-space:nowrap">&#128269; Search</button>
+        </div>
+        <div id="target-search-results" style="margin-top:8px"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin:8px 0">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
+        <span style="font-size:0.72rem;color:var(--muted)">or paste URL directly</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
+      </div>
+      <div class="fb-field">
+        <label>Paste URL <span style="color:var(--muted);font-weight:400">(auto-fills fields below)</span></label>
       <input type="text" id="target-url-paste" placeholder="https://facebook.com/groups/… or facebook.com/pagename" autocomplete="off">
       <div id="target-url-detected" style="display:none;margin-top:6px;font-size:0.78rem;color:#4ade80"></div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px"><div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div><span style="font-size:0.72rem;color:var(--muted)">or fill manually</span><div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin:8px 0 10px">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
+        <span style="font-size:0.72rem;color:var(--muted)">or fill manually</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
+      </div>
+    </div>
     <div class="fb-field">
       <label>Type</label>
       <div class="fb-type-toggle">

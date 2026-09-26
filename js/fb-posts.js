@@ -581,3 +581,31 @@ async function submitManualToken() {
     btn.textContent = '\u2713 Connect with this token'; btn.disabled = false;
   }
 }
+
+// ── Search Facebook targets from Add Target modal ────────
+async function searchFbTargets() {
+  const kw      = (document.getElementById('target-search-kw').value || '').trim();
+  const type    = document.getElementById('target-search-type').value; // 'groups' or 'pages'
+  const results = document.getElementById('target-search-results');
+  if (!kw) { results.innerHTML = '<p style="color:#f87171;font-size:0.82rem">Enter a keyword first.</p>'; return; }
+
+  const btn = document.getElementById('target-search-btn');
+  btn.disabled = true; btn.textContent = 'Searching…';
+  results.innerHTML = '<div style="font-size:0.82rem;color:var(--muted)">Searching…</div>';
+
+  const fbUrl = 'https://www.facebook.com/search/' + type + '/?q=' + encodeURIComponent(kw);
+
+  // Build result rows
+  let rows = '<div style="font-size:0.82rem;color:var(--muted);margin-bottom:8px">'
+    + 'Facebook doesn\'t expose search results via API. Open Facebook search, find your group/page, copy the URL and use the paste field below.'
+    + '</div>'
+    + '<a href="' + fbUrl + '" target="_blank" rel="noopener" '
+    + 'style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;background:#1877f2;color:#fff;border-radius:8px;font-size:0.85rem;font-weight:600;text-decoration:none;margin-bottom:12px">'
+    + '<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>'
+    + 'Search &ldquo;' + esc(kw) + '&rdquo; on Facebook &nearr;'
+    + '</a>'
+    + '<div style="font-size:0.78rem;color:var(--muted)">Tip: Copy the group/page URL from your browser, then paste it in the field below.</div>';
+
+  results.innerHTML = rows;
+  btn.disabled = false; btn.textContent = '\ud83d\udd0d Search';
+}
