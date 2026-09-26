@@ -140,7 +140,7 @@ function renderTemplates() {
           <button class="fb-icon-btn fb-icon-del" onclick="deleteTemplate('${t.id}')">✕</button>
         </div>
       </div>
-      <div class="fb-tpl-body">${esc(t.text || t.content)}</div>
+      <div class="fb-tpl-body" onclick="fillBrandPreview(this.textContent)" style="cursor:pointer" title="Click to load into branding preview">${esc(t.text || t.content)}</div>
     </div>`
   ).join('');
 }
@@ -784,3 +784,10 @@ document.getElementById('brand-download').addEventListener('click', function() {
 });
 
 })();
+
+function fillBrandPreview(text) {
+  var el = document.getElementById('brand-preview-text');
+  if (!el) return;
+  el.value = text.trim();
+  if (typeof renderBrandCanvas === 'function') renderBrandCanvas();
+}
