@@ -1626,6 +1626,196 @@ function handleBlogGet(req, res, slug) {
   return json(res, 200, { post });
 }
 
+
+// ── Blog SSR: server-rendered HTML for crawlers & AI tools (Step 9) ────
+
+function blogEsc(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function blogNavHtml() {
+  return `<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="/#how">Πώς λειτουργεί</a>
+      <a href="/#pricing">Τιμές</a>
+      <a href="/blog">Blog</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="/signup.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">Start free &rarr;</a>
+    </div>
+  </div>
+</nav>`;
+}
+
+function blogHeadHtml(title, description, slug, post) {
+  const canonical = slug ? `https://eureach.eu/blog/${slug}` : `https://eureach.eu/blog`;
+  const ogImg = post && post.featuredImage ? blogEsc(post.featuredImage) : '';
+  const schema = post ? `<script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title,
+    "description": post.excerpt || post.title,
+    "author": { "@type": "Person", "name": post.author || "eureach team" },
+    "publisher": { "@type": "Organization", "name": "eureach.eu", "url": "https://eureach.eu" },
+    "datePublished": post.publishedAt || post.createdAt,
+    "dateModified": post.updatedAt || post.publishedAt || post.createdAt,
+    "url": canonical,
+    "image": post.featuredImage || undefined,
+    "inLanguage": post.lang || post.language || "el"
+  })}<\/script>` : '';
+  return `<!DOCTYPE html>
+<html lang="${post ? (post.lang || post.language || 'el') : 'el'}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${blogEsc(title)}</title>
+  <meta name="description" content="${blogEsc(description)}">
+  <link rel="canonical" href="${canonical}">
+  <meta property="og:title" content="${blogEsc(title)}">
+  <meta property="og:description" content="${blogEsc(description)}">
+  <meta property="og:type" content="${post ? 'article' : 'website'}">
+  <meta property="og:url" content="${canonical}">
+  ${ogImg ? `<meta property="og:image" content="${ogImg}">` : ''}
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/css/style.css">
+  ${schema}
+</head>
+<body>`;
+}
+
+function handleBlogSSR(req, res) {
+  const params = new URL("http://x" + req.url).searchParams;
+  const lang   = params.get("lang") || null;
+  let posts = (readJSON(BLOG_FILE) || [])
+    .filter(p => p.status === "approved" || p.status === "published")
+    .sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
+  if (lang) posts = posts.filter(p => (p.lang || p.language) === lang);
+
+  const cards = posts.map(p => {
+    const date = p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('el-GR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const img  = p.featuredImage
+      ? `<img class="blog-card-img" src="${blogEsc(p.featuredImage)}" alt="${blogEsc(p.title)}" loading="lazy">`
+      : `<div class="blog-card-img-ph">✦</div>`;
+    return `<a class="blog-card" href="/blog/${blogEsc(p.slug)}">
+      ${img}
+      <div class="blog-card-body">
+        <div class="blog-card-meta">
+          <span class="blog-card-lang">${blogEsc((p.lang || p.language || '').toUpperCase())}</span>
+          <span class="blog-card-cat">${blogEsc(p.category || '')}</span>
+          <span class="blog-card-date">${blogEsc(date)}</span>
+        </div>
+        <div class="blog-card-title">${blogEsc(p.title)}</div>
+        ${p.excerpt ? `<div class="blog-card-excerpt">${blogEsc(p.excerpt)}</div>` : ''}
+        <div class="blog-card-read">Διαβάστε το άρθρο &rarr;</div>
+      </div>
+    </a>`;
+  }).join('\n');
+
+  const html = blogHeadHtml('Blog — eureach.eu', 'Άρθρα για lead generation, AI content και ανάπτυξη στην Ευρώπη.') +
+    `<style>
+      .blog-page{max-width:1100px;margin:0 auto;padding:100px 24px 80px}
+      .blog-header{margin-bottom:48px}
+      .blog-header h1{font-size:2rem;font-weight:800;color:var(--white);margin-bottom:8px}
+      .blog-header p{color:var(--muted);font-size:0.95rem}
+      .blog-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px}
+      .blog-filter-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:0.8rem;font-weight:600;padding:6px 16px;cursor:pointer;font-family:inherit;transition:all .15s;min-height:44px}
+      .blog-filter-btn.active,.blog-filter-btn:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+      .blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
+      .blog-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .2s,box-shadow .2s;text-decoration:none;color:inherit;display:flex;flex-direction:column}
+      .blog-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+      .blog-card-img{width:100%;height:180px;object-fit:cover}
+      .blog-card-img-ph{width:100%;height:180px;background:linear-gradient(135deg,rgba(37,99,235,.2),rgba(124,58,237,.2));display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+      .blog-card-body{padding:22px;flex:1;display:flex;flex-direction:column}
+      .blog-card-meta{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+      .blog-card-lang{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.3);color:#60a5fa;border-radius:20px;padding:2px 8px}
+      .blog-card-cat{font-size:0.7rem;color:var(--muted)}
+      .blog-card-date{font-size:0.7rem;color:var(--muted);margin-left:auto}
+      .blog-card-title{font-size:1.05rem;font-weight:700;color:var(--white);margin-bottom:8px;line-height:1.35}
+      .blog-card-excerpt{font-size:0.83rem;color:var(--muted);line-height:1.6;flex:1}
+      .blog-card-read{margin-top:16px;font-size:0.8rem;font-weight:600;color:#60a5fa}
+    </style>` +
+    blogNavHtml() +
+    `<div class="blog-page">
+      <div class="blog-header">
+        <h1>Blog</h1>
+        <p>Άρθρα για lead generation, AI content και ανάπτυξη σε ευρωπαϊκές αγορές.</p>
+      </div>
+      <div class="blog-filters">
+        <a class="blog-filter-btn${!lang ? ' active' : ''}" href="/blog">Όλα</a>
+        <a class="blog-filter-btn${lang === 'en' ? ' active' : ''}" href="/blog?lang=en">🇬🇧 English</a>
+        <a class="blog-filter-btn${lang === 'el' ? ' active' : ''}" href="/blog?lang=el">🇬🇷 Greek</a>
+        <a class="blog-filter-btn${lang === 'de' ? ' active' : ''}" href="/blog?lang=de">🇩🇪 German</a>
+      </div>
+      <div class="blog-grid">${cards || '<div style="text-align:center;padding:80px 24px;color:var(--muted)">No articles yet.</div>'}</div>
+    </div>
+    <script src="/js/nav-init.js?v=5" defer></script>
+    </body></html>`;
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+
+function handleBlogPostSSR(req, res, slug) {
+  const posts = readJSON(BLOG_FILE) || [];
+  const post  = posts.find(p => p.slug === slug && (p.status === 'approved' || p.status === 'published'));
+  if (!post) {
+    res.writeHead(302, { Location: '/blog' });
+    res.end();
+    return;
+  }
+  const date = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('el-GR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const img  = post.featuredImage ? `<img class="post-img" src="${blogEsc(post.featuredImage)}" alt="${blogEsc(post.title)}" loading="lazy">` : '';
+  const desc = post.metaDescription || post.excerpt || post.title;
+
+  const html = blogHeadHtml(`${post.title} — eureach.eu`, desc, slug, post) +
+    `<style>
+      .post-page{max-width:760px;margin:0 auto;padding:100px 24px 80px}
+      .post-back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:0.85rem;margin-bottom:32px;text-decoration:none;min-height:44px;align-items:center}
+      .post-back:hover{color:var(--white)}
+      .post-img{width:100%;max-height:380px;object-fit:cover;border-radius:16px;margin-bottom:32px}
+      .post-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+      .post-lang{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.3);color:#60a5fa;border-radius:20px;padding:3px 10px}
+      .post-cat{font-size:0.78rem;color:var(--muted)}
+      .post-date{font-size:0.78rem;color:var(--muted)}
+      .post-author{font-size:0.78rem;color:var(--muted)}
+      .post-title{font-size:2rem;font-weight:800;color:var(--white);line-height:1.25;margin-bottom:24px}
+      .post-excerpt{font-size:1.05rem;color:var(--muted);line-height:1.7;margin-bottom:32px;border-left:3px solid var(--blue);padding-left:16px}
+      .post-content{color:var(--text);line-height:1.8;font-size:0.97rem;word-break:break-word}
+      .post-content h1,.post-content h2,.post-content h3{color:var(--white);margin:28px 0 12px;line-height:1.3}
+      .post-content p{margin:0 0 16px}
+      .post-cta{background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);border-radius:16px;padding:32px;margin-top:48px;text-align:center}
+      .post-cta h3{color:var(--white);margin-bottom:8px}
+      .post-cta p{color:var(--muted);font-size:0.88rem;margin-bottom:20px}
+    </style>` +
+    blogNavHtml() +
+    `<div class="post-page">
+      <a class="post-back" href="/blog">&larr; Blog</a>
+      ${img}
+      <div class="post-meta">
+        <span class="post-lang">${blogEsc((post.lang || post.language || '').toUpperCase())}</span>
+        <span class="post-cat">${blogEsc(post.category || '')}</span>
+        <span class="post-date">${blogEsc(date)}</span>
+        <span class="post-author">by ${blogEsc(post.author || 'eureach team')}</span>
+      </div>
+      <h1 class="post-title">${blogEsc(post.title)}</h1>
+      ${post.excerpt ? `<div class="post-excerpt">${blogEsc(post.excerpt)}</div>` : ''}
+      <div class="post-content">${post.html || post.content || ''}</div>
+      <div class="post-cta">
+        <h3>Ξεκίνα να δημιουργείς leads &amp; περιεχόμενο σήμερα</h3>
+        <p>Βρες τοπικές επιχειρήσεις, γράψε SEO άρθρα σε 3 γλώσσες και αναπτύξου ταχύτερα με AI.</p>
+        <a href="/signup.html" class="btn btn-primary btn-lg">Ξεκίνα δωρεάν &mdash; χωρίς κάρτα &rarr;</a>
+      </div>
+    </div>
+    <script src="/js/nav-init.js?v=5" defer></script>
+    </body></html>`;
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+
 async function handleBlogPublish(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
@@ -7871,6 +8061,20 @@ async function handleRequest(req, res) {
     return require("fs").readFile(require("path").join(ROOT, "youtube-profile.html"), (e, d) => { if (e) { res.writeHead(404); res.end(); return; } res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(d); });
   }
   // Public Free Audit (no auth)
+
+  // Blog SSR routes — serve pre-rendered HTML for crawlers (Step 9)
+  if ((urlPath === "/blog" || urlPath === "/blog/") && method === "GET") return handleBlogSSR(req, res);
+  if (urlPath.startsWith("/blog/") && method === "GET" && !urlPath.startsWith("/blog/api")) {
+    const slug = decodeURIComponent(urlPath.slice(6));
+    if (slug && !slug.includes(".")) return handleBlogPostSSR(req, res, slug);
+  }
+  // Redirect old blog-post.html?slug=X to /blog/X
+  if (urlPath === "/blog-post.html" && method === "GET") {
+    const qs = new URL("http://x" + req.url).searchParams;
+    const slug = qs.get("slug");
+    if (slug) { res.writeHead(301, { Location: "/blog/" + encodeURIComponent(slug) }); res.end(); return; }
+  }
+
   if (urlPath === "/audit" || urlPath === "/audit/")   { return fs.readFile(path.join(ROOT, "audit-landing.html"), (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
   if (urlPath === "/audit/running")                    { return fs.readFile(path.join(ROOT, "audit-running.html"),  (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
   if (urlPath === "/audit/results")                    { return fs.readFile(path.join(ROOT, "audit-results.html"), (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
