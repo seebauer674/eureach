@@ -112,18 +112,19 @@
         <span data-i18n="lp.heroBadge">Για Ελλάδα, Γερμανία &amp; ΕΕ</span>
       </div>
 
-      <h1 data-i18n-html="lp.heroH1">Βρες leads.<br>Γράψε περιεχόμενο.<br><span class="gradient-text">Ανάπτυξη ταχύτερα.</span></h1>
+      <h1 data-i18n-html="lp.heroH1BizOwner">Να σε βρίσκουν οι πελάτες.<br>Και το ChatGPT.</h1>
 
       <p class="hero-sub">
-        <span data-i18n="lp.heroSub">Η AI πλατφόρμα που βρίσκει τοπικές επιχειρήσεις, γράφει SEO άρθρα στα Ελληνικά &amp; Γερμανικά, και ελέγχει την online παρουσία σου — όλα σε ένα μέρος.</span>
+        <span data-i18n="lp.heroSubBizOwner">Το eureach σε βοηθά να γράφεις άρθρα, posts και newsletters με AI, και να εμφανίζεσαι όταν οι πελάτες ρωτούν ένα AI ποιον να διαλέξουν. Δεν χρειάζεται να είσαι ειδικός.</span>
       </p>
 
-      <div class="hero-actions">
-        <a href="signup.html" class="btn btn-primary btn-lg" data-i18n="lp.heroCta1">Ξεκίνα δωρεάν — χωρίς κάρτα →</a>
-        <a href="#how" class="btn btn-outline-gold btn-lg" data-i18n="lp.heroCta2">Δες πώς λειτουργεί</a>
+      <!-- Two-path chooser -->
+      <div class="two-path" style="display:flex;gap:10px;margin:20px 0 8px;flex-wrap:wrap;">
+        <a href="signup.html" class="btn btn-primary btn-lg" data-i18n="lp.twoPathBiz">Έχω επιχείρηση</a>
+        <a href="agencies.html" class="btn btn-outline-gold btn-lg" data-i18n="lp.twoPathAgency">Είμαι agency ή freelancer</a>
       </div>
 
-      <div class="hero-trust">
+      <div class="hero-trust" style="margin-top:16px;">
         <div class="hero-trust-avatars">
           <span aria-label="Greece">🇬🇷</span><span aria-label="Germany">🇩🇪</span><span aria-label="Austria">🇦🇹</span><span aria-label="Switzerland">🇨🇭</span>
         </div>
@@ -230,12 +231,37 @@
 <section class="features" id="features">
   <div class="container">
     <div class="section-head reveal">
-      <div class="section-label" data-i18n="lp.featLabel">Τι κάνει το eureach</div>
-      <h2 class="section-title" data-i18n-html="lp.featTitle">Πέντε εργαλεία. <span class="gradient-text">Μία πλατφόρμα.</span></h2>
-      <p class="section-sub" data-i18n="lp.featSub">Όλα όσα χρειάζεται μια ευρωπαϊκή επιχείρηση ή digital agency για να βρει πελάτες, να δημιουργήσει περιεχόμενο και να κυριαρχήσει στην τοπική αναζήτηση.</p>
+      <div class="section-label" data-i18n="lp.whatLabel">Τι μπορείς να κάνεις</div>
+      <h2 class="section-title" data-i18n-html="lp.whatTitle">Ό,τι χρειάζεσαι. <span class="gradient-text">Έτοιμο για δημοσίευση.</span></h2>
+      <p class="section-sub" data-i18n="lp.whatSub">Το eureach δημιουργεί περιεχόμενο για κάθε κανάλι — στα Ελληνικά, Αγγλικά και Γερμανικά.</p>
     </div>
 
     <div class="features-grid">
+      <div class="feat-card reveal" style="--card-color:#7c3aed;--card-glow:rgba(124,58,237,0.25)">
+        <div class="feat-icon" style="background:rgba(124,58,237,0.15)">✍️</div>
+        <h3 data-i18n="lp.whatArt">Άρθρα &amp; Περιεχόμενο</h3>
+        <p data-i18n="lp.whatArtDesc">SEO άρθρα βελτιστοποιημένα για Google και AI αναζήτηση — γραμμένα στη γλώσσα σου σε δευτερόλεπτα.</p>
+      </div>
+      <div class="feat-card reveal" style="--card-color:#2563eb;--card-glow:rgba(37,99,235,0.25)">
+        <div class="feat-icon" style="background:rgba(37,99,235,0.15)">📱</div>
+        <h3 data-i18n="lp.whatSocial">Social Media &amp; Posts</h3>
+        <p data-i18n="lp.whatSocialDesc">Έτοιμα posts για Facebook, Instagram και LinkedIn — προσαρμοσμένα στο brand σου.</p>
+      </div>
+      <div class="feat-card reveal" style="--card-color:#0891b2;--card-glow:rgba(8,145,178,0.25)">
+        <div class="feat-icon" style="background:rgba(8,145,178,0.15)">📧</div>
+        <h3 data-i18n="lp.whatNl">Newsletters &amp; Email</h3>
+        <p data-i18n="lp.whatNlDesc">Email campaigns και outreach sequences που παίρνουν απαντήσεις, όχι unsubscribes.</p>
+      </div>
+      <div class="feat-card reveal" style="--card-color:#d97706;--card-glow:rgba(217,119,6,0.25)">
+        <div class="feat-icon" style="background:rgba(217,119,6,0.15)">📣</div>
+        <h3 data-i18n="lp.whatAds">Διαφήμιση &amp; Marketing</h3>
+        <p data-i18n="lp.whatAdsDesc">Κείμενα για διαφημίσεις, landing pages και ideas καμπάνιας — από το brief σου.</p>
+      </div>
+      <div class="feat-card reveal feat-card-wide" style="--card-color:#059669;--card-glow:rgba(5,150,105,0.25)">
+        <div class="feat-icon" style="background:rgba(5,150,105,0.15)">🌍</div>
+        <h3 data-i18n="lp.whatTrans">Μετάφραση &amp; Localization</h3>
+        <p data-i18n="lp.whatTransDesc">Όλο το περιεχόμενο σε Ελληνικά, Αγγλικά και Γερμανικά. Ένα κλικ, τρεις αγορές.</p>
+      </div>
 
       <div class="feat-card reveal" style="--card-color:#2563eb;--card-glow:rgba(37,99,235,0.25)">
         <div class="feat-icon" style="background:rgba(37,99,235,0.15)">🔍</div>
@@ -339,142 +365,44 @@
     <div class="steps">
       <div class="step reveal">
         <div class="step-num">1</div>
-        <h3 data-i18n="lp.step1Title">Βρες τα leads σου</h3>
-        <p data-i18n="lp.step1Desc">Επίλεξε κλάδο και πόλη. Το eureach ψάχνει στο Google Maps και επιστρέφει πραγματικές τοπικές επιχειρήσεις με στοιχεία επικοινωνίας, ratings και websites.</p>
+        <h3 data-i18n="lp.bizStep1Title">Πες μας τι χρειάζεσαι</h3>
+        <p data-i18n="lp.bizStep1Desc">Επέλεξε τύπο περιεχομένου, θέμα και γλώσσα. Το eureach συμπληρώνει το brief αυτόματα.</p>
       </div>
       <div class="step reveal">
         <div class="step-num">2</div>
-        <h3 data-i18n="lp.step2Title">Γράψε το περιεχόμενο</h3>
-        <p data-i18n="lp.step2Desc">Δημιούργησε στοχευμένο SEO άρθρο ή outreach email για αυτόν τον κλάδο, στη σωστή γλώσσα, με schema markup και promotion kit ήδη ενσωματωμένα.</p>
+        <h3 data-i18n="lp.bizStep2Title">Το eureach το γράφει και το ελέγχει</h3>
+        <p data-i18n="lp.bizStep2Desc">Η AI δημιουργεί το περιεχόμενο με SEO δομή, schema και promotion kit ενσωματωμένα.</p>
       </div>
       <div class="step reveal">
         <div class="step-num">3</div>
-        <h3 data-i18n="lp.step3Title">Audit &amp; κλείσιμο</h3>
-        <p data-i18n="lp.step3Desc">Τρέξε AI Visibility Audit on any prospect's website. Show them their score. Offer to fix it. Turn a cold lead into a paying client with a concrete proposal.</p>
+        <h3 data-i18n="lp.bizStep3Title">Το δημοσιεύεις</h3>
+        <p data-i18n="lp.bizStep3Desc">Αντιγραφή, λήψη ή δημοσίευση απευθείας στο WordPress — με ένα κλικ.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── COMPARISON ─────────────────────────────────────────── -->
-<section class="comparison" id="compare">
+<!-- ── TRUST ─────────────────────────────────────────────── -->
+<!-- SHOW_TRUST: set to true when reviews are ready -->
+<section class="trust-section" id="trust" style="display:none" data-show-when="SHOW_TRUST">
   <div class="container">
     <div class="section-head reveal">
-      <div class="section-label" data-i18n="lp.cmpLabel">Σύγκριση</div>
-      <h2 class="section-title" data-i18n-html="lp.cmpTitle">Φτιαγμένο για τοπικές ΕΕ επιχειρήσεις. <span class="gradient-text">Τίποτα άλλο δεν είναι.</span></h2>
-      <p class="section-sub" data-i18n="lp.cmpSub">Το Apollo βρίσκει Fortune 500. Το Clay εμπλουτίζει spreadsheets. Το eureach βρίσκει τον οδοντίατρο στη Θεσσαλονίκη που σε χρειάζεται — και γράφει το email για να τον φτάσεις.</p>
+      <div class="section-label" data-i18n="lp.trustLabel">Τι λένε οι πελάτες</div>
+      <h2 class="section-title" data-i18n-html="lp.trustTitle">Πραγματικά αποτελέσματα. <span class="gradient-text">Πραγματικές επιχειρήσεις.</span></h2>
     </div>
-
-    <div class="cmp-wrap reveal">
-      <div class="cmp-table-wrap">
-        <table class="cmp-table">
-          <thead>
-            <tr>
-              <th class="cmp-feature-col" data-i18n="lp.cmpFeat">Δυνατότητα</th>
-              <th class="cmp-us">eureach.eu</th>
-              <th>contacter.ai</th>
-              <th>Apollo.io</th>
-              <th>Clay</th>
-              <th>Instantly</th>
-              <th>Dealfront</th>
-              <th>Pipedrive</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="cmp-row-label" data-i18n="lp.cmpF1">Βρίσκει τοπικές ΜΜΕ (Google Maps)</td>
-              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-            </tr>
-            <tr>
-              <td class="cmp-row-label" data-i18n="lp.cmpF2">Υποστήριξη Ελληνικών &amp; Γερμανικών</td>
-              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-partial" data-i18n="lp.partial">μερικώς</span></td>
-              <td><span class="cmp-partial" data-i18n="lp.partial">μερικώς</span></td>
-            </tr>
-            <tr>
-              <td class="cmp-row-label" data-i18n="lp.cmpF3">Δημιουργία AI άρθρων</td>
-              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-            </tr>
-            <tr>
-              <td class="cmp-row-label" data-i18n="lp.cmpF4">Αυτοματισμός social media DM</td>
-              <td class="cmp-us"><span class="cmp-soon" data-i18n="lp.soon">σύντομα</span></td>
-              <td><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-            </tr>
-            <tr>
-              <td class="cmp-row-label" data-i18n="lp.cmpF5">AI email outreach sequences</td>
-              <td class="cmp-us"><span class="cmp-soon" data-i18n="lp.soon">σύντομα</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-            </tr>
-            <tr>
-              <td class="cmp-row-label" data-i18n="lp.cmpF6">GDPR / §7 UWG συμμόρφωση</td>
-              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-partial" data-i18n="lp.partial">μερικώς</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-partial" data-i18n="lp.partial">μερικώς</span></td>
-              <td><span class="cmp-no">✗</span></td>
-            </tr>
-            <tr>
-              <td class="cmp-row-label" data-i18n="lp.cmpF7">AI visibility audit (ChatGPT/Gemini)</td>
-              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-            </tr>
-            <tr>
-              <td class="cmp-row-label" data-i18n="lp.cmpF8">Ενσωματωμένο CRM pipeline</td>
-              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-yes">✓</span></td>
-            </tr>
-            <tr>
-              <td class="cmp-row-label" data-i18n="lp.cmpF9">Τιμή εκκίνησης / μήνα</td>
-              <td class="cmp-us cmp-price">Free → €29</td>
-              <td class="cmp-price">Demo only</td>
-              <td class="cmp-price">$49 / user</td>
-              <td class="cmp-price">$185</td>
-              <td class="cmp-price">$37</td>
-              <td class="cmp-price">€99</td>
-              <td class="cmp-price">€14 / user</td>
-            </tr>
-          </tbody>
-        </table>
+    <div class="steps" style="gap:24px">
+      <div class="step reveal" style="text-align:left;padding:28px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
+        <p style="color:#94a3b8;font-style:italic;">[ΚΡΙΤΙΚΗ ΠΕΛΑΤΗ 1]</p>
+        <p style="margin-top:12px;font-size:0.82rem;color:#64748b;">— [Όνομα], [Επάγγελμα], [Πόλη]</p>
       </div>
-      <p class="cmp-note" data-i18n="lp.cmpNote">Το contacter.ai αυτοματοποιεί social DMs but can't find real local businesses or write content. eureach combines both — and outreach automation is coming soon.</p>
+      <div class="step reveal" style="text-align:left;padding:28px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
+        <p style="color:#94a3b8;font-style:italic;">[ΚΡΙΤΙΚΗ ΠΕΛΑΤΗ 2]</p>
+        <p style="margin-top:12px;font-size:0.82rem;color:#64748b;">— [Όνομα], [Επάγγελμα], [Πόλη]</p>
+      </div>
+      <div class="step reveal" style="text-align:left;padding:28px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
+        <p style="color:#94a3b8;font-style:italic;">[ΚΡΙΤΙΚΗ ΠΕΛΑΤΗ 3]</p>
+        <p style="margin-top:12px;font-size:0.82rem;color:#64748b;">— [Όνομα], [Επάγγελμα], [Πόλη]</p>
+      </div>
     </div>
   </div>
 </section>
