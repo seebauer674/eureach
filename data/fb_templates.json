@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "3aedcaec93098db42d8dce33",
+    "userId": "669c87088f8594eb7a72398c",
+    "name": "general week one",
+    "text": "this is a lawyers test",
+    "targetType": "",
+    "week": 1,
+    "tags": [],
+    "createdAt": "2026-09-22T20:04:38.050Z"
+  }
+]

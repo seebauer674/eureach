@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "userId": "669c87088f8594eb7a72398c",
+    "fbUserId": "manual",
+    "fbUserName": "Seebauer",
+    "accessToken": "EAAfJ27f2OpUBSu7mMOhuAQLQv9IkjZCAxHFy16N0ZCR8VRs7DjWQncd1YNxnZBHUrNgfTGfVUvZCTtUa86SOxWZBfcFzcZBfxGJJ8Btr3JI3YzP395AS1SiYvcs4nwytRZBmOgZBsAJ030B5SCx8DZBFxRQYylmHemGZBXDNKtex6ZCsO9Vzapqm37eWYUVw23KnYWqt4y5QfqmXhK9fHryzAG4bFsdSmlzYsKZAsHZAIfhbrOuSqbWvY",
+    "expiresAt": "2026-11-25T11:46:31.157Z",
+    "pages": [],
+    "connectedAt": "2026-09-26T11:46:31.157Z",
+    "manual": true
+  }
+]

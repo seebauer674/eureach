@@ -720,3 +720,170 @@ details[open] .ag-section-title::after { content: "▴"; }
   font-weight: 600;
 }
 .ag-wp-post-link:hover { text-decoration: underline; }
+
+/* ── Add Ready Article button ───────────────────────── */
+.ag-ready-btn {
+  padding: 13px 24px;
+  background: #1e293b;
+  border: 1px solid #4b5563;
+  border-radius: 10px;
+  color: #cbd5e1; font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.ag-ready-btn:hover { border-color: #7c3aed; color: #fff; background: #2d1f5e; }
+
+/* ── Ready Article Modal ────────────────────────────── */
+.ag-modal-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.ag-modal {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 32px;
+  width: 100%; max-width: 680px;
+  max-height: 90vh; overflow-y: auto;
+}
+.ag-modal h3 {
+  margin: 0 0 20px; font-size: 1.2rem; color: #e2e8f0;
+}
+.ag-modal textarea {
+  background: #0f172a; border: 1px solid #334155;
+  border-radius: 8px; color: #e2e8f0; padding: 10px;
+  resize: vertical;
+}
+.ag-modal textarea:focus { outline: none; border-color: #6366f1; }
+.ag-modal-actions {
+  display: flex; gap: 12px; margin-top: 20px; justify-content: flex-end;
+}
+
+/* ── Article Ideas ────────────────────────────────────── */
+.ag-ideas-bar { margin-top: 8px; }
+.ag-ideas-btn {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none; border-radius: 7px; color: #fff;
+  font-size: 0.78rem; font-weight: 600; padding: 6px 12px;
+  cursor: pointer; transition: opacity 0.15s;
+}
+.ag-ideas-btn:hover { opacity: 0.85; }
+.ag-ideas-btn:disabled { opacity: 0.5; cursor: default; }
+.ag-ideas-panel {
+  margin-top: 8px;
+  background: rgba(99,102,241,0.07);
+  border: 1px solid rgba(99,102,241,0.25);
+  border-radius: 8px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ag-ideas-loading, .ag-ideas-error {
+  font-size: 0.82rem; color: var(--muted, #94a3b8);
+}
+.ag-ideas-error { color: #f87171; }
+.ag-idea-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 6px; border-radius: 6px;
+  transition: background 0.12s;
+}
+.ag-idea-row:hover { background: rgba(255,255,255,0.05); }
+.ag-idea-text { flex: 1; font-size: 0.84rem; color: #e2e8f0; line-height: 1.35; }
+.ag-idea-use {
+  background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.4);
+  border-radius: 5px; color: #a5b4fc; font-size: 0.73rem; font-weight: 600;
+  padding: 3px 9px; cursor: pointer; white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+.ag-idea-use:hover { background: rgba(99,102,241,0.4); color: #fff; }
+.ag-idea-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.ag-idea-desc { font-size: 0.75rem; color: #94a3b8; line-height: 1.3; }
+
+/* nav hidden by nav-init.js; this ensures immediate hide before auth check */
+nav.app-nav { display: none !important; }
+
+
+/* ── Improve Article ──────────────────────────────────── */
+.ag-improve-btn {
+  color: #a78bfa; border-color: rgba(167,139,250,0.35);
+}
+.ag-improve-btn:hover { color: #c4b5fd; border-color: rgba(167,139,250,0.6); background: rgba(167,139,250,0.08); }
+
+.ag-improve-modal { max-width: 560px; }
+
+.ag-improve-row { margin-bottom: 18px; }
+
+.ag-improve-label {
+  display: block; font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.07em;
+  color: #64748b; margin-bottom: 8px;
+}
+
+.ag-improve-select {
+  width: 100%; background: #0f172a; border: 1px solid #334155;
+  border-radius: 8px; color: #e2e8f0; padding: 9px 12px;
+  font-size: 0.88rem; outline: none; cursor: pointer;
+}
+.ag-improve-select:focus { border-color: #7c3aed; }
+
+.ag-improve-radio-lbl {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 14px; border-radius: 8px; border: 1px solid #1e293b;
+  cursor: pointer; margin-bottom: 8px; transition: border-color 0.15s;
+}
+.ag-improve-radio-lbl:hover { border-color: #334155; }
+.ag-improve-radio-lbl input[type=radio] { margin-top: 3px; accent-color: #7c3aed; flex-shrink: 0; }
+.ag-improve-radio-lbl input[type=radio]:checked + div .ag-improve-radio-title { color: #c4b5fd; }
+.ag-improve-radio-title { font-size: 0.87rem; font-weight: 600; color: #e2e8f0; margin-bottom: 2px; }
+.ag-improve-radio-sub  { font-size: 0.75rem; color: #475569; }
+
+/* Full-screen improved article result */
+.ag-improve-result-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.85);
+  overflow-y: auto; padding: 40px 24px;
+}
+.ag-improve-result-inner {
+  max-width: 900px; margin: 0 auto;
+}
+.ag-improve-result-title {
+  font-size: 1.1rem; font-weight: 700; color: #e2e8f0; margin-bottom: 4px;
+}
+.ag-improve-result-footer {
+  display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap;
+  margin-top: 32px; padding-top: 20px; border-top: 1px solid #1e293b;
+  padding-bottom: 40px;
+}
+
+/* ── Site picker step ─────────────────────────────────── */
+.ag-site-picker {
+  max-width: 600px; margin: 60px auto 0; text-align: center; padding: 0 16px;
+}
+.ag-sp-icon { font-size: 3rem; margin-bottom: 16px; }
+.ag-sp-title { font-size: 1.4rem; font-weight: 700; color: #e2e8f0; margin: 0 0 10px; }
+.ag-sp-sub { font-size: 0.9rem; color: #94a3b8; margin: 0 0 28px; }
+.ag-sp-cards {
+  display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 16px;
+}
+.ag-sp-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 20px 24px; min-width: 160px; max-width: 220px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px; cursor: pointer; transition: border-color 0.15s, background 0.15s;
+  color: #e2e8f0;
+}
+.ag-sp-card:hover {
+  border-color: #7c3aed; background: rgba(124,58,237,0.08);
+}
+.ag-sp-card-letter {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg,#6366f1,#7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; font-weight: 700; color: #fff;
+}
+.ag-sp-card-name { font-weight: 600; font-size: 0.95rem; }
+.ag-sp-card-domain { font-size: 0.78rem; color: #64748b; }
+.ag-sp-card-niche {
+  font-size: 0.72rem; color: #94a3b8; background: rgba(255,255,255,0.06);
+  padding: 2px 8px; border-radius: 20px;
+}

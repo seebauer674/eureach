@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard &mdash; eureach.eu</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/dashboard.css">
+  <script src="js/translations.js?v=7"></script>
+  <script src="js/i18n.js?v=5"></script>
 </head>
 <body class="db-page">
 
@@ -57,6 +59,7 @@
             <a href="competitors.html"><span class="ndm-icon">&#128225;</span>Competitors</a>
             <a href="citations.html"><span class="ndm-icon">&#128279;</span>Citations</a>
             <a href="marketing.html"><span class="ndm-icon">&#128640;</span>Marketing Creator</a>
+            <a href="fb-posts.html"><span class="ndm-icon">&#128248;</span>FB Post Agent</a>
           </div>
         </div>
       </div>
@@ -116,8 +119,70 @@
       <button class="db-add-btn" id="db-add-job-btn">+ Add task</button>
     </div>
 
+    <style>
+.db-todo-widget{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;margin:18px 0 4px}
+.db-todo-widget-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:.78rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.7px}
+.db-todo-date{background:#1a2236;border:1px solid rgba(255,255,255,.12);border-radius:6px;color:#e2e8f0;font-size:.78rem;padding:4px 7px;outline:none;cursor:pointer;color-scheme:dark}
+.db-todo-wlist{list-style:none;margin:0 0 10px;padding:0}
+.db-todo-wlist li{display:flex;align-items:center;gap:8px;padding:5px 3px;border-radius:5px}
+.db-todo-wlist li:hover{background:rgba(255,255,255,.04)}
+.db-todo-wlist .tw-cb{width:15px;height:15px;accent-color:#3b82f6;cursor:pointer;flex-shrink:0}
+.db-todo-wlist .tw-txt{flex:1;font-size:.84rem;color:#cbd5e1}
+.db-todo-wlist .tw-txt.done{text-decoration:line-through;color:rgba(255,255,255,.28)}
+.db-todo-wlist .tw-del{background:none;border:none;color:rgba(255,255,255,.18);font-size:.9rem;cursor:pointer;padding:0 3px}
+.db-todo-wlist .tw-del:hover{color:#ef4444}
+.db-todo-wadd{display:flex;gap:7px;flex-wrap:wrap}
+.db-todo-wbtn-ai{background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:7px;color:#fff;font-size:.75rem;font-weight:600;padding:7px 10px;cursor:pointer;white-space:nowrap}
+.db-todo-wbtn-ai:hover{opacity:.88}
+.db-todo-wbtn-imp{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.15);border-radius:7px;color:#e2e8f0;font-size:.75rem;font-weight:600;padding:7px 10px;cursor:pointer;white-space:nowrap}
+.db-todo-wbtn-imp:hover{background:rgba(255,255,255,.12)}
+.td-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10000;display:none;align-items:center;justify-content:center}
+.td-modal-overlay.open{display:flex}
+.td-modal{background:#0f172a;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:28px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative}
+.td-modal h3{font-size:1rem;font-weight:700;color:#fff;margin:0 0 18px}
+.td-modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:rgba(255,255,255,.4);font-size:1.2rem;cursor:pointer}
+.td-modal-close:hover{color:#fff}
+.td-step{display:none}.td-step.active{display:block}
+.td-period-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px}
+.td-period-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:rgba(255,255,255,.6);font-size:.82rem;padding:10px 6px;cursor:pointer;text-align:center;transition:all .15s}
+.td-period-btn:hover,.td-period-btn.sel{background:rgba(99,102,241,.2);border-color:#6366f1;color:#a5b4fc;font-weight:600}
+.td-label{font-size:.75rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.td-textarea{width:100%;background:#1a2236;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#e2e8f0;font-size:.83rem;padding:10px 12px;outline:none;resize:vertical;min-height:80px;box-sizing:border-box;font-family:inherit}
+.td-goal-select{width:100%;background:#1a2236;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#e2e8f0;font-size:.83rem;padding:9px 12px;outline:none;cursor:pointer;margin-bottom:2px}
+.td-goal-select:focus{border-color:#6366f1}
+.td-goal-select option{background:#1a2236;color:#e2e8f0}
+.td-textarea:focus{border-color:#6366f1}
+.td-textarea.plan{min-height:260px;font-family:monospace;font-size:.8rem;line-height:1.6}
+.td-btn-row{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.td-btn{border:none;border-radius:8px;font-size:.83rem;font-weight:600;padding:9px 18px;cursor:pointer}
+.td-btn-primary{background:#6366f1;color:#fff}.td-btn-primary:hover{background:#4f46e5}
+.td-btn-ghost{background:rgba(255,255,255,.07);color:#e2e8f0;border:1px solid rgba(255,255,255,.12)}.td-btn-ghost:hover{background:rgba(255,255,255,.12)}
+.td-btn-green{background:#059669;color:#fff}.td-btn-green:hover{background:#047857}
+.td-ai-status{font-size:.8rem;color:rgba(255,255,255,.4);margin-top:10px;min-height:20px}
+.td-imp-parse{background:#1a2236;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;margin-top:10px;max-height:160px;overflow-y:auto;font-size:.78rem;color:#94a3b8}
+.td-imp-row{display:flex;align-items:baseline;gap:8px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.td-imp-date{color:#6366f1;font-weight:600;flex-shrink:0;font-size:.72rem}
+
+.db-todo-winput{flex:1;background:#1a2236;border:1px solid rgba(255,255,255,.12);border-radius:7px;color:#e2e8f0;font-size:.83rem;padding:7px 10px;outline:none}
+.db-todo-winput:focus{border-color:#3b82f6}
+.db-todo-wbtn{background:#3b82f6;border:none;border-radius:7px;color:#fff;font-size:1rem;font-weight:700;padding:7px 14px;cursor:pointer}
+.db-todo-wbtn:hover{background:#2563eb}
+</style>
     <!-- Job list -->
     <div class="db-content">
+      <div class="db-todo-widget" id="db-todo-widget">
+        <div class="db-todo-widget-hd">
+          <span>&#9989; Personal To-Do <span id="db-todo-widget-count" style="color:#6366f1;font-size:.75rem"></span></span>
+          <input type="date" class="db-todo-date" id="db-todo-date">
+        </div>
+        <ul class="db-todo-wlist" id="db-todo-wlist"></ul>
+        <div class="db-todo-wadd">
+          <input class="db-todo-winput" id="db-todo-winput" placeholder="Add to-do for this day..." maxlength="120">
+          <button class="db-todo-wbtn" id="db-todo-wbtn">+</button>
+          <button class="db-todo-wbtn-ai" id="db-todo-ai-btn">&#129504; AI Plan</button>
+          <button class="db-todo-wbtn-imp" id="db-todo-imp-btn">&#128229; Import</button>
+        </div>
+      </div>
       <div id="db-jobs-area">
         <div class="db-empty"><div class="db-empty-icon">&#9203;</div><div class="db-empty-title">Loading&hellip;</div></div>
       </div>
@@ -252,7 +317,417 @@
   </div>
 </div>
 
+<script>
+(function(){
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  var wdate=todayStr();
+  var wdateEl=document.getElementById("db-todo-date");
+  if(wdateEl) wdateEl.value=wdate;
+  function loadWTodos(date){
+    if(date){ wdate=date; if(wdateEl) wdateEl.value=date; }
+    fetch("/api/todos?date="+wdate).then(function(r){
+      if(!r.ok){ console.error('todos fetch failed', r.status); renderWTodos([],'err:'+r.status); return null; }
+      return r.json();
+    }).then(function(d){ if(d) renderWTodos(d.todos||[]); }).catch(function(e){ console.error('todos error',e); renderWTodos([],'fetch error'); });
+  }
+  window.loadWTodos = loadWTodos;
+  function renderWTodos(todos, dbgMsg){
+    var hd=document.getElementById("db-todo-widget-count"); if(hd) hd.textContent = dbgMsg ? '⚠ '+dbgMsg : (todos.length ? '('+todos.length+')' : '');
+    var ul=document.getElementById("db-todo-wlist"); if(!ul) return; ul.innerHTML="";
+    if(!todos.length){var li=document.createElement("li");li.style.cssText="color:rgba(255,255,255,.25);font-size:.8rem;padding:4px 3px";li.textContent="No to-dos for "+wdate;ul.appendChild(li);return;}
+    todos.forEach(function(t){
+      var li=document.createElement("li");
+      var cb=document.createElement("input");cb.type="checkbox";cb.className="tw-cb";cb.checked=!!t.done;
+      var txt=document.createElement("span");txt.className="tw-txt"+(t.done?" done":"");txt.textContent=t.text;
+      var del=document.createElement("button");del.className="tw-del";del.textContent="\u00d7";
+      cb.addEventListener("change",function(){fetch("/api/todos/"+t.id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:cb.checked})}).then(loadWTodos);});
+      del.addEventListener("click",function(){fetch("/api/todos/"+t.id,{method:"DELETE"}).then(loadWTodos);});
+      li.appendChild(cb);li.appendChild(txt);li.appendChild(del);ul.appendChild(li);
+    });
+  }
+  if(wdateEl) wdateEl.addEventListener("change",function(){wdate=this.value;loadWTodos();});
+  var addBtn=document.getElementById("db-todo-wbtn");
+  var addInp=document.getElementById("db-todo-winput");
+  function addWTodo(){var text=(addInp&&addInp.value.trim())||"";
+    if(!text) return;
+    fetch("/api/todos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,date:wdate})}).then(function(){if(addInp)addInp.value="";loadWTodos();});
+  }
+  if(addBtn) addBtn.addEventListener("click",addWTodo);
+  if(addInp) addInp.addEventListener("keydown",function(e){if(e.key==="Enter")addWTodo();});
+  loadWTodos();
+})();
+</script>
+
 <script src="/js/api.js?v=5"></script>
-<script src="/js/dashboard.js?v=1"></script>
+<script src="/js/dashboard.js?v=3"></script>
+
+<!-- AI Todo Modal -->
+<div class="td-modal-overlay" id="td-ai-modal">
+  <div class="td-modal">
+    <button class="td-modal-close" id="td-ai-close">&times;</button>
+    <h3>&#129504; AI Todo Plan</h3>
+    <div class="td-step active" id="td-step-1">
+      <div class="td-label">Choose period</div>
+      <div class="td-period-grid">
+        <button class="td-period-btn" data-period="today">Today</button>
+        <button class="td-period-btn" data-period="3days">3 Days</button>
+        <button class="td-period-btn" data-period="week">1 Week</button>
+        <button class="td-period-btn" data-period="2weeks">2 Weeks</button>
+        <button class="td-period-btn" data-period="month">1 Month</button>
+      </div>
+      <div class="td-btn-row"><button class="td-btn td-btn-primary" id="td-step1-next">Next &rarr;</button></div>
+    </div>
+    <div class="td-step" id="td-step-2">
+      <div class="td-label">What is your goal?</div>
+      <select class="td-goal-select" id="td-goal-select">
+        <option value="">-- Choose a preset goal or type your own below --</option>
+        <option value="Grow organic search traffic by publishing SEO-optimised blog content and building backlinks">Grow organic traffic (SEO + backlinks)</option>
+        <option value="Launch an email marketing campaign to nurture leads and convert them into paying clients">Launch email marketing campaign</option>
+        <option value="Increase social media presence by creating and scheduling daily posts across Facebook, Instagram and LinkedIn">Boost social media presence</option>
+        <option value="Generate 20 new qualified leads through outreach, cold email and LinkedIn prospecting">Generate new leads (outreach)</option>
+        <option value="Improve Google Business Profile ranking and collect 10 new 5-star reviews">Improve local SEO &amp; reviews</option>
+        <option value="Build brand authority by publishing thought-leadership articles, case studies and press mentions">Build brand authority &amp; PR</option>
+        <option value="Launch a new product or service with a full go-to-market plan including landing page, ads and emails">Launch new product or service</option>
+        <option value="Retain existing clients by improving onboarding, follow-ups and monthly reporting">Improve client retention</option>
+        <option value="Run a paid advertising campaign on Google Ads or Meta to drive traffic and conversions">Run paid advertising campaign</option>
+        <option value="Audit and optimise the website: speed, UX, conversion rate and on-page SEO">Website audit &amp; optimisation</option>
+      </select>
+      <textarea class="td-textarea" id="td-goal-input" placeholder="e.g. Grow organic traffic by 20%, launch email campaign, build 10 backlinks..." rows="4" style="margin-top:8px"></textarea>
+      <div class="td-btn-row">
+        <button class="td-btn td-btn-ghost" id="td-step2-back">&larr; Back</button>
+        <button class="td-btn td-btn-primary" id="td-step2-gen">&#10024; Generate Plan</button>
+      </div>
+    </div>
+    <div class="td-step" id="td-step-3">
+      <div class="td-label">Review &amp; edit your plan <span style="font-weight:400;text-transform:none;letter-spacing:0">(format: YYYY-MM-DD: task)</span></div>
+      <textarea class="td-textarea plan" id="td-plan-text"></textarea>
+      <div class="td-ai-status" id="td-ai-status"></div>
+      <div class="td-btn-row">
+        <button class="td-btn td-btn-ghost" id="td-step3-back">&larr; Regenerate</button>
+        <button class="td-btn td-btn-green" id="td-step3-import">&#128229; Import to Dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Import Todo Modal -->
+<div class="td-modal-overlay" id="td-imp-modal">
+  <div class="td-modal">
+    <button class="td-modal-close" id="td-imp-close">&times;</button>
+    <h3>&#128229; Import Timetable as Dashboard Jobs</h3>
+    <div class="td-label">Paste or upload a .txt timetable file. Supports:</div>
+    <div style="font-size:.72rem;color:rgba(255,255,255,.3);margin-bottom:10px;line-height:1.7;font-family:monospace">
+      Day 1: Task &nbsp;/&nbsp; Day 1 - Title + bullets<br>
+      Week 1, Day 1: Task<br>
+      22 September 2026 &gt; Headline &gt; Description<br>
+      YYYY-MM-DD: Task
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <label style="font-size:.78rem;color:rgba(255,255,255,.5);white-space:nowrap">Add to site:</label>
+      <select id="td-imp-site" style="flex:1;background:#1a2236;border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#e2e8f0;font-size:.78rem;padding:5px 8px;outline:none">
+        <option value="">— select site —</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <label style="font-size:.78rem;color:rgba(255,255,255,.5);white-space:nowrap">Day 1 starts on:</label>
+      <input type="date" id="td-imp-startdate" style="background:#1a2236;border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#e2e8f0;font-size:.78rem;padding:5px 8px;outline:none;color-scheme:dark">
+    </div>
+    <input type="file" id="td-imp-file" accept=".txt,text/plain" style="display:none">
+    <button class="td-btn td-btn-ghost" id="td-imp-file-btn" style="margin-bottom:10px;font-size:.78rem">&#128193; Load from file</button>
+    <textarea class="td-textarea plan" id="td-imp-text" placeholder="Day 1: Post in 3 Facebook groups&#10;Day 2: Send cold outreach emails&#10;Day 3:&#10;  - Write blog post&#10;  - Share on social"></textarea>
+    <div class="td-imp-parse" id="td-imp-preview" style="display:none"></div>
+    <div class="td-ai-status" id="td-imp-status"></div>
+    <div class="td-btn-row">
+      <button class="td-btn td-btn-ghost" id="td-imp-parse-btn">&#128270; Preview</button>
+      <button class="td-btn td-btn-green" id="td-imp-confirm-btn">&#128229; Import to Dashboard</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var aiModal  = document.getElementById('td-ai-modal');
+  var impModal = document.getElementById('td-imp-modal');
+  var aiPeriod = null;
+
+  function openModal(el){ el.classList.add('open'); }
+  function closeModal(el){ el.classList.remove('open'); }
+  function showStep(n){
+    document.querySelectorAll('.td-step').forEach(function(s){ s.classList.remove('active'); });
+    var s = document.getElementById('td-step-'+n);
+    if(s) s.classList.add('active');
+  }
+
+  document.getElementById('db-todo-ai-btn').addEventListener('click', function(){
+    showStep(1); aiPeriod = null;
+    document.querySelectorAll('.td-period-btn').forEach(function(b){ b.classList.remove('sel'); });
+    document.getElementById('td-goal-input').value = '';
+    document.getElementById('td-goal-select').value = '';
+    document.getElementById('td-plan-text').value = '';
+    document.getElementById('td-ai-status').textContent = '';
+    openModal(aiModal);
+  });
+  document.getElementById('td-ai-close').addEventListener('click', function(){ closeModal(aiModal); });
+  aiModal.addEventListener('click', function(e){ if(e.target===aiModal) closeModal(aiModal); });
+
+  document.querySelectorAll('.td-period-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.td-period-btn').forEach(function(b){ b.classList.remove('sel'); });
+      btn.classList.add('sel');
+      aiPeriod = btn.dataset.period;
+    });
+  });
+
+  document.getElementById('td-goal-select').addEventListener('change', function(){
+    if(this.value) document.getElementById('td-goal-input').value = this.value;
+  });
+
+  document.getElementById('td-step1-next').addEventListener('click', function(){
+    if(!aiPeriod){ alert('Please select a period first.'); return; }
+    showStep(2);
+    document.getElementById('td-goal-input').focus();
+  });
+  document.getElementById('td-step2-back').addEventListener('click', function(){ showStep(1); });
+
+  document.getElementById('td-step2-gen').addEventListener('click', async function(){
+    var goal = document.getElementById('td-goal-input').value.trim();
+    if(!goal){ alert('Please enter your goal.'); return; }
+    showStep(3);
+    var planEl = document.getElementById('td-plan-text');
+    var statusEl = document.getElementById('td-ai-status');
+    planEl.value = '';
+    statusEl.textContent = '\u23f3 Generating your plan...';
+    document.getElementById('td-step3-import').disabled = true;
+    try {
+      var r = await fetch('/api/todos/ai-generate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ period: aiPeriod, goal: goal }) });
+      var d = await r.json();
+      if(!r.ok) throw new Error(d.error || 'Generation failed');
+      planEl.value = d.text;
+      statusEl.textContent = '\u2705 Plan ready \u2014 review and edit before importing.';
+      document.getElementById('td-step3-import').disabled = false;
+    } catch(e){
+      statusEl.textContent = '\u274c Error: ' + e.message;
+    }
+  });
+
+  document.getElementById('td-step3-back').addEventListener('click', function(){ showStep(2); });
+
+  document.getElementById('td-step3-import').addEventListener('click', async function(){
+    var text = document.getElementById('td-plan-text').value;
+    var todos = parseTodoText(text);
+    if(!todos.length){ alert('No valid tasks found. Format: YYYY-MM-DD: Task description'); return; }
+    await bulkImport(todos, document.getElementById('td-ai-status'));
+    closeModal(aiModal);
+    if(typeof loadWTodos === 'function') loadWTodos();
+  });
+
+  document.getElementById('db-todo-imp-btn').addEventListener('click', function(){
+    document.getElementById('td-imp-text').value = '';
+    document.getElementById('td-imp-preview').style.display = 'none';
+    document.getElementById('td-imp-status').textContent = '';
+    var today = new Date();
+    var dd = [today.getFullYear(), String(today.getMonth()+1).padStart(2,'0'), String(today.getDate()).padStart(2,'0')].join('-');
+    document.getElementById('td-imp-startdate').value = dd;
+    // populate site dropdown from dashboard state
+    var sel = document.getElementById('td-imp-site');
+    var sites = (window.dashState && window.dashState.sites) ? window.dashState.sites : [];
+    sel.innerHTML = '<option value="">— select site —</option>' + sites.map(function(s){
+      return '<option value="'+s.id+'">'+escHtml(s.display_name||s.domain)+'</option>';
+    }).join('');
+    if(window.dashState && window.dashState.siteFilter) sel.value = window.dashState.siteFilter;
+    openModal(impModal);
+  });
+  document.getElementById('td-imp-close').addEventListener('click', function(){ closeModal(impModal); });
+  impModal.addEventListener('click', function(e){ if(e.target===impModal) closeModal(impModal); });
+
+  document.getElementById('td-imp-file-btn').addEventListener('click', function(){
+    document.getElementById('td-imp-file').click();
+  });
+  document.getElementById('td-imp-file').addEventListener('change', function(){
+    var file = this.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e){ document.getElementById('td-imp-text').value = e.target.result; };
+    reader.readAsText(file);
+    this.value = '';
+  });
+
+  document.getElementById('td-imp-parse-btn').addEventListener('click', function(){
+    var text = document.getElementById('td-imp-text').value;
+    var todos = parseTodoText(text);
+    var preview = document.getElementById('td-imp-preview');
+    var confirm = document.getElementById('td-imp-confirm-btn');
+    var status = document.getElementById('td-imp-status');
+    if(!todos.length){
+      preview.style.display = 'none';
+      status.textContent = '\u274c No valid tasks found. Use Day 1: Task or YYYY-MM-DD: Task format.';
+      return;
+    }
+    preview.style.display = '';
+    preview.innerHTML = todos.map(function(t){
+      return '<div class="td-imp-row"><span class="td-imp-date">'+t.date+'</span><span>'+escHtml(t.text)+'</span></div>';
+    }).join('');
+    status.textContent = '\u2705 ' + todos.length + ' task' + (todos.length!==1?'s':'') + ' ready to import.';
+  });
+
+  document.getElementById('td-imp-confirm-btn').addEventListener('click', async function(){
+    var text = document.getElementById('td-imp-text').value;
+    var todos = parseTodoText(text);
+    var status = document.getElementById('td-imp-status');
+    if(!todos.length){ status.textContent = '\u274c No tasks parsed \u2014 click Preview first to check the format.'; return; }
+    await bulkImport(todos, status);
+    closeModal(impModal);
+    if(typeof loadWTodos === 'function') loadWTodos();
+  });
+
+  function getStartDate(){
+    var v = document.getElementById('td-imp-startdate').value;
+    if(v) return new Date(v + 'T00:00:00');
+    var d = new Date(); d.setHours(0,0,0,0); return d;
+  }
+
+  function dateStrFromBase(base, dayNum){
+    var d = new Date(base.getTime());
+    d.setDate(d.getDate() + dayNum - 1);
+    return [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+  }
+
+  var MONTHS = {january:1,february:2,march:3,april:4,may:5,june:6,july:7,august:8,september:9,october:10,november:11,december:12};
+
+  function detectChannel(text){
+    var t = text.toLowerCase();
+    if(/instagram/.test(t))          return { channel:'Instagram',    job_type:'instagram_post' };
+    if(/facebook\s+ad/.test(t))      return { channel:'Facebook Ads', job_type:'facebook_ad' };
+    if(/facebook/.test(t))           return { channel:'Facebook',     job_type:'facebook_post' };
+    if(/linkedin\s+ad/.test(t))      return { channel:'LinkedIn Ads', job_type:'linkedin_ad' };
+    if(/linkedin/.test(t))           return { channel:'LinkedIn',     job_type:'linkedin_post' };
+    if(/google\s+ad/.test(t))        return { channel:'Google Ads',   job_type:'google_ad' };
+    if(/youtube/.test(t))            return { channel:'YouTube',      job_type:'marketing_content' };
+    if(/tiktok/.test(t))             return { channel:'TikTok',       job_type:'marketing_content' };
+    if(/twitter|x\.com/.test(t))     return { channel:'Twitter/X',    job_type:'marketing_content' };
+    if(/email|newsletter/.test(t))   return { channel:'Email',        job_type:'email_campaign' };
+    if(/blog|article|post.*site|website.*post/.test(t)) return { channel:'Blog', job_type:'article' };
+    if(/outreach|cold/.test(t))      return { channel:'Outreach',     job_type:'outreach' };
+    if(/analytics|review|stat/.test(t)) return { channel:'Analytics', job_type:'analytics' };
+    return { channel:'General', job_type:'generic' };
+  }
+
+  function parseNaturalDate(str){
+    // "22 September 2026" or "September 22 2026" or "22 Sep 2026"
+    var m = str.trim().match(/^(\d{1,2})\s+([a-z]+)\s+(\d{4})$/i) ||
+            str.trim().match(/^([a-z]+)\s+(\d{1,2})[,\s]+(\d{4})$/i);
+    if(!m) return null;
+    var day, mon, yr;
+    if(/^\d/.test(m[1])){ day=parseInt(m[1]); mon=MONTHS[(m[2]||'').toLowerCase()]; yr=parseInt(m[3]); }
+    else { mon=MONTHS[(m[1]||'').toLowerCase()]; day=parseInt(m[2]); yr=parseInt(m[3]); }
+    if(!mon) return null;
+    return [yr, String(mon).padStart(2,'0'), String(day).padStart(2,'0')].join('-');
+  }
+
+  // day-of-week names and common date words to skip as inline tasks
+  var DAY_WORDS = /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2}[\/\-]\d{1,2})/i;
+
+  function parseTodoText(text){
+    var todos = [];
+    var lines = text.split('\n');
+    var base = getStartDate();
+
+    // "DD Month YYYY > Headline > Description"
+    var reNatural = /^(\d{1,2}\s+[a-z]+\s+\d{4})\s*>\s*(.+)$/i;
+    lines.forEach(function(line){
+      var m = line.trim().match(reNatural);
+      if(!m) return;
+      var date = parseNaturalDate(m[1]);
+      if(!date) return;
+      var parts = m[2].split('>').map(function(p){ return p.trim(); }).filter(Boolean);
+      var title = parts[0] || '';
+      var notes = parts.slice(1).join(' — ') || '';
+      var ch = detectChannel(title + ' ' + notes);
+      if(title) todos.push({ date: date, text: title, notes: notes, channel: ch.channel, job_type: ch.job_type });
+    });
+    if(todos.length) return todos;
+
+    // exact date: YYYY-MM-DD: Task
+    var reExact = /^(\d{4}-\d{2}-\d{2})\s*:\s*(.+)$/;
+    // Week W, Day D (before Day N so it matches first)
+    var reWeekDay = /^week\s+(\d+)[,\s\-–—]+day\s+(\d+)\s*(?:[-–—:,]|$)(.*)/i;
+    // Day N header
+    var reDay = /^day\s+(\d+)\s*(?:[-–—:,]|$)(.*)/i;
+    // bullets: -, *, •, □, ✓, numbers like "1.", letters like "a)"
+    var reBullet = /^[\s]*(?:[-*•□✓✗]|\d+[.)]\s|[a-z][.)]\s)\s*(.+)$/i;
+
+    var currentDay = null;
+
+    lines.forEach(function(line){
+      var raw = line;
+      var trimmed = line.trim();
+      if(!trimmed) return;
+
+      // skip pure separator/header lines (===, ---, all caps section titles with no task content)
+      if(/^[=\-_]{3,}$/.test(trimmed)) return;
+
+      // exact date
+      var mExact = trimmed.match(reExact);
+      if(mExact){ todos.push({ date: mExact[1], text: mExact[2].trim() }); currentDay = null; return; }
+
+      // Week W, Day D
+      var mWD = trimmed.match(reWeekDay);
+      if(mWD){
+        currentDay = (parseInt(mWD[1]) - 1) * 7 + parseInt(mWD[2]);
+        var inline = mWD[3].trim().replace(/^[-–—:,]\s*/, '');
+        if(inline && !DAY_WORDS.test(inline)) todos.push({ date: dateStrFromBase(base, currentDay), text: inline });
+        return;
+      }
+
+      // Day N
+      var mDay = trimmed.match(reDay);
+      if(mDay){
+        currentDay = parseInt(mDay[1]);
+        var inline = mDay[2].trim().replace(/^[-–—:,]\s*/, '');
+        if(inline && !DAY_WORDS.test(inline)) todos.push({ date: dateStrFromBase(base, currentDay), text: inline });
+        return;
+      }
+
+      // bullet under a day heading
+      if(currentDay !== null){
+        var mBullet = trimmed.match(reBullet);
+        if(mBullet){
+          var task = mBullet[1].trim();
+          if(task) todos.push({ date: dateStrFromBase(base, currentDay), text: task });
+          return;
+        }
+        // indented plain text also counts as a task
+        if(/^[\t ]/.test(raw) && trimmed){
+          todos.push({ date: dateStrFromBase(base, currentDay), text: trimmed });
+          return;
+        }
+        // non-indented, non-bullet line = end of this day's tasks
+        currentDay = null;
+      }
+    });
+
+    return todos;
+  }
+
+  async function bulkImport(todos, statusEl){
+    var site_id = document.getElementById('td-imp-site').value;
+    if(!site_id){ if(statusEl) statusEl.textContent = '\u274c Please select a site first.'; return; }
+    if(statusEl) statusEl.textContent = '\u23f3 Importing ' + todos.length + ' tasks...';
+    try {
+      var jobs = todos.map(function(t){ return { due_date: t.date, title: t.text, notes: t.notes||'', channel: t.channel||'General', job_type: t.job_type||'generic' }; });
+      var r = await fetch('/api/jobs/bulk', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ site_id: site_id, jobs: jobs }) });
+      var d = await r.json();
+      if(!r.ok) throw new Error(d.error || 'Import failed');
+      if(statusEl) statusEl.textContent = '\u2705 Imported ' + d.created + ' jobs! Navigate dates to see them.';
+      if(typeof window.loadJobs === 'function') window.loadJobs();
+    } catch(e){
+      if(statusEl) statusEl.textContent = '\u274c Error: ' + e.message;
+      throw e;
+    }
+  }
+
+  function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+})();
+</script>
 </body>
 </html>

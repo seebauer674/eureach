@@ -1,3 +1,4 @@
+function t(k,fb){var l=window.euLang?window.euLang():'en';var r=window.EUREACH_T;return(r&&r[l]&&r[l][k])||fb||k;}
 const API = window.api;
 
 /* ═══════════════════════════════════════════════════════
@@ -55,7 +56,7 @@ const MC = {
       }
       MC.state.user = me.user;
       MC.state.planLimits = {
-        plan:                  me.user.plan || 'free',
+        plan:                  me.user.plan || 'expired',
         marketingPostsMax:     me.user.marketingPostsMax     ?? 2,
         marketingCampaignsMax: me.user.marketingCampaignsMax ?? 0,
         creditsMax:            me.user.creditsMax            ?? 150,
@@ -148,8 +149,8 @@ const MC = {
     const b = MC.state.business;
     if (!b || !b.name) {
       el.innerHTML = `
-        <div class="mc-profile-missing">Δεν έχετε ορίσει επιχειρηματικό προφίλ.</div>
-        <a href="settings.html" class="mc-profile-link">+ Προσθήκη προφίλ →</a>
+        <div class="mc-profile-missing">' + t('mc.noProfile','Business profile not set.') + '</div>
+        <a href="settings.html" class="mc-profile-link">' + t('mc.addProfile','+ Add profile →') + '</a>
       `;
       return;
     }
@@ -158,7 +159,7 @@ const MC = {
       ${b.industry ? `<div class="mc-profile-meta">🏷 ${MC.esc(b.industry)}</div>` : ''}
       ${b.location ? `<div class="mc-profile-meta">📍 ${MC.esc(b.location)}</div>` : ''}
       ${b.website  ? `<div class="mc-profile-meta">🌐 ${MC.esc(b.website)}</div>`  : ''}
-      <a href="settings.html" class="mc-profile-link">Επεξεργασία →</a>
+      <a href="settings.html" class="mc-profile-link">' + t('mc.edit','Edit →') + '</a>
     `;
     // pre-fill brief fields from business profile
     if (b.location) {
@@ -176,8 +177,8 @@ const MC = {
     const k = MC.state.brand;
     if (!k || (!k.slogan && !k.tones && !k.colors)) {
       el.innerHTML = `
-        <div class="mc-profile-missing">Δεν έχετε ορίσει brand kit.</div>
-        <a href="settings.html" class="mc-profile-link">+ Δημιουργία brand kit →</a>
+        <div class="mc-profile-missing">' + t('mc.noBrandKit','Brand kit not set.') + '</div>
+        <a href="settings.html" class="mc-profile-link">' + t('mc.addBrandKit','+ Create brand kit →') + '</a>
       `;
       return;
     }
@@ -193,7 +194,7 @@ const MC = {
       html += k.colors.map(c => `<span title="${MC.esc(c)}" style="display:inline-block;width:18px;height:18px;border-radius:4px;background:${MC.esc(c)};border:1px solid rgba(255,255,255,0.15)"></span>`).join('');
       html += '</div>';
     }
-    el.innerHTML = html || '<div class="mc-profile-missing">Brand kit κενό.</div>';
+    el.innerHTML = html || '<div class="mc-profile-missing">' + t('mc.brandKitEmpty','Brand kit empty.') + '</div>';
 
     // pre-fill tone from brand kit
     if (k.tone) {
@@ -222,7 +223,7 @@ const MC = {
       if (limits.marketingCampaignsMax === 0) {
         MC.showUpgradeModal(
           'Full Campaign',
-          'Το πλάνο σας δεν συμπεριλαμβάνει Full Campaign. Αναβαθμίστε για να δημιουργείτε πλήρεις καμπάνιες για όλες τις πλατφόρμες μαζί.'
+          '' + t('mc.upgradeCampaign','Your plan does not include Full Campaign. Upgrade to create complete marketing campaigns.') + ''
         );
         return;
       }
@@ -262,7 +263,7 @@ const MC = {
     section.style.display = '';
 
     if (platforms.length === 0) {
-      grid.innerHTML = '<span style="font-size:0.82rem;color:var(--muted)">Ενιαία δημιουργία</span>';
+      grid.innerHTML = '<span style="font-size:0.82rem;color:var(--muted)">' + t('mc.unifiedCreate','Unified creation') + '</span>';
       return;
     }
 
@@ -314,7 +315,7 @@ const MC = {
 
     const brief = MC.getBriefFromForm();
     if (!brief.what && MC.state.activeTab !== 'article') {
-      MC.showError('Συμπληρώστε τουλάχιστον το πεδίο "Τι προωθείτε;"');
+      MC.showError('t('mc.fillWhat','Please fill in the "What are you promoting?" field.')');
       return;
     }
 
@@ -330,7 +331,7 @@ const MC = {
         const articleTitle   = document.getElementById('brief-article-title')?.value.trim() || '';
         const articleContent = document.getElementById('brief-article-content')?.value.trim() || '';
         if (!articleTitle && !articleContent) {
-          MC.showError('Συμπληρώστε τον τίτλο ή το περιεχόμενο του άρθρου.');
+          MC.showError('t('mc.fillArticle','Please fill in the article title or content.')');
           MC.state.generating = false;
           MC.setGenerating(false);
           return;
@@ -345,7 +346,7 @@ const MC = {
       } else {
         const platforms = MC.PLATFORM_CONFIG[tab] || [];
         const platObj = platforms.find(p => p.id === MC.state.activePlatform) || platforms[0];
-        if (!platObj) { MC.showError('Επιλέξτε πλατφόρμα.'); MC.state.generating = false; MC.setGenerating(false); return; }
+        if (!platObj) { MC.showError('t('mc.selectPlatform','Please select a platform.')'); MC.state.generating = false; MC.setGenerating(false); return; }
 
         platform = platObj.id;
         const res = await API.post(platObj.endpoint, { brief, saveToAssets: false });
@@ -362,7 +363,7 @@ const MC = {
       if (err?.error === 'insufficient_credits' || err?.status === 403) {
         MC.showUpgradeModal('Credits', 'Δεν έχετε αρκετά credits για αυτή την ενέργεια. Αναβαθμίστε το πλάνο σας για περισσότερα credits κάθε μήνα.');
       } else {
-        const msg = err?.message || err?.error || 'Παρουσιάστηκε σφάλμα. Δοκιμάστε ξανά.';
+        const msg = err?.message || err?.error || 't('mc.genError','An error occurred. Try again.')';
         MC.showError(msg, true);
       }
     } finally {
@@ -376,7 +377,7 @@ const MC = {
     const label   = document.getElementById('mc-generate-label');
     const spinner = document.getElementById('mc-generate-spinner');
     btn.disabled  = on;
-    label.textContent = on ? 'Παράγεται...' : '✨ Δημιουργία';
+    label.textContent = on ? t('mc.generating','Generating...') : t('mc.generate','✨ Generate');
     spinner.style.display = on ? 'inline-block' : 'none';
   },
 
@@ -445,10 +446,10 @@ const MC = {
           </div>
           <div class="mc-result-actions">
             <button class="mc-result-btn copy" onclick="MC.copyToClipboard(\`${safeText}\`)">
-              📋 Αντιγραφή
+              ' + t('mc.copy','📋 Copy') + '
             </button>
             <button class="mc-result-btn save" id="mc-save-btn" onclick="MC.saveAsset('${platform}', ${JSON.stringify(JSON.stringify(result))})">
-              💾 Αποθήκευση
+              ' + t('mc.save','💾 Save') + '
             </button>
           </div>
         </div>
@@ -636,7 +637,7 @@ const MC = {
       copyParts.push(hashtags);
     }
     if (music) {
-      html += `<div style="margin-top:10px;font-size:0.78rem;color:var(--muted)">🎵 Μουσική: ${MC.esc(music)}</div>`;
+      html += `<div style="margin-top:10px;font-size:0.78rem;color:var(--muted)">' + t('mc.music','🎵 Music:') + ' ${MC.esc(music)}</div>`;
     }
 
     // Variant panels
@@ -1205,7 +1206,7 @@ const MC = {
     const brief = MC.getBriefFromForm();
     if (!brief.what) {
       const errEl = document.getElementById('mc-orch-error');
-      errEl.textContent = 'Συμπληρώστε τουλάχιστον το πεδίο "Τι προωθείτε;"';
+      errEl.textContent = 't('mc.fillWhat','Please fill in the "What are you promoting?" field.')';
       errEl.style.display = '';
       return;
     }
@@ -1323,8 +1324,8 @@ const MC = {
         <span class="mc-orch-result-icon">${plat.icon}</span>
         <span class="mc-orch-result-label">${plat.label}</span>
         <span class="mc-orch-result-chevron">▾</span>
-        <button class="mc-result-btn copy" style="margin-left:auto;margin-right:8px" onclick="event.stopPropagation();MC.copyToClipboard(\`${safeCopy}\`)">📋 Αντιγραφή</button>
-        <button class="mc-result-btn save" onclick="event.stopPropagation();MC.saveAsset('${plat.id}', ${JSON.stringify(JSON.stringify(result))})">💾 Αποθήκευση</button>
+        <button class="mc-result-btn copy" style="margin-left:auto;margin-right:8px" onclick="event.stopPropagation();MC.copyToClipboard(\`${safeCopy}\`)">' + t('mc.copy','📋 Copy') + '</button>
+        <button class="mc-result-btn save" onclick="event.stopPropagation();MC.saveAsset('${plat.id}', ${JSON.stringify(JSON.stringify(result))})">' + t('mc.save','💾 Save') + '</button>
       </div>
       <div class="mc-orch-result-body">
         ${bodyHtml}
@@ -1344,7 +1345,7 @@ const MC = {
     lines.push(`Προϊόν/Υπηρεσία: ${brief.what || '—'}`);
     lines.push(`Κοινό: ${brief.audience || '—'}`);
     lines.push(`Γλώσσα: ${brief.language || 'Greek'}`);
-    lines.push(`\nΔημιουργήθηκε: ${new Date().toLocaleString('el-GR')}\n`);
+    lines.push(`\nΔημιουργήθηκε: ${new Date().toLocaleString(window.euLang&&window.euLang()==='el'?'el-GR':window.euLang&&window.euLang()==='de'?'de-DE':'en-GB')}\n`);
 
     for (const plat of MC.ORCH_PLATFORMS) {
       const result = MC.orchResults[plat.id];
@@ -1395,23 +1396,23 @@ const MC = {
 
   renderPlanBadge() {
     const limits  = MC.state.planLimits || {};
-    const plan    = limits.plan || 'free';
+    const plan    = limits.plan || 'expired';
     const badgeEl = document.getElementById('mc-plan-badge');
     const upEl    = document.getElementById('mc-upgrade-link');
     if (!badgeEl) return;
 
-    const labels = { free: 'Free', trial: 'Trial', paid: 'Pro', starter: 'Starter', pro: 'Pro', agency: 'Agency' };
-    const colors = { free: '#94a3b8', trial: '#f59e0b', paid: '#7c3aed', starter: '#7c3aed', pro: '#7c3aed', agency: '#10b981' };
+    const labels = { expired: 'Expired', trial: 'Trial', beginners: 'Beginners', paid: 'Pro', starter: 'Starter', pro: 'Pro', agency: 'Agency' };
+    const colors = { expired: '#94a3b8', trial: '#f59e0b', beginners: '#22c55e', paid: '#7c3aed', starter: '#7c3aed', pro: '#7c3aed', agency: '#10b981' };
     const label = labels[plan] || plan;
     const color = colors[plan] || '#94a3b8';
 
     badgeEl.innerHTML = `<span style="color:${color};font-weight:700;font-size:0.8rem">${label}</span>`;
 
     if (upEl) {
-      upEl.style.display = (plan === 'free' || plan === 'trial') ? '' : 'none';
+      upEl.style.display = (plan === 'trial' || plan === 'expired') ? '' : 'none';
     }
 
-    // Lock orchestrator tab visually for free plan
+    // Lock orchestrator tab visually for non-paid plans
     if (limits.marketingCampaignsMax === 0) {
       document.querySelectorAll('.mc-tab-btn').forEach(btn => {
         if (btn.dataset.tab === 'orchestrator') {
@@ -1507,7 +1508,7 @@ const MC = {
       MC.showToast('⚠ Σφάλμα αποθήκευσης');
       if (btn) {
         btn.disabled = false;
-        btn.textContent = '💾 Αποθήκευση';
+        btn.textContent = '' + t('mc.save','💾 Save') + '';
       }
     }
   },
@@ -1570,7 +1571,7 @@ const MC = {
       const id = asset.id || asset._id || '';
       const plat = (asset.platform || '').toLowerCase().replace(/ /g, '-');
       const cfg = platformLabels[plat] || { icon: '📄', label: plat || 'Unknown' };
-      const dateStr = asset.createdAt ? new Date(asset.createdAt).toLocaleDateString('el-GR') : '';
+      const dateStr = asset.createdAt ? new Date(asset.createdAt).toLocaleDateString(window.euLang&&window.euLang()==='el'?'el-GR':window.euLang&&window.euLang()==='de'?'de-DE':'en-GB') : '';
 
       // get preview text
       let preview = '';

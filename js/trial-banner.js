@@ -53,8 +53,14 @@
     document.body.prepend(banner);
 
     // Push page content down
-    const main = document.querySelector('main, .main, #main');
-    if (main) main.style.paddingTop = (parseInt(main.style.paddingTop) || 0) + 36 + 'px';
+    var BANNER_TOP = parseInt(banner.style.top) || 52;
+    var BANNER_BOTTOM = BANNER_TOP + 36;
+    ["main", ".main", "#main", ".ag-page", ".db-body"].forEach(function(sel) {
+      var el = document.querySelector(sel);
+      if (el) { var cur = parseInt(window.getComputedStyle(el).paddingTop) || 0; el.style.paddingTop = Math.max(cur, BANNER_BOTTOM) + "px"; }
+    });
+    var rail = document.querySelector(".db-rail");
+    if (rail) { rail.style.top = BANNER_BOTTOM + "px"; rail.style.height = "calc(100vh - " + BANNER_BOTTOM + "px)"; }
 
     document.getElementById('trial-cancel-btn').addEventListener('click', async () => {
       if (!confirm('Cancel your trial? Your account will be downgraded immediately and you will not be charged.')) return;

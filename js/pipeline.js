@@ -58,7 +58,7 @@ function renderBoard() {
         <div class="pl-col-count">${stageleads.length}</div>
       </div>
       <div class="pl-col-cards" id="col-${stage.key}">
-        ${stageleads.length === 0 ? `<div class="pl-col-empty">${T("pl.noLeads","No leads")}</div>` : ""}
+        ${stageleads.length === 0 ? `<div class="pl-col-empty">${T("pl.noLeads","No leads")}${stage.key === "new" ? '<br><a href="leads.html" class="pl-find-leads-link">🔍 Find Leads →</a>' : ""}</div>` : ""}
         ${stageleads.map(l => cardHTML(l, stage)).join("")}
       </div>`;
     board.appendChild(col);

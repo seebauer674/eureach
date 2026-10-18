@@ -492,7 +492,29 @@
       note.textContent = "✅ Saved as blog draft — Admin → Articles to review";
       body.appendChild(note);
     }
-    addCopyBtn(body, () => (r.title || "") + "\n\n" + contentEl.textContent);
+    // Insert image button
+    const insertImgBtn = document.createElement("button");
+    insertImgBtn.className = "ag-ghost-btn";
+    insertImgBtn.style.cssText = "font-size:0.78rem;padding:5px 12px;margin-top:4px;margin-right:8px;";
+    insertImgBtn.textContent = "🖼 Insert image";
+    insertImgBtn.addEventListener("click", () => {
+      const url = prompt("Image URL:", "https://");
+      if (!url || url === "https://") return;
+      const alt = prompt("Alt text (optional):", "") || "";
+      const tag = `<img src="${url}" alt="${alt}" style="width:100%;max-width:100%;height:auto;margin:16px 0">`;
+      contentEl.focus();
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount) {
+        const range = sel.getRangeAt(0);
+        range.collapse(false);
+        const frag = document.createRange().createContextualFragment(tag);
+        range.insertNode(frag);
+      } else {
+        contentEl.insertAdjacentHTML("beforeend", tag);
+      }
+    });
+    body.appendChild(insertImgBtn);
+    addCopyBtn(body, () => contentEl.innerHTML);
   }
 
   function renderLinks(body, links) {

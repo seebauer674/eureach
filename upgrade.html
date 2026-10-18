@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -140,6 +140,8 @@
     }
     .upgrade-success.visible { display: block; }
   </style>
+  <script src="js/translations.js?v=7"></script>
+  <script src="js/i18n.js?v=5"></script>
 </head>
 <body>
 <nav id="nav" class="app-nav">
@@ -158,12 +160,12 @@
       <li>Unlimited competitor searches</li>
       <li>Upgraded AI model (better analysis quality)</li>
       <li>6 articles per month</li>
-      <li>4 AI audits per month</li>
+      <li>10 AI audits per month</li>
       <li>Full Lead Finder access</li>
       <li>Cancel anytime</li>
     </ul>
 
-    <div class="upgrade-price">€15<span style="font-size:1rem;font-weight:400;color:var(--muted)">/month</span></div>
+    <div class="upgrade-price">€20<span style="font-size:1rem;font-weight:400;color:var(--muted)">/month</span></div>
     <div class="upgrade-price-sub">No contract. Cancel anytime.</div>
 
     <div class="upgrade-card-info" id="card-info">Loading billing info…</div>
@@ -186,7 +188,7 @@ async function loadStatus() {
       document.getElementById('upgrade-btn').disabled = true;
     } else if (data.trialEndsAt) {
       const d = new Date(data.trialEndsAt).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
-      document.getElementById('card-info').textContent = `Your card will be charged €15 on ${d}`;
+      document.getElementById('card-info').textContent = `Your card will be charged €20 on ${d}`;
     } else {
       document.getElementById('card-info').textContent = 'No active trial found. Sign up to start a trial.';
       document.getElementById('upgrade-btn').disabled = true;
@@ -215,7 +217,7 @@ async function upgradeNow() {
     });
     const data = await res.json();
     if (data.success) {
-      suc.textContent = 'Upgrade initiated! Your card will be charged €15 shortly. Redirecting…';
+      suc.textContent = 'Upgrade initiated! Your card will be charged €20 shortly. Redirecting…';
       suc.classList.add('visible');
       setTimeout(() => { location.href = '/leads.html'; }, 2500);
     } else {

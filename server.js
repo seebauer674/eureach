@@ -71,6 +71,25 @@ const YOUTUBER_ASSIGNMENTS_FILE = path.join(ROOT, "data/youtuber_assignments.jso
 const COACH_COMPLETIONS_FILE = path.join(ROOT, "data/coach-completions.json");
 const COACH_CONTENT_FILE     = path.join(ROOT, "data/coach-weekly-content.json");
 const AUDIT_JOBS_FILE        = path.join(ROOT, "data/audit-jobs.json");
+// Hero audit rate limit: 3 checks per IP per day (resets at midnight)
+const heroAuditLimitMap = new Map(); // ip -> { count, date }
+function heroAuditCheckLimit(ip) {
+  const today = new Date().toISOString().slice(0, 10);
+  const rec = heroAuditLimitMap.get(ip);
+  if (!rec || rec.date !== today) {
+    heroAuditLimitMap.set(ip, { count: 1, date: today });
+    return true;
+  }
+  if (rec.count >= 3) return false;
+  rec.count++;
+  return true;
+}
+function getClientIp(req) {
+  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    || req.socket.remoteAddress
+    || '0.0.0.0';
+}
+
 const DASHBOARD_SITES_FILE     = path.join(ROOT, "data/dashboard-sites.json");
 const DASHBOARD_RECURRING_FILE = path.join(ROOT, "data/dashboard-recurring.json");
 const DASHBOARD_INSTANCES_FILE = path.join(ROOT, "data/dashboard-instances.json");
@@ -81,6 +100,7 @@ const FB_BRANDING_FILE     = path.join(ROOT, 'data/fb_branding.json');
 const FB_TARGETS_FILE      = path.join(ROOT, 'data/fb_targets.json');
 const FB_TEMPLATES_FILE    = path.join(ROOT, 'data/fb_templates.json');
 const FB_LOG_FILE          = path.join(ROOT, 'data/fb_post_log.json');
+const PIPELINE_FILE        = path.join(ROOT, 'data/pipeline.json');
 const FB_APP_ID            = process.env.FB_APP_ID || '';
 const FB_APP_SECRET        = process.env.FB_APP_SECRET || '';
 const FB_REDIRECT_URI      = (process.env.SITE_URL || 'https://eureach.eu') + '/api/auth/facebook/callback';
@@ -173,7 +193,7 @@ function currentMonth() {
 
 // Returns { creditsLeft, creditsMax } — handles monthly reset automatically
 function getCredits(userRecord) {
-  const plan = PLAN_LIMITS.plans[userRecord.plan] || PLAN_LIMITS.plans.free;
+  const plan = PLAN_LIMITS.plans[userRecord.plan] || PLAN_LIMITS.plans.beginners;
   const max  = plan.credits;
   if (max === -1) return { creditsLeft: -1, creditsMax: -1 };
   if (userRecord.creditMonth !== currentMonth()) return { creditsLeft: max, creditsMax: max };
@@ -352,11 +372,7 @@ function isPaidUser(user) {
 }
 
 
-function isFreeExpired(user) {
-  if (isPaidUser(user) || isTrialActive(user) || user.role === "admin") return false;
-  if (!user.freeExpiresAt) return false;
-  return new Date() > new Date(user.freeExpiresAt);
-}
+
 function hasAccess(user) {
   return user.role === "admin" || isTrialActive(user) || isPaidUser(user);
 }
@@ -376,7 +392,7 @@ function getModel(user) {
 function autoExpireTrialIfNeeded(users, idx) {
   const u = users[idx];
   if (u.plan === "trial" && isTrialExpired(u)) {
-    users[idx].plan = "free";
+    users[idx].plan = "expired";
     users[idx].trialStatus = "expired";
     writeJSON(USERS_FILE, users);
     return users[idx];
@@ -437,7 +453,7 @@ async function handleSignup(req, res) {
   }
 
   const body = await readBody(req);
-  const { first_name, last_name, email, password, plan = "free" } = body;
+  const { first_name, last_name, email, password, plan = "beginners" } = body;
 
   if (!email || !password || !first_name) {
     return json(res, 400, { error: "Name, email, and password are required." });
@@ -450,7 +466,7 @@ async function handleSignup(req, res) {
   }
 
   const validPlans = Object.keys(PLAN_LIMITS.plans);
-  const chosenPlan = validPlans.includes(plan) ? plan : "free";
+  const chosenPlan = validPlans.includes(plan) && plan !== "free" ? plan : "beginners";
 
   const users = readJSON(USERS_FILE);
   if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
@@ -458,7 +474,7 @@ async function handleSignup(req, res) {
   }
 
   const passwordHash = await hashPassword(password);
-  const planCfg      = PLAN_LIMITS.plans[chosenPlan] || PLAN_LIMITS.plans.free;
+  const planCfg      = PLAN_LIMITS.plans[chosenPlan] || PLAN_LIMITS.plans.beginners;
 
   const user = {
     id:           generateId(),
@@ -472,7 +488,7 @@ async function handleSignup(req, res) {
     creditMonth:  currentMonth(),
     sites:        [],
     createdAt:    new Date().toISOString(),
-    freeExpiresAt: chosenPlan === 'free' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+    freeExpiresAt: null,
     preferredLang: 'el',
   };
 
@@ -545,7 +561,7 @@ async function handleLeadsSearch(req, res) {
   if (isTrialActive(user)) {
     return json(res, 403, {
       success: false, error: "trial_lead_limit",
-      message: "Lead Finder is not available during the free trial. Upgrade to €20/month to unlock it.",
+      message: "Lead Finder requires a paid plan. Upgrade to €20/month to unlock it.",
       upgradeUrl: "/upgrade",
     });
   }
@@ -632,7 +648,7 @@ function handleMe(req, res) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
-  const plan = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
+  const plan = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.beginners;
   const { creditsLeft, creditsMax } = getCredits(user);
   const computed = {
     creditsLeft,
@@ -859,8 +875,8 @@ async function handleVerifyEmail(req, res) {
     return json(res, 400, { error: "Invalid email address." });
   }
 
-  const evPlan = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
-  if (!evPlan.canEmailVerify) return json(res, 403, { error: "Email verification is not available on the free plan. Upgrade to Beginners or Pro." });
+  const evPlan = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.beginners;
+  if (!evPlan.canEmailVerify) return json(res, 403, { error: "Email verification requires Beginners or Pro plan." });
 
   const evUsers = readJSON(USERS_FILE);
   const evIdx   = evUsers.findIndex(u => u.id === user.id);
@@ -903,7 +919,7 @@ function getAnthropicKey() {
   } catch { return null; }
 }
 
-function callClaude(apiKey, systemPrompt, userMessage, maxTokens = 2048, model = "claude-sonnet-4-6") {
+function callClaude(apiKey, systemPrompt, userMessage, maxTokens = 2048, model = "claude-sonnet-4-6", extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model,
@@ -920,6 +936,7 @@ function callClaude(apiKey, systemPrompt, userMessage, maxTokens = 2048, model =
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
         "Content-Length": Buffer.byteLength(body),
+        ...extraHeaders,
       },
     };
     const req = https.request(options, res => {
@@ -1009,8 +1026,8 @@ async function handleOutreach(req, res) {
   const outIdx   = outUsers.findIndex(u => u.id === user.id);
   if (outIdx === -1) return json(res, 404, { error: "User not found." });
 
-  const outPlan = PLAN_LIMITS.plans[outUsers[outIdx].plan] || PLAN_LIMITS.plans.free;
-  if (!outPlan.canOutreach) return json(res, 403, { error: "Outreach is not available on the free plan. Upgrade to Beginners or Pro." });
+  const outPlan = PLAN_LIMITS.plans[outUsers[outIdx].plan] || PLAN_LIMITS.plans.beginners;
+  if (!outPlan.canOutreach) return json(res, 403, { error: "Outreach requires Beginners or Pro plan." });
 
   const outCost   = PLAN_LIMITS.costs.outreach;
   const outResult = deductCredits(outUsers, outIdx, outCost, 'Outreach Email');
@@ -1143,8 +1160,8 @@ async function handleWhatsApp(req, res) {
   const waUsers = readJSON(USERS_FILE);
   const waIdx   = waUsers.findIndex(u => u.id === user.id);
   if (waIdx === -1) return json(res, 404, { error: "User not found." });
-  const waPlan = PLAN_LIMITS.plans[waUsers[waIdx].plan] || PLAN_LIMITS.plans.free;
-  if (!waPlan.canWhatsApp) return json(res, 403, { error: "WhatsApp campaigns are not available on the free plan. Upgrade to Beginners or Pro." });
+  const waPlan = PLAN_LIMITS.plans[waUsers[waIdx].plan] || PLAN_LIMITS.plans.beginners;
+  if (!waPlan.canWhatsApp) return json(res, 403, { error: "WhatsApp campaigns require Beginners or Pro plan." });
 
   const waCost   = PLAN_LIMITS.costs.whatsapp;
   const waResult = deductCredits(waUsers, waIdx, waCost, 'WhatsApp Message');
@@ -1244,7 +1261,7 @@ async function handleCrmCreate(req, res) {
   if (!leadName || !leadName.trim()) return json(res, 400, { error: "leadName is required." });
 
   const crm   = readJSON(CRM_FILE);
-  const clim  = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
+  const clim  = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.beginners;
   if (clim.crmLeads !== -1) {
     const userCount = crm.filter(e => e.userId === user.id).length;
     if (userCount >= clim.crmLeads) return limitReached(res, "crm", userCount, clim.crmLeads);
@@ -1308,6 +1325,154 @@ function handleCrmDelete(req, res, id) {
 }
 
 // ── Lead scoring ─────────────────────────────────────────────────────────────
+
+
+// ── Pipeline ─────────────────────────────────────────────────────────────────
+
+function handlePipelineGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const pl = readJSON(PIPELINE_FILE);
+  json(res, 200, pl.filter(l => l.userId === user.id));
+}
+
+async function handlePipelineAdd(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  if (!hasAccess(user)) return json(res, 402, { error: 'trial_expired', upgradeUrl: '/membership' });
+
+  const body = await readBody(req);
+  const { name, city, category, phone, email, website, rating, reviews } = body;
+  if (!name || !name.trim()) return json(res, 400, { error: 'name is required.' });
+
+  const pl  = readJSON(PIPELINE_FILE);
+  const dup = pl.find(l => l.userId === user.id && l.name === name.trim() && l.city === (city || '').trim());
+  if (dup) return json(res, 409, { error: 'Already in pipeline.', id: dup.id });
+
+  const now   = new Date().toISOString();
+  const entry = {
+    id:           generateId(),
+    userId:       user.id,
+    name:         name.trim(),
+    city:         (city     || '').trim(),
+    category:     (category || '').trim(),
+    phone:        phone   || null,
+    email:        email   || null,
+    website:      website || null,
+    rating:       rating  || null,
+    reviews:      reviews || null,
+    stage:        'new',
+    followUpDate: null,
+    notes:        [],
+    history:      [{ stage: 'new', date: now }],
+    addedAt:      now,
+  };
+  pl.push(entry);
+  writeJSON(PIPELINE_FILE, pl);
+  json(res, 201, entry);
+}
+
+async function handlePipelineStageUpdate(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const body  = await readBody(req);
+  const valid = ['new','contacted','replied','audited','proposal','won','lost'];
+  if (!valid.includes(body.stage)) return json(res, 400, { error: 'Invalid stage.' });
+
+  const pl  = readJSON(PIPELINE_FILE);
+  const idx = pl.findIndex(l => l.id === id && l.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Not found.' });
+
+  pl[idx].stage = body.stage;
+  pl[idx].history.push({ stage: body.stage, date: new Date().toISOString() });
+  writeJSON(PIPELINE_FILE, pl);
+  json(res, 200, pl[idx]);
+}
+
+async function handlePipelineFollowup(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const body = await readBody(req);
+  const pl   = readJSON(PIPELINE_FILE);
+  const idx  = pl.findIndex(l => l.id === id && l.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Not found.' });
+
+  pl[idx].followUpDate = body.followUpDate || null;
+  writeJSON(PIPELINE_FILE, pl);
+  json(res, 200, pl[idx]);
+}
+
+async function handlePipelineNoteAdd(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const body = await readBody(req);
+  if (!body.text || !body.text.trim()) return json(res, 400, { error: 'text is required.' });
+
+  const pl  = readJSON(PIPELINE_FILE);
+  const idx = pl.findIndex(l => l.id === id && l.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Not found.' });
+
+  pl[idx].notes.push({ text: body.text.trim(), date: new Date().toISOString() });
+  writeJSON(PIPELINE_FILE, pl);
+  json(res, 200, pl[idx]);
+}
+
+function handlePipelineDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+
+  const pl  = readJSON(PIPELINE_FILE);
+  const idx = pl.findIndex(l => l.id === id && l.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Not found.' });
+
+  pl.splice(idx, 1);
+  writeJSON(PIPELINE_FILE, pl);
+  json(res, 200, { ok: true });
+}
+
+async function handlePipelineGenerateEmail(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  if (!checkAiRateLimit(res, user.id)) return;
+
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: 'AI service not configured.' });
+
+  const body = await readBody(req);
+  const { name, category, city, website } = body;
+  if (!name) return json(res, 400, { error: 'name is required.' });
+
+  const users = readJSON(USERS_FILE);
+  const uIdx  = users.findIndex(u => u.id === user.id);
+  if (uIdx === -1) return json(res, 404, { error: 'User not found.' });
+
+  const cost   = PLAN_LIMITS.costs.outreach || 1;
+  const result = deductCredits(users, uIdx, cost, 'Pipeline Email');
+  if (!result.ok) return insufficientCredits(res, result.creditsLeft, result.creditsMax, cost);
+  writeJSON(USERS_FILE, users);
+
+  const systemPrompt = 'You are a B2B sales copywriter. Write a single short cold outreach email for a local business lead. Return ONLY the plain text email body, no subject line, no JSON, no markdown. Keep it under 120 words. Be specific to their business type and city. Write as if from the eureach.eu team.';
+  const userMsg = 'Write a cold email for: Business: ' + name + ', Type: ' + (category || 'local business') + ', City: ' + (city || 'Europe') + (website ? ', Website: ' + website : '');
+
+  try {
+    const aiRes = await callClaude(apiKey, systemPrompt, userMsg, 512, getModel(users[uIdx]));
+    const email = aiRes.content && aiRes.content[0] && aiRes.content[0].text ? aiRes.content[0].text.trim() : '';
+    if (!email) return json(res, 500, { error: 'AI returned empty response.' });
+    json(res, 200, { email });
+  } catch (e) {
+    json(res, 500, { error: 'AI generation failed.' });
+  }
+}
 
 function readScoreCache() {
   try {
@@ -1443,7 +1608,7 @@ function handleBlogList(req, res) {
   if (statusFilter && isAdmin) {
     filtered = filtered.filter(p => p.status === statusFilter);
   } else if (!isAdmin) {
-    filtered = filtered.filter(p => p.status === "approved");
+    filtered = filtered.filter(p => p.status === "approved" || p.status === "published");
   }
   if (lang) filtered = filtered.filter(p => (p.lang || p.language) === lang);
   const sorted = [...filtered].sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
@@ -1457,8 +1622,198 @@ function handleBlogGet(req, res, slug) {
   const posts = readJSON(BLOG_FILE) || [];
   const post  = posts.find(p => p.slug === slug);
   if (!post) return json(res, 404, { error: "Post not found." });
-  if (post.status !== "approved" && !isAdmin) return json(res, 403, { error: "Post pending approval." });
+  if (post.status !== "approved" && post.status !== "published" && !isAdmin) return json(res, 403, { error: "Post pending approval." });
   return json(res, 200, { post });
+}
+
+
+// ── Blog SSR: server-rendered HTML for crawlers & AI tools (Step 9) ────
+
+function blogEsc(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function blogNavHtml() {
+  return `<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="/" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="/#how">Πώς λειτουργεί</a>
+      <a href="/#pricing">Τιμές</a>
+      <a href="/blog">Blog</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
+      <a href="/signup.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">Start free &rarr;</a>
+    </div>
+  </div>
+</nav>`;
+}
+
+function blogHeadHtml(title, description, slug, post) {
+  const canonical = slug ? `https://eureach.eu/blog/${slug}` : `https://eureach.eu/blog`;
+  const ogImg = post && post.featuredImage ? blogEsc(post.featuredImage) : '';
+  const schema = post ? `<script type="application/ld+json">${JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title,
+    "description": post.excerpt || post.title,
+    "author": { "@type": "Person", "name": post.author || "eureach team" },
+    "publisher": { "@type": "Organization", "name": "eureach.eu", "url": "https://eureach.eu" },
+    "datePublished": post.publishedAt || post.createdAt,
+    "dateModified": post.updatedAt || post.publishedAt || post.createdAt,
+    "url": canonical,
+    "image": post.featuredImage || undefined,
+    "inLanguage": post.lang || post.language || "el"
+  })}<\/script>` : '';
+  return `<!DOCTYPE html>
+<html lang="${post ? (post.lang || post.language || 'el') : 'el'}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${blogEsc(title)}</title>
+  <meta name="description" content="${blogEsc(description)}">
+  <link rel="canonical" href="${canonical}">
+  <meta property="og:title" content="${blogEsc(title)}">
+  <meta property="og:description" content="${blogEsc(description)}">
+  <meta property="og:type" content="${post ? 'article' : 'website'}">
+  <meta property="og:url" content="${canonical}">
+  ${ogImg ? `<meta property="og:image" content="${ogImg}">` : ''}
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/css/style.css">
+  ${schema}
+</head>
+<body>`;
+}
+
+function handleBlogSSR(req, res) {
+  const params = new URL("http://x" + req.url).searchParams;
+  const lang   = params.get("lang") || null;
+  let posts = (readJSON(BLOG_FILE) || [])
+    .filter(p => p.status === "approved" || p.status === "published")
+    .sort((a, b) => new Date(b.publishedAt || b.createdAt) - new Date(a.publishedAt || a.createdAt));
+  if (lang) posts = posts.filter(p => (p.lang || p.language) === lang);
+
+  const cards = posts.map(p => {
+    const date = p.publishedAt ? new Date(p.publishedAt).toLocaleDateString('el-GR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const img  = p.featuredImage
+      ? `<img class="blog-card-img" src="${blogEsc(p.featuredImage)}" alt="${blogEsc(p.title)}" loading="lazy">`
+      : `<div class="blog-card-img-ph">✦</div>`;
+    return `<a class="blog-card" href="/blog/${blogEsc(p.slug)}">
+      ${img}
+      <div class="blog-card-body">
+        <div class="blog-card-meta">
+          <span class="blog-card-lang">${blogEsc((p.lang || p.language || '').toUpperCase())}</span>
+          <span class="blog-card-cat">${blogEsc(p.category || '')}</span>
+          <span class="blog-card-date">${blogEsc(date)}</span>
+        </div>
+        <div class="blog-card-title">${blogEsc(p.title)}</div>
+        ${p.excerpt ? `<div class="blog-card-excerpt">${blogEsc(p.excerpt)}</div>` : ''}
+        <div class="blog-card-read">Διαβάστε το άρθρο &rarr;</div>
+      </div>
+    </a>`;
+  }).join('\n');
+
+  const html = blogHeadHtml('Blog — eureach.eu', 'Άρθρα για lead generation, AI content και ανάπτυξη στην Ευρώπη.') +
+    `<style>
+      .blog-page{max-width:1100px;margin:0 auto;padding:100px 24px 80px}
+      .blog-header{margin-bottom:48px}
+      .blog-header h1{font-size:2rem;font-weight:800;color:var(--white);margin-bottom:8px}
+      .blog-header p{color:var(--muted);font-size:0.95rem}
+      .blog-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px}
+      .blog-filter-btn{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:20px;color:var(--muted);font-size:0.8rem;font-weight:600;padding:6px 16px;cursor:pointer;font-family:inherit;transition:all .15s;min-height:44px}
+      .blog-filter-btn.active,.blog-filter-btn:hover{background:var(--blue);border-color:var(--blue);color:#fff}
+      .blog-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:24px}
+      .blog-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:transform .2s,box-shadow .2s;text-decoration:none;color:inherit;display:flex;flex-direction:column}
+      .blog-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
+      .blog-card-img{width:100%;height:180px;object-fit:cover}
+      .blog-card-img-ph{width:100%;height:180px;background:linear-gradient(135deg,rgba(37,99,235,.2),rgba(124,58,237,.2));display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+      .blog-card-body{padding:22px;flex:1;display:flex;flex-direction:column}
+      .blog-card-meta{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+      .blog-card-lang{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.3);color:#60a5fa;border-radius:20px;padding:2px 8px}
+      .blog-card-cat{font-size:0.7rem;color:var(--muted)}
+      .blog-card-date{font-size:0.7rem;color:var(--muted);margin-left:auto}
+      .blog-card-title{font-size:1.05rem;font-weight:700;color:var(--white);margin-bottom:8px;line-height:1.35}
+      .blog-card-excerpt{font-size:0.83rem;color:var(--muted);line-height:1.6;flex:1}
+      .blog-card-read{margin-top:16px;font-size:0.8rem;font-weight:600;color:#60a5fa}
+    </style>` +
+    blogNavHtml() +
+    `<div class="blog-page">
+      <div class="blog-header">
+        <h1>Blog</h1>
+        <p>Άρθρα για lead generation, AI content και ανάπτυξη σε ευρωπαϊκές αγορές.</p>
+      </div>
+      <div class="blog-filters">
+        <a class="blog-filter-btn${!lang ? ' active' : ''}" href="/blog">Όλα</a>
+        <a class="blog-filter-btn${lang === 'en' ? ' active' : ''}" href="/blog?lang=en">🇬🇧 English</a>
+        <a class="blog-filter-btn${lang === 'el' ? ' active' : ''}" href="/blog?lang=el">🇬🇷 Greek</a>
+        <a class="blog-filter-btn${lang === 'de' ? ' active' : ''}" href="/blog?lang=de">🇩🇪 German</a>
+      </div>
+      <div class="blog-grid">${cards || '<div style="text-align:center;padding:80px 24px;color:var(--muted)">No articles yet.</div>'}</div>
+    </div>
+    <script src="/js/nav-init.js?v=5" defer></script>
+    </body></html>`;
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+
+function handleBlogPostSSR(req, res, slug) {
+  const posts = readJSON(BLOG_FILE) || [];
+  const post  = posts.find(p => p.slug === slug && (p.status === 'approved' || p.status === 'published'));
+  if (!post) {
+    res.writeHead(302, { Location: '/blog' });
+    res.end();
+    return;
+  }
+  const date = post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('el-GR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const img  = post.featuredImage ? `<img class="post-img" src="${blogEsc(post.featuredImage)}" alt="${blogEsc(post.title)}" loading="lazy">` : '';
+  const desc = post.metaDescription || post.excerpt || post.title;
+
+  const html = blogHeadHtml(`${post.title} — eureach.eu`, desc, slug, post) +
+    `<style>
+      .post-page{max-width:760px;margin:0 auto;padding:100px 24px 80px}
+      .post-back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:0.85rem;margin-bottom:32px;text-decoration:none;min-height:44px;align-items:center}
+      .post-back:hover{color:var(--white)}
+      .post-img{width:100%;max-height:380px;object-fit:cover;border-radius:16px;margin-bottom:32px}
+      .post-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+      .post-lang{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.3);color:#60a5fa;border-radius:20px;padding:3px 10px}
+      .post-cat{font-size:0.78rem;color:var(--muted)}
+      .post-date{font-size:0.78rem;color:var(--muted)}
+      .post-author{font-size:0.78rem;color:var(--muted)}
+      .post-title{font-size:2rem;font-weight:800;color:var(--white);line-height:1.25;margin-bottom:24px}
+      .post-excerpt{font-size:1.05rem;color:var(--muted);line-height:1.7;margin-bottom:32px;border-left:3px solid var(--blue);padding-left:16px}
+      .post-content{color:var(--text);line-height:1.8;font-size:0.97rem;word-break:break-word}
+      .post-content h1,.post-content h2,.post-content h3{color:var(--white);margin:28px 0 12px;line-height:1.3}
+      .post-content p{margin:0 0 16px}
+      .post-cta{background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.2);border-radius:16px;padding:32px;margin-top:48px;text-align:center}
+      .post-cta h3{color:var(--white);margin-bottom:8px}
+      .post-cta p{color:var(--muted);font-size:0.88rem;margin-bottom:20px}
+    </style>` +
+    blogNavHtml() +
+    `<div class="post-page">
+      <a class="post-back" href="/blog">&larr; Blog</a>
+      ${img}
+      <div class="post-meta">
+        <span class="post-lang">${blogEsc((post.lang || post.language || '').toUpperCase())}</span>
+        <span class="post-cat">${blogEsc(post.category || '')}</span>
+        <span class="post-date">${blogEsc(date)}</span>
+        <span class="post-author">by ${blogEsc(post.author || 'eureach team')}</span>
+      </div>
+      <h1 class="post-title">${blogEsc(post.title)}</h1>
+      ${post.excerpt ? `<div class="post-excerpt">${blogEsc(post.excerpt)}</div>` : ''}
+      <div class="post-content">${post.html || post.content || ''}</div>
+      <div class="post-cta">
+        <h3>Ξεκίνα να δημιουργείς leads &amp; περιεχόμενο σήμερα</h3>
+        <p>Βρες τοπικές επιχειρήσεις, γράψε SEO άρθρα σε 3 γλώσσες και αναπτύξου ταχύτερα με AI.</p>
+        <a href="/signup.html" class="btn btn-primary btn-lg">Ξεκίνα δωρεάν &mdash; χωρίς κάρτα &rarr;</a>
+      </div>
+    </div>
+    <script src="/js/nav-init.js?v=5" defer></script>
+    </body></html>`;
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
 }
 
 async function handleBlogPublish(req, res) {
@@ -1488,6 +1843,35 @@ async function handleBlogPublish(req, res) {
   return json(res, 200, { post: { ...post, html: undefined }, slug: post.slug, pending: true });
 }
 
+
+function rebuildBlogIndex(posts) {
+  var INDEX_SLUG = 'ola-ta-arthra-tou-eureach-pliries-katalogos';
+  var visible = posts.filter(function(p) {
+    return (p.status === 'approved' || p.status === 'published') && p.slug !== INDEX_SLUG;
+  });
+  var byLang = { el: [], en: [], de: [], other: [] };
+  visible.forEach(function(p) {
+    var l = p.language || p.lang || 'en';
+    if (byLang[l]) byLang[l].push(p); else byLang.other.push(p);
+  });
+  function liItem(p) {
+    var title = (p.title || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var desc  = (p.excerpt || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<li><a href="blog-post.html?slug=' + encodeURIComponent(p.slug) + '"><strong>' + title + '</strong></a>' + (desc ? ' — ' + desc : '') + '</li>';
+  }
+  var html = '<p>Το <strong>eureach.eu</strong> είναι μια πλατφόρμα που βοηθά επιχειρήσεις να βρουν υποψήφιους πελάτες, να δημιουργούν περιεχόμενο με τεχνητή νοημοσύνη και να αναπτυχθούν σε όλη την Ευρώπη. Μέσα από το blog μας, δημοσιεύουμε άρθρα στα ελληνικά, αγγλικά και γερμανικά — για SEO, AI, τοπική ανάπτυξη και πολλά άλλα.</p><p>Παρακάτω θα βρείτε όλα τα άρθρα που έχουμε δημοσιεύσει μέχρι σήμερα:</p>';
+  if (byLang.el.length) html += '<h2>Ελληνικά Άρθρα</h2><ul>' + byLang.el.map(liItem).join('') + '</ul>';
+  if (byLang.en.length) html += '<h2>Αγγλικά Άρθρα</h2><ul>' + byLang.en.map(liItem).join('') + '</ul>';
+  if (byLang.de.length) html += '<h2>Γερμανικά Άρθρα</h2><ul>' + byLang.de.map(liItem).join('') + '</ul>';
+  if (byLang.other.length) html += '<h2>Άλλα Άρθρα</h2><ul>' + byLang.other.map(liItem).join('') + '</ul>';
+  html += '<p>Το blog του eureach.eu ενημερώνεται συνεχώς με νέο περιεχόμενο. Αν θέλετε να μαθαίνετε πρώτοι για κάθε νέο άρθρο, <a href="signup.html">δημιουργήστε δωρεάν λογαριασμό</a> και παρακολουθήστε μας.</p>';
+  var idx = posts.findIndex(function(p) { return p.slug === INDEX_SLUG; });
+  if (idx !== -1) {
+    posts[idx].content = html;
+    posts[idx].updatedAt = new Date().toISOString();
+  }
+}
+
 function handleBlogApprove(req, res, slug) {
   const cookies = parseCookies(req);
   const user    = getSessionUser(cookies.session);
@@ -1497,6 +1881,7 @@ function handleBlogApprove(req, res, slug) {
   if (idx === -1) return json(res, 404, { error: "Post not found." });
   posts[idx].status = "approved";
   posts[idx].approvedAt = new Date().toISOString();
+  rebuildBlogIndex(posts);
   writeJSON(BLOG_FILE, posts);
   return json(res, 200, { ok: true });
 }
@@ -1509,6 +1894,7 @@ function handleBlogReject(req, res, slug) {
   const idx   = posts.findIndex(p => p.slug === slug);
   if (idx === -1) return json(res, 404, { error: "Post not found." });
   posts.splice(idx, 1);
+  rebuildBlogIndex(posts);
   writeJSON(BLOG_FILE, posts);
   return json(res, 200, { ok: true });
 }
@@ -1526,6 +1912,7 @@ async function handleBlogUpdate(req, res, slug) {
   if (html)    posts[idx].html    = html;
   if (status)  posts[idx].status  = status;
   posts[idx].updatedAt = new Date().toISOString();
+  if (status === 'approved' || status === 'published') rebuildBlogIndex(posts);
   writeJSON(BLOG_FILE, posts);
   return json(res, 200, { ok: true, post: { ...posts[idx], html: undefined } });
 }
@@ -1768,6 +2155,82 @@ async function handlePublishToAgora(req, res) {
   }
 }
 
+// ── Articles: improve existing ────────────────────────────────────────────────
+
+async function handleArticleImprove(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Unauthorized' });
+
+  let body;
+  try { body = await readBody(req); } catch { return json(res, 400, { error: 'Invalid request' }); }
+
+  const { htmlContent, tone, mode, userInstructions, lang } = body || {};
+  if (!htmlContent) return json(res, 400, { error: 'No article content provided' });
+
+  const toneLabels = {
+    professional: 'more professional and authoritative',
+    friendly:     'more friendly, warm and approachable',
+    formal:       'more formal and academic',
+    conversational: 'more conversational and casual',
+    concise:      'more concise — cut redundancy while keeping all key information',
+    detailed:     'more detailed with additional examples, statistics, and explanations',
+    persuasive:   'more persuasive with compelling arguments and stronger calls to action',
+    seo:          'more SEO-optimized with natural keyword integration and improved headings',
+    energetic:    'more energetic and dynamic with active voice and strong verbs',
+  };
+
+  const toneInstruction = tone && tone !== 'keep'
+    ? `Rewrite to be ${toneLabels[tone] || tone}.`
+    : '';
+
+  const modeInstruction = mode === 'user' && userInstructions
+    ? `Apply these specific instructions: ${userInstructions}`
+    : 'Improve the article quality, clarity, flow, and reader engagement. Fix transitions, strengthen the intro and conclusion.';
+
+  const langName = { en: 'English', el: 'Greek', de: 'German' }[lang] || 'the original language';
+
+  const systemPrompt = `You are an expert content editor. Improve the given article HTML. Keep the same language (${langName}) — do NOT translate. Return ONLY the improved HTML with no commentary.`;
+
+  const userMessage = `${toneInstruction}
+${modeInstruction}
+
+Rules:
+- Return only semantic HTML: h1 (once), h2, h3, p, ul/li, strong, em — no divs, no inline styles, no markdown
+- Keep the same language as the input (${langName})
+- Preserve nav.art-toc, .art-snippet, .art-intro, .art-cta sections if present
+- Do NOT add markdown fences
+
+ARTICLE HTML:
+${htmlContent.slice(0, 10000)}`;
+
+  try {
+    let improvedHtml = '';
+    const apiKey  = getAnthropicKey();
+    const groqKey = getGroqKey();
+
+    if (apiKey) {
+      const model = isPaidUser(user) ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
+      const aiRes = await callClaude(apiKey, systemPrompt, userMessage, 6000, model);
+      if (aiRes?.type === 'error') return json(res, 503, { error: aiRes.error?.message || 'AI error' });
+      improvedHtml = (aiRes?.content?.[0]?.text || '').trim();
+    } else if (groqKey) {
+      const aiRes = await callGroq(groqKey, systemPrompt, userMessage, 6000);
+      if (aiRes.error) return json(res, 503, { error: aiRes.error.message || 'Groq error' });
+      improvedHtml = (aiRes.choices?.[0]?.message?.content || '').trim();
+    } else {
+      return json(res, 500, { error: 'No AI service configured' });
+    }
+
+    // Strip markdown fences if AI wrapped output
+    improvedHtml = improvedHtml.replace(/^```html?\n?/i, '').replace(/\n?```$/i, '').trim();
+    return json(res, 200, { htmlContent: improvedHtml });
+  } catch (err) {
+    console.error('[article-improve]', err);
+    return json(res, 500, { error: err.message || 'Improvement failed' });
+  }
+}
+
 // ── Articles: analyze existing ────────────────────────────────────────────────
 
 async function handleArticleAnalyzeExisting(req, res) {
@@ -1868,7 +2331,7 @@ async function handleArticleGenerate(req, res) {
   const { topic, brief, articleType, language, readingLevel, audience,
     primaryKeyword, secondaryKeywords, searchIntent, funnelStage,
     geoTarget, articleLength, tones, conversionGoal, cta, ctaUrl,
-    siteDomain, siteName, siteNiche, model: modelChoice,
+    siteDomain, siteName, siteNiche, siteAbout, model: modelChoice,
     includeFaq, includeToc, includeSnippet } = body;
 
   if (!topic) return json(res, 400, { error: "topic is required." });
@@ -1898,6 +2361,7 @@ async function handleArticleGenerate(req, res) {
     "SEARCH INTENT: " + (searchIntent || "Informational"),
     "GEOGRAPHIC AUDIENCE: " + (geoTarget || "Not specified") + " (audience context only, does NOT affect language)",
     (siteNiche ? "SITE NICHE: " + siteNiche : ""),
+    (siteAbout ? "SITE DESCRIPTION (use this to personalise the article to this specific business): " + siteAbout : ""),
     "",
     "Return ONLY valid JSON. No markdown fences. No text outside the JSON. Use this exact structure: {\"article\":{\"h1\":\"heading\",\"featured_snippet\":\"snippet\",\"toc\":[\"s1\"],\"intro\":\"intro\",\"sections\":[{\"h2\":\"h\",\"content\":\"body paragraph\"}],\"conclusion\":\"conc\",\"cta_block\":\"\",\"faq\":[{\"q\":\"q\",\"a\":\"a\"}]},\"seo\":{\"title_tag\":\"t\",\"meta_description\":\"d\",\"slug\":\"s\",\"og_title\":\"t\",\"og_description\":\"d\",\"primary_keyword\":\"k\",\"search_intent\":\"i\",\"estimated_word_count\":1750,\"secondary_keywords\":[\"k\"],\"lsi_keywords\":[\"l\"]},\"audits\":{\"market\":{\"keyword_difficulty\":\"Medium\",\"monthly_searches_estimate\":\"500-2000/mo\",\"competitors\":[\"C\"],\"gaps\":[\"G\"],\"topic_cluster\":[\"T\"]},\"cro\":{\"score\":80,\"strengths\":[\"s\"],\"weaknesses\":[\"w\"],\"recommendations\":[\"r\"]},\"eu_ai_act\":{\"requires_disclosure\":true,\"risk_level\":\"Low\",\"reasoning\":\"AI-assisted content.\",\"disclosure_text\":\"This article was produced with AI assistance. EU AI Act Article 50 compliant.\"},\"ai_citation\":{\"overall_score\":80,\"chatgpt_score\":80,\"perplexity_score\":82,\"google_ai_score\":78}}}",
   ];
@@ -1919,11 +2383,12 @@ async function handleArticleGenerate(req, res) {
   userParts.push("\nWrite the complete " + lang + "-language content about: \"" + topic + "\"");
 
   const userMessage = userParts.join("\n");
-  const tokenBudget = { XS: 3000, S: 4500, M: 7500, L: 8000, XL: 8000 }[articleLength || "M"] || 5000;
+  const tokenBudget = { XS: 3000, S: 5000, M: 8000, L: 16000, XL: 24000 }[articleLength || "M"] || 8000;
   const claudeModel = modelChoice === "haiku" ? "claude-haiku-4-5-20251001" : "claude-sonnet-4-6";
+  const extraHeaders = tokenBudget > 8192 ? { "anthropic-beta": "output-128k-2025-02-19" } : {};
 
   try {
-    const aiRes  = await callClaude(apiKey, systemPrompt, userMessage, tokenBudget, claudeModel);
+    const aiRes  = await callClaude(apiKey, systemPrompt, userMessage, tokenBudget, claudeModel, extraHeaders);
     const rawText = claudeText(aiRes);
     // Robust parse: strip fences, try direct parse, then fall back to extracting article/seo blocks
     let parsed = null;
@@ -1953,10 +2418,59 @@ async function handleArticleGenerate(req, res) {
       if (!parsed) throw new Error("AI returned unparseable JSON: " + e1.message);
     }
     if (!parsed || !parsed.article) throw new Error("AI returned invalid structure");
+    if (parsed && parsed.html) parsed.html = parsed.html.replace(/\\n/g, '\n').replace(/\\t/g, ' ');
     return json(res, 200, parsed);
   } catch (err) {
     console.error("[article-generate]", err.message);
     return json(res, 500, { error: err.message || "Article generation failed." });
+  }
+}
+// ── Article image upload ──────────────────────────────────────────────────────
+
+async function handleArticleImageUpload(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const chunks = [];
+  req.on("data", d => chunks.push(d));
+  await new Promise(r => req.on("end", r));
+  const buf = Buffer.concat(chunks);
+  const ct = req.headers["content-type"] || "";
+  const ext = ct.includes("png") ? "png" : ct.includes("gif") ? "gif" : ct.includes("webp") ? "webp" : "jpg";
+  const fname = "article_" + user.id + "_" + Date.now() + "." + ext;
+  const fpath = require("path").join(ROOT, "uploads", fname);
+  require("fs").mkdirSync(require("path").join(ROOT, "uploads"), { recursive: true });
+  require("fs").writeFileSync(fpath, buf);
+  json(res, 200, { url: "/uploads/" + fname });
+}
+
+
+// ── Articles: AI image generation via Pollinations ──────────────────────────
+async function handleArticleGenerateImage(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const { prompt } = await readBody(req);
+  if (!prompt) return json(res, 400, { error: "prompt required" });
+  const encodedPrompt = encodeURIComponent(prompt.slice(0, 400));
+  const imgUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1200&height=630&nologo=true&model=flux`;
+  try {
+    const imgBuf = await new Promise((resolve, reject) => {
+      https.get(imgUrl, { timeout: 30000 }, (resp) => {
+        if (resp.statusCode !== 200) return reject(new Error("Pollinations returned " + resp.statusCode));
+        const chunks = [];
+        resp.on("data", c => chunks.push(c));
+        resp.on("end", () => resolve(Buffer.concat(chunks)));
+      }).on("error", reject).on("timeout", () => reject(new Error("timeout")));
+    });
+    const fname = "ai_header_" + user.id + "_" + Date.now() + ".jpg";
+    const fpath = require("path").join(ROOT, "uploads", fname);
+    require("fs").mkdirSync(require("path").join(ROOT, "uploads"), { recursive: true });
+    require("fs").writeFileSync(fpath, imgBuf);
+    return json(res, 200, { url: "/uploads/" + fname });
+  } catch (e) {
+    console.error("[AI Image] Generation failed:", e.message);
+    return json(res, 500, { error: "Image generation failed: " + e.message });
   }
 }
 
@@ -1977,28 +2491,6 @@ async function handleArticlesDeduct(req, res) {
   const body = await readBody(req);
   const articleLanguage = (body.language || "").toLowerCase();
 
-  // Free-plan: block if expired, language Greek only
-  if (!hasAccess(users[idx])) {
-    if (isFreeExpired(users[idx])) return json(res, 403, { error: "free_expired", message: "Your free plan has expired. Upgrade to Pro to continue.", upgradeUrl: "/membership" });
-    if (articleLanguage && articleLanguage !== "greek" && articleLanguage !== "el") {
-      return json(res, 403, {
-        error: "free_plan_language",
-        message: "Free plan supports Greek language only. Upgrade to €20/month for English and German.",
-        upgradeUrl: "/membership",
-      });
-    }
-  }
-
-  // Free plan: 1 article/month (Greek only — language check already above)
-  if (!hasAccess(users[idx]) && !isTrialActive(users[idx])) {
-    if ((users[idx].monthArticles || 0) >= 1) {
-      return json(res, 403, {
-        error: "monthly_article_limit",
-        message: "Free plan includes 1 article per month (Greek only). Upgrade to Pro for 6 articles in Greek, English & German.",
-        upgradeUrl: "/membership",
-      });
-    }
-  }
 
   // Trial article limit (3 total during trial)
   if (isTrialActive(users[idx])) {
@@ -2006,7 +2498,7 @@ async function handleArticlesDeduct(req, res) {
     if ((tu.articlesGenerated || 0) >= 3) {
       return json(res, 403, {
         success: false, error: "trial_article_limit",
-        message: "Your free trial includes 3 articles. Upgrade to €20/month for 6 articles per month.",
+        message: "Your Free plan includes 3 articles. Upgrade to €20/month for 6 articles per month.",
         upgradeUrl: "/membership",
       });
     }
@@ -2364,9 +2856,9 @@ async function handleCompetitorCreate(req, res) {
   compIdx = compUsers.findIndex(u => u.id === user.id); // re-find after potential write
 
   // Competitor tracking cap per plan
-  const compPlan = PLAN_LIMITS.plans[compUsers[compIdx].plan] || PLAN_LIMITS.plans.free;
+  const compPlan = PLAN_LIMITS.plans[compUsers[compIdx].plan] || PLAN_LIMITS.plans.beginners;
   if (compPlan.maxCompetitors === 0) {
-    return json(res, 403, { success: false, error: "plan_limit", message: "Competitor tracking is not available on the free plan. Upgrade to Beginners or Pro.", upgradeUrl: "/upgrade" });
+    return json(res, 403, { success: false, error: "plan_limit", message: "Competitor tracking requires Beginners or Pro plan.", upgradeUrl: "/upgrade" });
   }
   if (compPlan.maxCompetitors > 0) {
     const existing = (compUsers[compIdx].competitors || []).length;
@@ -2746,7 +3238,7 @@ function getJobTypes() {
 const JOB_TYPE_FALLBACK = { key: 'generic', label: 'General task', action_kind: 'none', action_label: '', action_url_template: '', icon: '\u2705', sort_order: 99 };
 
 function getSitePlanLimit(user) {
-  const planCfg = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
+  const planCfg = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.beginners;
   return planCfg.sites !== undefined ? planCfg.sites : 1;
 }
 
@@ -3339,6 +3831,87 @@ async function handleJobsBulkCreate(req, res) {
 }
 
 
+
+async function handleArticleIdeas(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+
+  const body = await readBody(req);
+  const { site_id, domain: domainParam } = body;
+
+  // Support lookup by site_id (dashboard) or domain (articles page)
+  const allSites = getDashboardSites();
+  let site = site_id
+    ? allSites.find(s => s.id === site_id && s.user_id === user.id && !s.archived_at)
+    : allSites.find(s => s.domain === domainParam && s.user_id === user.id && !s.archived_at);
+
+  // Fallback: build a minimal site object from user-sites.json when domain provided
+  if (!site && domainParam) {
+    const userSites = Array.isArray(readJSON(SITES_FILE)) ? readJSON(SITES_FILE) : [];
+    const us = userSites.find(s => s.userId === user.id && s.domain === domainParam);
+    if (us) site = { id: null, domain: us.domain, market: us.geo || "EU", display_name: us.name || us.domain };
+  }
+
+  if (!site) return json(res, 404, { error: "Site not found." });
+
+  const allInstances = getDashboardInstances();
+  const pastArticles = allInstances
+    .filter(i => i.user_id === user.id && (site_id ? i.site_id === site_id : i.site_id) && i.job_type === "article" && i.title)
+    .sort((a, b) => (b.due_date || "").localeCompare(a.due_date || ""))
+    .slice(0, 30)
+    .map(i => i.title);
+
+  const savedLists = Array.isArray(readJSON(ARTICLE_SAVED_LISTS_FILE)) ? readJSON(ARTICLE_SAVED_LISTS_FILE) : [];
+  const userLists = savedLists.filter(s => s.userId === user.id).slice(-5);
+  const savedTopics = userLists.flatMap(l =>
+    (Array.isArray(l.results) ? l.results : []).slice(0, 3).map(r => r.keyword || r.title || "")
+  ).filter(Boolean).slice(0, 10);
+
+  const siteInfo = "Domain: " + site.domain + ". Market: " + (site.market || "EU") + ".";
+  const pastBlock = pastArticles.length
+    ? "\nPast article tasks (avoid repeating):\n" + pastArticles.map((t, i) => (i+1) + ". " + t).join("\n")
+    : "";
+  const topicsBlock = savedTopics.length
+    ? "\nKeywords/topics from user research:\n" + savedTopics.join(", ")
+    : "";
+
+  const systemPrompt = "You are a content strategist helping a digital marketing agency plan articles for client websites. Be concise and practical.";
+  const userMessage = "Generate exactly 5 article topic ideas for this site.\n" + siteInfo + pastBlock + topicsBlock + "\n\nRequirements:\n- Each idea has a specific, actionable title (not a vague category)\n- Each idea has a 1-sentence description (max 100 chars) explaining the angle or hook\n- Vary the angles: how-to, list, opinion, case study, trending\n- Avoid duplicating past article tasks listed above\n- Keep titles under 70 characters\n- Consider what the site audience would search for today\n\nRespond with ONLY a JSON array of 5 objects, no extra text:\n[{\"title\":\"..\",\"description\":\"..\"},...]";
+
+  try {
+    let ideas = null;
+
+    const anthropicKey = getAnthropicKey();
+    if (anthropicKey) {
+      const model = isPaidUser(user) ? "claude-sonnet-4-6" : "claude-haiku-4-5-20251001";
+      const aiRes = await callClaude(anthropicKey, systemPrompt, userMessage, 400, model);
+      const text = ((aiRes && aiRes.content && aiRes.content[0] && aiRes.content[0].text) || "").trim();
+      const m = text.match(/\[[\s\S]*\]/);
+      if (m) { try { ideas = JSON.parse(m[0]); } catch(e) {} }
+    }
+
+    if (!ideas) {
+      const groqKey = getGroqKey();
+      if (!groqKey) return json(res, 500, { error: "No AI service configured." });
+      const aiRes = await callGroq(groqKey, systemPrompt, userMessage, 400);
+      const text = ((aiRes && aiRes.choices && aiRes.choices[0] && aiRes.choices[0].message && aiRes.choices[0].message.content) || "").trim();
+      const m = text.match(/\[[\s\S]*\]/);
+      if (m) { try { ideas = JSON.parse(m[0]); } catch(e) {} }
+    }
+
+    if (!Array.isArray(ideas) || !ideas.length) return json(res, 500, { error: "AI returned no ideas." });
+    const normalized = ideas.slice(0, 5).map(item => {
+      if (typeof item === "string") return { title: item.slice(0, 120), description: "" };
+      return { title: String(item.title || item.t || "").slice(0, 120), description: String(item.description || item.desc || item.d || "").slice(0, 150) };
+    });
+    json(res, 200, { ideas: normalized });
+  } catch (err) {
+    console.error("[article-ideas]", err.message);
+    json(res, 500, { error: "AI request failed." });
+  }
+}
+
 function handleRecurringJobsGet(req, res) {
   const cookies = parseCookies(req);
   const user = getSessionUser(cookies.session);
@@ -3485,31 +4058,6 @@ async function handleLeadSearch(req, res) {
   const { subcatLabel, city, country } = body;
   if (!subcatLabel || !city || !country) return json(res, 400, { error: "subcatLabel, city and country are required." });
 
-  if (!hasAccess(user)) {
-  // Access check: free users get 3 searches (Greece only); block if expired
-    if (isFreeExpired(user)) return json(res, 403, { error: "free_expired", message: "Your free plan has expired. Upgrade to Pro to continue.", upgradeUrl: "/membership" });
-
-    const countryLower = (country || "").replace(/^\S+\s/, "").toLowerCase().trim();
-    if (countryLower !== "greece" && countryLower !== "ελλάδα" && countryLower !== "ελλάς") {
-      return json(res, 403, {
-        error: "free_plan_country",
-        message: "Free plan supports Greece only. Upgrade to Pro to search all 6 countries.",
-        upgradeUrl: "/membership",
-      });
-    }
-    const freeUsers = readJSON(USERS_FILE);
-    const freeIdx = freeUsers.findIndex(u => u.id === user.id);
-    if (freeIdx === -1) return json(res, 404, { error: "User not found." });
-    if ((freeUsers[freeIdx].monthLeadSearches || 0) >= 3) {
-      return json(res, 403, {
-        error: "free_lead_limit",
-        message: "Free plan includes 3 lead searches. Upgrade to Pro for unlimited searches.",
-        upgradeUrl: "/membership",
-      });
-    }
-    freeUsers[freeIdx].monthLeadSearches = (freeUsers[freeIdx].monthLeadSearches || 0) + 1;
-    writeJSON(USERS_FILE, freeUsers);
-  }
 
 
   const COUNTRY_CODES = {
@@ -3668,12 +4216,6 @@ async function handleAdminUsage(req, res, targetUserId) {
   if (idx === -1) return json(res, 404, { error: "User not found." });
   const u = users[idx];
   switch (action) {
-    case "extend7":
-      u.freeExpiresAt = new Date(Math.max(Date.now(), u.freeExpiresAt ? new Date(u.freeExpiresAt).getTime() : Date.now()) + 7 * 86400000).toISOString(); break;
-    case "extend30":
-      u.freeExpiresAt = new Date(Math.max(Date.now(), u.freeExpiresAt ? new Date(u.freeExpiresAt).getTime() : Date.now()) + 30 * 86400000).toISOString(); break;
-    case "resetExpiry":
-      u.freeExpiresAt = new Date(Date.now() + 7 * 86400000).toISOString(); break;
     case "resetArticles":  u.monthArticles     = 0; break;
     case "addArticle":     u.monthArticles     = (u.monthArticles || 0) + 1; break;
     case "resetLeads":     u.monthLeadSearches = 0; break;
@@ -3717,8 +4259,8 @@ async function handleAdminCreateUser(req, res) {
   const users = readJSON(USERS_FILE);
   if (users.find(u => u.email === email.trim().toLowerCase())) return json(res, 409, { error: "A user with this email already exists." });
   const PLANS = require("./config/limits");
-  const planKey = plan || "free";
-  const cfg = PLANS.plans[planKey] || PLANS.plans["free"];
+  const planKey = plan || "beginners";
+  const cfg = PLANS.plans[planKey] || PLANS.plans["beginners"];
   const passwordHash = await hashPassword(password);
   const user = {
     id:          generateId(),
@@ -3833,7 +4375,7 @@ async function handleWpConnect(req, res) {
   if (!user) return json(res, 401, { error: "Not authenticated." });
   if (!hasAccess(user)) return json(res, 402, { error: "trial_expired", upgradeUrl: "/membership" });
 
-  const limits = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.free;
+  const limits = PLAN_LIMITS.plans[user.plan] || PLAN_LIMITS.plans.beginners;
   if (!limits.wordpress) return limitReached(res, "wordpress", 0, 0);
 
   const body = await readBody(req);
@@ -3938,17 +4480,6 @@ async function handleAuditCreate(req, res) {
   // Auto-expire trial if needed
   autoExpireTrialIfNeeded(users, uidx);
 
-  // Free plan: 1 audit total (no reset); block if expired
-  if (!hasAccess(users[uidx])) {
-    if (isFreeExpired(users[uidx])) return json(res, 403, { error: "free_expired", message: "Your free plan has expired. Upgrade to Pro to continue.", upgradeUrl: "/membership" });
-    if ((users[uidx].monthAudits || 0) >= 1) {
-      return json(res, 403, {
-        error: "free_audit_limit",
-        message: "Free plan includes 1 AI audit. Upgrade to Pro for 10 audits per month.",
-        upgradeUrl: "/membership",
-      });
-    }
-  }
 
   // Trial audit daily limit (1 per day)
   if (isTrialActive(users[uidx])) {
@@ -3958,7 +4489,7 @@ async function handleAuditCreate(req, res) {
     if (auditsToday >= 1) {
       return json(res, 403, {
         success: false, error: "trial_audit_limit",
-        message: "Your free trial includes 1 AI audit per day. Upgrade to €20/month for 4 audits per month.",
+        message: "Your Free plan includes 1 AI audit per day. Upgrade to €20/month for 4 audits per month.",
         upgradeUrl: "/upgrade",
       });
     }
@@ -4577,8 +5108,8 @@ async function handleTrialStart(req, res) {
     const trialEndDate = new Date(trialEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     sendSystemEmail(
       user.email,
-      "Your eureach trial has started — 7 days free",
-      `Hi ${user.firstName || "there"},\n\nYour 7-day free trial is now active.\n\nTrial ends: ${trialEndDate}\nIf you don't cancel before then, your card will be charged €20.\n\nWhat to do first:\n→ Run your AI Visibility Audit\n→ Search for your competitors\n→ Generate your first article\n\nCancel anytime at: https://eureach.eu/billing\n\n– The eureach team`
+      "Your eureach subscription has started",
+      `Hi ${user.firstName || "there"},\n\nYour eureach subscription is now active.\n\nBilling starts: \nIf you don't cancel before then, your card will be charged €20.\n\nWhat to do first:\n→ Run your AI Visibility Audit\n→ Search for your competitors\n→ Generate your first article\n\nCancel anytime at: https://eureach.eu/billing\n\n– The eureach team`
     ).catch(() => {});
 
     json(res, 200, { success: true, trialEndsAt, daysRemaining: 7 });
@@ -4679,7 +5210,7 @@ async function handleBillingWebhook(req, res) {
     const u = users.find(u => u.stripeCustomerId === invoice.customer);
     if (u) {
       const idx = users.findIndex(x => x.id === u.id);
-      users[idx].plan        = "free";
+      users[idx].plan        = "expired";
       users[idx].trialStatus = "expired";
       writeJSON(USERS_FILE, users);
 
@@ -4720,7 +5251,7 @@ function handleBillingStatus(req, res) {
     : null;
 
   json(res, 200, {
-    plan:             user.plan || "free",
+    plan:             user.plan || "expired",
     trialStatus:      user.trialStatus || "not_started",
     daysRemaining,
     trialEndsAt:      user.trialEndsAt || null,
@@ -4850,8 +5381,8 @@ async function handlePayPalSubscriptionActivate(req, res) {
     const trialEndDate = new Date(trialEndsAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     sendSystemEmail(
       user.email,
-      "Your eureach trial has started — 7 days free",
-      `Hi ${user.firstName || "there"},\n\nYour 7-day free trial is now active via PayPal.\n\nTrial ends: ${trialEndDate}\nIf you don't cancel before then, your PayPal will be charged €20/month.\n\nCancel anytime at: https://eureach.eu/billing\n\n– The eureach team`
+      "Your eureach subscription has started",
+      `Hi ${user.firstName || "there"},\n\nYour eureach subscription is now active via PayPal.\n\nBilling starts: \nIf you don't cancel before then, your PayPal will be charged €20/month.\n\nCancel anytime at: https://eureach.eu/billing\n\n– The eureach team`
     ).catch(() => {});
 
     json(res, 200, { success: true, trialEndsAt, daysRemaining: 7 });
@@ -5708,7 +6239,7 @@ async function handleAdminYoutuberApplicationApprove(req, res, id) {
     const newUser  = {
       id: users.length ? Math.max(...users.map(u => u.id || 0)) + 1 : 1,
       email: app.email, firstName: app.name.split(" ")[0], lastName: app.name.split(" ").slice(1).join(" "),
-      password: tempPass, role: "youtuber", plan: "free",
+      password: tempPass, role: "youtuber", plan: "beginners",
       credits: 0, creditsLeft: 0, createdAt: new Date().toISOString(),
     };
     users.push(newUser);
@@ -6257,10 +6788,20 @@ function parseCookieValue(req, name) {
 
 async function handlePublicAuditStart(req, res) {
   const body = await readBody(req);
-  const { businessName, category, city, customCategory, utmSource, utmCampaign } = body;
-  const cat = category === "Άλλο" ? (customCategory || "Άλλο") : category;
+  const { businessName, category, city, customCategory, utmSource, utmCampaign, _trap } = body;
 
-  if (!businessName || !cat || !city) {
+  // Honeypot: bots fill this hidden field, humans don't
+  if (_trap) return json(res, 400, { error: "Bot detected" });
+
+  // IP rate limit: 3 hero audits per day
+  const clientIp = getClientIp(req);
+  if (!heroAuditCheckLimit(clientIp)) {
+    return json(res, 429, { error: "Έχεις κάνει το μέγιστο ελέγχων για σήμερα. Δοκίμασε αύριο ή δημιούργησε δωρεάν λογαριασμό." });
+  }
+
+  const cat = category === "Άλλο" ? (customCategory || "Άλλο") : (category || "Τοπική επιχείρηση");
+
+  if (!businessName || !city) {
     return json(res, 400, { error: "Συμπλήρωσε όλα τα πεδία" });
   }
 
@@ -6375,20 +6916,20 @@ async function handlePublicAuditEmailSave(req, res) {
 
   if (!user) {
     // Create minimal account (no password — just email capture)
-    const planCfg = PLAN_LIMITS.plans.free;
+    const planCfg = PLAN_LIMITS.plans.beginners;
     user = {
       id:           generateId(),
       email:        sanitized.toLowerCase(),
       firstName:    "",
       lastName:     "",
       passwordHash: null,
-      plan:         "free",
+      plan:         "emailonly",
       creditsLeft:  planCfg.credits,
       creditsMax:   planCfg.credits,
       creditMonth:  currentMonth(),
       sites:        [],
       createdAt:    new Date().toISOString(),
-      freeExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      freeExpiresAt: null,
       emailOnly:    true,
     };
     users.push(user);
@@ -7300,7 +7841,10 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/leads/verify-email" && method === "POST") return handleVerifyEmail(req, res);
   if (urlPath === "/api/leads/score"         && method === "POST") return handleLeadsScore(req, res);
   if (urlPath === "/api/leads/score/cache" && method === "GET")  return handleLeadsScoreCache(req, res);
+  if (urlPath === "/api/articles/improve"   && method === "POST") return handleArticleImprove(req, res);
   if (urlPath === "/api/articles/generate"  && method === "POST") return handleArticleGenerate(req, res);
+  if (urlPath === "/api/articles/upload-image"  && method === "POST") return handleArticleImageUpload(req, res);
+  if (urlPath === "/api/articles/generate-image" && method === "POST") return handleArticleGenerateImage(req, res);
   if (urlPath === "/api/articles/deduct"   && method === "POST") return handleArticlesDeduct(req, res);
 
   // WordPress API routes
@@ -7330,6 +7874,19 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/crm"                       && method === "POST")   return handleCrmCreate(req, res);
   if (urlPath.startsWith("/api/crm/")              && method === "PATCH")  return handleCrmUpdate(req, res, urlPath.slice(9));
   if (urlPath.startsWith("/api/crm/")              && method === "DELETE") return handleCrmDelete(req, res, urlPath.slice(9));
+  // Pipeline API routes
+  if (urlPath === '/api/pipeline'                && method === 'GET')    return handlePipelineGet(req, res);
+  if (urlPath === '/api/pipeline'                && method === 'POST')   return handlePipelineAdd(req, res);
+  if (urlPath === '/api/pipeline/generate-email' && method === 'POST')   return handlePipelineGenerateEmail(req, res);
+  { const _m = urlPath.match(/^\/api\/pipeline\/([^\/]+)\/stage$/);
+    if (_m && method === 'PATCH') return handlePipelineStageUpdate(req, res, _m[1]); }
+  { const _m = urlPath.match(/^\/api\/pipeline\/([^\/]+)\/followup$/);
+    if (_m && method === 'PATCH') return handlePipelineFollowup(req, res, _m[1]); }
+  { const _m = urlPath.match(/^\/api\/pipeline\/([^\/]+)\/note$/);
+    if (_m && method === 'POST')  return handlePipelineNoteAdd(req, res, _m[1]); }
+  { const _m = urlPath.match(/^\/api\/pipeline\/([^\/]+)$/);
+    if (_m && method === 'DELETE') return handlePipelineDelete(req, res, _m[1]); }
+
 
   // Competitor tracking API routes
   if (urlPath === "/api/business/profile"          && method === "GET")    return handleBusinessProfileGet(req, res);
@@ -7369,6 +7926,7 @@ async function handleRequest(req, res) {
   if (urlPath === '/api/jobs'                                  && method === 'GET')    return handleJobsGet(req, res);
   if (urlPath === '/api/jobs'                                  && method === 'POST')   return handleJobCreate(req, res);
   if (urlPath === '/api/jobs/bulk'                             && method === 'POST')   return handleJobsBulkCreate(req, res);
+  if (urlPath === '/api/dashboard/article-ideas'               && method === 'POST')   return handleArticleIdeas(req, res);
   // Facebook OAuth
   if (urlPath === '/api/auth/facebook'          && method === 'GET')  return handleFbOauthStart(req, res);
   if (urlPath === '/api/auth/facebook/callback' && method === 'GET')  return handleFbOauthCallback(req, res);
@@ -7503,6 +8061,20 @@ async function handleRequest(req, res) {
     return require("fs").readFile(require("path").join(ROOT, "youtube-profile.html"), (e, d) => { if (e) { res.writeHead(404); res.end(); return; } res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }); res.end(d); });
   }
   // Public Free Audit (no auth)
+
+  // Blog SSR routes — serve pre-rendered HTML for crawlers (Step 9)
+  if ((urlPath === "/blog" || urlPath === "/blog/") && method === "GET") return handleBlogSSR(req, res);
+  if (urlPath.startsWith("/blog/") && method === "GET" && !urlPath.startsWith("/blog/api")) {
+    const slug = decodeURIComponent(urlPath.slice(6));
+    if (slug && !slug.includes(".")) return handleBlogPostSSR(req, res, slug);
+  }
+  // Redirect old blog-post.html?slug=X to /blog/X
+  if (urlPath === "/blog-post.html" && method === "GET") {
+    const qs = new URL("http://x" + req.url).searchParams;
+    const slug = qs.get("slug");
+    if (slug) { res.writeHead(301, { Location: "/blog/" + encodeURIComponent(slug) }); res.end(); return; }
+  }
+
   if (urlPath === "/audit" || urlPath === "/audit/")   { return fs.readFile(path.join(ROOT, "audit-landing.html"), (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
   if (urlPath === "/audit/running")                    { return fs.readFile(path.join(ROOT, "audit-running.html"),  (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
   if (urlPath === "/audit/results")                    { return fs.readFile(path.join(ROOT, "audit-results.html"), (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
@@ -7637,7 +8209,7 @@ async function handleRequest(req, res) {
 // ════════════════════════════════════════════════════════════════════════════
 // eureach.eu Newsletter — Contact Lists + Presets + AI (Phases 1-5)
 // ════════════════════════════════════════════════════════════════════════════
-let _euGroq = null;
+var _euGroq = null;
 function _getEuGroq() {
   if (!_euGroq) { const Groq = require('groq-sdk'); _euGroq = new Groq({ apiKey: process.env.GROQ_API_KEY }); }
   return _euGroq;
@@ -7882,15 +8454,16 @@ async function euNlAiGenerate(req, res) {
   const toneDesc = toneMap[tone] || toneMap.friendly;
   const systemPrompt = `You are an expert at writing email newsletters for business growth platforms. Write in the language the user specifies or defaults to English. Return ONLY valid JSON with fields: "subject" (if requested) and "html" (content without html/body tags, ready for email).`;
   const userPrompt   = `Write an email newsletter with a ${toneDesc} tone.${genSubject ? '\nAlso generate a subject line.' : ''}\nInstructions: ${prompt}\n\nResponse JSON: { ${genSubject ? '"subject": "...", ' : ''}"html": "..." }`;
+  const apiKey = getAnthropicKey();
+  if (!apiKey) return json(res, 500, { error: 'AI not configured.' });
   try {
-    const completion = await _getEuGroq().chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
-      temperature: 0.7, max_tokens: 2048, response_format: { type: 'json_object' }
-    });
-    const text = completion.choices[0].message.content;
+    const aiRes = await callClaude(apiKey, systemPrompt, userPrompt, 2048, 'claude-haiku-4-5-20251001');
+    if (aiRes.type === 'error') throw new Error((aiRes.error && aiRes.error.message) || 'Claude error');
+    const rawText = (aiRes.content && aiRes.content[0] && aiRes.content[0].text) || '';
+    const cleaned = rawText.replace(/^[`]{3}json\s*/i, '').replace(/[`]{3}\s*$/i, '').trim();
     let parsed;
-    try { parsed = JSON.parse(text); } catch { const m = text.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { html: text }; }
+    try { parsed = JSON.parse(cleaned); } catch { const m = cleaned.match(/\{[\s\S]*\}/); parsed = m ? JSON.parse(m[0]) : { html: cleaned }; }
+    if (parsed && parsed.html) parsed.html = parsed.html.replace(/\\n/g, '\n').replace(/\\t/g, ' ');
     return json(res, 200, parsed);
   } catch(e) { console.error('euNlAiGenerate:', e); return json(res, 500, { error: e.message }); }
 }

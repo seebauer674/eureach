@@ -85,7 +85,7 @@
     "label": "Outreach",
     "action_kind": "internal",
     "action_label": "Open pipeline",
-    "action_url_template": "/outreach.html?job_id={job_id}",
+    "action_url_template": "/pipeline.html?job_id={job_id}",
     "icon": "🤝",
     "sort_order": 10
   },
@@ -108,12 +108,48 @@
     "sort_order": 12
   },
   {
+    "key": "facebook_post",
+    "label": "Facebook post",
+    "action_kind": "internal",
+    "action_label": "Create FB post",
+    "action_url_template": "/fb-posts.html?job_id={job_id}",
+    "icon": "📘",
+    "sort_order": 14
+  },
+  {
+    "key": "marketing_content",
+    "label": "Marketing content",
+    "action_kind": "internal",
+    "action_label": "Open creator",
+    "action_url_template": "/marketing.html?job_id={job_id}",
+    "icon": "🚀",
+    "sort_order": 15
+  },
+  {
+    "key": "competitor_check",
+    "label": "Competitor check",
+    "action_kind": "internal",
+    "action_label": "Run check",
+    "action_url_template": "/competitors.html?domain={domain}&job_id={job_id}",
+    "icon": "📡",
+    "sort_order": 16
+  },
+  {
+    "key": "lead_finder",
+    "label": "Lead finder",
+    "action_kind": "internal",
+    "action_label": "Find leads",
+    "action_url_template": "/leads.html?job_id={job_id}",
+    "icon": "🎯",
+    "sort_order": 17
+  },
+  {
     "key": "generic",
     "label": "General task",
     "action_kind": "none",
     "action_label": "",
     "action_url_template": "",
     "icon": "✅",
-    "sort_order": 13
+    "sort_order": 99
   }
 ]

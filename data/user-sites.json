@@ -16,5 +16,24 @@
     ],
     "addedAt": "2026-05-23T16:14:43.585Z",
     "userId": "669c87088f8594eb7a72398c"
+  },
+  {
+    "id": 1791724375549,
+    "domain": "kinkdate.eu",
+    "name": "Kinkdate",
+    "languages": [
+      "Greek",
+      "English",
+      "German"
+    ],
+    "niche": "Other",
+    "audience": "Individuals looking for a kinky date",
+    "geo": "European union",
+    "about": "A European community for adults exploring BDSM, kink and meaningful connections. Explore. Connect. Belong.",
+    "tones": [
+      "Friendly"
+    ],
+    "addedAt": "2026-10-11T13:12:55.549Z",
+    "userId": "669c87088f8594eb7a72398c"
   }
 ]

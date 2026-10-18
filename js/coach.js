@@ -1,3 +1,5 @@
+function uiLocale(){var l=window.euLang?window.euLang():'en';return l==='el'?'el-GR':l==='de'?'de-DE':'en-GB';}
+function t(k,fb){var l=window.euLang?window.euLang():'en';var r=window.EUREACH_T;return(r&&r[l]&&r[l][k])||fb||k;}
 (function () {
   'use strict';
 
@@ -33,7 +35,7 @@
     const d = new Date(weekData.weekStart + 'T00:00:00');
     const opts = { day: 'numeric', month: 'long', year: 'numeric' };
     document.getElementById('coach-week-label').textContent =
-      'Εβδομάδα ' + d.toLocaleDateString('el-GR', opts);
+      t('coach.weekOf','Week of ') + d.toLocaleDateString(uiLocale(), opts);
 
     // Restore completions
     for (const c of (weekData.completions || [])) {
@@ -58,7 +60,7 @@
     const done  = completedDays.size;
     const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
     document.getElementById('progress-fill').style.width = pct + '%';
-    document.getElementById('progress-text').textContent = done + '/3 δράσεις αυτή την εβδομάδα';
+    document.getElementById('progress-text').textContent = done + t('coach.actionsThisWeek','/3 actions this week');
   }
 
   // ── Streak ───────────────────────────────────────────────────────────────────
@@ -90,7 +92,7 @@
       card.className = 'suggestion-card';
       card.innerHTML = `
         <p class="suggestion-title">${esc(s.title)}</p>
-        <p class="suggestion-why"><strong>Γιατί βοηθά:</strong> ${esc(s.why)}</p>
+        <p class="suggestion-why"><strong>${t('coach.whyHelps','Why it helps')}:</strong> ${esc(s.why)}</p>
         <div class="suggestion-meta">
           <span class="suggestion-angle">${esc(s.angle)}</span>
           <span class="suggestion-time">${esc(s.estimated_read_time)}</span>
@@ -196,7 +198,7 @@
       const data = await res.json();
 
       if (!data.hasData) {
-        el.innerHTML = `<div class="vis-no-data">Δεν υπάρχει ακόμα αναφορά ορατότητας. <a href="/audit.html" style="color:var(--accent)">Κάνε το πρώτο audit →</a></div>`;
+        el.innerHTML = `<div class="vis-no-data">${t('coach.noVisibilityReport','No visibility report yet.')} <a href="/audit.html" style="color:var(--accent)">${t('coach.firstAudit','Run your first audit →')}</a></div>`;
         return;
       }
 
@@ -221,12 +223,12 @@
         </div>`;
       }
 
-      const updated = data.updatedAt ? new Date(data.updatedAt).toLocaleDateString('el-GR') : '';
-      html += `<p class="vis-note">Τελευταία ανανέωση: ${updated}${data.deltas ? ' · Σύγκριση με προηγούμενο audit' : ' · Δεν υπάρχει σύγκριση ακόμα'}</p>`;
-      html += `<a class="vis-audit-link" href="/audit.html">Δες την πλήρη ανάλυση →</a>`;
+      const updated = data.updatedAt ? new Date(data.updatedAt).toLocaleDateString(uiLocale()) : '';
+      html += `<p class="vis-note">${t('coach.lastUpdated','Last updated:')} ${updated}${data.deltas ? t('coach.compareNote',' · Compared to previous audit') : t('coach.noCompare',' · No comparison yet')}</p>`;
+      html += `<a class="vis-audit-link" href="/audit.html">${t('coach.viewAnalysis','View full analysis →')}</a>`;
       el.innerHTML = html;
     } catch {
-      el.innerHTML = `<div class="vis-no-data">Δεν υπάρχουν δεδομένα ορατότητας ακόμα. <a href="/audit.html" style="color:var(--accent)">Ξεκίνα ένα audit →</a></div>`;
+      el.innerHTML = `<div class="vis-no-data">${t('coach.noVisibilityData','No visibility data yet.')} <a href="/audit.html" style="color:var(--accent)">${t('coach.startAudit','Start an audit →')}</a></div>`;
     }
   }
 
@@ -236,9 +238,9 @@
     const el    = document.getElementById('week-summary');
     if (!el) return;
     document.getElementById('week-summary-text').textContent =
-      'Αυτή την εβδομάδα έκανες: ' + done + '/3 δράσεις.';
+      t('coach.thisWeekDone','This week you completed: ') + done + '/3 ' + t('coach.actions','actions.');
     document.getElementById('total-summary-text').textContent =
-      'Συνολικά έχεις κάνει ' + total + ' δράσεις από τότε που ξεκίνησες.';
+      t('coach.totalDone','Total actions since you started: ') + total + ' ' + t('coach.actions','actions.');
     el.style.display = 'block';
   }
 
@@ -288,9 +290,9 @@
     navigator.clipboard.writeText(text).then(() => {
       const btn = document.querySelector(`[onclick="copyOrShare('${elId}')"]`);
       if (btn) {
-        btn.textContent = 'Αντιγράφηκε!';
+        btn.textContent = t('coach.copied','Copied!');
         btn.classList.add('copied');
-        setTimeout(() => { btn.textContent = 'Αντιγραφή'; btn.classList.remove('copied'); }, 2000);
+        setTimeout(() => { btn.textContent = t('coach.copy','Copy'); btn.classList.remove('copied'); }, 2000);
       }
     }).catch(() => {});
   }

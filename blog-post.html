@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,7 +43,7 @@
       <a href="citations.html">Citations</a>
     
       <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="nav.dashboard">Dashboard</a>
     </div>
     <div class="nav-cta">
       <a href="profile.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; My Profile</a>
@@ -78,7 +78,7 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
     '</div>'+
     '<h1 class="post-title">'+esc(p.title)+'</h1>'+
     (p.excerpt?'<div class="post-excerpt">'+esc(p.excerpt)+'</div>':'')+
-    '<div class="post-content">'+(p.content||'')+'</div>'+
+    '<div class="post-content">'+(p.content||p.html||'')+'</div>'+
     '<div class="post-cta">'+
       '<h3>Start generating leads &amp; content today</h3>'+
       '<p>Find local business leads, write SEO articles in 3 languages, and grow faster with AI.</p>'+
@@ -86,6 +86,6 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
     '</div>';
 })();
 </script>
-<script src="js/nav-init.js?v=2"></script>
+<script src="js/nav-init.js?v=5"></script>
 </body>
 </html>

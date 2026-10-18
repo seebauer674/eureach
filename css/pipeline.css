@@ -389,3 +389,6 @@
   .pl-col { flex: 0 0 200px; }
   .pl-panel { width: 100%; right: -100%; }
 }
+
+.pl-find-leads-link { display:inline-block; margin-top:8px; font-size:0.78rem; color:var(--accent); text-decoration:none; font-weight:500; }
+.pl-find-leads-link:hover { text-decoration:underline; }

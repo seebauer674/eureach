@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up — eureach.eu</title>
   <link rel="stylesheet" href="css/style.css?v=2">
-  <script src="js/translations.js?v=5"></script>
+  <script src="js/translations.js?v=7"></script>
   <script src="js/i18n.js?v=5"></script>
   <style>
     .auth-page {
@@ -31,7 +31,7 @@
     }
     .auth-card {
       width: 100%;
-      max-width: 460px;
+      max-width: 520px;
       background: linear-gradient(145deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
       border: 1px solid var(--border);
       border-radius: var(--radius2);
@@ -49,7 +49,7 @@
     }
     .auth-logo span { color: var(--gold); }
     .auth-title {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 800;
       letter-spacing: -0.5px;
       margin-bottom: 6px;
@@ -59,40 +59,97 @@
       font-size: 0.875rem;
       color: var(--muted);
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
-    .auth-sub a { color: var(--blue2); transition: color 0.2s; }
-    .auth-sub a:hover { color: var(--white); }
 
-    /* Plan pill */
+    /* ── Plan picker ── */
+    .plan-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .plan-option {
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .plan-option:hover { border-color: rgba(99,102,241,0.5); }
+    .plan-option.selected {
+      border-color: var(--blue);
+      background: rgba(37,99,235,0.08);
+    }
+    .plan-option.selected.green {
+      border-color: #16a34a;
+      background: rgba(34,197,94,0.08);
+    }
+    .plan-option-badge {
+      position: absolute;
+      top: -10px; right: 10px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 100px;
+      background: linear-gradient(135deg,#16a34a,#15803d);
+      color: white;
+      letter-spacing: 0.04em;
+    }
+    .plan-option-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 4px;
+    }
+    .plan-option-price {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .plan-option-price span { font-size: 0.75rem; font-weight: 400; color: var(--muted); }
+    .plan-option-features {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .plan-option-features li {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.6);
+    }
+    .plan-option-features li::before { content: "✓ "; color: #4ade80; }
+
+    /* ── Selected plan pill (step 1 & 2) ── */
     .plan-pill {
       display: flex;
       align-items: center;
-      gap: 10px;
+      justify-content: space-between;
       background: rgba(37,99,235,0.1);
-      border: 1px solid rgba(37,99,235,0.25);
+      border: 1px solid rgba(37,99,235,0.3);
       border-radius: 10px;
-      padding: 12px 16px;
-      margin-bottom: 24px;
+      padding: 10px 14px;
+      margin-bottom: 20px;
+      font-size: 0.82rem;
     }
-    .plan-pill.plan-pro {
-      background: rgba(124,58,237,0.12);
-      border-color: rgba(124,58,237,0.3);
+    .plan-pill.beginners {
+      background: rgba(34,197,94,0.08);
+      border-color: rgba(34,197,94,0.3);
     }
-    .plan-pill.plan-agency {
-      background: rgba(245,158,11,0.08);
-      border-color: rgba(245,158,11,0.25);
+    .plan-pill-name { font-weight: 700; color: var(--white); }
+    .plan-pill-price { color: var(--muted); }
+    .plan-pill-change {
+      font-size: 0.72rem;
+      color: var(--blue2);
+      cursor: pointer;
+      text-decoration: underline;
     }
-    .plan-pill-icon { font-size: 1.1rem; }
-    .plan-pill-info { flex: 1; }
-    .plan-pill-name { font-size: 0.85rem; font-weight: 700; color: var(--white); }
-    .plan-pill-desc { font-size: 0.75rem; color: var(--muted); }
-    .plan-pill-change { font-size: 0.75rem; color: var(--blue2); cursor: pointer; white-space: nowrap; }
-    .plan-pill-change:hover { color: var(--white); }
 
-    .auth-field {
-      margin-bottom: 14px;
-    }
+    .auth-field { margin-bottom: 14px; }
     .auth-field label {
       display: block;
       font-size: 0.8rem;
@@ -118,33 +175,11 @@
       border-color: rgba(37,99,235,0.6);
       box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
     }
-    .auth-field-row-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .auth-terms {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin: 16px 0;
-    }
-    .auth-terms input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      margin-top: 2px;
-      flex-shrink: 0;
-      accent-color: var(--blue);
-      cursor: pointer;
-    }
-    .auth-terms label {
-      font-size: 0.8rem;
-      color: var(--muted);
-      line-height: 1.5;
-      cursor: pointer;
-    }
-    .auth-terms a { color: var(--blue2); transition: color 0.2s; }
-    .auth-terms a:hover { color: var(--white); }
+    .auth-field-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .auth-terms { display: flex; align-items: flex-start; gap: 10px; margin: 16px 0; }
+    .auth-terms input[type="checkbox"] { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; accent-color: var(--blue); cursor: pointer; }
+    .auth-terms label { font-size: 0.8rem; color: var(--muted); line-height: 1.5; cursor: pointer; }
+    .auth-terms a { color: var(--blue2); }
     .auth-submit {
       width: 100%;
       padding: 13px;
@@ -159,44 +194,14 @@
       box-shadow: 0 4px 20px rgba(37,99,235,0.35);
       font-family: inherit;
     }
-    .auth-submit:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 28px rgba(37,99,235,0.5);
-    }
-    .auth-submit:active { transform: none; }
+    .auth-submit:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(37,99,235,0.5); }
     .auth-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .auth-free-note {
-      text-align: center;
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-top: 10px;
-    }
-    .auth-divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 20px 0;
-    }
-    .auth-divider::before,
-    .auth-divider::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-    .auth-divider span {
-      font-size: 0.75rem;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-    .auth-bottom {
-      text-align: center;
-      font-size: 0.82rem;
-      color: var(--muted);
-      margin-top: 20px;
-    }
-    .auth-bottom a { color: var(--blue2); font-weight: 600; transition: color 0.2s; }
-    .auth-bottom a:hover { color: var(--white); }
+    .auth-free-note { text-align: center; font-size: 0.75rem; color: var(--muted); margin-top: 10px; }
+    .auth-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+    .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+    .auth-divider span { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+    .auth-bottom { text-align: center; font-size: 0.82rem; color: var(--muted); margin-top: 20px; }
+    .auth-bottom a { color: var(--blue2); font-weight: 600; }
     .auth-error {
       display: none;
       background: rgba(239,68,68,0.1);
@@ -208,19 +213,8 @@
       margin-bottom: 16px;
     }
     .auth-error.visible { display: block; }
-    .pw-strength {
-      height: 3px;
-      border-radius: 2px;
-      margin-top: 6px;
-      background: var(--border);
-      overflow: hidden;
-    }
-    .pw-strength-bar {
-      height: 100%;
-      border-radius: 2px;
-      width: 0%;
-      transition: width 0.3s, background 0.3s;
-    }
+    .pw-strength { height: 3px; border-radius: 2px; margin-top: 6px; background: var(--border); overflow: hidden; }
+    .pw-strength-bar { height: 100%; border-radius: 2px; width: 0%; transition: width 0.3s, background 0.3s; }
   </style>
 </head>
 <body>
@@ -232,10 +226,9 @@
       <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
       <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
       <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
     </div>
     <div class="nav-cta">
-      <a href="signin.html" class="btn btn-ghost" data-i18n="suNavSignIn">Sign in</a>
+      <a href="signin.html" class="btn btn-ghost">Sign in</a>
     </div>
   </div>
 </nav>
@@ -246,10 +239,58 @@
 
   <div class="auth-card">
     <div class="auth-logo">eureach<span>.</span>eu</div>
+
+    <!-- Step 0: Plan picker -->
+    <div id="step-0">
+      <h1 class="auth-title">Choose your plan</h1>
+      <p class="auth-sub">Ξεκίνα δωρεάν — χωρίς κάρτα για το Free πλάνο.</p>
+
+      <div class="plan-picker">
+        <!-- Beginners -->
+        <div class="plan-option green" id="opt-beginners" onclick="selectPlan('beginners')">
+          <div class="plan-option-badge">Popular</div>
+          <div class="plan-option-name">Beginners</div>
+          <div class="plan-option-price">€9<span>/month</span></div>
+          <ul class="plan-option-features">
+            <li>350 credits/month</li>
+            <li>3 articles/month</li>
+            <li>20 lead searches</li>
+            <li>3 AI audits</li>
+            <li>3 competitors</li>
+            <li>Outreach & WhatsApp</li>
+          </ul>
+        </div>
+        <!-- Pro -->
+        <div class="plan-option" id="opt-pro" onclick="selectPlan('pro')">
+          <div class="plan-option-name">Solo Pro</div>
+          <div class="plan-option-price">€20<span>/month</span></div>
+          <ul class="plan-option-features">
+            <li>800 credits/month</li>
+            <li>6 articles/month</li>
+            <li>100 lead searches</li>
+            <li>10 AI audits</li>
+            <li>10 competitors</li>
+            <li>WordPress + 3 sites</li>
+          </ul>
+        </div>
+      </div>
+
+      <button class="auth-submit" id="plan-continue-btn" onclick="goToStep1()">
+        Continue with <span id="plan-btn-label">Beginners — €9/mo</span> →
+      </button>
+      <p class="auth-free-note">7 days free · Cancel anytime · No contract</p>
+
+      <div class="auth-divider"><span>already have an account?</span></div>
+      <div class="auth-bottom"><a href="signin.html">Sign in →</a></div>
+    </div>
+
     <!-- Step 1: Account details -->
-    <div id="step-1">
-      <h1 class="auth-title">Start your 7-day free trial</h1>
-      <p class="auth-sub" style="margin-bottom:20px">No charge today. €15/month after trial. Cancel anytime.<br><small style="color:rgba(255,255,255,0.35)">Heute keine Zahlung. Jederzeit kündbar.</small></p>
+    <div id="step-1" style="display:none">
+      <!-- Plan pill -->
+      <div class="plan-pill" id="plan-pill-1">
+        <span><span class="plan-pill-name" id="pill1-name">Beginners</span> <span class="plan-pill-price" id="pill1-price">€9/month</span></span>
+        <span class="plan-pill-change" onclick="backToPlanPicker()">Change</span>
+      </div>
 
       <div class="auth-error" id="auth-error"></div>
 
@@ -264,116 +305,139 @@
             <input type="text" id="last-name" name="last_name" placeholder="Papadaki" autocomplete="family-name">
           </div>
         </div>
-
         <div class="auth-field">
           <label for="email">Email address</label>
           <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email">
         </div>
-
         <div class="auth-field">
           <label for="password">Password</label>
           <input type="password" id="password" name="password" placeholder="At least 8 characters" required autocomplete="new-password" oninput="checkStrength(this.value)">
           <div class="pw-strength"><div class="pw-strength-bar" id="pw-bar"></div></div>
         </div>
-
         <div class="auth-terms">
           <input type="checkbox" id="terms" required>
           <label for="terms">I agree to the <a href="terms.html" target="_blank">Terms of Service</a> and <a href="privacy.html" target="_blank">Privacy Policy</a></label>
         </div>
-
         <button type="submit" class="auth-submit" id="submit-btn">Continue →</button>
         <p class="auth-free-note">No charge today · Cancel anytime</p>
       </form>
+
+      <div class="auth-divider"><span>already have an account?</span></div>
+      <div class="auth-bottom"><a href="signin.html">Sign in →</a></div>
     </div>
 
-    <!-- Step 2: Card details -->
+    <!-- Step 2: Payment -->
     <div id="step-2" style="display:none">
-      <h1 class="auth-title" style="font-size:1.2rem;margin-bottom:6px">Add your card</h1>
-      <p class="auth-sub" style="margin-bottom:20px">
-        No charge for 7 days. €15/month after trial.<br>
-        <small style="color:rgba(255,255,255,0.35)">Keine Zahlung für 7 Tage. €15/Monat nach dem Test.</small>
-      </p>
+      <!-- Plan pill -->
+      <div class="plan-pill" id="plan-pill-2">
+        <span><span class="plan-pill-name" id="pill2-name">Beginners</span> <span class="plan-pill-price" id="pill2-price">€9/month</span></span>
+      </div>
 
       <div class="auth-error" id="card-error"></div>
 
       <div class="auth-field">
         <label>Card details</label>
-        <div id="card-element" style="
-          background:rgba(255,255,255,0.05);border:1px solid var(--border);
-          border-radius:8px;padding:13px 14px;transition:border-color 0.2s;
-        "></div>
+        <div id="card-element" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;padding:13px 14px;transition:border-color 0.2s;"></div>
       </div>
 
       <button class="auth-submit" id="card-btn" onclick="handleCardSubmit()" style="margin-top:16px">
-        Start free trial →
+        Ξεκίνα δωρεάν →
       </button>
-      <p class="auth-free-note">Your card will be charged €15 on day 8 if you don't cancel.</p>
+      <p class="auth-free-note" id="card-note">Your card will be charged €9 on day 8 if you don't cancel.</p>
 
-      <div style="margin-top:16px;text-align:center">
-        <a href="#" onclick="skipCard()" style="font-size:0.8rem;color:var(--muted);text-decoration:underline">
-          Skip — continue without trial (free account)
-        </a>
-      </div>
+      <div class="auth-divider" style="margin:20px 0"><span>or pay with</span></div>
+      <div id="paypal-button-container" style="min-height:45px"></div>
+
+
     </div>
 
     <!-- Step 3: Success -->
     <div id="step-3" style="display:none;text-align:center">
       <div style="font-size:2.5rem;margin-bottom:16px">✓</div>
-      <h1 class="auth-title" style="font-size:1.3rem;color:#4ade80">Your 7-day free trial has started</h1>
+      <h1 class="auth-title" style="font-size:1.3rem;color:#4ade80">Ο λογαριασμός σου είναι ενεργός!</h1>
       <div style="margin:20px 0;font-size:0.9rem;color:var(--muted);line-height:1.7">
-        <div>Trial ends: <strong id="trial-end-display" style="color:var(--white)"></strong></div>
-        <div style="margin-top:6px">Next charge: <strong id="trial-charge-display" style="color:var(--white)">€15 on day 8</strong></div>
+        <div>Plan: <strong id="success-plan" style="color:var(--white)"></strong></div>
+        <div style="margin-top:4px">Επόμενη χρέωση: <strong id="trial-end-display" style="color:var(--white)"></strong></div>
+        <div style="margin-top:4px">Next charge: <strong id="trial-charge-display" style="color:var(--white)"></strong></div>
       </div>
-      <a href="/profile.html" class="auth-submit" style="display:inline-block;text-align:center;text-decoration:none;margin-top:8px">
+      <a href="/dashboard.html" class="auth-submit" style="display:inline-block;text-align:center;text-decoration:none;margin-top:8px">
         Start exploring eureach →
       </a>
-    </div>
-
-    <div class="auth-divider" id="signin-divider"><span>already have an account?</span></div>
-    <div class="auth-bottom" id="signin-link">
-      <a href="signin.html">Sign in to your account →</a>
     </div>
   </div>
 </main>
 
 <script src="https://js.stripe.com/v3/"></script>
+<script id="paypal-sdk" src="about:blank"></script>
 <script>
-let stripe = null, cardElement = null;
+let stripe = null, cardElement = null, _ppReady = false;
+let selectedPlan = 'beginners'; // default
 
-// Try to init Stripe — requires STRIPE_PUBLISHABLE_KEY set in the page
-// We fetch it from a lightweight endpoint
+const PLAN_INFO = {
+  beginners: { name: 'Beginners', price: '€9', priceLabel: '€9/month', btnLabel: 'Beginners — €9/mo' },
+  pro:       { name: 'Solo Pro',  price: '€20', priceLabel: '€20/month', btnLabel: 'Solo Pro — €20/mo' },
+};
+
+// Read ?plan= param or pre-select from URL
+(function() {
+  const p = new URLSearchParams(location.search).get('plan');
+  if (p === 'pro' || p === 'beginners') selectedPlan = p;
+  applyPlanSelection();
+})();
+
+function applyPlanSelection() {
+  const info = PLAN_INFO[selectedPlan];
+  document.getElementById('opt-beginners').classList.toggle('selected', selectedPlan === 'beginners');
+  document.getElementById('opt-beginners').classList.toggle('green',    selectedPlan === 'beginners');
+  document.getElementById('opt-pro').classList.toggle('selected',       selectedPlan === 'pro');
+  document.getElementById('plan-btn-label').textContent = info.btnLabel;
+  // Pills
+  ['pill1-name','pill2-name'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = info.name; });
+  ['pill1-price','pill2-price'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = info.priceLabel; });
+  ['plan-pill-1','plan-pill-2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.toggle('beginners', selectedPlan === 'beginners'); }
+  });
+  // Note under card button
+  const note = document.getElementById('card-note');
+  if (note) note.textContent = `Your card will be charged ${info.price} on day 8 if you don't cancel.`;
+  // Success screen
+  const sp = document.getElementById('success-plan');
+  if (sp) sp.textContent = info.name + ' — ' + info.price + '/month';
+}
+
+function selectPlan(plan) {
+  selectedPlan = plan;
+  applyPlanSelection();
+}
+
+function goToStep1() {
+  document.getElementById('step-0').style.display = 'none';
+  document.getElementById('step-1').style.display = '';
+}
+
+function backToPlanPicker() {
+  document.getElementById('step-1').style.display = 'none';
+  document.getElementById('step-0').style.display = '';
+}
+
 async function initStripe() {
   try {
     const res  = await fetch('/api/billing/stripe-key');
     if (!res.ok) return;
-    const { publishableKey } = await res.json();
-    if (!publishableKey) return;
-    stripe = Stripe(publishableKey);
+    const data = await res.json();
+    if (!data.publishableKey) return;
+    stripe = Stripe(data.publishableKey);
     const elements = stripe.elements({
-      appearance: {
-        theme: 'night',
-        variables: {
-          colorPrimary: '#2563eb',
-          colorBackground: 'rgba(255,255,255,0.05)',
-          colorText: '#f1f5f9',
-          fontFamily: 'inherit',
-        },
-      },
+      appearance: { theme: 'night', variables: { colorPrimary: '#2563eb', colorBackground: 'rgba(255,255,255,0.05)', colorText: '#f1f5f9', fontFamily: 'inherit' } },
     });
     cardElement = elements.create('card', {
-      style: {
-        base: { color: '#f1f5f9', fontSize: '15px', '::placeholder': { color: '#475569' } },
-        invalid: { color: '#f87171' },
-      },
+      style: { base: { color: '#f1f5f9', fontSize: '15px', '::placeholder': { color: '#475569' } }, invalid: { color: '#f87171' } },
     });
     cardElement.mount('#card-element');
-    cardElement.on('focus', () => {
-      document.getElementById('card-element').style.borderColor = 'rgba(37,99,235,0.6)';
-    });
-    cardElement.on('blur', () => {
-      document.getElementById('card-element').style.borderColor = 'var(--border)';
-    });
-  } catch { /* Stripe not configured — skip */ }
+    cardElement.on('focus', () => { document.getElementById('card-element').style.borderColor = 'rgba(37,99,235,0.6)'; });
+    cardElement.on('blur',  () => { document.getElementById('card-element').style.borderColor = 'var(--border)'; });
+  } catch {}
 }
 
 function checkStrength(val) {
@@ -383,59 +447,38 @@ function checkStrength(val) {
   if (/[A-Z]/.test(val)) score++;
   if (/[0-9]/.test(val)) score++;
   if (/[^A-Za-z0-9]/.test(val)) score++;
-  const colors = ['', '#ef4444', '#f59e0b', '#3b82f6', '#22c55e'];
-  const widths  = ['0%', '25%', '50%', '75%', '100%'];
-  bar.style.width      = widths[score];
-  bar.style.background = colors[score];
+  const colors = ['','#ef4444','#f59e0b','#3b82f6','#22c55e'];
+  const widths  = ['0%','25%','50%','75%','100%'];
+  bar.style.width = widths[score]; bar.style.background = colors[score];
 }
 
 async function handleSignup(e) {
   e.preventDefault();
   const btn   = document.getElementById('submit-btn');
   const errEl = document.getElementById('auth-error');
-
   const payload = {
     first_name: document.getElementById('first-name').value.trim(),
     last_name:  document.getElementById('last-name').value.trim(),
     email:      document.getElementById('email').value.trim(),
     password:   document.getElementById('password').value,
-    plan:       'free',
+    plan: selectedPlan,
   };
-
   if (payload.password.length < 8) {
     errEl.textContent = 'Password must be at least 8 characters.';
-    errEl.classList.add('visible');
-    return;
+    errEl.classList.add('visible'); return;
   }
-
-  btn.disabled    = true;
-  btn.textContent = 'Creating account…';
+  btn.disabled = true; btn.textContent = 'Creating account…';
   errEl.classList.remove('visible');
-
   try {
-    const res  = await fetch('/api/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    const res  = await fetch('/api/auth/signup', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Sign up failed');
-
-    // Account created — go to card step if Stripe is available
-    if (stripe && cardElement) {
-      document.getElementById('step-1').style.display = 'none';
-      document.getElementById('step-2').style.display = '';
-      document.getElementById('signin-divider').style.display = 'none';
-      document.getElementById('signin-link').style.display = 'none';
-    } else {
-      // No Stripe configured — skip to free account
-      location.href = 'profile.html';
-    }
+    document.getElementById('step-1').style.display = 'none';
+    document.getElementById('step-2').style.display = '';
+    renderPayPalButton();
   } catch (err) {
-    errEl.textContent = err.message;
-    errEl.classList.add('visible');
-    btn.disabled    = false;
-    btn.textContent = 'Continue →';
+    errEl.textContent = err.message; errEl.classList.add('visible');
+    btn.disabled = false; btn.textContent = 'Continue →';
   }
 }
 
@@ -447,49 +490,95 @@ async function handleCardSubmit() {
   if (!stripe || !cardElement) return;
   const btn   = document.getElementById('card-btn');
   const errEl = document.getElementById('card-error');
-  btn.disabled    = true;
-  btn.textContent = 'Starting trial…';
+  btn.disabled = true; btn.textContent = 'Starting trial…';
   errEl.classList.remove('visible');
-
   try {
-    const { paymentMethod, error } = await stripe.createPaymentMethod({
-      type: 'card', card: cardElement,
-    });
+    const { paymentMethod, error } = await stripe.createPaymentMethod({ type:'card', card: cardElement });
     if (error) throw new Error(error.message);
-
     const res  = await fetch('/api/trial/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-csrf-token': getCsrf() },
-      body: JSON.stringify({ paymentMethodId: paymentMethod.id }),
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-csrf-token':getCsrf()},
+      body: JSON.stringify({ paymentMethodId: paymentMethod.id, tier: selectedPlan }),
     });
     const data = await res.json();
     if (!data.success) throw new Error(data.error || 'Failed to start trial');
-
-    // Show success
-    document.getElementById('step-2').style.display = 'none';
-    document.getElementById('step-3').style.display = '';
-    if (data.trialEndsAt) {
-      const d = new Date(data.trialEndsAt).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
-      document.getElementById('trial-end-display').textContent = d;
-      document.getElementById('trial-charge-display').textContent = `€15 on ${d}`;
-    }
+    showSuccess(data.trialEndsAt);
   } catch (err) {
-    errEl.textContent = err.message;
-    errEl.classList.add('visible');
-    btn.disabled    = false;
-    btn.textContent = 'Start free trial →';
+    errEl.textContent = err.message; errEl.classList.add('visible');
+    btn.disabled = false; btn.textContent = 'Ξεκίνα δωρεάν →';
   }
 }
 
-function skipCard() {
-  location.href = 'profile.html';
+function showSuccess(trialEndsAt) {
+  document.getElementById('step-2').style.display = 'none';
+  document.getElementById('step-3').style.display = '';
+  applyPlanSelection();
+  if (trialEndsAt) {
+    const d = new Date(trialEndsAt).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+    document.getElementById('trial-end-display').textContent = d;
+    document.getElementById('trial-charge-display').textContent = PLAN_INFO[selectedPlan].price + ' on ' + d;
+  }
 }
+
+async function initPayPal() {
+  try {
+    const res  = await fetch('/api/billing/paypal-info?plan=' + selectedPlan);
+    const data = await res.json();
+    if (!data.clientId || !data.planId) return;
+    window._ppPlanId    = data.planId;
+    window._ppClientId  = data.clientId;
+    const sdkEl = document.getElementById('paypal-sdk');
+    sdkEl.src = 'https://www.paypal.com/sdk/js?client-id=' + data.clientId + '&vault=true&intent=subscription&currency=EUR';
+    sdkEl.onload = () => { _ppReady = true; };
+  } catch {}
+}
+
+function renderPayPalButton() {
+  // Reload the correct plan ID before rendering
+  fetch('/api/billing/paypal-info?plan=' + selectedPlan)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.planId) return;
+      window._ppPlanId = data.planId;
+      if (!_ppReady) return;
+      const container = document.getElementById('paypal-button-container');
+      if (!container || container.children.length > 0) return;
+      paypal.Buttons({
+        style: { layout:'horizontal', color:'gold', shape:'rect', label:'subscribe', height:45 },
+        createSubscription: (d, actions) => actions.subscription.create({ plan_id: window._ppPlanId }),
+        onApprove: async (d) => {
+          const btn = document.getElementById('card-btn');
+          if (btn) { btn.disabled = true; btn.textContent = 'Activating…'; }
+          try {
+            const r = await fetch('/api/billing/paypal/activate', {
+              method:'POST',
+              headers:{'Content-Type':'application/json','x-csrf-token':getCsrf()},
+              body: JSON.stringify({ subscriptionId: d.subscriptionID, tier: selectedPlan }),
+            });
+            const result = await r.json();
+            if (!result.success) throw new Error(result.error || 'Activation failed');
+            showSuccess(result.trialEndsAt);
+          } catch (e) {
+            const errEl = document.getElementById('card-error');
+            if (errEl) { errEl.textContent = e.message; errEl.classList.add('visible'); }
+            if (btn) { btn.disabled = false; btn.textContent = 'Ξεκίνα δωρεάν →'; }
+          }
+        },
+        onError: () => {
+          const errEl = document.getElementById('card-error');
+          if (errEl) { errEl.textContent = 'PayPal error. Please try the card option.'; errEl.classList.add('visible'); }
+        },
+      }).render('#paypal-button-container');
+    }).catch(() => {});
+}
+
 
 window.addEventListener('scroll', () => {
   document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 10);
 });
 
 initStripe();
+initPayPal();
 </script>
 <script src="/js/api.js?v=5"></script>
 </body>

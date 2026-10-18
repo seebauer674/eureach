@@ -1,1 +1,26 @@
-{}
+{
+  "peloponnes travel service l. t. d|patras": {
+    "score": 35,
+    "tier": "cold",
+    "reasoning": "Has phone for reachability (+15) but lacks a website, Google rating, and reviews, indicating very low digital maturity with limited signals to confirm business viability, making it a low-priority prospect despite the digital gap opportunity.",
+    "cachedAt": "2026-09-23T11:31:55.743Z"
+  },
+  "polestar travel|patras": {
+    "score": 35,
+    "tier": "cold",
+    "reasoning": "Reachable via phone (+15) but has no website, no ratings, and zero reviews, reflecting minimal digital presence that suggests a low-engagement business unlikely to invest in AI-powered SEO services in the near term.",
+    "cachedAt": "2026-09-23T11:31:55.743Z"
+  },
+  "georgantas travel|patras": {
+    "score": 35,
+    "tier": "cold",
+    "reasoning": "Phone availability (+15) provides basic reachability, but the complete absence of a website, reviews, and ratings signals either a dormant or very traditional operation with uncertain appetite for digital marketing investment.",
+    "cachedAt": "2026-09-23T11:31:55.743Z"
+  },
+  "rose travel|patras": {
+    "score": 55,
+    "tier": "warm",
+    "reasoning": "Stands out from peers with both a verified website (+20) and phone (+15), demonstrating baseline digital maturity while still lacking reviews and ratings, making it the strongest candidate in this batch and a solid warm lead for SEO enhancement services.",
+    "cachedAt": "2026-09-23T11:31:55.743Z"
+  }
+}

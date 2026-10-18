@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Newsletter Campaigns — eureach.eu</title>
   <link rel="stylesheet" href="css/style.css">
-  <script src="js/translations.js?v=5"></script>
+  <link rel="stylesheet" href="/css/quill.snow.css">
+  <script src="js/translations.js?v=7"></script>
   <script src="js/i18n.js?v=5"></script>
   <style>
     :root { --accent:#4f46e5; --accent2:#6366f1; --bg:#0f1117; --surface:#181c27; --surface2:#1e2333; --border:#2a3047; --text:#e2e8f0; --muted:#8892a4; --danger:#ef4444; --success:#22c55e; --warn:#f59e0b; }
@@ -51,7 +52,6 @@
     .growth-banner-title{font-size:1rem;font-weight:700;margin-bottom:4px}
     .growth-banner-sub{font-size:0.83rem;color:var(--muted);line-height:1.5}
     .growth-badge{display:inline-flex;align-items:center;gap:5px;background:#22c55e22;color:#22c55e;border:1px solid #22c55e44;border-radius:20px;padding:3px 10px;font-size:0.75rem;font-weight:600;margin-top:8px}
-    .growth-days{font-weight:700;color:#fff}
 
     /* Campaign Table */
     .campaign-table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -79,19 +79,14 @@
     @media(max-width:768px){.editor-grid{grid-template-columns:1fr}}
     .form-group{margin-bottom:16px}
     .form-group label{display:block;font-size:0.78rem;color:var(--muted);margin-bottom:6px;font-weight:500}
-    .form-group input,.form-group textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;transition:border-color .2s;resize:vertical}
-    .form-group input:focus,.form-group textarea:focus{outline:none;border-color:var(--accent)}
+    .form-group input,.form-group select,.form-group textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-size:0.85rem;font-family:inherit;transition:border-color .2s;resize:vertical}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:var(--accent)}
+    .form-group select option{background:var(--surface2)}
     .form-group .hint{font-size:0.75rem;color:var(--muted);margin-top:4px}
-    textarea.body-editor{height:320px;font-family:'Courier New',monospace;font-size:0.82rem}
     textarea.recipients-box{height:100px}
 
-    /* Preview */
-    .preview-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff}
-    .preview-header{background:var(--surface2);padding:8px 14px;font-size:0.75rem;color:var(--muted);border-bottom:1px solid var(--border)}
-    .preview-frame{width:100%;height:420px;border:none}
-
-    /* Footer preview */
-    .footer-toggle-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--border);margin-top:16px}
+    /* Footer toggle */
+    .footer-toggle-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--border);margin-top:4px}
     .toggle-label{font-size:0.82rem;color:var(--muted)}
     .toggle{position:relative;width:38px;height:20px;cursor:pointer}
     .toggle input{opacity:0;width:0;height:0}
@@ -116,7 +111,156 @@
     /* Recipient count */
     .recipient-count{font-size:0.78rem;color:var(--muted);margin-top:4px}
     .recipient-count span{color:#fff;font-weight:600}
-  </style>
+
+    /* Preview */
+    .preview-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff}
+    .preview-header{background:var(--surface2);padding:8px 14px;font-size:0.75rem;color:var(--muted);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .preview-frame{width:100%;height:420px;border:none}
+
+    /* Block composer */
+    .composer-col{display:flex;flex-direction:column;gap:0}
+    .block-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
+    .block-card-head{background:rgba(255,255,255,.03);padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+    .block-badge{font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.5px}
+    .badge-header{background:#1e1b4b;color:#818cf8;border:1px solid #3730a3}
+    .badge-content{background:#1e2d4b;color:#7dd3fc;border:1px solid #1e40af}
+    .badge-ads{background:#2d2200;color:#fbbf24;border:1px solid #92400e}
+    .block-card-head-title{font-size:0.8rem;font-weight:600;color:var(--text);flex:1}
+    .block-card-body{padding:14px}
+    .block-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+    .block-row.single{grid-template-columns:1fr}
+    .block-field{display:flex;flex-direction:column;gap:4px}
+    .block-field label{font-size:0.72rem;color:var(--muted);font-weight:500}
+    .block-field input,.block-field textarea{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:0.82rem;font-family:inherit;transition:border-color .2s;resize:vertical}
+    .block-field input:focus,.block-field textarea:focus{outline:none;border-color:var(--accent)}
+    .block-field input[type="color"]{padding:3px;height:32px;cursor:pointer}
+
+    /* Quill dark theme overrides */
+    .ql-toolbar.ql-snow{background:rgba(255,255,255,.04);border:1px solid var(--border) !important;border-bottom:none !important;border-radius:6px 6px 0 0}
+    .ql-container.ql-snow{border:1px solid var(--border) !important;border-radius:0 0 6px 6px;background:var(--bg);min-height:200px}
+    .ql-editor{color:var(--text);font-size:0.85rem;min-height:200px}
+    .ql-editor.ql-blank::before{color:var(--muted)}
+    .ql-snow .ql-stroke{stroke:#8892a4}
+    .ql-snow .ql-fill,.ql-snow .ql-stroke.ql-fill{fill:#8892a4}
+    .ql-snow .ql-picker{color:#8892a4}
+    .ql-snow .ql-picker-options{background:var(--surface2);border-color:var(--border)}
+    .ql-snow .ql-picker-item:hover,.ql-snow .ql-picker-item.ql-selected{color:var(--text)}
+    .ql-snow .ql-tooltip{background:var(--surface2);border-color:var(--border);color:var(--text);z-index:9999}
+    .ql-snow .ql-tooltip input{background:var(--bg);border-color:var(--border);color:var(--text)}
+    .ql-snow a{color:var(--accent)}
+
+    /* Ad blocks */
+    .ad-block-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden}
+    .ad-block-head{background:rgba(255,255,255,.02);padding:7px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+    .ad-block-head-label{font-size:0.75rem;font-weight:600;flex:1;color:var(--text)}
+    .ad-block-body{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .ad-block-body .block-field.full{grid-column:1/-1}
+    .ad-move-btn{background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:2px 6px;font-size:0.7rem;cursor:pointer;transition:all .15s}
+    .ad-move-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .ad-del-btn{background:none;border:1px solid var(--danger);color:var(--danger);border-radius:4px;padding:2px 6px;font-size:0.7rem;cursor:pointer;transition:all .15s}
+    .ad-del-btn:hover{background:var(--danger);color:#fff}
+    .ad-toggle{width:14px;height:14px;cursor:pointer;accent-color:var(--accent)}
+    .btn-add-ad{width:100%;background:none;border:1px dashed var(--border);color:var(--muted);border-radius:7px;padding:8px;font-size:0.78rem;cursor:pointer;transition:all .2s;margin-top:4px}
+    .btn-add-ad:hover{border-color:#c9a227;color:#c9a227}
+
+    /* Template bar */
+    .template-bar{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .template-bar label{font-size:0.75rem;color:var(--muted);font-weight:500;white-space:nowrap}
+    .template-bar select{flex:1;min-width:120px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;color:var(--text);font-size:0.78rem}
+    .template-bar select option{background:var(--surface2)}
+    .btn-tpl{background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:0.75rem;cursor:pointer;transition:all .15s;white-space:nowrap}
+    .btn-tpl:hover{border-color:var(--accent);color:var(--accent)}
+    .btn-tpl.save{border-color:#22c55e44;color:#22c55e}
+    .btn-tpl.save:hover{background:#052e16}
+    .btn-tpl.del{border-color:var(--danger);color:var(--danger)}
+    .btn-tpl.del:hover{background:var(--danger);color:#fff}
+
+    /* Test send row */
+    .test-send-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--border);margin-top:4px}
+    .test-send-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--text);font-size:0.82rem;font-family:inherit}
+    .test-send-row input:focus{outline:none;border-color:var(--accent)}
+
+    /* Preview modal */
+    .preview-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:none;align-items:center;justify-content:center}
+    .preview-modal-bg.open{display:flex}
+    .preview-modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;width:min(720px,95vw);max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+    .preview-modal-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+    .preview-modal-head span{font-weight:600;font-size:0.9rem}
+    .preview-modal-close{background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:0 4px;line-height:1}
+    .preview-modal-close:hover{color:#fff}
+    .preview-modal iframe{flex:1;border:none;width:100%;min-height:520px}
+  
+  /* ── Newsletter Lists + Presets + AI (eureach port) ── */
+  .lists-panel { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:1.25rem; margin-bottom:1.25rem; display:none; }
+  .lists-panel.open { display:block; }
+  .lists-panel-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+  .lists-panel-head h3 { margin:0; font-size:1rem; }
+  .lists-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:.6rem; margin-top:.75rem; }
+  .list-card { border:1px solid #e2e8f0; border-radius:8px; padding:.75rem; cursor:pointer; transition:all .15s; }
+  .list-card:hover { border-color:#4f46e5; box-shadow:0 2px 8px rgba(79,70,229,.15); }
+  .list-card-name { font-weight:600; font-size:.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .list-card-count { font-size:.78rem; color:#64748b; margin-top:.2rem; }
+  .list-card-actions { display:flex; gap:.3rem; margin-top:.5rem; }
+  .btn-list-action { background:none; border:1px solid #e2e8f0; border-radius:4px; padding:.2rem .45rem; font-size:.75rem; cursor:pointer; }
+  .btn-list-action:hover { background:#f1f5f9; }
+  /* List detail overlay */
+  #lv-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:2000; align-items:flex-start; justify-content:center; padding-top:4vh; overflow-y:auto; }
+  #lv-overlay.open { display:flex; }
+  .lv-box { background:#fff; border-radius:12px; width:900px; max-width:96vw; max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.2); }
+  .lv-head { padding:1rem 1.25rem; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:#fff; z-index:1; }
+  .lv-head h3 { margin:0; font-size:1rem; }
+  .lv-toolbar { display:flex; gap:.5rem; align-items:center; padding:.75rem 1.25rem; border-bottom:1px solid #f1f5f9; flex-wrap:wrap; }
+  .lv-search { flex:1; min-width:160px; border:1px solid #e2e8f0; border-radius:6px; padding:.35rem .65rem; font-size:.84rem; }
+  .lv-filter-tabs { display:flex; gap:.25rem; }
+  .lv-filter-tab { border:1px solid #e2e8f0; background:#f8fafc; border-radius:5px; padding:.3rem .65rem; font-size:.8rem; cursor:pointer; }
+  .lv-filter-tab.active { background:#4f46e5; color:#fff; border-color:#4f46e5; }
+  .lv-bulk-bar { display:none; align-items:center; gap:.5rem; padding:.5rem 1.25rem; background:#eef2ff; font-size:.84rem; }
+  .lv-bulk-bar.show { display:flex; }
+  .lv-table-wrap { padding:0 1.25rem; }
+  .lv-table { width:100%; border-collapse:collapse; font-size:.84rem; }
+  .lv-table th { text-align:left; padding:.5rem .4rem; border-bottom:2px solid #e2e8f0; font-size:.78rem; color:#64748b; }
+  .lv-table td { padding:.45rem .4rem; border-bottom:1px solid #f1f5f9; }
+  .lv-table tr:hover td { background:#f8fafc; }
+  .lv-pager { display:flex; justify-content:center; gap:.35rem; padding:.75rem 1.25rem; }
+  .lv-page-btn { border:1px solid #e2e8f0; background:#fff; border-radius:5px; padding:.3rem .6rem; font-size:.8rem; cursor:pointer; }
+  .lv-page-btn.active { background:#4f46e5; color:#fff; border-color:#4f46e5; }
+  /* Import modal */
+  #import-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:3000; align-items:center; justify-content:center; }
+  #import-modal.open { display:flex; }
+  .import-box { background:#fff; border-radius:10px; width:500px; max-width:96vw; box-shadow:0 8px 32px rgba(0,0,0,.2); }
+  .import-head { padding:.85rem 1.1rem; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; font-weight:700; }
+  .import-body { padding:1.1rem; }
+  /* Recipient mode tabs */
+  .rcpt-mode-tabs { display:flex; gap:.4rem; margin-bottom:.75rem; }
+  .rcpt-tab { border:1px solid #e2e8f0; background:#f8fafc; border-radius:6px; padding:.35rem .85rem; font-size:.84rem; cursor:pointer; }
+  .rcpt-tab.active { background:#4f46e5; color:#fff; border-color:#4f46e5; }
+  /* Preset bar */
+  .eu-preset-bar { display:flex; gap:.4rem; align-items:center; margin-left:auto; }
+  .eu-preset-select { border:1px solid #e2e8f0; border-radius:5px; padding:.25rem .5rem; font-size:.78rem; max-width:140px; }
+  .btn-eu-preset { background:none; border:1px solid #e2e8f0; border-radius:4px; padding:.25rem .45rem; font-size:.82rem; cursor:pointer; }
+  .btn-eu-preset:hover { background:#f1f5f9; }
+  .btn-eu-preset.is-default { color:#f59e0b; border-color:#f59e0b; }
+  /* AI modal */
+  .btn-ai-gen { background:linear-gradient(135deg,#6c3483,#1a5276); color:#fff; border:none; border-radius:5px; padding:.25rem .65rem; font-size:.78rem; cursor:pointer; font-weight:600; margin-left:auto; }
+  .btn-ai-gen:hover { opacity:.88; }
+  #ai-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:3000; align-items:center; justify-content:center; }
+  #ai-modal.open { display:flex; }
+  .ai-box { background:#fff; border-radius:10px; width:540px; max-width:96vw; max-height:88vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.25); }
+  .ai-hd { padding:.85rem 1.1rem; display:flex; justify-content:space-between; align-items:center; font-weight:700; background:linear-gradient(135deg,#6c3483,#1a5276); color:#fff; border-radius:10px 10px 0 0; }
+  .ai-hd button { background:none; border:none; color:#fff; font-size:1.3rem; cursor:pointer; }
+  .ai-body { padding:1.1rem; display:flex; flex-direction:column; gap:.75rem; }
+  #ai-prompt { width:100%; box-sizing:border-box; border:1px solid #e2e8f0; border-radius:6px; padding:.6rem; font-size:.88rem; resize:vertical; min-height:80px; }
+  .ai-opts { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; font-size:.84rem; }
+  .ai-opts select { border:1px solid #e2e8f0; border-radius:5px; padding:.3rem .55rem; }
+  #ai-gen-btn { background:linear-gradient(135deg,#6c3483,#1a5276); color:#fff; border:none; border-radius:6px; padding:.5rem 1.2rem; font-weight:700; cursor:pointer; }
+  #ai-gen-btn:disabled { opacity:.5; cursor:not-allowed; }
+  #ai-preview { border:1px solid #d5e8d4; border-radius:7px; padding:.75rem; background:#f9fff9; }
+  #ai-subject-out { font-size:.87rem; font-weight:600; color:#1a5276; padding:.3rem .5rem; background:#eaf4fb; border-radius:4px; margin-bottom:.5rem; }
+  #ai-content-out { border:1px solid #e2e8f0; border-radius:5px; padding:.5rem; background:#fff; max-height:220px; overflow-y:auto; font-size:.83rem; }
+  .ai-apply-row { display:flex; gap:.5rem; margin-top:.5rem; }
+  .btn-ai-apply { background:#1e8449; color:#fff; border:none; border-radius:5px; padding:.4rem .9rem; font-size:.84rem; font-weight:700; cursor:pointer; }
+  .btn-ai-regen { background:#784212; color:#fff; border:none; border-radius:5px; padding:.4rem .85rem; font-size:.84rem; cursor:pointer; }
+</style>
 </head>
 <body>
 
@@ -136,6 +280,7 @@
             <a href="competitors.html"><span class="ndm-icon">📡</span>Competitors</a>
             <a href="citations.html"><span class="ndm-icon">🔗</span>Citations</a>
             <a href="marketing.html"><span class="ndm-icon">🚀</span>Marketing Creator</a>
+            <a href="fb-posts.html"><span class="ndm-icon">📘</span>FB Post Agent</a>
             <div class="nav-dropdown-divider"></div>
             <a href="newsletter-campaigns.html" style="color:var(--accent)"><span class="ndm-icon">📧</span>Newsletter Campaigns</a>
           </div>
@@ -146,7 +291,7 @@
       <a href="crm.html" style="font-size:0.8rem">CRM</a>
       <a href="outreach.html" style="font-size:0.8rem">Outreach</a>
       <a href="newsletter-campaigns.html" class="active" style="font-size:0.8rem;color:var(--accent)">Newsletter</a>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="nav.dashboard">Dashboard</a>
     </div>
     <div class="nav-lang">
       <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
@@ -184,28 +329,200 @@
   </div>
 
   <!-- Campaign Editor -->
+
+
+
+  <!-- List Detail Overlay -->
+  <div id="lv-overlay" onclick="if(event.target===this)closeLv()">
+    <div class="lv-box">
+      <div class="lv-head">
+        <h3 id="lv-title">List</h3>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="openImportModal()">⬆ Import CSV</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeLv()">× Close</button>
+        </div>
+      </div>
+      <div class="lv-toolbar">
+        <input class="lv-search" id="lv-search" placeholder="Search email or name..." oninput="lvSearch()">
+        <div class="lv-filter-tabs">
+          <button class="lv-filter-tab active" onclick="setLvFilter('all',this)">All</button>
+          <button class="lv-filter-tab" onclick="setLvFilter('active',this)">Active</button>
+          <button class="lv-filter-tab" onclick="setLvFilter('excluded',this)">Excluded</button>
+        </div>
+      </div>
+      <div class="lv-bulk-bar" id="lv-bulk-bar">
+        <span id="lv-sel-count">0 selected</span>
+        <button class="btn btn-ghost btn-sm" onclick="lvBulk('exclude')">Exclude</button>
+        <button class="btn btn-ghost btn-sm" onclick="lvBulk('include')">Re-include</button>
+        <button class="btn btn-ghost btn-sm" style="color:#c0392b" onclick="lvBulk('delete')">Delete</button>
+        <button class="btn btn-ghost btn-sm" onclick="lvClearSel()">× Clear</button>
+      </div>
+      <div class="lv-table-wrap">
+        <table class="lv-table">
+          <thead><tr>
+            <th style="width:28px"><input type="checkbox" id="lv-chk-all" onchange="lvSelectAll()"></th>
+            <th>Email</th><th>Name</th><th>Status</th><th></th>
+          </tr></thead>
+          <tbody id="lv-tbody"></tbody>
+        </table>
+      </div>
+      <div class="lv-pager" id="lv-pager"></div>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div id="import-modal" onclick="if(event.target===this)closeImportModal()">
+    <div class="import-box">
+      <div class="import-head">
+        <span>⬆ Import CSV</span>
+        <button onclick="closeImportModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer">&times;</button>
+      </div>
+      <div class="import-body">
+        <div style="margin-bottom:.75rem">
+          <label style="font-size:.84rem;font-weight:600;display:block;margin-bottom:.35rem">Import into list</label>
+          <select id="import-list-select" style="width:100%;border:1px solid #e2e8f0;border-radius:6px;padding:.4rem .6rem;font-size:.84rem">
+            <option value="">— Select a list —</option>
+            <option value="__new__">+ Create new list…</option>
+          </select>
+          <input type="text" id="import-new-list-name" placeholder="New list name…" style="display:none;margin-top:.4rem;width:100%;box-sizing:border-box;border:1px solid #e2e8f0;border-radius:6px;padding:.4rem .6rem;font-size:.84rem">
+        </div>
+        <p style="font-size:.84rem;color:#64748b">CSV must have an <strong>email</strong> column. Optional: <strong>name</strong> column. First row = header.</p>
+        <input type="file" id="import-file" accept=".csv,.txt" style="margin:.75rem 0">
+        <div id="import-preview" style="font-size:.8rem;color:#64748b;margin:.4rem 0"></div>
+        <div style="display:flex;gap:.5rem;margin-top:.75rem">
+          <button class="btn btn-primary btn-sm" id="import-do-btn" onclick="doImport()">Import</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeImportModal()">Cancel</button>
+        </div>
+        <div id="import-msg" style="margin-top:.5rem;font-size:.84rem"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Generate Modal -->
+  <div id="ai-modal" onclick="if(event.target===this)closeAiModal()">
+    <div class="ai-box">
+      <div class="ai-hd">
+        <span>✨ Create with AI</span>
+        <button onclick="closeAiModal()">&times;</button>
+      </div>
+      <div class="ai-body">
+        <div>
+          <label style="font-size:.84rem;font-weight:600;display:block;margin-bottom:.35rem">What should I write?</label>
+          <textarea id="ai-prompt" placeholder="e.g. Newsletter announcing our new AI features for business growth, friendly tone, include a call to action..."></textarea>
+        </div>
+        <div class="ai-opts">
+          <select id="ai-tone">
+            <option value="friendly">😄 Friendly</option>
+            <option value="professional">👔 Professional</option>
+            <option value="urgent">⚡ Urgent</option>
+          </select>
+          <label><input type="checkbox" id="ai-gen-subject" checked> Generate subject line too</label>
+        </div>
+        <button id="ai-gen-btn" onclick="runAiGenerate()">✨ Generate</button>
+        <div id="ai-preview" style="display:none">
+          <div id="ai-subject-out" style="display:none"></div>
+          <div style="font-size:.78rem;font-weight:600;color:#64748b;margin-bottom:.35rem">Preview:</div>
+          <div id="ai-content-out"></div>
+          <div class="ai-apply-row">
+            <button class="btn-ai-apply" onclick="applyAiContent()">✔ Apply</button>
+            <button id="btn-ai-copy" onclick="copyAiHtml()" style="background:#0ea5e9;color:#fff;border:none;border-radius:5px;padding:.4rem .9rem;font-size:.84rem;font-weight:700;cursor:pointer">📋 Copy HTML</button>
+            <button class="btn-ai-regen" onclick="runAiGenerate()">↻ Regenerate</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="editor-panel" id="editor-panel">
     <div class="editor-title">
       <span id="editor-title-text">New Campaign</span>
-      <button class="btn btn-ghost btn-sm" onclick="closeEditor()" style="margin-left:auto" data-i18n="nl.cancel">Cancel</button>
+      <button class="btn btn-ghost btn-sm" onclick="openPreviewModal()" style="margin-left:auto;margin-right:8px">👁 Preview</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeEditor()" data-i18n="nl.cancel">Cancel</button>
+    </div>
+
+    <!-- Template bar -->
+    <div class="template-bar">
+      <label>Templates:</label>
+      <select id="tpl-select"><option value="">— select —</option></select>
+      <button class="btn-tpl" onclick="loadTemplate()">Load</button>
+      <button class="btn-tpl save" onclick="saveTemplate()">Save as…</button>
+      <button class="btn-tpl del" onclick="deleteTemplate()">Delete</button>
     </div>
 
     <div class="editor-grid">
-      <!-- Left: Fields -->
-      <div>
+      <!-- Left: Composer blocks -->
+      <div class="composer-col">
+        <!-- Meta fields -->
         <div class="form-group">
           <label data-i18n="nl.campName">Campaign name (internal)</label>
           <input type="text" id="field-name" placeholder="e.g. July Newsletter" oninput="markDirty()">
         </div>
         <div class="form-group">
           <label data-i18n="nl.subject">Email subject line</label>
-          <input type="text" id="field-subject" placeholder="What's new at [Your Business]" oninput="markDirty();updatePreview()">
+          <input type="text" id="field-subject" placeholder="What's new at EUREACH" oninput="markDirty();updatePreview()">
         </div>
-        <div class="form-group">
-          <label data-i18n="nl.body">Email body (HTML supported)</label>
-          <textarea class="body-editor" id="field-body" placeholder="<h2>Hello!</h2>&#10;<p>Your newsletter content here...</p>" oninput="markDirty();updatePreview()"></textarea>
-          <div class="hint">You can paste plain text or HTML. Use &lt;h2&gt;, &lt;p&gt;, &lt;b&gt;, &lt;a href=&quot;...&quot;&gt; etc.</div>
+
+        <!-- Header block -->
+        <div class="block-card" style="border-left:4px solid #4f46e5">
+          <div class="block-card-head" style="justify-content:space-between;flex-wrap:wrap;gap:.4rem">
+            <span class="block-badge badge-header">Header</span>
+            <span class="block-card-head-title">Email header block</span>
+            <div class="eu-preset-bar">
+              <select id="eu-preset-select" class="eu-preset-select" onchange="applyEuPreset(this.value)"><option value="">— Preset —</option></select>
+              <button class="btn-eu-preset" onclick="saveEuPreset()" title="Save preset">💾</button>
+              <button class="btn-eu-preset" id="btn-eu-preset-star" onclick="setEuPresetDefault()" title="Set as default" style="display:none">★</button>
+              <button class="btn-eu-preset" id="btn-eu-preset-del" onclick="deleteEuPreset()" title="Delete" style="display:none">🗑</button>
+            </div>
+          </div>
+          <div class="block-card-body">
+            <div class="block-row">
+              <div class="block-field">
+                <label>Logo / brand text</label>
+                <input type="text" id="hdr-logo" value="eureach.eu" oninput="updatePreview()">
+              </div>
+              <div class="block-field">
+                <label>Accent suffix</label>
+                <input type="text" id="hdr-accent" value=".eu" oninput="updatePreview()">
+              </div>
+            </div>
+            <div class="block-row">
+              <div class="block-field">
+                <label>Subtitle</label>
+                <input type="text" id="hdr-subtitle" value="Business Growth Platform" oninput="updatePreview()">
+              </div>
+              <div class="block-field">
+                <label>Background color</label>
+                <input type="color" id="hdr-bg" value="#1e1b4b" oninput="updatePreview()">
+              </div>
+            </div>
+          </div>
         </div>
+
+        <!-- Content block (Quill) -->
+        <div class="block-card" style="border-left:4px solid #6366f1">
+          <div class="block-card-head" style="justify-content:space-between">
+            <span class="block-badge badge-content">Content</span>
+            <span class="block-card-head-title">Email body (rich text)</span>
+            <button class="btn-ai-gen" onclick="openAiModal()">✨ Create with AI</button>
+          </div>
+          <div class="block-card-body">
+            <div id="quill-editor" style="min-height:220px"></div>
+          </div>
+        </div>
+
+        <!-- Ad blocks -->
+        <div class="block-card" style="border-left:4px solid #c9a227">
+          <div class="block-card-head">
+            <span class="block-badge badge-ads">Ads</span>
+            <span class="block-card-head-title">Right sidebar sponsor blocks</span>
+          </div>
+          <div class="block-card-body">
+            <div id="ad-blocks-list"></div>
+            <button class="btn-add-ad" onclick="addAdBlock()">+ Add Sponsor Block</button>
+          </div>
+        </div>
+
+        <!-- Footer toggle -->
         <div class="footer-toggle-row">
           <label class="toggle">
             <input type="checkbox" id="field-footer" checked onchange="updatePreview()">
@@ -213,20 +530,56 @@
           </label>
           <span class="toggle-label">Include EUREACH growth footer <span style="color:var(--accent);font-size:0.75rem">(required for Growth Plan)</span></span>
         </div>
+
+        <!-- Test send -->
+        <div class="test-send-row">
+          <input type="email" id="test-email" placeholder="your@email.com — send a test">
+          <button class="btn btn-ghost btn-sm" onclick="sendTestEmail()">Send Test</button>
+        </div>
       </div>
 
       <!-- Right: Recipients + Preview -->
       <div>
         <div class="form-group">
-          <label data-i18n="nl.recipients">Recipients (one email per line or comma-separated)</label>
+          <label data-i18n="nl.recipients">Recipients</label>
+          <div class="rcpt-mode-tabs" style="align-items:center">
+            <button class="rcpt-tab active" id="rcpt-tab-manual" onclick="setRcptMode('manual')">✍ Manual</button>
+            <button class="rcpt-tab" id="rcpt-tab-list" onclick="setRcptMode('list')">📋 From List</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleListsPanel()" style="margin-left:auto;font-size:.78rem;padding:.2rem .6rem">⚙️ Manage Lists</button>
+          </div>
+          <div id="rcpt-manual-wrap">
           <textarea class="recipients-box" id="field-recipients" placeholder="customer1@email.com&#10;customer2@email.com&#10;..." oninput="markDirty();countRecipients()"></textarea>
           <div class="recipient-count">Recipients: <span id="recipient-count">0</span></div>
+          </div>
+          <div id="rcpt-list-wrap" style="display:none">
+            <select id="rcpt-list-select" class="recipients-box" style="height:auto;padding:.5rem" onchange="onRcptListChange()">
+              <option value="">— Select a list —</option>
+            </select>
+            <div id="rcpt-list-info" style="font-size:.8rem;color:#64748b;margin-top:.35rem"></div>
+          </div>
         </div>
+
+  <!-- Contact Lists Panel -->
+  <div class="lists-panel" id="lists-panel">
+    <div class="lists-panel-head">
+      <h3>📋 Contact Lists</h3>
+      <div style="display:flex;gap:.4rem">
+        <button class="btn btn-ghost btn-sm" onclick="openPanelImport()">📥 Import CSV</button>
+        <button class="btn btn-primary btn-sm" onclick="openCreateList()">+ New List</button>
+      </div>
+    </div>
+    <div id="lists-grid" class="lists-grid">
+      <div style="color:#94a3b8;font-size:.85rem">Loading lists...</div>
+    </div>
+  </div>
         <div class="form-group">
-          <label data-i18n="nl.preview">Email preview</label>
+          <label>Email preview</label>
           <div class="preview-wrap">
-            <div class="preview-header">Preview — as your recipients will see it</div>
-            <iframe class="preview-frame" id="preview-frame" srcdoc="<div style='padding:20px;color:#94a3b8;font-size:13px'>Start typing to see a preview...</div>"></iframe>
+            <div class="preview-header">
+              <span>Preview — as your recipients will see it</span>
+              <button class="btn-tpl" onclick="openPreviewModal()">Full preview</button>
+            </div>
+            <iframe class="preview-frame" id="preview-frame" srcdoc="<div style='padding:20px;color:#94a3b8;font-size:13px'>Start composing to see a preview...</div>"></iframe>
           </div>
         </div>
       </div>
@@ -264,87 +617,407 @@
   </div>
 </div>
 
+<!-- Preview Modal -->
+<div class="preview-modal-bg" id="preview-modal-bg" onclick="closePreviewModal(event)">
+  <div class="preview-modal" onclick="event.stopPropagation()">
+    <div class="preview-modal-head">
+      <span>Email Preview</span>
+      <button class="preview-modal-close" onclick="closePreviewModal()">✕</button>
+    </div>
+    <iframe id="preview-modal-frame" srcdoc="" style="flex:1;border:none;width:100%;min-height:520px"></iframe>
+  </div>
+</div>
+
 <div id="toast"></div>
 
-<script src="js/nav-init.js?v=2"></script>
+<script src="js/api.js"></script>
+<script src="js/nav-init.js?v=5"></script>
+<script src="/js/quill.min.js"></script>
 <script>
+// ── Constants ─────────────────────────────────────────────────────────────────
 const EUREACH_FOOTER_HTML = '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:40px;"><tr><td align="center" style="border-top:2px solid #e2e8f0;padding:28px 24px 0;font-family:Arial,Helvetica,sans-serif;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;letter-spacing:0.8px;text-transform:uppercase;">This newsletter was created with</p><a href="https://eureach.eu?ref=nl-footer" style="display:inline-block;margin-bottom:12px;font-size:20px;font-weight:700;color:#4f46e5;text-decoration:none;">eureach<span style="color:#6366f1">.</span>eu</a><p style="margin:0;font-size:12px;color:#64748b;line-height:1.7;">Need help with your business marketing?<br><a href="https://eureach.eu?ref=nl-footer-cta" style="color:#4f46e5;font-weight:600;text-decoration:none;">Discover EUREACH \u2192</a></p></td></tr></table>';
 
+const TPL_KEY = 'nl_templates_eureach';
+
+const DEFAULT_TEMPLATES = [
+  {
+    name: 'Welcome',
+    subject: 'Welcome to our newsletter!',
+    blocks: {
+      header: { logo: 'eureach.eu', accent: '.eu', subtitle: 'Business Growth Platform', bg: '#1e1b4b' },
+      content: '<h2>Welcome aboard!</h2><p>We\'re thrilled to have you with us. At <strong>EUREACH</strong>, we help businesses grow smarter \u2014 with AI-powered outreach, lead generation, and marketing tools.</p><p>Here\'s what you can expect from our newsletter:</p><ul><li>Growth tips and strategies</li><li>Platform updates and new features</li><li>Case studies from businesses like yours</li></ul><p>Questions? Reply to this email \u2014 we read everything.</p><p>Warm regards,<br><strong>The EUREACH Team</strong></p>',
+      ads: [
+        { title: 'EUREACH Platform', desc: 'Grow your business with AI-powered outreach and lead generation.', btnText: 'Try Free', url: 'https://eureach.eu', color: '#4f46e5', enabled: true },
+        { title: 'sos.gr Network', desc: 'Join the SOS business network \u2014 connect with partners across Europe.', btnText: 'Learn More', url: 'https://sos.gr', color: '#0ea5e9', enabled: true }
+      ]
+    }
+  },
+  {
+    name: 'Product Update',
+    subject: 'New features just dropped \ud83d\ude80',
+    blocks: {
+      header: { logo: 'eureach.eu', accent: '.eu', subtitle: 'Product Updates', bg: '#0f172a' },
+      content: '<h2>New Features \u2014 What\'s New This Month</h2><p>We\'ve been busy building. Here\'s what\'s new on the <strong>EUREACH</strong> platform this month:</p><h3>Enhanced Lead Finder</h3><p>Find qualified leads faster with our improved search filters and contact enrichment.</p><h3>Newsletter Campaigns</h3><p>Our new rich-text campaign composer makes it easy to build beautiful newsletters with sponsor blocks \u2014 right from your dashboard.</p><h3>CRM Improvements</h3><p>Smarter pipelines, better notes, and one-click outreach from your contact view.</p><p>Log in now to explore the updates.</p><p>\u2014 The EUREACH Team</p>',
+      ads: [
+        { title: 'Upgrade to Pro', desc: 'Unlock unlimited leads, campaigns, and CRM contacts.', btnText: 'See Plans', url: 'https://eureach.eu/pricing', color: '#4f46e5', enabled: true },
+        { title: 'Refer a Friend', desc: 'Earn 1 month free for every business you refer to EUREACH.', btnText: 'Refer Now', url: 'https://eureach.eu/refer', color: '#22c55e', enabled: true }
+      ]
+    }
+  },
+  {
+    name: 'Growth Tips',
+    subject: '5 growth tactics for your business this quarter',
+    blocks: {
+      header: { logo: 'eureach.eu', accent: '.eu', subtitle: 'Growth Playbook', bg: '#1a1a2e' },
+      content: '<h2>5 Growth Tactics for This Quarter</h2><p>Whether you\'re B2B or B2C, these strategies work. Here\'s what successful businesses are doing right now:</p><ol><li><strong>Automate your outreach</strong> \u2014 Use tools like EUREACH to send personalized emails at scale without losing the human touch.</li><li><strong>Build your email list</strong> \u2014 A newsletter audience is an asset you own. Start growing it now.</li><li><strong>Track your competitors</strong> \u2014 Know what\'s working for others in your niche before you invest in content.</li><li><strong>Get citations</strong> \u2014 Local SEO citations (directory listings) drive free traffic. Set them up once.</li><li><strong>Double down on what works</strong> \u2014 Review your last 90 days. What brought the most leads? Do more of that.</li></ol><p>Need help implementing any of these? EUREACH has tools for all of them.</p><p>To your growth,<br><strong>The EUREACH Team</strong></p>',
+      ads: [
+        { title: 'EUREACH Outreach', desc: 'Send 1000+ personalized emails per day \u2014 without the spam risk.', btnText: 'Start Free', url: 'https://eureach.eu', color: '#4f46e5', enabled: true },
+        { title: 'Citation Builder', desc: 'Get listed on 50+ business directories automatically.', btnText: 'Get Listed', url: 'https://eureach.eu/citations', color: '#f59e0b', enabled: true }
+      ]
+    }
+  }
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
 let editingId = null;
 let isDirty = false;
 let growthActive = false;
 let campaigns = [];
+let quill = null;
+let _adBlocks = [];
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
+  initTemplates();
   await Promise.all([loadGrowthPlan(), loadCampaigns()]);
+  await loadLists();
+  await loadEuPresets();
 }
 
+function initQuill() {
+  quill = new Quill('#quill-editor', {
+    theme: 'snow',
+    placeholder: 'Write your email content here...',
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline'],
+        [{ color: [] }, { background: [] }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link', 'clean']
+      ]
+    }
+  });
+  quill.on('text-change', function() {
+    markDirty();
+    updatePreview();
+  });
+}
+
+// ── Templates ─────────────────────────────────────────────────────────────────
+function getTemplates() {
+  try {
+    var raw = localStorage.getItem(TPL_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  var tpls = DEFAULT_TEMPLATES.map(function(t) { return Object.assign({}, t); });
+  localStorage.setItem(TPL_KEY, JSON.stringify(tpls));
+  return tpls;
+}
+
+function saveTemplates(tpls) {
+  localStorage.setItem(TPL_KEY, JSON.stringify(tpls));
+}
+
+function initTemplates() {
+  renderTemplateSelect();
+}
+
+function renderTemplateSelect() {
+  var sel = document.getElementById('tpl-select');
+  var val = sel.value;
+  var tpls = getTemplates();
+  sel.innerHTML = '<option value="">— select —</option>' +
+    tpls.map(function(t, i) {
+      return '<option value="' + i + '"' + (val == i ? ' selected' : '') + '>' + esc(t.name) + '</option>';
+    }).join('');
+}
+
+function loadTemplate() {
+  var idx = parseInt(document.getElementById('tpl-select').value, 10);
+  if (isNaN(idx)) { showToast('Select a template first.', 'err'); return; }
+  var tpls = getTemplates();
+  var tpl = tpls[idx];
+  if (!tpl) return;
+  document.getElementById('field-subject').value = tpl.subject || '';
+  applyBlocks(tpl.blocks);
+  updatePreview();
+  showToast('Template loaded.', 'ok');
+}
+
+function applyBlocks(blocks) {
+  if (!blocks) return;
+  var h = blocks.header || {};
+  document.getElementById('hdr-logo').value     = h.logo     || 'eureach.eu';
+  document.getElementById('hdr-accent').value   = h.accent   || '.eu';
+  document.getElementById('hdr-subtitle').value = h.subtitle || 'Business Growth Platform';
+  document.getElementById('hdr-bg').value       = h.bg       || '#1e1b4b';
+  if (quill && blocks.content !== undefined) {
+    quill.root.innerHTML = blocks.content || '';
+  }
+  _adBlocks = (blocks.ads || []).map(function(a) { return Object.assign({}, a); });
+  renderAdBlocks();
+}
+
+function getCurrentBlocks() {
+  return {
+    header: {
+      logo:     document.getElementById('hdr-logo').value,
+      accent:   document.getElementById('hdr-accent').value,
+      subtitle: document.getElementById('hdr-subtitle').value,
+      bg:       document.getElementById('hdr-bg').value
+    },
+    content: quill ? quill.root.innerHTML : '',
+    ads: _adBlocks.map(function(a) { return Object.assign({}, a); })
+  };
+}
+
+function saveTemplate() {
+  var name = prompt('Template name:');
+  if (!name || !name.trim()) return;
+  name = name.trim();
+  var tpls = getTemplates();
+  var existing = -1;
+  for (var i = 0; i < tpls.length; i++) { if (tpls[i].name === name) { existing = i; break; } }
+  var tpl = {
+    name: name,
+    subject: document.getElementById('field-subject').value,
+    blocks: getCurrentBlocks()
+  };
+  if (existing >= 0) {
+    if (!confirm('Overwrite existing template "' + name + '"?')) return;
+    tpls[existing] = tpl;
+  } else {
+    tpls.push(tpl);
+  }
+  saveTemplates(tpls);
+  renderTemplateSelect();
+  var newIdx = -1;
+  var tpls2 = getTemplates();
+  for (var j = 0; j < tpls2.length; j++) { if (tpls2[j].name === name) { newIdx = j; break; } }
+  if (newIdx >= 0) document.getElementById('tpl-select').value = newIdx;
+  showToast('Template saved.', 'ok');
+}
+
+function deleteTemplate() {
+  var idx = parseInt(document.getElementById('tpl-select').value, 10);
+  if (isNaN(idx)) { showToast('Select a template first.', 'err'); return; }
+  var tpls = getTemplates();
+  if (!confirm('Delete template "' + tpls[idx].name + '"?')) return;
+  tpls.splice(idx, 1);
+  saveTemplates(tpls);
+  renderTemplateSelect();
+  showToast('Template deleted.', 'ok');
+}
+
+// ── Ad Blocks ─────────────────────────────────────────────────────────────────
+function addAdBlock() {
+  _adBlocks.push({ title: 'Sponsor', desc: 'Description here.', btnText: 'Learn More', url: 'https://', color: '#4f46e5', enabled: true });
+  renderAdBlocks();
+  updatePreview();
+}
+
+function removeAdBlock(i) {
+  _adBlocks.splice(i, 1);
+  renderAdBlocks();
+  updatePreview();
+}
+
+function moveAdBlock(i, dir) {
+  var j = i + dir;
+  if (j < 0 || j >= _adBlocks.length) return;
+  var tmp = _adBlocks[i];
+  _adBlocks[i] = _adBlocks[j];
+  _adBlocks[j] = tmp;
+  renderAdBlocks();
+  updatePreview();
+}
+
+function updateAd(i, field, val) {
+  if (!_adBlocks[i]) return;
+  if (field === 'enabled') { _adBlocks[i].enabled = val; } else { _adBlocks[i][field] = val; }
+  updatePreview();
+}
+
+function renderAdBlocks() {
+  var container = document.getElementById('ad-blocks-list');
+  if (!_adBlocks.length) {
+    container.innerHTML = '<p style="font-size:0.78rem;color:var(--muted);text-align:center;padding:10px 0">No sponsor blocks. Add one below.</p>';
+    return;
+  }
+  container.innerHTML = _adBlocks.map(function(ad, i) {
+    return '<div class="ad-block-item">' +
+      '<div class="ad-block-head">' +
+        '<input type="checkbox" class="ad-toggle" ' + (ad.enabled ? 'checked' : '') + ' onchange="updateAd(' + i + ',\'enabled\',this.checked)">' +
+        '<span class="ad-block-head-label" id="adlbl-' + i + '">' + esc(ad.title || ('Sponsor ' + (i+1))) + '</span>' +
+        '<button class="ad-move-btn" onclick="moveAdBlock(' + i + ',-1)" title="Move up">\u2191</button>' +
+        '<button class="ad-move-btn" onclick="moveAdBlock(' + i + ',1)" title="Move down">\u2193</button>' +
+        '<button class="ad-del-btn" onclick="removeAdBlock(' + i + ')" title="Remove">\u2715</button>' +
+      '</div>' +
+      '<div class="ad-block-body">' +
+        '<div class="block-field">' +
+          '<label>Title</label>' +
+          '<input type="text" value="' + esc(ad.title) + '" oninput="updateAd(' + i + ',\'title\',this.value);var el=document.getElementById(\'adlbl-' + i + '\');if(el)el.textContent=this.value||\'Sponsor ' + (i+1) + '\'">' +
+        '</div>' +
+        '<div class="block-field">' +
+          '<label>Button text</label>' +
+          '<input type="text" value="' + esc(ad.btnText) + '" oninput="updateAd(' + i + ',\'btnText\',this.value)">' +
+        '</div>' +
+        '<div class="block-field">' +
+          '<label>URL</label>' +
+          '<input type="text" value="' + esc(ad.url) + '" oninput="updateAd(' + i + ',\'url\',this.value)">' +
+        '</div>' +
+        '<div class="block-field">' +
+          '<label>Button color</label>' +
+          '<input type="color" value="' + esc(ad.color || '#4f46e5') + '" oninput="updateAd(' + i + ',\'color\',this.value)">' +
+        '</div>' +
+        '<div class="block-field full" style="grid-column:1/-1">' +
+          '<label>Description</label>' +
+          '<textarea rows="2" oninput="updateAd(' + i + ',\'desc\',this.value)">' + esc(ad.desc) + '</textarea>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Email HTML Builder ────────────────────────────────────────────────────────
+function getEmailHtml() {
+  var logo       = document.getElementById('hdr-logo').value || 'eureach.eu';
+  var accent     = document.getElementById('hdr-accent').value || '.eu';
+  var subtitle   = document.getElementById('hdr-subtitle').value || '';
+  var bg         = document.getElementById('hdr-bg').value || '#1e1b4b';
+  var content    = quill ? quill.root.innerHTML : '';
+  var withFooter = document.getElementById('field-footer').checked;
+
+  // Split logo at accent suffix for colored display
+  var accPos     = logo.lastIndexOf(accent);
+  var logoMain   = accPos >= 0 ? logo.substring(0, accPos) : logo;
+  var logoAccent = accPos >= 0 ? logo.substring(accPos) : '';
+
+  var headerHtml =
+    '<table width="100%" border="0" cellspacing="0" cellpadding="0">' +
+    '<tr><td align="center" style="background:' + bg + ';padding:32px 24px 28px;">' +
+    '<div style="font-family:Arial,Helvetica,sans-serif;font-size:28px;font-weight:700;color:#fff;margin-bottom:6px;">' +
+      esc(logoMain) + '<span style="color:#818cf8;">' + esc(logoAccent) + '</span>' +
+    '</div>' +
+    (subtitle ? '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#94a3b8;letter-spacing:1px;text-transform:uppercase;">' + esc(subtitle) + '</div>' : '') +
+    '</td></tr></table>';
+
+  var activeAds = _adBlocks.filter(function(a) { return a.enabled; });
+
+  var bodyTable;
+  if (activeAds.length) {
+    var adCells = activeAds.map(function(ad) {
+      return '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom:16px;background:#f8fafc;border-radius:8px;overflow:hidden;border:1px solid #e2e8f0;">' +
+        '<tr><td style="background:' + (ad.color || '#4f46e5') + ';padding:8px 12px;">' +
+          '<div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;color:#fff;">' + esc(ad.title) + '</div>' +
+        '</td></tr>' +
+        '<tr><td style="padding:10px 12px 12px;">' +
+          '<p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#475569;line-height:1.5;">' + esc(ad.desc) + '</p>' +
+          '<a href="' + esc(ad.url) + '" style="display:inline-block;background:' + (ad.color || '#4f46e5') + ';color:#fff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:600;padding:6px 14px;border-radius:5px;">' + esc(ad.btnText) + '</a>' +
+        '</td></tr>' +
+        '</table>';
+    }).join('');
+
+    bodyTable =
+      '<table width="100%" border="0" cellspacing="0" cellpadding="0">' +
+      '<tr>' +
+        '<td width="66%" valign="top" style="padding-right:20px;font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#334155;line-height:1.7;">' +
+          (content || '<p style="color:#94a3b8">Start typing your email content...</p>') +
+        '</td>' +
+        '<td width="34%" valign="top" style="border-left:1px solid #e2e8f0;padding-left:20px;">' +
+          '<p style="font-family:Arial,Helvetica,sans-serif;font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px;font-weight:600;">Sponsors</p>' +
+          adCells +
+        '</td>' +
+      '</tr>' +
+      '</table>';
+  } else {
+    bodyTable =
+      '<table width="100%" border="0" cellspacing="0" cellpadding="0">' +
+      '<tr>' +
+        '<td valign="top" style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#334155;line-height:1.7;">' +
+          (content || '<p style="color:#94a3b8">Start typing your email content...</p>') +
+        '</td>' +
+      '</tr>' +
+      '</table>';
+  }
+
+  var footerHtml = withFooter ? EUREACH_FOOTER_HTML : '';
+
+  return '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' +
+    'body{font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;margin:0;padding:20px}' +
+    '.wrap{max-width:620px;margin:0 auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.1)}' +
+    '.body-pad{padding:28px 32px}' +
+    'h1,h2,h3{color:#1e293b;font-family:Arial,Helvetica,sans-serif}' +
+    'p{color:#334155;line-height:1.7;margin:0 0 14px}' +
+    'a{color:#4f46e5}img{max-width:100%}' +
+    'ul,ol{margin:0 0 14px;padding-left:24px}li{margin-bottom:4px}' +
+    '</style></head><body>' +
+    '<div class="wrap">' +
+      headerHtml +
+      '<div class="body-pad">' +
+        bodyTable +
+        footerHtml +
+      '</div>' +
+    '</div>' +
+    '</body></html>';
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+function updatePreview() {
+  var html = getEmailHtml();
+  var frame = document.getElementById('preview-frame');
+  if (frame) frame.srcdoc = html;
+}
+
+function openPreviewModal() {
+  var html = getEmailHtml();
+  document.getElementById('preview-modal-frame').srcdoc = html;
+  document.getElementById('preview-modal-bg').classList.add('open');
+}
+
+function closePreviewModal(e) {
+  if (e && e.target !== document.getElementById('preview-modal-bg')) return;
+  document.getElementById('preview-modal-bg').classList.remove('open');
+}
+
+// ── Growth Plan ───────────────────────────────────────────────────────────────
 async function loadGrowthPlan() {
   try {
-    const r = await fetch('/api/growth-plan/status');
-    const d = await r.json();
-    const gp = d.growthPlan;
+    var r = await fetch('/api/growth-plan/status');
+    var d = await r.json();
+    var gp = d.growthPlan;
     growthActive = gp.active;
-    const banner = document.getElementById('growth-banner');
+    var banner = document.getElementById('growth-banner');
     if (gp.active) {
       banner.classList.add('active');
       document.getElementById('gp-title').textContent = 'Growth Plan Active';
-      const exp = new Date(gp.expiresAt).toLocaleDateString();
+      var exp = new Date(gp.expiresAt).toLocaleDateString();
       document.getElementById('gp-sub').innerHTML =
-        `EUREACH footer is automatically added to your newsletters. You have <strong>free access</strong> until <strong>${exp}</strong>. Emails sent with footer: <strong>${(gp.emailsSent||0).toLocaleString()}</strong>.`;
+        'EUREACH footer is automatically added to your newsletters. You have <strong>free access</strong> until <strong>' + exp + '</strong>. Emails sent with footer: <strong>' + ((gp.emailsSent||0).toLocaleString()) + '</strong>.';
       document.getElementById('gp-action').innerHTML =
-        '<span class="growth-badge">✓ Growth Plan Active</span>';
+        '<span class="growth-badge">\u2713 Growth Plan Active</span>';
     }
   } catch(e) { console.warn('growth plan load failed', e); }
 }
 
-async function loadCampaigns() {
-  try {
-    const r = await fetch('/api/newsletter-campaign');
-    if (!r.ok) return;
-    const d = await r.json();
-    campaigns = d.campaigns || [];
-    renderCampaigns();
-  } catch(e) { console.warn('campaigns load failed', e); }
-}
-
-function renderCampaigns() {
-  const tbody = document.getElementById('campaigns-body');
-  if (!campaigns.length) {
-    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No campaigns yet</div><div>Create your first newsletter campaign above.</div></div></td></tr>';
-    return;
-  }
-  tbody.innerHTML = campaigns.map(c => {
-    const statusClass = { draft:'status-draft', sending:'status-sending', sent:'status-sent' }[c.status] || 'status-draft';
-    const sentInfo = c.status === 'sent' ? `${c.sentCount} sent${c.errorCount ? ', <span style="color:var(--danger)">' + c.errorCount + ' failed</span>' : ''}` : '—';
-    const sentDate = c.sentAt ? new Date(c.sentAt).toLocaleDateString() : '—';
-    return `<tr>
-      <td>
-        <div class="campaign-name">${esc(c.name)}</div>
-        <div class="campaign-subject">${esc(c.subject || '(no subject)')}</div>
-      </td>
-      <td>${(c.recipients||[]).length}</td>
-      <td><span class="status-badge ${statusClass}">${c.status}</span></td>
-      <td><div style="font-size:0.8rem">${sentDate}</div><div style="font-size:0.78rem;color:var(--muted)">${sentInfo}</div></td>
-      <td>
-        <div class="table-actions">
-          ${c.status !== 'sent' && c.status !== 'sending' ? `<button class="btn btn-ghost btn-sm" onclick="editCampaign('${c.id}')">Edit</button>` : ''}
-          ${c.status === 'draft' ? `<button class="btn btn-primary btn-sm" onclick="quickSend('${c.id}')">Send</button>` : ''}
-          <button class="btn btn-danger btn-sm" onclick="deleteCampaign('${c.id}')">Delete</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── Growth Plan ───────────────────────────────────────────────────────────────
 async function activateGrowthPlan() {
-  const btn = document.getElementById('btn-activate');
+  var btn = document.getElementById('btn-activate');
   btn.disabled = true; btn.textContent = 'Activating...';
   try {
-    const r = await fetch('/api/growth-plan/activate', { method:'POST', headers:{'Content-Type':'application/json'} });
-    const d = await r.json();
+    var _csrf = (document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/) || [])[1] || '';
+    var r = await fetch('/api/growth-plan/activate', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':_csrf} });
+    var d = await r.json();
     if (d.ok) {
       showToast('Growth Plan activated! You now have 90 days of free newsletter sending.', 'ok');
       await loadGrowthPlan();
@@ -355,37 +1028,93 @@ async function activateGrowthPlan() {
   } catch(e) { showToast('Network error', 'err'); btn.disabled = false; btn.textContent = 'Activate Free Growth Plan — 90 days free'; }
 }
 
+async function loadCampaigns() {
+  try {
+    var r = await fetch('/api/newsletter-campaign');
+    if (!r.ok) return;
+    var d = await r.json();
+    campaigns = d.campaigns || [];
+    renderCampaigns();
+  } catch(e) { console.warn('campaigns load failed', e); }
+}
+
+function renderCampaigns() {
+  var tbody = document.getElementById('campaigns-body');
+  if (!campaigns.length) {
+    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">No campaigns yet</div><div>Create your first newsletter campaign above.</div></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = campaigns.map(function(c) {
+    var statusClass = { draft:'status-draft', sending:'status-sending', sent:'status-sent' }[c.status] || 'status-draft';
+    var sentInfo = c.status === 'sent'
+      ? c.sentCount + ' sent' + (c.errorCount ? ', <span style="color:var(--danger)">' + c.errorCount + ' failed</span>' : '')
+      : '—';
+    var sentDate = c.sentAt ? new Date(c.sentAt).toLocaleDateString() : '—';
+    return '<tr>' +
+      '<td><div class="campaign-name">' + esc(c.name) + '</div><div class="campaign-subject">' + esc(c.subject || '(no subject)') + '</div></td>' +
+      '<td>' + ((c.recipients||[]).length) + '</td>' +
+      '<td><span class="status-badge ' + statusClass + '">' + c.status + '</span></td>' +
+      '<td><div style="font-size:0.8rem">' + sentDate + '</div><div style="font-size:0.78rem;color:var(--muted)">' + sentInfo + '</div></td>' +
+      '<td><div class="table-actions">' +
+        (c.status !== 'sent' && c.status !== 'sending' ? '<button class="btn btn-ghost btn-sm" onclick="editCampaign(\'' + c.id + '\')">Edit</button>' : '') +
+        (c.status === 'draft' ? '<button class="btn btn-primary btn-sm" onclick="quickSend(\'' + c.id + '\')">Send</button>' : '') +
+        '<button class="btn btn-danger btn-sm" onclick="deleteCampaign(\'' + c.id + '\')">Delete</button>' +
+      '</div></td>' +
+    '</tr>';
+  }).join('');
+}
+
 // ── Editor ────────────────────────────────────────────────────────────────────
 function openEditor(id) {
   editingId = id || null;
   isDirty = false;
-  const panel = document.getElementById('editor-panel');
+  var panel = document.getElementById('editor-panel');
   document.getElementById('editor-title-text').textContent = id ? 'Edit Campaign' : 'New Campaign';
   document.getElementById('field-name').value = '';
   document.getElementById('field-subject').value = '';
-  document.getElementById('field-body').value = '';
   document.getElementById('field-recipients').value = '';
   document.getElementById('field-footer').checked = true;
   document.getElementById('recipient-count').textContent = '0';
   document.getElementById('editor-status').textContent = '';
   document.getElementById('send-progress').classList.remove('visible');
 
+  // Reset blocks to defaults
+  document.getElementById('hdr-logo').value     = 'eureach.eu';
+  document.getElementById('hdr-accent').value   = '.eu';
+  document.getElementById('hdr-subtitle').value = 'Business Growth Platform';
+  document.getElementById('hdr-bg').value       = '#1e1b4b';
+  if (quill) quill.root.innerHTML = '';
+  _adBlocks = [
+    { title: 'EUREACH Platform', desc: 'Grow your business with AI-powered outreach.', btnText: 'Try Free', url: 'https://eureach.eu', color: '#4f46e5', enabled: true },
+    { title: 'sos.gr Network', desc: 'Connect with partners across Europe.', btnText: 'Learn More', url: 'https://sos.gr', color: '#0ea5e9', enabled: true }
+  ];
+  renderAdBlocks();
+
   if (id) {
-    const c = campaigns.find(x => x.id === id);
+    var c = campaigns.find(function(x) { return x.id === id; });
     if (c) {
       document.getElementById('field-name').value = c.name || '';
       document.getElementById('field-subject').value = c.subject || '';
-      document.getElementById('field-body').value = c.bodyHtml || '';
       document.getElementById('field-recipients').value = (c.recipients || []).join('\n');
       document.getElementById('field-footer').checked = c.footerEnabled !== false;
       countRecipients();
-      updatePreview();
+      if (c.blocksJson) {
+        try {
+          applyBlocks(JSON.parse(c.blocksJson));
+        } catch(e) {
+          if (c.bodyHtml && quill) quill.root.innerHTML = c.bodyHtml;
+        }
+      } else if (c.bodyHtml && quill) {
+        quill.root.innerHTML = c.bodyHtml;
+      }
     }
   }
 
+  renderTemplateSelect();
+  if (!quill) { try { initQuill(); } catch(e) { console.error("initQuill failed:", e); } }
   panel.classList.add('visible');
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  updatePreview();
+  setTimeout(updatePreview, 150);
 }
 
 function closeEditor() {
@@ -399,50 +1128,31 @@ function editCampaign(id) { openEditor(id); }
 function markDirty() { isDirty = true; }
 
 function countRecipients() {
-  const raw = document.getElementById('field-recipients').value;
-  const emails = parseRecipients(raw);
+  var raw = document.getElementById('field-recipients').value;
+  var emails = parseRecipients(raw);
   document.getElementById('recipient-count').textContent = emails.length;
 }
 
 function parseRecipients(raw) {
-  return raw.split(/[\n,;]+/).map(e => e.trim().toLowerCase()).filter(e => e.includes('@') && e.includes('.'));
-}
-
-// ── Preview ───────────────────────────────────────────────────────────────────
-function updatePreview() {
-  const body = document.getElementById('field-body').value;
-  const footer = document.getElementById('field-footer').checked;
-  const fullHtml = buildEmailHtml(body, footer);
-  document.getElementById('preview-frame').srcdoc = fullHtml;
-}
-
-function buildEmailHtml(bodyHtml, withFooter) {
-  const content = bodyHtml || '<p style="color:#94a3b8">Start typing your email content...</p>';
-  const footer = withFooter ? EUREACH_FOOTER_HTML : '';
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f8fafc;margin:0;padding:20px}
-    .wrap{max-width:600px;margin:0 auto;background:#fff;border-radius:8px;padding:32px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
-    h1,h2,h3{color:#1e293b}p{color:#334155;line-height:1.7}
-    a{color:#4f46e5}img{max-width:100%}
-  </style></head><body><div class="wrap">${content}${footer}</div></body></html>`;
+  return raw.split(/[\n,;]+/).map(function(e) { return e.trim().toLowerCase(); }).filter(function(e) { return e.includes('@') && e.includes('.'); });
 }
 
 // ── Save Draft ────────────────────────────────────────────────────────────────
 async function saveDraft() {
-  const payload = getEditorPayload();
-  const status = document.getElementById('editor-status');
+  var payload = getEditorPayload();
+  var status = document.getElementById('editor-status');
   status.textContent = 'Saving...';
   try {
-    const url = editingId ? `/api/newsletter-campaign/${editingId}` : '/api/newsletter-campaign';
-    const method = editingId ? 'PUT' : 'POST';
-    const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    const d = await r.json();
+    var url = editingId ? '/api/newsletter-campaign/' + editingId : '/api/newsletter-campaign';
+    var method = editingId ? 'PUT' : 'POST';
+    var r = await fetch(url, { method: method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    var d = await r.json();
     if (d.campaign) {
       editingId = d.campaign.id;
       isDirty = false;
-      status.textContent = 'Saved ✓';
+      status.textContent = 'Saved \u2713';
       await loadCampaigns();
-      setTimeout(() => { status.textContent = ''; }, 2000);
+      setTimeout(function() { status.textContent = ''; }, 2000);
     } else { status.textContent = d.error || 'Save failed'; }
   } catch(e) { status.textContent = 'Network error'; }
 }
@@ -453,57 +1163,56 @@ async function sendCampaign() {
     await saveDraft();
     if (!editingId) { showToast('Please save the campaign first.', 'err'); return; }
   }
-  const recipients = parseRecipients(document.getElementById('field-recipients').value);
+  var recipients = parseRecipients(document.getElementById('field-recipients').value);
   if (!recipients.length) { showToast('Add at least one recipient.', 'err'); return; }
   if (!document.getElementById('field-subject').value.trim()) { showToast('Subject is required.', 'err'); return; }
-  if (!document.getElementById('field-body').value.trim()) { showToast('Email body is required.', 'err'); return; }
-  if (!confirm(`Send this campaign to ${recipients.length} recipient(s)? This cannot be undone.`)) return;
+  var bodyCheck = quill ? quill.getText().trim() : '';
+  if (!bodyCheck) { showToast('Email body is required.', 'err'); return; }
+  if (!confirm('Send this campaign to ' + recipients.length + ' recipient(s)? This cannot be undone.')) return;
 
   await saveDraft();
   await doSend(editingId, recipients.length);
 }
 
 async function quickSend(id) {
-  const c = campaigns.find(x => x.id === id);
+  var c = campaigns.find(function(x) { return x.id === id; });
   if (!c) return;
-  if (!confirm(`Send "${c.name}" to ${(c.recipients||[]).length} recipient(s)?`)) return;
+  if (!confirm('Send "' + c.name + '" to ' + (c.recipients||[]).length + ' recipient(s)?')) return;
   await doSend(id, (c.recipients||[]).length);
 }
 
 async function doSend(id, total) {
-  const progress = document.getElementById('send-progress');
-  const bar = document.getElementById('progress-bar');
-  const label = document.getElementById('progress-label');
-  const detail = document.getElementById('progress-detail');
+  var progress = document.getElementById('send-progress');
+  var bar = document.getElementById('progress-bar');
+  var label = document.getElementById('progress-label');
+  var detail = document.getElementById('progress-detail');
   progress.classList.add('visible');
-  label.textContent = `Sending to ${total} recipients...`;
+  label.textContent = 'Sending to ' + total + ' recipients...';
   detail.textContent = 'Please wait — do not close this tab.';
   bar.style.width = '5%';
 
   try {
-    const r = await fetch(`/api/newsletter-campaign/${id}/send`, { method: 'POST', headers: {'Content-Type':'application/json'} });
-    const d = await r.json();
+    var r = await fetch('/api/newsletter-campaign/' + id + '/send', { method: 'POST', headers: {'Content-Type':'application/json'} });
+    var d = await r.json();
     if (d.ok && d.started) {
-      // Poll for completion
       bar.style.width = '20%';
       label.textContent = 'Campaign is sending in the background...';
-      detail.textContent = `${total} emails queued. Status will update when done.`;
-      // Poll every 3 seconds for up to 5 minutes
-      let polls = 0;
-      const interval = setInterval(async () => {
+      detail.textContent = total + ' emails queued. Status will update when done.';
+      var polls = 0;
+      var interval = setInterval(async function() {
         polls++;
-        const pr = await fetch('/api/newsletter-campaign');
-        const pd = await pr.json();
+        var pr = await fetch('/api/newsletter-campaign');
+        var pd = await pr.json();
         campaigns = pd.campaigns || [];
         renderCampaigns();
-        const found = campaigns.find(x => x.id === id);
+        var found = campaigns.find(function(x) { return x.id === id; });
         if (found && found.status === 'sent') {
           clearInterval(interval);
           bar.style.width = '100%';
           label.textContent = 'Campaign sent!';
-          detail.textContent = `${found.sentCount} delivered${found.errorCount ? ', ' + found.errorCount + ' failed' : ''}.`;
+          detail.textContent = found.sentCount + ' delivered' + (found.errorCount ? ', ' + found.errorCount + ' failed' : '') + '.';
           showToast('Campaign sent successfully!', 'ok');
-          setTimeout(() => { progress.classList.remove('visible'); closeEditor(); }, 3000);
+          setTimeout(function() { progress.classList.remove('visible'); closeEditor(); }, 3000);
         } else if (polls > 100) { clearInterval(interval); }
         else { bar.style.width = Math.min(20 + polls * 2, 90) + '%'; }
       }, 3000);
@@ -521,10 +1230,10 @@ async function doSend(id, total) {
 async function deleteCampaign(id) {
   if (!confirm('Delete this campaign?')) return;
   try {
-    const r = await fetch(`/api/newsletter-campaign/${id}`, { method: 'DELETE' });
-    const d = await r.json();
+    var r = await fetch('/api/newsletter-campaign/' + id, { method: 'DELETE' });
+    var d = await r.json();
     if (d.ok) {
-      campaigns = campaigns.filter(c => c.id !== id);
+      campaigns = campaigns.filter(function(c) { return c.id !== id; });
       renderCampaigns();
       showToast('Campaign deleted.', 'ok');
       if (editingId === id) closeEditor();
@@ -532,29 +1241,397 @@ async function deleteCampaign(id) {
   } catch(e) { showToast('Network error', 'err'); }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Test Send ─────────────────────────────────────────────────────────────────
+async function sendTestEmail() {
+  var email = document.getElementById('test-email').value.trim();
+  if (!email || !email.includes('@')) { showToast('Enter a valid email address.', 'err'); return; }
+  var subject = document.getElementById('field-subject').value.trim() || 'Test Email';
+  var bodyHtml = getEmailHtml();
+  try {
+    var r = await fetch('/api/newsletter/broadcast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to: [email], subject: '[TEST] ' + subject, bodyHtml: bodyHtml })
+    });
+    var d = await r.json();
+    if (d.ok || d.sent) { showToast('Test email sent to ' + email, 'ok'); }
+    else { showToast(d.error || 'Test send failed.', 'err'); }
+  } catch(e) { showToast('Network error', 'err'); }
+}
+
+// ── Payload ───────────────────────────────────────────────────────────────────
 function getEditorPayload() {
   return {
-    name:       document.getElementById('field-name').value.trim(),
-    subject:    document.getElementById('field-subject').value.trim(),
-    bodyHtml:   document.getElementById('field-body').value,
-    recipients: parseRecipients(document.getElementById('field-recipients').value),
-    footerEnabled: document.getElementById('field-footer').checked,
+    name:          document.getElementById('field-name').value.trim(),
+    subject:       document.getElementById('field-subject').value.trim(),
+    bodyHtml:      getEmailHtml(),
+    blocksJson:    JSON.stringify(getCurrentBlocks()),
+    recipients:    parseRecipients(document.getElementById('field-recipients').value),
+    footerEnabled: document.getElementById('field-footer').checked
   };
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-let _toastTimer;
+var _toastTimer;
 function showToast(msg, type) {
-  const el = document.getElementById('toast');
+  var el = document.getElementById('toast');
   el.textContent = msg;
   el.className = 'show ' + (type || '');
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.className = '', 3500);
+  _toastTimer = setTimeout(function() { el.className = ''; }, 3500);
 }
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// eureach.eu Newsletter — Lists + Presets + AI  (Phases 1-5 port)
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── State ─────────────────────────────────────────────────────────────────
+var _nlLists      = [];
+var _nlPresets    = [];
+var _euPresetId   = null;
+var _lvState      = { listId: null, listName: '', page: 1, filter: 'all', search: '', total: 0, sel: new Set() };
+var _importRows   = [];
+var _aiResult     = null;
+var _rcptMode     = 'manual';
+var _rcptListId   = null;
+
+// ── Recipient mode ─────────────────────────────────────────────────────────
+function setRcptMode(mode) {
+  _rcptMode = mode;
+  document.getElementById('rcpt-tab-manual').classList.toggle('active', mode === 'manual');
+  document.getElementById('rcpt-tab-list').classList.toggle('active', mode === 'list');
+  document.getElementById('rcpt-manual-wrap').style.display = mode === 'manual' ? '' : 'none';
+  document.getElementById('rcpt-list-wrap').style.display   = mode === 'list'   ? '' : 'none';
+  if (mode === 'list') populateRcptListDropdown();
+}
+function populateRcptListDropdown() {
+  var sel = document.getElementById('rcpt-list-select');
+  sel.innerHTML = '<option value="">— Select a list —</option>';
+  _nlLists.forEach(function(l) {
+    var o = document.createElement('option'); o.value = l.id; o.textContent = l.name + ' (' + l.contact_count + ')'; sel.appendChild(o);
+  });
+  if (_rcptListId) sel.value = _rcptListId;
+}
+function onRcptListChange() {
+  _rcptListId = document.getElementById('rcpt-list-select').value || null;
+  var info = document.getElementById('rcpt-list-info');
+  if (!_rcptListId) { info.textContent = ''; return; }
+  var l = _nlLists.find(function(x) { return String(x.id) === String(_rcptListId); });
+  info.textContent = l ? l.contact_count + ' active contacts' : '';
+}
+
+// ── Lists Panel ────────────────────────────────────────────────────────────
+function toggleListsPanel() {
+  var p = document.getElementById('lists-panel');
+  var open = p.classList.toggle('open');
+  if (open) loadLists();
+}
+async function loadLists() {
+  var r = await fetch('/api/nl-lists', { credentials: 'include' });
+  var d = await r.json();
+  _nlLists = d.lists || [];
+  renderLists();
+  populateRcptListDropdown();
+}
+function renderLists() {
+  var g = document.getElementById('lists-grid');
+  if (!_nlLists.length) { g.innerHTML = '<div style="color:#94a3b8;font-size:.85rem">No lists yet. Create one to get started.</div>'; return; }
+  g.innerHTML = _nlLists.map(function(l) {
+    return '<div class="list-card" onclick="openLv(' + l.id + ',\'' + l.name.replace(/'/g,'&#39;') + '\')">'
+      + '<div class="list-card-name">' + esc(l.name) + '</div>'
+      + '<div class="list-card-count">' + l.contact_count + ' contacts</div>'
+      + '<div class="list-card-actions">'
+      + '<button class="btn-list-action" onclick="event.stopPropagation();renameList(' + l.id + ',\'' + l.name.replace(/'/g,'&#39;') + '\')">✏</button>'
+      + '<button class="btn-list-action" style="color:#c0392b" onclick="event.stopPropagation();deleteList(' + l.id + ')">🗑</button>'
+      + '</div></div>';
+  }).join('');
+}
+async function openCreateList() {
+  var name = prompt('List name:'); if (!name) return;
+  await fetch('/api/nl-lists', { method: 'POST', credentials: 'include', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
+  loadLists();
+}
+async function renameList(id, current) {
+  var name = prompt('New name:', current); if (!name || name === current) return;
+  await fetch('/api/nl-lists/' + id + '/rename', { method: 'PATCH', credentials: 'include', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
+  loadLists();
+}
+async function deleteList(id) {
+  if (!confirm('Delete this list and all its contacts?')) return;
+  await fetch('/api/nl-lists/' + id, { method: 'DELETE', credentials: 'include' });
+  loadLists();
+}
+
+// ── List Detail View ────────────────────────────────────────────────────────
+function openLv(id, name) {
+  _lvState = { listId: id, listName: name, page: 1, filter: 'all', search: '', total: 0, sel: new Set() };
+  document.getElementById('lv-title').textContent = name;
+  document.getElementById('lv-overlay').classList.add('open');
+  document.getElementById('lv-search').value = '';
+  fetchLv();
+}
+function closeLv() { document.getElementById('lv-overlay').classList.remove('open'); }
+async function fetchLv() {
+  var s = _lvState;
+  var qs = '?page=' + s.page + '&filter=' + s.filter + (s.search ? '&search=' + encodeURIComponent(s.search) : '');
+  var r  = await fetch('/api/nl-lists/' + s.listId + '/contacts' + qs, { credentials: 'include' });
+  var d  = await r.json();
+  _lvState.total = d.total;
+  renderLvTable(d.contacts);
+  renderLvPager(d.page, d.pages);
+  updateLvBulkBar();
+}
+var _lvSearchTimer;
+function lvSearch() { clearTimeout(_lvSearchTimer); _lvSearchTimer = setTimeout(function() { _lvState.search = document.getElementById('lv-search').value; _lvState.page=1; fetchLv(); }, 320); }
+function setLvFilter(f, btn) {
+  _lvState.filter = f; _lvState.page = 1;
+  document.querySelectorAll('.lv-filter-tab').forEach(function(b) { b.classList.toggle('active', b === btn); });
+  fetchLv();
+}
+function renderLvTable(contacts) {
+  var sel = _lvState.sel;
+  document.getElementById('lv-tbody').innerHTML = contacts.map(function(c) {
+    var chk = sel.has(c.id) ? 'checked' : '';
+    var ex  = c.is_excluded ? '<span style="color:#c0392b;font-size:.75rem">excluded</span>' : '<span style="color:#1e8449;font-size:.75rem">active</span>';
+    return '<tr>'
+      + '<td><input type="checkbox" ' + chk + ' onchange="lvCheck(' + c.id + ',this.checked)"></td>'
+      + '<td><span id="lv-em-' + c.id + '">' + esc(c.email) + '</span> <button class="btn-list-action" onclick="lvInlineEdit(' + c.id + ',\'email\')">✏</button></td>'
+      + '<td><span id="lv-nm-' + c.id + '">' + esc(c.name || '') + '</span> <button class="btn-list-action" onclick="lvInlineEdit(' + c.id + ',\'name\')">✏</button></td>'
+      + '<td>' + ex + '</td>'
+      + '<td style="white-space:nowrap">'
+      + '<button class="btn-list-action" onclick="lvToggleExcluded(' + c.id + ',' + c.is_excluded + ')">⊘</button>'
+      + '<button class="btn-list-action" style="color:#c0392b" onclick="lvDeleteContact(' + c.id + ')">🗑</button>'
+      + '</td></tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem">No contacts found.</td></tr>';
+}
+function renderLvPager(page, pages) {
+  if (pages <= 1) { document.getElementById('lv-pager').innerHTML = ''; return; }
+  var btns = '';
+  for (var i = 1; i <= pages; i++) {
+    btns += '<button class="lv-page-btn' + (i===page?' active':'') + '" onclick="lvGoPage(' + i + ')">' + i + '</button>';
+  }
+  document.getElementById('lv-pager').innerHTML = btns;
+}
+function lvGoPage(p) { _lvState.page = p; fetchLv(); }
+function lvCheck(id, checked) { if (checked) _lvState.sel.add(id); else _lvState.sel.delete(id); updateLvBulkBar(); }
+function lvSelectAll() {
+  var chkAll = document.getElementById('lv-chk-all');
+  document.querySelectorAll('#lv-tbody input[type=checkbox]').forEach(function(c) {
+    var id = parseInt(c.closest('tr').querySelector('input').getAttribute('onchange').match(/\d+/)[0]);
+    c.checked = chkAll.checked;
+    if (chkAll.checked) _lvState.sel.add(id); else _lvState.sel.delete(id);
+  });
+  updateLvBulkBar();
+}
+function updateLvBulkBar() {
+  var n = _lvState.sel.size;
+  var bar = document.getElementById('lv-bulk-bar');
+  bar.classList.toggle('show', n > 0);
+  document.getElementById('lv-sel-count').textContent = n + ' selected';
+}
+function lvClearSel() { _lvState.sel.clear(); fetchLv(); }
+async function lvBulk(action) {
+  if (!_lvState.sel.size) return;
+  if (action === 'delete' && !confirm('Delete ' + _lvState.sel.size + ' contacts?')) return;
+  await fetch('/api/nl-lists/' + _lvState.listId + '/bulk', { method: 'POST', credentials: 'include',
+    headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action, ids: Array.from(_lvState.sel) }) });
+  _lvState.sel.clear(); fetchLv(); loadLists();
+}
+async function lvInlineEdit(id, field) {
+  var el  = document.getElementById('lv-' + (field==='email'?'em':'nm') + '-' + id);
+  var val = prompt('Edit ' + field + ':', el.textContent);
+  if (val === null || val === el.textContent) return;
+  var body = {}; body[field] = val;
+  await fetch('/api/nl-lists/' + _lvState.listId + '/contacts/' + id, { method: 'PATCH', credentials: 'include',
+    headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  fetchLv();
+}
+async function lvToggleExcluded(id, current) {
+  await fetch('/api/nl-lists/' + _lvState.listId + '/contacts/' + id, { method: 'PATCH', credentials: 'include',
+    headers: {'Content-Type':'application/json'}, body: JSON.stringify({ is_excluded: !current }) });
+  fetchLv(); loadLists();
+}
+async function lvDeleteContact(id) {
+  if (!confirm('Delete this contact?')) return;
+  await fetch('/api/nl-lists/' + _lvState.listId + '/contacts/' + id, { method: 'DELETE', credentials: 'include' });
+  fetchLv(); loadLists();
+}
+
+// ── CSV Import ─────────────────────────────────────────────────────────────
+function openImportModal() { document.getElementById('import-modal').classList.add('open'); }
+function closeImportModal() { document.getElementById('import-modal').classList.remove('open'); document.getElementById('import-file').value=''; _importRows=[]; document.getElementById('import-preview').textContent=''; document.getElementById('import-msg').textContent=''; }
+document.addEventListener('DOMContentLoaded', function() {
+  var fi = document.getElementById('import-file');
+  if (fi) fi.addEventListener('change', function() {
+    var file = this.files[0]; if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var lines = e.target.result.split(/\r?\n/).filter(function(l) { return l.trim(); });
+      if (!lines.length) return;
+      var headers = lines[0].split(',').map(function(h) { return h.trim().toLowerCase().replace(/^"|"$/g,''); });
+      var ei = headers.indexOf('email'); if (ei === -1) ei = 0;
+      var ni = headers.indexOf('name');
+      _importRows = [];
+      for (var i = 1; i < lines.length; i++) {
+        var cols = lines[i].split(',').map(function(c) { return c.trim().replace(/^"|"$/g,''); });
+        var email = cols[ei] || ''; var name = ni >= 0 ? (cols[ni] || '') : '';
+        if (email) _importRows.push({ email: email, name: name });
+      }
+      document.getElementById('import-preview').textContent = 'Found ' + _importRows.length + ' rows. Email column: "' + headers[ei] + '"' + (ni>=0 ? ', Name column: "' + headers[ni] + '"' : '');
+    };
+    reader.readAsText(file);
+  });
+});
+async function doImport() {
+  if (!_importRows.length) { document.getElementById('import-msg').textContent = 'No rows parsed.'; return; }
+  var btn = document.getElementById('import-do-btn'); btn.disabled = true; btn.textContent = 'Importing...';
+  var r = await fetch('/api/nl-lists/' + _lvState.listId + '/import', { method: 'POST', credentials: 'include',
+    headers: {'Content-Type':'application/json'}, body: JSON.stringify({ rows: _importRows }) });
+  var d = await r.json();
+  document.getElementById('import-msg').textContent = 'Imported: ' + (d.imported||0) + ', Skipped: ' + (d.skipped||0);
+  btn.disabled = false; btn.textContent = 'Import';
+  fetchLv(); loadLists();
+}
+
+// ── Header Presets ─────────────────────────────────────────────────────────
+async function loadEuPresets() {
+  var r = await fetch('/api/nl-presets', { credentials: 'include' });
+  var d = await r.json();
+  _nlPresets = d.presets || [];
+  renderEuPresetDropdown();
+}
+function renderEuPresetDropdown() {
+  var sel = document.getElementById('eu-preset-select'); if (!sel) return;
+  sel.innerHTML = '<option value="">— Preset —</option>';
+  _nlPresets.forEach(function(p) {
+    var o = document.createElement('option'); o.value = p.id;
+    o.textContent = (p.is_default ? '★ ' : '') + p.name; sel.appendChild(o);
+  });
+  if (_euPresetId) sel.value = _euPresetId;
+  var hasPreset = !!_euPresetId;
+  var star = document.getElementById('btn-eu-preset-star'); if (star) star.style.display = hasPreset ? '' : 'none';
+  var del  = document.getElementById('btn-eu-preset-del');  if (del)  del.style.display  = hasPreset ? '' : 'none';
+  if (_euPresetId) {
+    var p = _nlPresets.find(function(x) { return String(x.id) === String(_euPresetId); });
+    if (star) star.classList.toggle('is-default', !!(p && p.is_default));
+  }
+}
+function applyEuPreset(id) {
+  _euPresetId = id || null;
+  if (!id) { renderEuPresetDropdown(); return; }
+  var p = _nlPresets.find(function(x) { return String(x.id) === String(id); });
+  if (!p || !p.config) { renderEuPresetDropdown(); return; }
+  var c = p.config;
+  if (c.logo)     document.getElementById('hdr-logo').value     = c.logo;
+  if (c.accent)   document.getElementById('hdr-accent').value   = c.accent;
+  if (c.subtitle) document.getElementById('hdr-subtitle').value = c.subtitle;
+  if (c.bg)       document.getElementById('hdr-bg').value       = c.bg;
+  updatePreview(); renderEuPresetDropdown();
+}
+async function saveEuPreset() {
+  var name = _euPresetId
+    ? (_nlPresets.find(function(p) { return String(p.id) === String(_euPresetId); }) || {}).name
+    : null;
+  name = prompt('Preset name:', name || ''); if (!name) return;
+  var config = { logo: document.getElementById('hdr-logo').value, accent: document.getElementById('hdr-accent').value,
+    subtitle: document.getElementById('hdr-subtitle').value, bg: document.getElementById('hdr-bg').value };
+  var r = await fetch('/api/nl-presets', { method: 'POST', credentials: 'include',
+    headers: {'Content-Type':'application/json'}, body: JSON.stringify({ name, config }) });
+  var d = await r.json(); if (d.preset) _euPresetId = String(d.preset.id);
+  await loadEuPresets();
+}
+async function deleteEuPreset() {
+  if (!_euPresetId || !confirm('Delete this preset?')) return;
+  await fetch('/api/nl-presets/' + _euPresetId, { method: 'DELETE', credentials: 'include' });
+  _euPresetId = null; await loadEuPresets();
+}
+async function setEuPresetDefault() {
+  if (!_euPresetId) return;
+  await fetch('/api/nl-presets/' + _euPresetId + '/default', { method: 'POST', credentials: 'include' });
+  await loadEuPresets();
+}
+
+// ── Override sendCampaign for "From List" mode ─────────────────────────────
+var _origSendCampaign = typeof sendCampaign !== 'undefined' ? sendCampaign : null;
+window.sendCampaign = async function() {
+  if (_rcptMode === 'manual') return _origSendCampaign ? _origSendCampaign() : undefined;
+  if (!_rcptListId) { showToast('Select a list first.', 'error'); return; }
+  var subject = (document.getElementById('field-subject') || {}).value || '';
+  if (!subject) { showToast('Subject is required.', 'error'); return; }
+  var html = getEmailHtml();
+  if (!html) { showToast('Email body is empty.', 'error'); return; }
+  var list = _nlLists.find(function(l) { return String(l.id) === String(_rcptListId); });
+  var cnt  = list ? list.contact_count : '?';
+  if (!confirm('Send to ' + cnt + ' contacts in "' + (list ? list.name : 'list') + '"?\n\nSubject: ' + subject)) return;
+  var statusEl = document.getElementById('editor-status');
+  if (statusEl) statusEl.textContent = 'Sending...';
+  var r = await fetch('/api/nl-lists/' + _rcptListId + '/broadcast', { method: 'POST', credentials: 'include',
+    headers: {'Content-Type':'application/json'}, body: JSON.stringify({ subject, html }) });
+  var d = await r.json();
+  if (r.ok) {
+    showToast('Broadcast started to ' + (d.total||0) + ' contacts.', 'success');
+    if (statusEl) statusEl.textContent = 'Sent to ' + (d.total||0) + ' contacts';
+  } else {
+    showToast(d.error || 'Send failed.', 'error');
+    if (statusEl) statusEl.textContent = '';
+  }
+};
+
+// ── AI Generate ────────────────────────────────────────────────────────────
+function openAiModal()  { document.getElementById('ai-modal').classList.add('open'); document.getElementById('ai-prompt').focus(); }
+function closeAiModal() { document.getElementById('ai-modal').classList.remove('open'); }
+
+async function runAiGenerate() {
+  var prompt = document.getElementById('ai-prompt').value.trim();
+  if (!prompt) { alert('Please describe what to write.'); return; }
+  var tone       = document.getElementById('ai-tone').value;
+  var genSubject = document.getElementById('ai-gen-subject').checked;
+  var btn = document.getElementById('ai-gen-btn');
+  btn.disabled = true; btn.textContent = '⏳ Working...';
+  document.getElementById('ai-preview').style.display = 'none';
+  try {
+    var r = await fetch('/api/nl-ai-generate', { method: 'POST', credentials: 'include',
+      headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt, tone, genSubject }) });
+    var data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Server error');
+    _aiResult = data;
+    var subEl = document.getElementById('ai-subject-out');
+    if (genSubject && data.subject) { subEl.textContent = 'Subject: ' + data.subject; subEl.style.display = ''; }
+    else { subEl.style.display = 'none'; }
+    document.getElementById('ai-content-out').innerHTML = data.html || '';
+    document.getElementById('ai-preview').style.display = '';
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ Generate';
+  }
+}
+function applyAiContent() {
+  if (!_aiResult) return;
+  if (_aiResult.subject) { var sf = document.getElementById('field-subject'); if (sf) sf.value = _aiResult.subject; }
+  if (_aiResult.html) {
+    if (quill) {
+      quill.clipboard.dangerouslyPasteHTML(_aiResult.html);
+    } else {
+      var qlEl = document.querySelector('.ql-editor');
+      if (qlEl) qlEl.innerHTML = _aiResult.html;
+    }
+  }
+  updatePreview(); closeAiModal();
+}
+function copyAiHtml() {
+  if (!_aiResult || !_aiResult.html) return;
+  navigator.clipboard.writeText(_aiResult.html).then(function() {
+    var btn = document.getElementById('btn-ai-copy');
+    if (btn) { btn.textContent = '\u2714 Copied!'; setTimeout(function(){ btn.textContent = '\U0001f4cb Copy HTML'; }, 2000); }
+  });
+}
+
 
 init();
 </script>
