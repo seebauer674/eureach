@@ -14,6 +14,11 @@
       formSub:        "AI-powered SEO + GEO + AEO content generation",
       savedBtn:       "📂 Saved Articles",
       generateBtn:    "✍️ Generate Article",
+      addReadyBtn:    "📋 Add Ready Article",
+      addReadyTitle:  "Article Title",
+      addReadyHtml:   "Paste HTML Content",
+      addReadySubmit: "Add Article",
+      addReadyCancel: "Cancel",
       creditNote:     "This will use 10 AI credits",
       gateTitle:      "Add a site to get started",
       gateSub:        "The Article Generator writes content tailored to your specific website — its niche, audience, language, and tone. Add your website in Settings to get started.",
@@ -86,7 +91,7 @@
         "Finalising output…",
       ],
       tabs: ["Article", "SEO", "Schema", "Audits", "Promotion"],
-      articleTypes: ["How-to guide", "Listicle", "Comparison", "Case study", "Tutorial", "Review", "Q&A", "Pillar page", "Local landing page", "News", "Opinion"],
+      articleTypes: ["How-to guide", "Listicle", "Comparison", "Case study", "Tutorial", "Review", "Q&A", "Pillar page", "Local landing page", "News", "Opinion", "Welcome"],
       lengths: [
         { value:"XS", label:"XS — 500-800 words"    },
         { value:"S",  label:"S — 800-1,200 words"   },
@@ -96,7 +101,7 @@
       ],
       intents: ["Informational", "Commercial", "Transactional", "Navigational", "Auto-detect"],
       funnel:  ["TOFU", "MOFU", "BOFU"],
-      goals:   ["Email", "Phone", "Form", "Purchase", "Download", "App", "Newsletter", "Booking", "Quote"],
+      goals:   ["Email", "Phone", "Form", "Purchase", "Download", "App", "Newsletter", "Booking", "Quote", "Website"],
       tones:   ["Professional", "Friendly", "Authoritative", "Conversational", "Urgent", "Inspiring", "Educational", "Direct"],
     },
 
@@ -111,6 +116,11 @@
       formSub:        "Δημιουργία περιεχομένου SEO + GEO + AEO με AI",
       savedBtn:       "📂 Αποθηκευμένα Άρθρα",
       generateBtn:    "✍️ Δημιουργία Άρθρου",
+      addReadyBtn:    "📋 Προσθήκη Έτοιμου Άρθρου",
+      addReadyTitle:  "Τίτλος Άρθρου",
+      addReadyHtml:   "Επικολλήστε HTML Περιεχόμενο",
+      addReadySubmit: "Προσθήκη Άρθρου",
+      addReadyCancel: "Ακύρωση",
       creditNote:     "Θα χρησιμοποιηθούν 10 AI credits",
       gateTitle:      "Προσθέστε ιστοσελίδα για να ξεκινήσετε",
       gateSub:        "Η Δημιουργία Άρθρων γράφει περιεχόμενο προσαρμοσμένο στην ιστοσελίδα σας — κλάδο, κοινό, γλώσσα και τόνο. Προσθέστε τον ιστότοπό σας στις Ρυθμίσεις.",
@@ -183,7 +193,7 @@
         "Οριστικοποίηση αποτελέσματος…",
       ],
       tabs: ["Άρθρο", "SEO", "Schema", "Αξιολογήσεις", "Προώθηση"],
-      articleTypes: ["Οδηγός βήμα-βήμα", "Λίστα", "Σύγκριση", "Case study", "Tutorial", "Κριτική", "Ερωτήσεις & Απαντήσεις", "Pillar page", "Τοπική σελίδα", "Νέα", "Γνώμη"],
+      articleTypes: ["Οδηγός βήμα-βήμα", "Λίστα", "Σύγκριση", "Case study", "Tutorial", "Κριτική", "Ερωτήσεις & Απαντήσεις", "Pillar page", "Τοπική σελίδα", "Νέα", "Γνώμη", "Καλωσόρισμα"],
       lengths: [
         { value:"XS", label:"XS — 500-800 λέξεις"    },
         { value:"S",  label:"S — 800-1.200 λέξεις"   },
@@ -193,7 +203,7 @@
       ],
       intents: ["Πληροφοριακή", "Εμπορική", "Συναλλακτική", "Πλοήγηση", "Αυτόματη ανίχνευση"],
       funnel:  ["TOFU", "MOFU", "BOFU"],
-      goals:   ["Email", "Τηλέφωνο", "Φόρμα", "Αγορά", "Λήψη", "Εφαρμογή", "Newsletter", "Κράτηση", "Προσφορά"],
+      goals:   ["Email", "Τηλέφωνο", "Φόρμα", "Αγορά", "Λήψη", "Εφαρμογή", "Newsletter", "Κράτηση", "Προσφορά", "Website"],
       tones:   ["Επαγγελματικός", "Φιλικός", "Αυθεντικός", "Καθημερινός", "Επείγον", "Εμπνευσμένος", "Εκπαιδευτικός", "Άμεσος"],
     },
 
@@ -208,6 +218,11 @@
       formSub:        "KI-gestützte SEO + GEO + AEO Inhaltserstellung",
       savedBtn:       "📂 Gespeicherte Artikel",
       generateBtn:    "✍️ Artikel generieren",
+      addReadyBtn:    "📋 Fertigen Artikel hinzufügen",
+      addReadyTitle:  "Artikeltitel",
+      addReadyHtml:   "HTML-Inhalt einfügen",
+      addReadySubmit: "Artikel hinzufügen",
+      addReadyCancel: "Abbrechen",
       creditNote:     "Dies verbraucht 10 KI-Credits",
       gateTitle:      "Website hinzufügen, um zu starten",
       gateSub:        "Der Artikel-Generator erstellt Inhalte, die auf Ihre Website zugeschnitten sind — Nische, Zielgruppe, Sprache und Tonalität. Fügen Sie Ihre Website in den Einstellungen hinzu.",
@@ -280,7 +295,7 @@
         "Ergebnis finalisieren…",
       ],
       tabs: ["Artikel", "SEO", "Schema", "Audits", "Promotion"],
-      articleTypes: ["Anleitungen", "Listen-Artikel", "Vergleich", "Fallstudie", "Tutorial", "Bewertung", "Q&A", "Pillar-Seite", "Lokale Landingpage", "Nachrichten", "Meinung"],
+      articleTypes: ["Anleitungen", "Listen-Artikel", "Vergleich", "Fallstudie", "Tutorial", "Bewertung", "Q&A", "Pillar-Seite", "Lokale Landingpage", "Nachrichten", "Meinung", "Willkommen"],
       lengths: [
         { value:"XS", label:"XS — 500-800 Wörter"     },
         { value:"S",  label:"S — 800-1.200 Wörter"    },
@@ -290,7 +305,7 @@
       ],
       intents: ["Informational", "Kommerziell", "Transaktional", "Navigational", "Automatisch"],
       funnel:  ["TOFU", "MOFU", "BOFU"],
-      goals:   ["E-Mail", "Telefon", "Formular", "Kauf", "Download", "App", "Newsletter", "Buchung", "Angebot"],
+      goals:   ["E-Mail", "Telefon", "Formular", "Kauf", "Download", "App", "Newsletter", "Buchung", "Angebot", "Website"],
       tones:   ["Professionell", "Freundlich", "Autoritativ", "Gesprächig", "Dringend", "Inspirierend", "Lehrreich", "Direkt"],
     },
   };
@@ -318,7 +333,7 @@
   let existingResult = null;
   let activeTab      = 0;      // index into t().tabs
   let articleAutoId  = null;   // stable ID for automation panel within session
-  let activeSiteId   = null;
+  let activeSiteId   = localStorage.getItem("eureach_active_site") || null;
   let selectedTones      = new Set();
   let selectedAiTargets  = new Set(["chatgpt", "perplexity", "google-ai"]);
   let progressStep   = 0;
@@ -348,6 +363,249 @@
     const d = document.createElement("div");
     d.textContent = String(s || "");
     return d.innerHTML;
+  }
+
+
+  function showImageInsertModal(onInsert, opts) {
+    const aiDefaultPrompt = opts && opts.articleTitle ? `Professional header image for article: "${opts.articleTitle}", modern, clean, high quality, photorealistic` : 'Professional article header image, modern, clean, high quality';
+    const overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center";
+    overlay.innerHTML = `
+      <div style="background:#1e2535;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:28px 28px 22px;width:420px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.5)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+          <span style="font-weight:600;font-size:1rem;color:#e2e8f0">🖼 Insert Image</span>
+          <button id="img-modal-close" style="background:none;border:none;color:#94a3b8;font-size:1.2rem;cursor:pointer;padding:0 4px">✕</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 12px;border-radius:10px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.88rem;color:#e2e8f0;font-weight:600;user-select:none">
+            <input type="checkbox" id="img-is-header" style="width:16px;height:16px;accent-color:#7c3aed;cursor:pointer">
+            🖼 Header Image <span style="font-size:0.75rem;font-weight:400;color:#94a3b8">(inserted at top of article)</span>
+          </label>
+        </div>
+        <div id="img-cursor-hint" style="font-size:0.78rem;color:#94a3b8;margin-bottom:12px;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:8px;border-left:3px solid rgba(99,102,241,.5);">
+          💡 For body images, place your cursor at the desired position in the article first
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:16px">
+          <button class="img-tab active" data-tab="url"  style="flex:1;padding:7px;border-radius:8px;font-size:0.8rem;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#e2e8f0">🔗 URL</button>
+          <button class="img-tab"        data-tab="drop" style="flex:1;padding:7px;border-radius:8px;font-size:0.8rem;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:transparent;color:#94a3b8">📦 Drag &amp; Drop</button>
+          <button class="img-tab"        data-tab="browse" style="flex:1;padding:7px;border-radius:8px;font-size:0.8rem;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:transparent;color:#94a3b8">📁 Browse</button>
+          <button class="img-tab"        data-tab="ai"     style="flex:1;padding:7px;border-radius:8px;font-size:0.8rem;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:transparent;color:#94a3b8">🤖 AI</button>
+        </div>
+
+        <div id="img-tab-url">
+          <input id="img-url-input" type="url" placeholder="https://example.com/image.jpg"
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;margin-bottom:10px">
+          <input id="img-alt-input" type="text" placeholder="Alt text (optional)"
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;margin-bottom:14px">
+          <button id="img-url-insert" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;font-size:0.9rem;cursor:pointer;font-weight:500">Insert</button>
+        </div>
+
+        <div id="img-tab-drop" style="display:none">
+          <div id="img-drop-zone"
+            style="border:2px dashed rgba(255,255,255,.2);border-radius:12px;padding:36px 20px;text-align:center;color:#94a3b8;font-size:0.88rem;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:10px">
+            <div style="font-size:2rem;margin-bottom:8px">📦</div>
+            Drop image here
+          </div>
+          <input id="img-alt-drop" type="text" placeholder="Alt text (optional)"
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;display:none;margin-bottom:14px">
+          <div id="img-drop-preview" style="display:none;margin-bottom:14px">
+            <img id="img-drop-thumb" style="max-height:120px;max-width:100%;border-radius:8px;object-fit:contain">
+            <button id="img-drop-insert" style="width:100%;margin-top:10px;padding:10px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;font-size:0.9rem;cursor:pointer;font-weight:500">Insert</button>
+          </div>
+          <p id="img-drop-err" style="color:#f87171;font-size:0.82rem;display:none"></p>
+        </div>
+
+        <div id="img-tab-browse" style="display:none;text-align:center">
+          <input type="file" id="img-browse-input" accept="image/*" style="display:none">
+          <button id="img-browse-btn"
+            style="width:100%;padding:36px 20px;border:2px dashed rgba(255,255,255,.2);border-radius:12px;background:transparent;color:#94a3b8;font-size:0.88rem;cursor:pointer;margin-bottom:10px">
+            <div style="font-size:2rem;margin-bottom:8px">📁</div>
+            Click to browse files
+          </button>
+          <input id="img-alt-browse" type="text" placeholder="Alt text (optional)"
+            style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;display:none;margin-bottom:14px">
+          <div id="img-browse-preview" style="display:none;margin-bottom:14px">
+            <img id="img-browse-thumb" style="max-height:120px;max-width:100%;border-radius:8px;object-fit:contain">
+            <button id="img-browse-insert" style="width:100%;margin-top:10px;padding:10px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;font-size:0.9rem;cursor:pointer;font-weight:500">Insert</button>
+          </div>
+          <p id="img-browse-err" style="color:#f87171;font-size:0.82rem;display:none"></p>
+        </div>
+
+        <div id="img-tab-ai" style="display:none">
+          <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:10px">Describe the image you want — or use the auto-generated prompt below</div>
+          <textarea id="img-ai-prompt" rows="3" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;resize:vertical;margin-bottom:10px;font-family:inherit"></textarea>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button id="img-ai-generate" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;font-size:0.9rem;cursor:pointer;font-weight:600">✨ Generate</button>
+            <button id="img-ai-regen" style="padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#94a3b8;font-size:0.88rem;cursor:pointer;display:none" title="Regenerate">🔄</button>
+          </div>
+          <div id="img-ai-loading" style="display:none;text-align:center;padding:30px 0;color:#94a3b8;font-size:0.88rem">
+            <div style="font-size:2rem;margin-bottom:8px;animation:spin 1.5s linear infinite;display:inline-block">⏳</div><br>Generating image… this takes ~10 seconds
+          </div>
+          <div id="img-ai-preview" style="display:none;margin-bottom:14px">
+            <img id="img-ai-thumb" style="width:100%;border-radius:8px;object-fit:cover;max-height:200px">
+            <button id="img-ai-insert" style="width:100%;margin-top:10px;padding:10px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;font-size:0.9rem;cursor:pointer;font-weight:500">Insert Image</button>
+          </div>
+          <p id="img-ai-err" style="color:#f87171;font-size:0.82rem;display:none"></p>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+    overlay.querySelector("#img-modal-close").addEventListener("click", close);
+    overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+
+    // Tabs
+    overlay.querySelectorAll(".img-tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        overlay.querySelectorAll(".img-tab").forEach(t => {
+          t.style.background = "transparent";
+          t.style.borderColor = "rgba(255,255,255,.08)";
+          t.style.color = "#94a3b8";
+        });
+        tab.style.background = "rgba(255,255,255,.1)";
+        tab.style.borderColor = "rgba(255,255,255,.15)";
+        tab.style.color = "#e2e8f0";
+        overlay.querySelector("#img-tab-url").style.display    = tab.dataset.tab === "url"    ? "" : "none";
+        overlay.querySelector("#img-tab-drop").style.display   = tab.dataset.tab === "drop"   ? "" : "none";
+        overlay.querySelector("#img-tab-browse").style.display = tab.dataset.tab === "browse" ? "" : "none";
+        overlay.querySelector("#img-tab-ai").style.display     = tab.dataset.tab === "ai"     ? "" : "none";
+      });
+    });
+
+    // Toggle cursor hint based on header checkbox
+    overlay.querySelector("#img-is-header").addEventListener("change", e => {
+      overlay.querySelector("#img-cursor-hint").style.display = e.target.checked ? "none" : "";
+    });
+
+    // URL tab
+    overlay.querySelector("#img-url-insert").addEventListener("click", () => {
+      const url = overlay.querySelector("#img-url-input").value.trim();
+      if (!url || url === "https://") return;
+      const alt = overlay.querySelector("#img-alt-input").value.trim();
+      const isHeader = overlay.querySelector("#img-is-header").checked;
+      onInsert(url, alt, isHeader);
+      close();
+    });
+
+    // Shared: upload file to server and return URL
+    async function uploadFile(file) {
+      const res = await fetch("/api/articles/upload-image", {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const d = await res.json();
+      return d.url;
+    }
+
+    // Drag & drop tab
+    const dropZone = overlay.querySelector("#img-drop-zone");
+    const dropErr  = overlay.querySelector("#img-drop-err");
+    ["dragover", "dragenter"].forEach(ev => dropZone.addEventListener(ev, e => {
+      e.preventDefault();
+      dropZone.style.borderColor = "#6366f1";
+      dropZone.style.background  = "rgba(99,102,241,.08)";
+    }));
+    ["dragleave", "dragend"].forEach(ev => dropZone.addEventListener(ev, () => {
+      dropZone.style.borderColor = "rgba(255,255,255,.2)";
+      dropZone.style.background  = "";
+    }));
+    dropZone.addEventListener("drop", async e => {
+      e.preventDefault();
+      dropZone.style.borderColor = "rgba(255,255,255,.2)";
+      dropZone.style.background  = "";
+      const file = e.dataTransfer.files[0];
+      if (!file || !file.type.startsWith("image/")) { dropErr.textContent = "Please drop an image file."; dropErr.style.display = ""; return; }
+      dropErr.style.display = "none";
+      dropZone.textContent = "Uploading…";
+      try {
+        const url = await uploadFile(file);
+        overlay.querySelector("#img-drop-thumb").src = url;
+        overlay.querySelector("#img-drop-preview").style.display = "";
+        overlay.querySelector("#img-alt-drop").style.display = "";
+        dropZone.style.display = "none";
+      } catch { dropErr.textContent = "Upload failed. Try again."; dropErr.style.display = ""; dropZone.textContent = "Drop image here"; }
+    });
+    overlay.querySelector("#img-drop-insert").addEventListener("click", () => {
+      const url = overlay.querySelector("#img-drop-thumb").src;
+      const alt = overlay.querySelector("#img-alt-drop").value.trim();
+      const isHeader = overlay.querySelector("#img-is-header").checked;
+      onInsert(url, alt, isHeader);
+      close();
+    });
+
+    // Browse tab
+    const browseInput = overlay.querySelector("#img-browse-input");
+    overlay.querySelector("#img-browse-btn").addEventListener("click", () => browseInput.click());
+    browseInput.addEventListener("change", async () => {
+      const file = browseInput.files[0];
+      if (!file) return;
+      const browseErr = overlay.querySelector("#img-browse-err");
+      browseErr.style.display = "none";
+      overlay.querySelector("#img-browse-btn").textContent = "Uploading…";
+      try {
+        const url = await uploadFile(file);
+        overlay.querySelector("#img-browse-thumb").src = url;
+        overlay.querySelector("#img-browse-preview").style.display = "";
+        overlay.querySelector("#img-alt-browse").style.display = "";
+        overlay.querySelector("#img-browse-btn").style.display = "none";
+      } catch { browseErr.textContent = "Upload failed. Try again."; browseErr.style.display = ""; overlay.querySelector("#img-browse-btn").textContent = "Click to browse files"; }
+    });
+    overlay.querySelector("#img-browse-insert").addEventListener("click", () => {
+      const url = overlay.querySelector("#img-browse-thumb").src;
+      const alt = overlay.querySelector("#img-alt-browse").value.trim();
+      const isHeader = overlay.querySelector("#img-is-header").checked;
+      onInsert(url, alt, isHeader);
+      close();
+    });
+
+    // AI tab
+    overlay.querySelector("#img-ai-prompt").value = aiDefaultPrompt;
+    const aiGenBtn  = overlay.querySelector("#img-ai-generate");
+    const aiRegenBtn = overlay.querySelector("#img-ai-regen");
+    const aiLoading = overlay.querySelector("#img-ai-loading");
+    const aiPreview = overlay.querySelector("#img-ai-preview");
+    const aiThumb   = overlay.querySelector("#img-ai-thumb");
+    const aiErr     = overlay.querySelector("#img-ai-err");
+    let aiGeneratedUrl = "";
+
+    async function runAiGenerate() {
+      const prompt = overlay.querySelector("#img-ai-prompt").value.trim();
+      if (!prompt) return;
+      aiErr.style.display = "none";
+      aiPreview.style.display = "none";
+      aiLoading.style.display = "";
+      aiGenBtn.disabled = true;
+      try {
+        const r = await fetch("/api/articles/generate-image", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Generation failed");
+        aiGeneratedUrl = d.url;
+        aiThumb.src = d.url;
+        aiPreview.style.display = "";
+        aiRegenBtn.style.display = "";
+      } catch(e) {
+        aiErr.textContent = e.message;
+        aiErr.style.display = "";
+      } finally {
+        aiLoading.style.display = "none";
+        aiGenBtn.disabled = false;
+      }
+    }
+
+    aiGenBtn.addEventListener("click", runAiGenerate);
+    aiRegenBtn.addEventListener("click", runAiGenerate);
+    overlay.querySelector("#img-ai-insert").addEventListener("click", () => {
+      if (!aiGeneratedUrl) return;
+      const isHeader = overlay.querySelector("#img-is-header").checked;
+      onInsert(aiGeneratedUrl, overlay.querySelector("#img-ai-prompt").value.trim(), isHeader);
+      close();
+    });
   }
 
   function copyText(text, btn) {
@@ -403,9 +661,13 @@
     const sites = loadSites();
     if (!sites.length && state !== "saved") { renderNoSites(); return; }
 
-    if (!activeSiteId || !sites.find(s => s.id === activeSiteId)) {
-      activeSiteId = sites[0]?.id || null;
+    if (activeSiteId && !sites.find(s => s.id == activeSiteId)) {
+      activeSiteId = null;
+      localStorage.removeItem("eureach_active_site");
     }
+
+    if (state === "form" && !activeSiteId && sites.length > 1) { renderSitePicker(); return; }
+    if (!activeSiteId) { activeSiteId = sites[0]?.id || null; if (activeSiteId) localStorage.setItem("eureach_active_site", activeSiteId); }
 
     if (state === "form")              renderForm();
     else if (state === "generating")   renderGenerating();
@@ -446,6 +708,38 @@
     return bar;
   }
 
+  /* ── Site picker (shown when multiple sites, none selected) ─── */
+  function renderSitePicker() {
+    const sites = loadSites();
+    const wrap = document.createElement("div");
+    wrap.className = "ag-site-picker";
+    wrap.innerHTML = `
+      <div class="ag-sp-icon">&#x1F310;</div>
+      <h2 class="ag-sp-title">${currentLang === "el" ? "\u0393\u03b9\u03b1 \u03c0\u03bf\u03b9\u03b1 \u03b9\u03c3\u03c4\u03bf\u03c3\u03b5\u03bb\u03af\u03b4\u03b1 \u03b3\u03c1\u03ac\u03c6\u03b5\u03c4\u03b5;" : currentLang === "de" ? "F\u00FCr welche Website schreiben Sie?" : "Which site is this article for?"}</h2>
+      <p class="ag-sp-sub">${currentLang === "el" ? "\u0395\u03c0\u03b9\u03bb\u03ad\u03be\u03c4\u03b5 \u03b9\u03c3\u03c4\u03bf\u03c3\u03b5\u03bb\u03af\u03b4\u03b1 \u03ba\u03b1\u03b9 \u03c4\u03bf AI \u03b8\u03b1 \u03c0\u03c1\u03bf\u03c3\u03b1\u03c1\u03bc\u03cc\u03c3\u03b5\u03b9 \u03c4\u03bf \u03ac\u03c1\u03b8\u03c1\u03bf." : currentLang === "de" ? "W\u00E4hlen Sie eine Website \u2014 das AI passt den Artikel an Ihr Publikum, Ton und SEO an." : "Pick a site and the AI will tailor the article to its audience, voice and SEO."}</p>
+      <div class="ag-sp-cards" id="ag-sp-cards"></div>
+      <a href="settings.html#sites" class="ag-ghost-btn" style="margin-top:8px;font-size:0.82rem">${t("addSite")}</a>`;
+    root.appendChild(wrap);
+    const cards = wrap.querySelector("#ag-sp-cards");
+    sites.forEach(function(site) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "ag-sp-card";
+      card.innerHTML =
+        '<span class="ag-sp-card-letter">' + (site.domain[0] || "?").toUpperCase() + '</span>' +
+        '<span class="ag-sp-card-name">' + esc(site.name || site.domain) + '</span>' +
+        '<span class="ag-sp-card-domain">' + esc(site.domain) + '</span>' +
+        (site.niche ? '<span class="ag-sp-card-niche">' + esc(site.niche) + '</span>' : '');
+      card.addEventListener("click", function() {
+        activeSiteId = site.id;
+        localStorage.setItem("eureach_active_site", String(site.id));
+        state = "form";
+        render();
+      });
+      cards.appendChild(card);
+    });
+  }
+
   /* ── No-sites gate ───────────────────────────────────── */
   function renderNoSites() {
     const gate = document.createElement("div");
@@ -454,7 +748,7 @@
       <div class="ag-gate-icon">🌐</div>
       <h2 class="ag-gate-title">${t("gateTitle")}</h2>
       <p class="ag-gate-sub">${t("gateSub")}</p>
-      <a href="settings.html" class="ag-gate-btn">${t("gateBtn")}</a>`;
+      <a href="settings.html#sites" class="ag-gate-btn">${t("gateBtn")}</a>`;
     const savedBtn = document.createElement("button");
     savedBtn.className = "ag-ghost-btn";
     savedBtn.style.marginTop = "10px";
@@ -465,6 +759,69 @@
   }
 
   /* ── FORM ────────────────────────────────────────────── */
+
+  function openReadyArticleModal() {
+    const overlay = document.createElement("div");
+    overlay.className = "ag-modal-overlay";
+    overlay.innerHTML = `
+      <div class="ag-modal">
+        <h3>${t("addReadyBtn")}</h3>
+        <div class="ag-field" style="margin-bottom:12px">
+          <label>${t("addReadyTitle")}</label>
+          <input type="text" id="ag-ready-title" placeholder="${t("addReadyTitle")}..." style="width:100%">
+        </div>
+        <div class="ag-field">
+          <label>${t("addReadyHtml")}</label>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <button type="button" id="ag-insert-img" class="ag-ghost-btn" style="font-size:0.78rem;padding:5px 12px">🖼 Insert image</button>
+          </div>
+          <textarea id="ag-ready-html" rows="12" placeholder="<h1>...</h1>\n<p>...</p>" style="width:100%;font-family:monospace;font-size:12px"></textarea>
+        </div>
+        <div class="ag-modal-actions">
+          <button class="ag-generate-btn" id="ag-ready-submit">${t("addReadySubmit")}</button>
+          <button class="ag-ghost-btn" id="ag-ready-cancel">${t("addReadyCancel")}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector("#ag-ready-cancel").addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+
+    overlay.querySelector("#ag-insert-img").addEventListener("click", () => {
+      showImageInsertModal((url, alt, isHeader) => {
+        const style = isHeader
+          ? "width:100%;max-width:100%;height:auto;display:block;margin:0 0 24px 0;border-radius:8px;"
+          : "width:100%;max-width:100%;height:auto;margin:16px 0";
+        const tag = `<img src="${url}" alt="${alt}" style="${style}">`;
+        const ta  = overlay.querySelector("#ag-ready-html");
+        if (isHeader) {
+          ta.value = tag + "\n" + ta.value;
+          ta.selectionStart = ta.selectionEnd = tag.length + 1;
+        } else {
+          const pos = ta.selectionStart;
+          ta.value  = ta.value.slice(0, pos) + "\n" + tag + "\n" + ta.value.slice(pos);
+          ta.selectionStart = ta.selectionEnd = pos + tag.length + 2;
+        }
+        ta.focus();
+      });
+    });
+
+    overlay.querySelector("#ag-ready-submit").addEventListener("click", () => {
+      const title = overlay.querySelector("#ag-ready-title").value.trim();
+      const html  = overlay.querySelector("#ag-ready-html").value.trim();
+      if (!html) return;
+      result = {
+        article: { rawHtml: html, h1: title || "Article" },
+        seo:     { title_tag: title || "Article", slug: title.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"") },
+        schema: null, audits: null, promotion: null
+      };
+      state = "results";
+      activeTab = 0;
+      overlay.remove();
+      render();
+    });
+  }
+
   function renderForm() {
     const sites = loadSites();
     const activeSite = sites.find(s => s.id === activeSiteId) || sites[0];
@@ -527,6 +884,7 @@
       btn.title = site.domain;
       btn.addEventListener("click", () => {
         activeSiteId = site.id;
+        localStorage.setItem("eureach_active_site", site.id);
         formData = {};
         selectedTones = new Set();
         render();
@@ -536,7 +894,7 @@
     siteSel.appendChild(tabsWrap);
 
     const manageLink = document.createElement("a");
-    manageLink.href = "settings.html";
+    manageLink.href = "settings.html#sites";
     manageLink.className = "ag-manage-sites-link";
     manageLink.textContent = sites.length < 3 ? `${t("addSite")} (${sites.length}/3)` : t("manageSites");
     siteSel.appendChild(manageLink);
@@ -550,9 +908,10 @@
       strip.innerHTML = `
         <span class="ag-sps-item">🌐 ${esc(activeSite.domain)}</span>
         ${activeSite.niche     ? `<span class="ag-sps-item">📂 ${esc(activeSite.niche)}</span>` : ""}
+        ${activeSite.about     ? `<span class="ag-sps-item ag-sps-about">💬 ${esc(activeSite.about.length > 80 ? activeSite.about.slice(0,80)+"…" : activeSite.about)}</span>` : ""}
         ${siteLangs.length     ? `<span class="ag-sps-item">🗣 ${siteLangs.join(" · ")}</span>` : ""}
         ${activeSite.geo       ? `<span class="ag-sps-item">📍 ${esc(activeSite.geo)}</span>` : ""}
-        <a href="settings.html" class="ag-sps-edit">${t("editProfile")}</a>`;
+        <a href="settings.html#sites" class="ag-sps-edit">${t("editProfile")}</a>`;
       wrap.appendChild(strip);
     }
 
@@ -562,10 +921,14 @@
     form.addEventListener("submit", e => { e.preventDefault(); startGenerate(form, activeSite); });
 
     // ── Core ──────────────────────────────────────────
-    form.appendChild(section(t("secCore"), `
+    const coreSection = section(t("secCore"), `
       <div class="ag-field ag-field-full">
         <label>${t("topic")} <span class="ag-req">*</span></label>
         <input type="text" name="topic" placeholder="${t("topicPh")}" required autocomplete="off" value="${esc(formData.topic || "")}">
+        <div class="ag-ideas-bar">
+          <button type="button" class="ag-ideas-btn" id="ag-ideas-btn">\u{1F4A1} Ideas</button>
+          <div class="ag-ideas-panel" id="ag-ideas-panel" style="display:none"></div>
+        </div>
       </div>
       <div class="ag-field ag-field-full">
         <label>${t("brief")}</label>
@@ -579,7 +942,58 @@
         <label>${t("model")}</label>
         <select name="model">${MODELS.map(m => `<option value="${m.value}"${m.value === (formData.model || "sonnet") ? " selected" : ""}>${m.label}</option>`).join("")}</select>
       </div>
-    `));
+    `);
+    form.appendChild(coreSection);
+
+    // Wire up Ideas button
+    const ideasBtn = coreSection.querySelector("#ag-ideas-btn");
+    const ideasPanel = coreSection.querySelector("#ag-ideas-panel");
+    const topicInput = coreSection.querySelector('input[name="topic"]');
+    if (ideasBtn && ideasPanel && topicInput) {
+      ideasBtn.addEventListener("click", async () => {
+        if (ideasPanel.style.display !== "none") {
+          ideasPanel.style.display = "none";
+          ideasBtn.textContent = "\u{1F4A1} Ideas";
+          return;
+        }
+        ideasPanel.style.display = "block";
+        ideasPanel.innerHTML = '<span class="ag-ideas-loading">Thinking\u2026</span>';
+        ideasBtn.disabled = true;
+        try {
+          const domain = activeSite ? (activeSite.domain || "") : "";
+          const r = await fetch("/api/dashboard/article-ideas", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ domain })
+          });
+          const data = await r.json();
+          if (!r.ok || !data.ideas) throw new Error(data.error || "No ideas returned");
+          ideasPanel.innerHTML = data.ideas.map(idea =>
+            `<div class="ag-idea-row">
+              <div class="ag-idea-body">
+                <span class="ag-idea-text">${esc(idea.title)}</span>
+                ${idea.description ? `<span class="ag-idea-desc">${esc(idea.description)}</span>` : ""}
+              </div>
+              <button type="button" class="ag-idea-use" data-idea="${esc(idea.title)}">Use</button>
+            </div>`
+          ).join("");
+          ideasPanel.querySelectorAll(".ag-idea-use").forEach(btn => {
+            btn.addEventListener("click", () => {
+              topicInput.value = btn.dataset.idea;
+              formData.topic = btn.dataset.idea;
+              ideasPanel.style.display = "none";
+              ideasBtn.textContent = "\u{1F4A1} Ideas";
+              topicInput.focus();
+            });
+          });
+        } catch (e) {
+          ideasPanel.innerHTML = `<span class="ag-ideas-error">${esc(e.message || "Failed")}</span>`;
+        } finally {
+          ideasBtn.disabled = false;
+          ideasBtn.textContent = "\u{1F4A1} Ideas";
+        }
+      });
+    }
 
     // ── Audience ──────────────────────────────────────
     form.appendChild(section(t("secAudience"), `
@@ -689,6 +1103,14 @@
     genBtn.className = "ag-generate-btn";
     genBtn.textContent = t("generateBtn");
     submitRow.appendChild(genBtn);
+
+    const readyBtn = document.createElement("button");
+    readyBtn.type = "button";
+    readyBtn.className = "ag-ready-btn";
+    readyBtn.textContent = t("addReadyBtn");
+    readyBtn.addEventListener("click", () => openReadyArticleModal());
+    submitRow.appendChild(readyBtn);
+
     form.appendChild(submitRow);
 
     wrap.appendChild(form);
@@ -841,6 +1263,31 @@
     });
     actionRow.appendChild(campaignBtn);
 
+    const pubTopBtn = document.createElement("button");
+    pubTopBtn.className = "ag-ghost-btn";
+    pubTopBtn.style.cssText = "background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;font-weight:600;";
+    pubTopBtn.textContent = "📝 Publish";
+    const getLiveHtml = () => {
+      const ta = wrap.querySelector(".ag-html-editor");
+      if (ta) return ta.value;
+      const preview = wrap.querySelector(".ag-article-preview[contenteditable]");
+      if (preview) return preview.innerHTML;
+      return buildArticleHTML(article, seo);
+    };
+    pubTopBtn.addEventListener("click", async () => {
+      pubTopBtn.disabled = true; pubTopBtn.textContent = "Publishing…";
+      try {
+        const r = await fetch("/api/blog", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: seo?.title_tag || article?.h1 || formData?.topic || "Untitled",
+            html: getLiveHtml(), excerpt: seo?.meta_description || "",
+            lang: currentLang || "en", metaDescription: seo?.meta_description || "" }) });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Publish failed");
+        pubTopBtn.textContent = "✅ Published";
+      } catch(e) { pubTopBtn.disabled = false; pubTopBtn.textContent = "📝 Publish"; alert("Publish failed: " + e.message); }
+    });
+    actionRow.appendChild(pubTopBtn);
+
     topBar.appendChild(actionRow);
     wrap.appendChild(topBar);
 
@@ -864,6 +1311,51 @@
     tabBodyEl.className = "ag-tab-body";
     renderTabBody(tabBodyEl, activeTab, article, seo, schema, audits, promotion);
     wrap.appendChild(tabBodyEl);
+
+    // Bottom action row
+    const bottomSaveRow = document.createElement("div");
+    bottomSaveRow.style.cssText = "display:flex;justify-content:space-between;align-items:center;padding:20px 0 8px;gap:12px;flex-wrap:wrap";
+
+    const improveBtn = document.createElement("button");
+    improveBtn.className = "ag-ghost-btn ag-improve-btn";
+    improveBtn.textContent = currentLang === "el" ? "\u2728 \u0392\u03b5\u03bb\u03c4\u03af\u03c9\u03c3\u03b7 \u0386\u03c1\u03b8\u03c1\u03bf\u03c5" : currentLang === "de" ? "\u2728 Artikel verbessern" : "\u2728 Improve Article";
+    improveBtn.addEventListener("click", () => showImproveModal(article, seo));
+
+    const bottomSaveBtn = document.createElement("button");
+    bottomSaveBtn.className = "ag-ghost-btn";
+    bottomSaveBtn.textContent = currentLang === "el" ? "\u0391\u03c0\u03bf\u03b8\u03ae\u03ba\u03b5\u03c5\u03c3\u03b7" : "Save";
+    bottomSaveBtn.addEventListener("click", () => {
+      const sites = loadSites();
+      const activeSite = sites.find(s => s.id === activeSiteId);
+      const art = {
+        id: Date.now(), savedAt: new Date().toISOString(),
+        siteId: activeSiteId, siteName: activeSite?.name || activeSite?.domain || "",
+        siteDomain: activeSite?.domain || "", lang: currentLang,
+        title: seo?.title_tag || article?.h1 || formData.topic || "Untitled",
+        language: { en: "English", el: "Greek", de: "German" }[currentLang] || "English",
+        keyword: seo?.primary_keyword || formData.primaryKeyword || "",
+        slug: seo?.slug || "", metaDescription: seo?.meta_description || "",
+        htmlContent: buildArticleHTML(article, seo),
+        plainText: buildCopyAll(article, seo), result,
+      };
+      savedArticles.unshift(art);
+      localStorage.setItem("eureach_articles", JSON.stringify(savedArticles.slice(0, 100)));
+      bottomSaveBtn.textContent = "\u2705";
+      setTimeout(() => { bottomSaveBtn.textContent = currentLang === "el" ? "\u0391\u03c0\u03bf\u03b8\u03ae\u03ba\u03b5\u03c5\u03c3\u03b7" : "Save"; }, 2500);
+    });
+
+    bottomSaveRow.appendChild(improveBtn);
+    bottomSaveRow.appendChild(bottomSaveBtn);
+    wrap.appendChild(bottomSaveRow);
+
+    wrap.appendChild(buildPublishBtn({
+      title: seo?.title_tag || article?.h1 || formData?.topic || "Untitled",
+      excerpt: seo?.meta_description || "",
+      getHtml: getLiveHtml,
+      lang: currentLang || "en",
+      metaDescription: seo?.meta_description || "",
+    }));
+
     root.appendChild(wrap);
   }
 
@@ -874,6 +1366,169 @@
     if (idx === 2) renderSchemaTab(el, schema);
     if (idx === 3) renderAuditsTab(el, audits);
     if (idx === 4) renderPromotionTab(el, promotion);
+  }
+
+
+  /* ── Improve Article ──────────────────────────────────── */
+  function showImproveModal(article, seo) {
+    const L = currentLang;
+    const toneOpts = [
+      ["keep",           L==="el" ? "\u2014 \u03a4\u03cc\u03bd\u03bf\u03c2 \u03c9\u03c2 \u03ad\u03c7\u03b5\u03b9 \u2014" : "\u2014 Keep current tone \u2014"],
+      ["professional",   L==="el" ? "\ud83c\udfa9 \u03a0\u03b9\u03bf \u03b5\u03c0\u03b1\u03b3\u03b3\u03b5\u03bb\u03bc\u03b1\u03c4\u03b9\u03ba\u03cc" : "\ud83c\udfa9 More Professional"],
+      ["friendly",       L==="el" ? "\ud83d\ude0a \u03a0\u03b9\u03bf \u03c6\u03b9\u03bb\u03b9\u03ba\u03cc" : "\ud83d\ude0a More Friendly"],
+      ["formal",         L==="el" ? "\ud83d\udcda \u03a0\u03b9\u03bf \u03c4\u03c5\u03c0\u03b9\u03ba\u03cc" : "\ud83d\udcda More Formal"],
+      ["conversational", L==="el" ? "\ud83d\udcac \u03a0\u03b9\u03bf \u03c3\u03c5\u03bd\u03bf\u03bc\u03b9\u03bb\u03b7\u03c4\u03b9\u03ba\u03cc" : "\ud83d\udcac More Conversational"],
+      ["concise",        L==="el" ? "\u2702\ufe0f \u03a0\u03b9\u03bf \u03c3\u03cd\u03bd\u03c4\u03bf\u03bc\u03bf" : "\u2702\ufe0f More Concise"],
+      ["detailed",       L==="el" ? "\ud83d\udcdd \u03a0\u03b9\u03bf \u03b1\u03bd\u03b1\u03bb\u03c5\u03c4\u03b9\u03ba\u03cc" : "\ud83d\udcdd More Detailed"],
+      ["persuasive",     L==="el" ? "\ud83d\udd25 \u03a0\u03b9\u03bf \u03c0\u03b5\u03b9\u03c3\u03c4\u03b9\u03ba\u03cc" : "\ud83d\udd25 More Persuasive"],
+      ["seo",            L==="el" ? "\ud83c\udfaf \u03a0\u03b9\u03bf SEO" : "\ud83c\udfaf More SEO-Focused"],
+      ["energetic",      L==="el" ? "\u26a1 \u03a0\u03b9\u03bf \u03b4\u03c5\u03bd\u03b1\u03bc\u03b9\u03ba\u03cc" : "\u26a1 More Energetic"],
+    ];
+
+    const overlay = document.createElement("div");
+    overlay.className = "ag-modal-overlay";
+
+    const modal = document.createElement("div");
+    modal.className = "ag-modal ag-improve-modal";
+    modal.innerHTML =
+      "<h3>\u2728 " + (L==="el" ? "\u0392\u03b5\u03bb\u03c4\u03af\u03c9\u03c3\u03b7 \u0386\u03c1\u03b8\u03c1\u03bf\u03c5" : L==="de" ? "Artikel verbessern" : "Improve Article") + "</h3>" +
+
+      "<div class='ag-improve-row'>" +
+        "<label class='ag-improve-label'>" + (L==="el" ? "\u038f\u03c6\u03bf\u03c2 / \u03a3\u03c4\u03c5\u03bb" : "Tone / Style") + "</label>" +
+        "<select id='ag-imp-tone' class='ag-improve-select'>" +
+          toneOpts.map(o => `<option value="${o[0]}">${o[1]}</option>`).join("") +
+        "</select>" +
+      "</div>" +
+
+      "<div class='ag-improve-row'>" +
+        "<label class='ag-improve-label'>" + (L==="el" ? "\u03a4\u03c1\u03cc\u03c0\u03bf\u03c2 \u03b2\u03b5\u03bb\u03c4\u03af\u03c9\u03c3\u03b7\u03c2" : "Improvement Mode") + "</label>" +
+        "<label class='ag-improve-radio-lbl'>" +
+          "<input type='radio' name='ag-imp-mode' value='ai' checked>" +
+          "<div><div class='ag-improve-radio-title'>A &middot; " + (L==="el" ? "\u03a0\u03c1\u03cc\u03c4\u03b1\u03c3\u03b7 AI" : "AI Suggestion") + "</div>" +
+          "<div class='ag-improve-radio-sub'>" + (L==="el" ? "\u03a4\u03bf AI \u03b5\u03bd\u03c4\u03bf\u03c0\u03af\u03b6\u03b5\u03b9 \u03b1\u03c5\u03c4\u03cc\u03bc\u03b1\u03c4\u03b1 \u03c4\u03b9 \u03c7\u03c1\u03b5\u03b9\u03ac\u03b6\u03b5\u03c4\u03b1\u03b9 \u03b2\u03b5\u03bb\u03c4\u03af\u03c9\u03c3\u03b7" : "AI automatically detects what to improve") + "</div></div>" +
+        "</label>" +
+        "<label class='ag-improve-radio-lbl'>" +
+          "<input type='radio' name='ag-imp-mode' value='user'>" +
+          "<div><div class='ag-improve-radio-title'>B &middot; " + (L==="el" ? "\u0394\u03b9\u03ba\u03ad\u03c2 \u03bf\u03b4\u03b7\u03b3\u03af\u03b5\u03c2" : "Your Instructions") + "</div>" +
+          "<div class='ag-improve-radio-sub'>" + (L==="el" ? "\u03a0\u03b5\u03c1\u03b9\u03b3\u03c1\u03ac\u03c8\u03c4\u03b5 \u03c4\u03b9 \u03b8\u03ad\u03bb\u03b5\u03c4\u03b5 \u03bd\u03b1 \u03b1\u03bb\u03bb\u03ac\u03be\u03b5\u03b9" : "Describe exactly what you want changed") + "</div></div>" +
+        "</label>" +
+      "</div>" +
+
+      "<div id='ag-imp-user-block' class='ag-improve-row' style='display:none'>" +
+        "<textarea id='ag-imp-instructions' rows='4' style='width:100%' placeholder='" +
+          (L==="el" ? "\u03c0.\u03c7. \u03a0\u03c1\u03cc\u03c3\u03b8\u03b5\u03c3\u03b5 \u03c0\u03b5\u03c1\u03b9\u03c3\u03c3\u03cc\u03c4\u03b5\u03c1\u03b1 \u03c0\u03b1\u03c1\u03b1\u03b4\u03b5\u03af\u03b3\u03bc\u03b1\u03c4\u03b1..." : "e.g. Add more examples, strengthen the conclusion...") +
+          "'></textarea>" +
+      "</div>" +
+
+      "<div class='ag-modal-actions'>" +
+        "<button class='ag-ghost-btn' id='ag-imp-cancel'>" + (L==="el" ? "\u0391\u03ba\u03cd\u03c1\u03c9\u03c3\u03b7" : "Cancel") + "</button>" +
+        "<button class='ag-generate-btn' id='ag-imp-submit'>\u2728 " + (L==="el" ? "\u0392\u03b5\u03bb\u03c4\u03af\u03c9\u03c3\u03b7" : L==="de" ? "Verbessern" : "Improve") + "</button>" +
+      "</div>";
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    overlay.querySelectorAll("[name=ag-imp-mode]").forEach(r => {
+      r.addEventListener("change", () => {
+        overlay.querySelector("#ag-imp-user-block").style.display =
+          overlay.querySelector("[name=ag-imp-mode]:checked").value === "user" ? "" : "none";
+      });
+    });
+
+    overlay.querySelector("#ag-imp-cancel").addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+
+    overlay.querySelector("#ag-imp-submit").addEventListener("click", async () => {
+      const tone = overlay.querySelector("#ag-imp-tone").value;
+      const mode = overlay.querySelector("[name=ag-imp-mode]:checked").value;
+      const userInstructions = overlay.querySelector("#ag-imp-instructions").value.trim();
+      if (mode === "user" && !userInstructions) { overlay.querySelector("#ag-imp-instructions").focus(); return; }
+
+      const btn = overlay.querySelector("#ag-imp-submit");
+      btn.disabled = true;
+      btn.textContent = L==="el" ? "\u0392\u03b5\u03bb\u03c4\u03af\u03c9\u03c3\u03b7\u2026" : "Improving\u2026";
+
+      try {
+        const htmlContent = buildArticleHTML(article, seo);
+        const r = await fetch("/api/articles/improve", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ htmlContent, tone, mode, userInstructions, lang: currentLang }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Failed");
+        overlay.remove();
+        showImproveResult(d.htmlContent, article, seo);
+      } catch(err) {
+        btn.disabled = false;
+        btn.textContent = "\u2728 " + (L==="el" ? "\u0392\u03b5\u03bb\u03c4\u03af\u03c9\u03c3\u03b7" : "Improve");
+        alert("Error: " + err.message);
+      }
+    });
+  }
+
+  function showImproveResult(improvedHtml, originalArticle, originalSeo) {
+    const L = currentLang;
+    const overlay = document.createElement("div");
+    overlay.className = "ag-improve-result-overlay";
+
+    const inner = document.createElement("div");
+    inner.className = "ag-improve-result-inner";
+
+    const titleEl = document.createElement("div");
+    titleEl.className = "ag-improve-result-title";
+    titleEl.textContent = "\u2728 " + (L==="el" ? "\u03a0\u03c1\u03bf\u03b5\u03c0\u03b9\u03c3\u03ba\u03cc\u03c3\u03ba\u03bf\u03c0\u03b7\u03c3\u03b7 \u03b2\u03b5\u03bb\u03c4\u03b9\u03c9\u03bc\u03ad\u03bd\u03bf\u03c5 \u03ac\u03c1\u03b8\u03c1\u03bf\u03c5" : "Improved Article Preview");
+
+    const preview = document.createElement("div");
+    preview.className = "ag-article-preview";
+    preview.style.marginTop = "24px";
+    preview.innerHTML = improvedHtml;
+
+    const footer = document.createElement("div");
+    footer.className = "ag-improve-result-footer";
+    footer.innerHTML =
+      "<button id='ag-impr-save-new' class='ag-ghost-btn' style='color:#34d399;border-color:rgba(52,211,153,0.3)'>" +
+        (L==="el" ? "\u0391\u03c0\u03bf\u03b8\u03ae\u03ba\u03b5\u03c5\u03c3\u03b7 \u03c9\u03c2 \u03bd\u03ad\u03bf" : "Save as New") + "</button>" +
+      "<button id='ag-impr-save-over' class='ag-generate-btn'>" +
+        (L==="el" ? "\u2705 \u0391\u03c0\u03bf\u03b8\u03ae\u03ba\u03b5\u03c5\u03c3\u03b7 (\u03b1\u03bd\u03c4\u03b9\u03ba\u03b1\u03c4\u03ac\u03c3\u03c4\u03b1\u03c3\u03b7)" : "\u2705 Save (overwrite)") + "</button>" +
+      "<button id='ag-impr-discard' class='ag-ghost-btn' style='color:#f87171;border-color:rgba(248,113,113,0.3)'>" +
+        (L==="el" ? "\u2715 \u0391\u03c0\u03cc\u03c1\u03c1\u03b9\u03c8\u03b7" : "\u2715 Discard") + "</button>";
+
+    inner.appendChild(titleEl);
+    inner.appendChild(preview);
+    inner.appendChild(footer);
+    overlay.appendChild(inner);
+    document.body.appendChild(overlay);
+
+    overlay.querySelector("#ag-impr-discard").addEventListener("click", () => overlay.remove());
+
+    overlay.querySelector("#ag-impr-save-over").addEventListener("click", () => {
+      if (result && result.article) { result.article.rawHtml = improvedHtml; }
+      else { result = result || {}; result.article = result.article || {}; result.article.rawHtml = improvedHtml; }
+      overlay.remove(); render();
+    });
+
+    overlay.querySelector("#ag-impr-save-new").addEventListener("click", () => {
+      const sites = loadSites();
+      const activeSite = sites.find(s => s.id === activeSiteId);
+      const baseTitle = originalSeo?.title_tag || originalArticle?.h1 || "Article";
+      const art = {
+        id: Date.now(), savedAt: new Date().toISOString(),
+        siteId: activeSiteId, siteName: activeSite?.name || activeSite?.domain || "",
+        siteDomain: activeSite?.domain || "", lang: currentLang,
+        title: baseTitle + " (\u2728 improved)",
+        language: { en: "English", el: "Greek", de: "German" }[currentLang] || "English",
+        keyword: originalSeo?.primary_keyword || "",
+        slug: (originalSeo?.slug || "article") + "-improved",
+        metaDescription: originalSeo?.meta_description || "",
+        htmlContent: improvedHtml, plainText: "",
+        result: { article: { rawHtml: improvedHtml }, seo: originalSeo },
+      };
+      savedArticles.unshift(art);
+      localStorage.setItem("eureach_articles", JSON.stringify(savedArticles.slice(0, 100)));
+      const btn = overlay.querySelector("#ag-impr-save-new");
+      btn.textContent = "\u2705 " + (L==="el" ? "\u0391\u03c0\u03bf\u03b8\u03b7\u03ba\u03b5\u03cd\u03c4\u03b7\u03ba\u03b5!" : "Saved!");
+      btn.disabled = true;
+    });
   }
 
   /* ── Article tab ─────────────────────────────────────── */
@@ -890,8 +1545,62 @@
     const htmlBtn = document.createElement("button");
     htmlBtn.className = "ag-toggle-btn"; htmlBtn.dataset.mode = "html";
     htmlBtn.textContent = t("htmlSource");
+    const insertImgBtn = document.createElement("button");
+    insertImgBtn.className = "ag-ghost-btn";
+    insertImgBtn.style.cssText = "font-size:0.78rem;padding:4px 11px;margin-left:auto";
+    insertImgBtn.textContent = "🖼 Insert image";
+    const copyHtmlBtn2 = document.createElement("button");
+    copyHtmlBtn2.className = "ag-ghost-btn";
+    copyHtmlBtn2.style.cssText = "font-size:0.78rem;padding:4px 11px";
+    copyHtmlBtn2.textContent = t("copyHtml");
+    insertImgBtn.addEventListener("click", () => {
+      showImageInsertModal((url, alt, isHeader) => {
+        const style = isHeader
+          ? "width:100%;max-width:100%;height:auto;display:block;margin:0 0 24px 0;border-radius:8px;"
+          : "width:100%;max-width:100%;height:auto;margin:16px 0";
+        const tag = `<img src="${url}" alt="${alt}" style="${style}">`;
+        const ta = contentEl.querySelector(".ag-html-editor");
+        const preview = contentEl.querySelector(".ag-article-preview[contenteditable]");
+        if (ta) {
+          if (isHeader) {
+            ta.value = tag + "\n" + ta.value;
+            ta.selectionStart = ta.selectionEnd = tag.length + 1;
+          } else {
+            const pos = ta.selectionStart;
+            ta.value = ta.value.slice(0, pos) + "\n" + tag + "\n" + ta.value.slice(pos);
+            ta.selectionStart = ta.selectionEnd = pos + tag.length + 2;
+          }
+          article.rawHtml = ta.value;
+          ta.focus();
+        } else if (preview) {
+          if (isHeader) {
+            preview.insertAdjacentHTML("afterbegin", tag);
+          } else {
+            preview.focus();
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount) {
+              const range = sel.getRangeAt(0);
+              range.collapse(false);
+              const tmp = document.createElement("div");
+              tmp.innerHTML = tag;
+              range.insertNode(tmp.firstChild);
+              range.collapse(false);
+            } else {
+              preview.insertAdjacentHTML("beforeend", tag);
+            }
+            article.rawHtml = preview.innerHTML;
+          }
+        }
+      });
+    });
+    copyHtmlBtn2.addEventListener("click", () => {
+      const liveHtml = buildArticleHTML(article, seo);
+      copyText(liveHtml, copyHtmlBtn2);
+    });
     toggleRow.appendChild(previewBtn);
     toggleRow.appendChild(htmlBtn);
+    toggleRow.appendChild(copyHtmlBtn2);
+    toggleRow.appendChild(insertImgBtn);
     toggleRow.addEventListener("click", e => {
       const btn = e.target.closest("[data-mode]");
       if (!btn) return;
@@ -915,14 +1624,26 @@
           <span>HTML</span>
           <button class="ag-copy-btn" id="ag-copy-html">${t("copyHtmlBtn")}</button>
         </div>
-        <pre class="ag-code">${esc(html)}</pre>`;
-      el.querySelector("#ag-copy-html").addEventListener("click", e => copyText(html, e.target));
+        <textarea class="ag-html-editor ag-code" spellcheck="false" style="width:100%;min-height:420px;resize:vertical;background:transparent;border:none;outline:none;font-family:monospace;font-size:0.82rem;line-height:1.5;color:inherit;padding:0">${esc(html)}</textarea>`;
+      const ta = el.querySelector(".ag-html-editor");
+      ta.addEventListener("input", () => { article.rawHtml = ta.value; });
+      el.querySelector("#ag-copy-html").addEventListener("click", e => {
+        copyText(ta.value, e.target);
+      });
     } else {
-      el.innerHTML = `<div class="ag-article-preview">${html}</div>`;
+      el.innerHTML = "";
+      const prev = document.createElement("div");
+      prev.className = "ag-article-preview";
+      prev.contentEditable = "true";
+      prev.style.outline = "none";
+      prev.innerHTML = html;
+      prev.addEventListener("input", () => { article.rawHtml = prev.innerHTML; });
+      el.appendChild(prev);
     }
   }
 
   function buildArticleHTML(article, seo) {
+    if (article && article.rawHtml) return article.rawHtml;
     let html = "";
     if (article.featured_snippet) html += `<div class="art-snippet"><p>${esc(article.featured_snippet)}</p></div>\n`;
     if (article.toc?.length) html += `<nav class="art-toc"><h3>Contents</h3><ol>${article.toc.map(t => `<li>${esc(t)}</li>`).join("")}</ol></nav>\n`;
@@ -1178,6 +1899,7 @@
             <button class="ag-ghost-btn" data-action="copy">${t("copyHtml")}</button>
             <button class="ag-ghost-btn" data-action="dl">${t("download")}</button>
             ${wpConnected ? `<button class="ag-ghost-btn ag-wp-btn" data-action="wp">🚀 WP</button>` : ""}
+            ${art.publishedToBlog ? `<span class="ag-wp-badge">✓ Blog</span>` : `<button class="ag-ghost-btn" data-action="pub">📝 Publish</button>`}
             <button class="ag-ghost-btn ag-delete-btn" data-action="del">🗑</button>
           </div>`;
         card.querySelector("[data-action=view]").addEventListener("click", () => {
@@ -1190,6 +1912,19 @@
         card.querySelector("[data-action=dl]").addEventListener("click", () => downloadHTML(art.result?.article||{}, art.result?.seo||{}));
         const wpCardBtn = card.querySelector("[data-action=wp]");
         if (wpCardBtn) wpCardBtn.addEventListener("click", () => openWpPublish(art));
+        const pubCardBtn = card.querySelector("[data-action=pub]");
+        if (pubCardBtn) pubCardBtn.addEventListener("click", async () => {
+          pubCardBtn.disabled = true; pubCardBtn.textContent = "Publishing…";
+          try {
+            const r = await fetch("/api/blog", { method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ title: art.title, html: art.htmlContent || "", excerpt: art.metaDescription || "", lang: art.lang || "en", metaDescription: art.metaDescription || "" }) });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error || "Publish failed");
+            art.publishedToBlog = true;
+            localStorage.setItem("eureach_articles", JSON.stringify(savedArticles));
+            pubCardBtn.replaceWith(Object.assign(document.createElement("span"), { className: "ag-wp-badge", textContent: "✓ Blog" }));
+          } catch(e) { pubCardBtn.disabled = false; pubCardBtn.textContent = "📝 Publish"; alert("Publish failed: " + e.message); }
+        });
         card.querySelector("[data-action=del]").addEventListener("click", () => {
           if (!confirm(`Delete "${art.title}"?`)) return;
           savedArticles.splice(idx, 1);
@@ -1234,50 +1969,69 @@
     root.appendChild(wrap);
   }
 
-  /* ── GENERATE (mock) ─────────────────────────────────── */
+  /* ── GENERATE ──────────────────────────── */
   async function startGenerate(form, activeSite) {
-    // Check and deduct article credit before starting
     try {
-      const chk = await fetch("/api/articles/deduct", { method: "POST" });
+      const chk = await fetch("/api/articles/deduct", { method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: { en:"English", el:"Greek", de:"German" }[currentLang] || "English" }) });
       if (!chk.ok) {
         const d = await chk.json();
-        if (chk.status === 403 && d.error === "insufficient_credits") {
-          showArticleLimitModal(d.creditsMax);
-          return;
-        }
-        if (chk.status === 401) return; // not logged in — let it proceed anyway
+        if (chk.status === 403 && d.error === "insufficient_credits") { showArticleLimitModal(d.creditsMax); return; }
+        if (chk.status === 403) { showArticleLimitModal(); return; }
       }
     } catch {}
 
     const fd = new FormData(form);
     formData = {
-      topic:             fd.get("topic")           || "",
-      brief:             fd.get("brief")           || "",
-      articleType:       fd.get("articleType")     || "How-to guide",
-      model:             fd.get("model")           || "sonnet",
+      topic:             fd.get("topic")             || "",
+      brief:             fd.get("brief")             || "",
+      articleType:       fd.get("articleType")       || "How-to guide",
+      model:             fd.get("model")             || "sonnet",
       language:          { en:"English", el:"Greek", de:"German" }[currentLang] || "English",
-      readingLevel:      fd.get("readingLevel")    || "Intermediate",
-      audience:          fd.get("audience")        || "",
-      primaryKeyword:    fd.get("primaryKeyword")  || "",
+      readingLevel:      fd.get("readingLevel")      || "Intermediate",
+      audience:          fd.get("audience")          || "",
+      primaryKeyword:    fd.get("primaryKeyword")    || "",
       secondaryKeywords: fd.get("secondaryKeywords") || "",
-      searchIntent:      fd.get("searchIntent")    || "Informational",
-      funnelStage:       fd.get("funnelStage")     || "TOFU",
-      geoTarget:         fd.get("geoTarget")       || "",
-      articleLength:     fd.get("articleLength")   || "M",
-      conversionGoal:    fd.get("conversionGoal")  || "Email",
-      cta:               fd.get("cta")             || "",
-      ctaUrl:            fd.get("ctaUrl")          || "",
-      siteDomain:        activeSite?.domain        || "",
-      siteName:          activeSite?.name          || activeSite?.domain || "",
-      siteNiche:         activeSite?.niche         || "",
+      searchIntent:      fd.get("searchIntent")      || "Informational",
+      funnelStage:       fd.get("funnelStage")       || "TOFU",
+      geoTarget:         fd.get("geoTarget")         || "",
+      articleLength:     fd.get("articleLength")     || "M",
+      conversionGoal:    fd.get("conversionGoal")    || "Email",
+      cta:               fd.get("cta")               || "",
+      ctaUrl:            fd.get("ctaUrl")            || "",
+      siteDomain:        activeSite?.domain          || "",
+      siteName:          activeSite?.name            || activeSite?.domain || "",
+      siteNiche:         activeSite?.niche           || "",
+      siteAbout:         activeSite?.about           || "",
+      tones:             [...selectedTones],
+      includeFaq:        fd.get("includeFaq")        !== null,
+      includeToc:        fd.get("includeToc")        !== null,
+      includeSnippet:    fd.get("includeSnippet")    !== null,
     };
     state = "generating";
     render();
-    const delay = 8000 + Math.random() * 4000;
-    setTimeout(() => {
-      result = buildMockResult(formData);
+
+    try {
+      const r = await fetch("/api/articles/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({}));
+        throw new Error(err.error || ("HTTP " + r.status));
+      }
+      result = await r.json();
       activeTab = 0; state = "results"; render();
-    }, delay);
+    } catch (err) {
+      state = "idle"; render();
+      const errDiv = document.getElementById("ag-gen-error") || Object.assign(document.createElement("div"), { id: "ag-gen-error" });
+      errDiv.style.cssText = "background:#451a1a;border:1px solid #dc2626;border-radius:8px;padding:14px 18px;margin:12px 0;color:#fca5a5;font-size:0.88rem";
+      errDiv.textContent = "Generation failed: " + err.message;
+      const formEl = document.querySelector(".ag-form");
+      if (formEl && !document.getElementById("ag-gen-error")) formEl.prepend(errDiv);
+    }
   }
 
   function showArticleLimitModal(max) {
@@ -1792,17 +2546,124 @@
       wrap.appendChild(imp);
     }
 
-    // article preview
-    const preview = document.createElement("div");
-    preview.className = "ag-article-preview";
-    preview.style.cssText = "background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:32px 36px;line-height:1.8;color:var(--text)";
-    preview.innerHTML = res.html || "";
-    wrap.appendChild(preview);
+    // article view — preview / HTML toggle with insert-image
+    const articleWrap = document.createElement("div");
+    articleWrap.className = "ag-article-view";
+    let exViewMode = "preview";
+
+    const exToggleRow = document.createElement("div");
+    exToggleRow.className = "ag-view-toggle";
+
+    const exPreviewBtn = document.createElement("button");
+    exPreviewBtn.className = "ag-toggle-btn active"; exPreviewBtn.dataset.mode = "preview";
+    exPreviewBtn.textContent = t("preview");
+    const exHtmlBtn = document.createElement("button");
+    exHtmlBtn.className = "ag-toggle-btn"; exHtmlBtn.dataset.mode = "html";
+    exHtmlBtn.textContent = t("htmlSource");
+    const exInsertImgBtn = document.createElement("button");
+    exInsertImgBtn.className = "ag-ghost-btn";
+    exInsertImgBtn.style.cssText = "font-size:0.78rem;padding:4px 11px;margin-left:auto";
+    exInsertImgBtn.textContent = "🖼 Insert image";
+    const exCopyHtmlBtn = document.createElement("button");
+    exCopyHtmlBtn.className = "ag-ghost-btn";
+    exCopyHtmlBtn.style.cssText = "font-size:0.78rem;padding:4px 11px";
+    exCopyHtmlBtn.textContent = t("copyHtml");
+    exCopyHtmlBtn.addEventListener("click", () => copyText(res.html || "", exCopyHtmlBtn));
+
+    const exContentEl = document.createElement("div");
+
+    function renderExContent() {
+      const html = res.html || "";
+      if (exViewMode === "html") {
+        exContentEl.innerHTML = `
+          <div class="ag-code-header">
+            <span>HTML</span>
+            <button class="ag-copy-btn" id="ex-copy-html">${t("copyHtmlBtn")}</button>
+          </div>
+          <textarea class="ag-html-editor ag-code" spellcheck="false" style="width:100%;min-height:420px;resize:vertical;background:transparent;border:none;outline:none;font-family:monospace;font-size:0.82rem;line-height:1.5;color:inherit;padding:0">${esc(html)}</textarea>`;
+        const exTa = exContentEl.querySelector(".ag-html-editor");
+        exTa.addEventListener("input", () => { res.html = exTa.value; });
+        exContentEl.querySelector("#ex-copy-html").addEventListener("click", e => copyText(exTa.value, e.target));
+      } else {
+        exContentEl.innerHTML = "";
+        const preview = document.createElement("div");
+        preview.className = "ag-article-preview";
+        preview.contentEditable = "true";
+        preview.style.cssText = "background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:14px;padding:32px 36px;line-height:1.8;color:var(--text);outline:none;min-height:200px";
+        preview.innerHTML = html;
+        preview.addEventListener("input", () => { res.html = preview.innerHTML; });
+        exContentEl.appendChild(preview);
+      }
+    }
+
+    function insertImgAtCursor(imgTag) {
+      const preview = exContentEl.querySelector(".ag-article-preview[contenteditable]");
+      const ta = exContentEl.querySelector(".ag-html-editor");
+      if (ta) {
+        const pos = ta.selectionStart;
+        ta.value = ta.value.slice(0, pos) + "\n" + imgTag + "\n" + ta.value.slice(pos);
+        ta.selectionStart = ta.selectionEnd = pos + imgTag.length + 2;
+        res.html = ta.value;
+        ta.focus();
+      } else if (preview) {
+        preview.focus();
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount) {
+          const range = sel.getRangeAt(0);
+          range.collapse(false);
+          const tmp = document.createElement("div");
+          tmp.innerHTML = imgTag;
+          const frag = document.createDocumentFragment();
+          frag.appendChild(tmp.firstChild);
+          range.insertNode(frag);
+          range.collapse(false);
+        } else {
+          preview.insertAdjacentHTML("beforeend", imgTag);
+        }
+        res.html = preview.innerHTML;
+      }
+    }
+
+    exInsertImgBtn.addEventListener("click", () => {
+      const _aiOpts = { articleTitle: res?.seo?.title_tag || res?.article?.h1 || "" };
+      showImageInsertModal((url, alt, isHeader) => {
+        const style = isHeader
+          ? "width:100%;max-width:100%;height:auto;display:block;margin:0 0 24px 0;border-radius:8px;"
+          : "width:100%;max-width:100%;height:auto;margin:16px 0";
+        const tag = `<img src="${url}" alt="${alt}" style="${style}">`;
+        if (isHeader) {
+          const preview = exContentEl.querySelector(".ag-article-preview[contenteditable]");
+          const ta = exContentEl.querySelector(".ag-html-editor");
+          if (ta) { ta.value = tag + "\n" + ta.value; }
+          else if (preview) { preview.insertAdjacentHTML("afterbegin", tag); }
+        } else {
+          insertImgAtCursor(tag);
+        }
+      }, _aiOpts);
+    });
+
+    exToggleRow.appendChild(exPreviewBtn);
+    exToggleRow.appendChild(exHtmlBtn);
+    exToggleRow.appendChild(exCopyHtmlBtn);
+    exToggleRow.appendChild(exInsertImgBtn);
+    exToggleRow.addEventListener("click", e => {
+      const btn = e.target.closest("[data-mode]");
+      if (!btn) return;
+      exViewMode = btn.dataset.mode;
+      exToggleRow.querySelectorAll(".ag-toggle-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === exViewMode));
+      renderExContent();
+    });
+
+    renderExContent();
+    articleWrap.appendChild(exToggleRow);
+    articleWrap.appendChild(exContentEl);
+    wrap.appendChild(articleWrap);
 
     wrap.appendChild(buildPublishBtn({
       title: res.metaTitle || "Article",
       excerpt: res.metaDescription || "",
       html: res.html || "",
+      getHtml: () => res.html || "",
       lang: existingData.targetLang || "en",
       metaDescription: res.metaDescription || "",
       showExport: true,
@@ -1835,7 +2696,8 @@
   }
 
   /* ── Publish panel (Eureach Blog + Agora) ───────────── */
-  function buildPublishBtn({ title, excerpt, html, lang, metaDescription, showExport }) {
+  function buildPublishBtn({ title, excerpt, html, getHtml, lang, metaDescription, showExport }) {
+    const liveHtml = () => (getHtml ? getHtml() : html) || "";
     const wrap = document.createElement("div");
     wrap.style.cssText = "margin-top:24px;padding-top:24px;border-top:1px solid var(--border,#2a3050);";
 
@@ -1870,20 +2732,20 @@
     if (showExport) {
       const safeTitle = (title || "Article").replace(/[^a-z0-9]/gi, "_");
       wrap.querySelector("#exp-copy").addEventListener("click", (e) => {
-        navigator.clipboard.writeText(html || "").then(() => { e.target.textContent = "✓ Copied!"; setTimeout(() => e.target.textContent = "📋 Copy HTML", 1500); });
+        navigator.clipboard.writeText(liveHtml()).then(() => { e.target.textContent = "✓ Copied!"; setTimeout(() => e.target.textContent = "📋 Copy HTML", 1500); });
       });
       wrap.querySelector("#exp-dl").addEventListener("click", () => {
-        const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title||"Article"}</title><meta name="description" content="${metaDescription||""}"></head><body>${html}</body></html>`], { type: "text/html" });
+        const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title||"Article"}</title><meta name="description" content="${metaDescription||""}"></head><body>${liveHtml()}</body></html>`], { type: "text/html" });
         const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = safeTitle + ".html"; a.click();
       });
       const pdfBtn = wrap.querySelector("#exp-pdf");
       pdfBtn.addEventListener("click", () => {
         const w = window.open("", "_blank");
-        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title||"Article"}</title><style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;line-height:1.7;color:#111}h1{font-size:2rem;margin-bottom:.5rem}h2{font-size:1.4rem;margin-top:2rem}p{margin:.8rem 0}</style></head><body>${html}</body></html>`);
+        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${title||"Article"}</title><style>body{font-family:Georgia,serif;max-width:720px;margin:40px auto;line-height:1.7;color:#111}h1{font-size:2rem;margin-bottom:.5rem}h2{font-size:1.4rem;margin-top:2rem}p{margin:.8rem 0}</style></head><body>${liveHtml()}</body></html>`);
         w.document.close(); w.focus(); setTimeout(() => w.print(), 400);
       });
       wrap.querySelector("#exp-docx").addEventListener("click", () => {
-        const wordHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset='UTF-8'><title>${title||"Article"}</title></head><body>${html}</body></html>`;
+        const wordHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset='UTF-8'><title>${title||"Article"}</title></head><body>${liveHtml()}</body></html>`;
         const blob = new Blob(['\ufeff', wordHtml], { type: "application/msword" });
         const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = safeTitle + ".doc"; a.click();
       });
@@ -1916,7 +2778,7 @@
             body: JSON.stringify({
               title: title || "Article",
               excerpt: excerpt || metaDescription || "",
-              html: html || "",
+              html: liveHtml(),
               lang: lang || "en",
               category: "article",
             }),
@@ -1937,13 +2799,13 @@
             body: JSON.stringify({
               title: title || "Article",
               excerpt: excerpt || metaDescription || "",
-              html: html || "",
+              html: liveHtml(),
               lang: lang || "en",
             }),
           });
           const d = await r.json();
           if (!r.ok) throw new Error(d.error || "Agora publish failed");
-          results.push(`✅ Agora — <a href="https://agora.sos.gr/gnomi/${d.slug || ''}" target="_blank" style="color:#38bdf8;text-decoration:underline;">View on Agora →</a>`);
+          results.push(`✅ Agora — submitted for admin approval.`);
         } catch (err) {
           results.push(`❌ Agora: ${err.message}`);
         }

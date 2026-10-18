@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,7 +42,7 @@
       <a href="audit.html">AI Audit</a>
       <a href="blog.html">Blog</a>
       <a href="membership.html">Membership</a>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="nav.dashboard">Dashboard</a>
     </div>
     <div class="nav-cta">
       <span style="font-size:0.72rem;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:var(--gold);padding:3px 10px;border-radius:100px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">Admin</span>
@@ -958,6 +958,10 @@ async function editArticle(slug) {
     </div>
     <div style="margin-bottom:20px;">
       <label style="display:block;font-size:0.8rem;color:#8b9ab7;margin-bottom:6px;">HTML Content</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <button onclick="adminInsertImage(false)" style="background:#1e293b;color:#93c5fd;border:1px solid #2a3050;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">🖼 Insert Image</button>
+        <button onclick="adminInsertImage(true)"  style="background:#1e293b;color:#a78bfa;border:1px solid #2a3050;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.82rem;">🖼 Header Image</button>
+      </div>
       <textarea id="edit-html" rows="14" style="width:100%;background:#1e293b;border:1px solid #2a3050;border-radius:8px;padding:10px 12px;color:#e2e8f0;font-size:0.8rem;font-family:monospace;box-sizing:border-box;resize:vertical;">${esc(post.html||'')}</textarea>
     </div>
     <div style="display:flex;gap:10px;">
@@ -965,6 +969,146 @@ async function editArticle(slug) {
       <button onclick="closeArtModal()" style="background:#1e293b;color:#e2e8f0;border:1px solid #2a3050;padding:10px 20px;border-radius:8px;cursor:pointer;">Cancel</button>
     </div>`;
   modal.style.display = 'block';
+}
+
+function adminInsertImage(isHeader) {
+  const ta = document.getElementById('edit-html');
+  const title = document.getElementById('edit-title')?.value || '';
+  const aiPrompt = title ? `Professional header image for article: "${title}", modern, clean, high quality, photorealistic` : 'Professional article header image, modern, clean';
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:#1e2535;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:28px;width:440px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.5)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-weight:600;font-size:1rem;color:#e2e8f0">🖼 ${isHeader ? 'Header Image' : 'Insert Image'}</span>
+        <button id="adm-img-close" style="background:none;border:none;color:#94a3b8;font-size:1.2rem;cursor:pointer">✕</button>
+      </div>
+      ${!isHeader ? '<div style="font-size:0.78rem;color:#94a3b8;margin-bottom:12px;padding:8px 10px;background:rgba(255,255,255,.04);border-radius:8px;border-left:3px solid rgba(99,102,241,.5);">💡 Place your cursor in the HTML at the desired position first</div>' : ''}
+      <div style="display:flex;gap:6px;margin-bottom:16px">
+        <button class="adm-img-tab active" data-tab="url"    style="flex:1;padding:7px;border-radius:8px;font-size:0.8rem;cursor:pointer;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.1);color:#e2e8f0">🔗 URL</button>
+        <button class="adm-img-tab"        data-tab="browse" style="flex:1;padding:7px;border-radius:8px;font-size:0.8rem;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:transparent;color:#94a3b8">📁 Browse</button>
+        <button class="adm-img-tab"        data-tab="ai"     style="flex:1;padding:7px;border-radius:8px;font-size:0.8rem;cursor:pointer;border:1px solid rgba(255,255,255,.08);background:transparent;color:#94a3b8">🤖 AI</button>
+      </div>
+      <div id="adm-tab-url">
+        <input id="adm-img-url" type="url" placeholder="https://example.com/image.jpg" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;margin-bottom:10px">
+        <input id="adm-img-alt" type="text" placeholder="Alt text (optional)" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;margin-bottom:14px">
+        <button id="adm-url-insert" style="width:100%;padding:10px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;font-size:0.9rem;cursor:pointer;font-weight:500">Insert</button>
+      </div>
+      <div id="adm-tab-browse" style="display:none;text-align:center">
+        <input type="file" id="adm-browse-input" accept="image/*" style="display:none">
+        <button id="adm-browse-btn" style="width:100%;padding:36px 20px;border:2px dashed rgba(255,255,255,.2);border-radius:12px;background:transparent;color:#94a3b8;font-size:0.88rem;cursor:pointer;margin-bottom:10px">
+          <div style="font-size:2rem;margin-bottom:8px">📁</div>Click to browse files
+        </button>
+        <div id="adm-browse-preview" style="display:none;margin-bottom:14px">
+          <img id="adm-browse-thumb" style="max-height:120px;max-width:100%;border-radius:8px;object-fit:contain">
+          <button id="adm-browse-insert" style="width:100%;margin-top:10px;padding:10px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;font-size:0.9rem;cursor:pointer;font-weight:500">Insert</button>
+        </div>
+        <p id="adm-browse-err" style="color:#f87171;font-size:0.82rem;display:none"></p>
+      </div>
+      <div id="adm-tab-ai" style="display:none">
+        <div style="font-size:0.78rem;color:#94a3b8;margin-bottom:8px">Edit the prompt or use the auto-generated one</div>
+        <textarea id="adm-ai-prompt" rows="3" style="width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;resize:vertical;margin-bottom:10px;font-family:inherit"></textarea>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button id="adm-ai-generate" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(135deg,#7c3aed,#4f46e5);border:none;color:#fff;font-size:0.9rem;cursor:pointer;font-weight:600">✨ Generate</button>
+          <button id="adm-ai-regen" style="display:none;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#94a3b8;cursor:pointer" title="Regenerate">🔄</button>
+        </div>
+        <div id="adm-ai-loading" style="display:none;text-align:center;padding:24px 0;color:#94a3b8;font-size:0.88rem">⏳ Generating image… ~10 seconds</div>
+        <div id="adm-ai-preview" style="display:none;margin-bottom:14px">
+          <img id="adm-ai-thumb" style="width:100%;border-radius:8px;object-fit:cover;max-height:200px">
+          <button id="adm-ai-insert" style="width:100%;margin-top:10px;padding:10px;border-radius:8px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;font-size:0.9rem;cursor:pointer;font-weight:500">Insert Image</button>
+        </div>
+        <p id="adm-ai-err" style="color:#f87171;font-size:0.82rem;display:none"></p>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.querySelector('#adm-img-close').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+  // Tabs
+  overlay.querySelectorAll('.adm-img-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      overlay.querySelectorAll('.adm-img-tab').forEach(t => { t.style.background='transparent'; t.style.borderColor='rgba(255,255,255,.08)'; t.style.color='#94a3b8'; });
+      tab.style.background='rgba(255,255,255,.1)'; tab.style.borderColor='rgba(255,255,255,.15)'; tab.style.color='#e2e8f0';
+      overlay.querySelector('#adm-tab-url').style.display    = tab.dataset.tab==='url'    ? '' : 'none';
+      overlay.querySelector('#adm-tab-browse').style.display = tab.dataset.tab==='browse' ? '' : 'none';
+      overlay.querySelector('#adm-tab-ai').style.display     = tab.dataset.tab==='ai'     ? '' : 'none';
+    });
+  });
+
+  function doInsert(url, alt) {
+    const style = isHeader
+      ? 'width:100%;max-width:100%;height:auto;display:block;margin:0 0 24px 0;border-radius:8px;'
+      : 'width:100%;max-width:100%;height:auto;margin:16px 0';
+    const tag = `<img src="${url}" alt="${alt}" style="${style}">\n`;
+    if (isHeader) {
+      ta.value = tag + ta.value;
+    } else {
+      const pos = ta.selectionStart || 0;
+      ta.value = ta.value.slice(0, pos) + '\n' + tag + ta.value.slice(pos);
+      ta.selectionStart = ta.selectionEnd = pos + tag.length + 1;
+    }
+    ta.focus();
+    close();
+  }
+
+  // URL tab
+  overlay.querySelector('#adm-url-insert').addEventListener('click', () => {
+    const url = overlay.querySelector('#adm-img-url').value.trim();
+    if (!url) return;
+    doInsert(url, overlay.querySelector('#adm-img-alt').value.trim());
+  });
+
+  // Browse tab
+  async function uploadFile(file) {
+    const r = await fetch('/api/articles/upload-image', { method:'POST', headers:{'Content-Type':file.type}, body:file });
+    if (!r.ok) throw new Error('Upload failed');
+    return (await r.json()).url;
+  }
+  overlay.querySelector('#adm-browse-btn').addEventListener('click', () => overlay.querySelector('#adm-browse-input').click());
+  overlay.querySelector('#adm-browse-input').addEventListener('change', async () => {
+    const file = overlay.querySelector('#adm-browse-input').files[0];
+    if (!file) return;
+    const errEl = overlay.querySelector('#adm-browse-err');
+    errEl.style.display = 'none';
+    overlay.querySelector('#adm-browse-btn').textContent = 'Uploading…';
+    try {
+      const url = await uploadFile(file);
+      overlay.querySelector('#adm-browse-thumb').src = url;
+      overlay.querySelector('#adm-browse-preview').style.display = '';
+      overlay.querySelector('#adm-browse-btn').style.display = 'none';
+    } catch { errEl.textContent='Upload failed.'; errEl.style.display=''; overlay.querySelector('#adm-browse-btn').textContent='Click to browse files'; }
+  });
+  overlay.querySelector('#adm-browse-insert').addEventListener('click', () => {
+    doInsert(overlay.querySelector('#adm-browse-thumb').src, '');
+  });
+
+  // AI tab
+  overlay.querySelector('#adm-ai-prompt').value = aiPrompt;
+  async function runAiGen() {
+    const prompt = overlay.querySelector('#adm-ai-prompt').value.trim();
+    if (!prompt) return;
+    overlay.querySelector('#adm-ai-err').style.display = 'none';
+    overlay.querySelector('#adm-ai-preview').style.display = 'none';
+    overlay.querySelector('#adm-ai-loading').style.display = '';
+    overlay.querySelector('#adm-ai-generate').disabled = true;
+    try {
+      const r = await fetch('/api/articles/generate-image', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt}) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error||'Generation failed');
+      overlay.querySelector('#adm-ai-thumb').src = d.url;
+      overlay.querySelector('#adm-ai-preview').style.display = '';
+      overlay.querySelector('#adm-ai-regen').style.display = '';
+    } catch(e) { overlay.querySelector('#adm-ai-err').textContent=e.message; overlay.querySelector('#adm-ai-err').style.display=''; }
+    finally { overlay.querySelector('#adm-ai-loading').style.display='none'; overlay.querySelector('#adm-ai-generate').disabled=false; }
+  }
+  overlay.querySelector('#adm-ai-generate').addEventListener('click', runAiGen);
+  overlay.querySelector('#adm-ai-regen').addEventListener('click', runAiGen);
+  overlay.querySelector('#adm-ai-insert').addEventListener('click', () => {
+    doInsert(overlay.querySelector('#adm-ai-thumb').src, overlay.querySelector('#adm-ai-prompt').value.trim());
+  });
 }
 
 async function saveArticleEdit(slug) {

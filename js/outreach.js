@@ -117,7 +117,10 @@
           <div class="or-steps-wrap">${stepsHtml}</div>
           <div class="or-card-foot">
             <span class="or-card-date">Started ${fmtDate(entry.createdAt)}</span>
-            <div class="or-card-controls">${pauseBtn}${stopBtn}</div>
+            <div class="or-card-controls">${pauseBtn}${stopBtn}
+              <button class="or-ctrl-btn or-ctrl-pipeline"
+                onclick="addOutreachToPipeline('${esc(entry.id)}','${esc(entry.leadName)}','${esc(entry.leadEmail)}','${esc(entry.businessType||'')}','${esc(entry.city||'')}',this)"
+                title="Add to Pipeline">📊 Pipeline</button></div>
           </div>
         </div>`;
     }).join("");
@@ -433,6 +436,64 @@
   function fmtDate2(iso) {
     if (!iso) return "—";
     return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+
+  // ── Add outreach contact to pipeline ─────────────────
+  window.addOutreachToPipeline = async function(queueId, leadName, leadEmail, businessType, city, btn) {
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    try {
+      const res = await fetch('/api/pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window._csrf || '' },
+        body: JSON.stringify({
+          name:     leadName,
+          city:     city         || '',
+          category: businessType || '',
+          email:    leadEmail    || null,
+          stage:    'contacted',
+        }),
+      });
+      if (res.status === 409) {
+        if (btn) { btn.textContent = '✓ In Pipeline'; btn.disabled = true; }
+        return;
+      }
+      if (!res.ok) {
+        const d = await res.json();
+        alert(d.error || 'Failed to add to pipeline');
+        if (btn) { btn.disabled = false; btn.textContent = '📊 Pipeline'; }
+        return;
+      }
+      if (btn) { btn.textContent = '✓ Added'; btn.disabled = true; btn.style.background = '#22c55e22'; }
+    } catch {
+      if (btn) { btn.disabled = false; btn.textContent = '📊 Pipeline'; }
+    }
+  };
+
+
+  // ── Add all outreach contacts to pipeline ────────────
+  async function addAllOutreachToPipeline() {
+    const btn = document.getElementById('or-add-all-pipeline-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+    let added = 0, skipped = 0;
+    for (const entry of allQueue) {
+      try {
+        const res = await fetch('/api/pipeline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window._csrf || '' },
+          body: JSON.stringify({
+            name:     entry.leadName,
+            city:     entry.city         || '',
+            category: entry.businessType || '',
+            email:    entry.leadEmail    || null,
+            stage:    'contacted',
+          }),
+        });
+        if (res.status === 409) { skipped++; } else if (res.ok) { added++; }
+      } catch {}
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '📊 Add All to Pipeline'; }
+    alert(added + ' added to pipeline' + (skipped ? ', ' + skipped + ' already there.' : '.'));
   }
 
   // ── Init ───────────────────────────────────────────────

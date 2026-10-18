@@ -9,6 +9,9 @@
   <meta property="og:description" content="Lead finder + AI content + visibility audits. Built for Greek & German markets.">
   <meta property="og:type" content="website">
   <link rel="stylesheet" href="css/style.css">
+  <script src="js/translations.js?v=7"></script>
+  <script src="js/lp-translations.js?v=1"></script>
+  <script src="js/i18n.js?v=5"></script>
 </head>
 <body>
 
@@ -44,43 +47,55 @@
 .nav-dropdown-menu .ndm-icon { font-size: 1rem; width: 20px; text-align: center; }
 .nav-dropdown-divider { height: 1px; background: var(--border); margin: 6px 0; }
 </style>
+<style>.lang-btn.active{border-color:rgba(255,255,255,.55)!important;color:#fff!important;background:rgba(255,255,255,.08)!important}</style>
 <nav id="nav">
   <div class="nav-inner">
     <a href="index.html" class="nav-logo">
       eureach<span class="dot">.</span>eu
     </a>
-    <div class="nav-links">
+    <!-- Logged-out nav (default) -->
+    <div class="nav-links" id="nav-links-guest">
+      <a href="#how" data-i18n="lp.navHow">Πώς λειτουργεί</a>
+      <a href="#pricing" data-i18n="lp.navPricing">Τιμές</a>
+      <a href="blog.html" data-i18n="lp.navBlog">Blog</a>
+    </div>
+    <!-- Logged-in nav (shown by JS after auth check) -->
+    <div class="nav-links" id="nav-links-user" style="display:none">
       <div class="nav-dropdown">
         <button class="nav-dropdown-toggle" data-i18n="nav.tools">
-          Tools
+          Εργαλεία
           <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
         </button>
         <div class="nav-dropdown-menu">
           <div class="nav-dropdown-menu-inner">
             <a href="leads.html"><span class="ndm-icon">🔍</span><span data-i18n="nav.leadFinder">Lead Finder</span></a>
-            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
-            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
-            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
-            <a href="marketing.html"><span class="ndm-icon">🚀</span><span>Marketing Creator</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Άρθρα</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Ανταγωνιστές</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Αναφορές</span></a>
+            <a href="marketing.html"><span class="ndm-icon">🚀</span><span data-i18n="lp.navMarketing">Marketing Creator</span></a>
             <div class="nav-dropdown-divider"></div>
-            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
-            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Πύλη Δημιουργού</span></a>
+            <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Γίνε Δημιουργός</span></a>
           </div>
         </div>
       </div>
-      <a href="audit.html">AI Audit</a>
-      <a href="blog.html">Blog</a>
-      <a href="#features">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="membership.html">Membership</a>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+      <a href="audit.html" data-i18n="lp.navAudit">AI Audit</a>
+      <a href="blog.html" data-i18n="lp.navBlog">Blog</a>
+      <a href="#pricing" data-i18n="lp.navPricing">Τιμές</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="lp.navDashboard">Dashboard</a>
     </div>
     <div class="nav-cta">
       <a href="profile.html" class="btn btn-ghost" id="nav-profile-btn" style="font-size:0.78rem;padding:7px 14px;display:none"></a>
-      <a href="signin.html" class="btn btn-ghost">Log in</a>
-      <a href="signup.html" class="btn btn-primary" id="nav-signup-btn">Start free →</a>
+      <a href="signin.html" class="btn btn-ghost" id="nav-signin-btn" data-i18n="lp.navLogin">Σύνδεση</a>
+      <a href="signup.html" class="btn btn-primary" id="nav-signup-btn" data-i18n="lp.navStartFree">Ξεκίνα δωρεάν →</a>
     </div>
   </div>
+
+    <div id="lp-lang" style="display:flex;gap:6px;align-items:center;margin-left:8px;">
+      <button class="lang-btn" data-lang="el" onclick="setLang('el')" style="background:none;border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:.8rem;font-weight:600;color:#94a3b8;letter-spacing:.03em;">ΕΛ</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" style="background:none;border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:.8rem;font-weight:600;color:#94a3b8;letter-spacing:.03em;">EN</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')" style="background:none;border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:3px 8px;cursor:pointer;font-size:.8rem;font-weight:600;color:#94a3b8;letter-spacing:.03em;">DE</button>
+    </div>
 </nav>
 
 <!-- ── HERO ─────────────────────────────────────────────── -->
@@ -93,26 +108,26 @@
     <!-- Left -->
     <div class="hero-left">
       <div class="hero-badge">
-        <span></span>
-        Built for Greece, Germany &amp; the EU
+        <span class="hero-dot"></span>
+        <span data-i18n="lp.heroBadge">Για Ελλάδα, Γερμανία &amp; ΕΕ</span>
       </div>
 
-      <h1>Find leads.<br>Write content.<br><span class="gradient-text">Grow faster.</span></h1>
+      <h1 data-i18n-html="lp.heroH1">Βρες leads.<br>Γράψε περιεχόμενο.<br><span class="gradient-text">Ανάπτυξη ταχύτερα.</span></h1>
 
       <p class="hero-sub">
-        The AI platform that finds local business leads, writes SEO articles in Greek &amp; German, and audits your visibility — all in one place.
+        <span data-i18n="lp.heroSub">Η AI πλατφόρμα που βρίσκει τοπικές επιχειρήσεις, γράφει SEO άρθρα στα Ελληνικά &amp; Γερμανικά, και ελέγχει την online παρουσία σου — όλα σε ένα μέρος.</span>
       </p>
 
       <div class="hero-actions">
-        <a href="signup.html" class="btn btn-primary btn-lg">Start free — no card needed →</a>
-        <a href="#how" class="btn btn-outline-gold btn-lg">See how it works</a>
+        <a href="signup.html" class="btn btn-primary btn-lg" data-i18n="lp.heroCta1">Ξεκίνα δωρεάν — χωρίς κάρτα →</a>
+        <a href="#how" class="btn btn-outline-gold btn-lg" data-i18n="lp.heroCta2">Δες πώς λειτουργεί</a>
       </div>
 
       <div class="hero-trust">
         <div class="hero-trust-avatars">
-          <span>GR</span><span>DE</span><span>AT</span><span>CH</span>
+          <span aria-label="Greece">🇬🇷</span><span aria-label="Germany">🇩🇪</span><span aria-label="Austria">🇦🇹</span><span aria-label="Switzerland">🇨🇭</span>
         </div>
-        <span>Built for EU businesses · Greek, English &amp; German</span>
+        <span data-i18n="lp.heroTrust">Για επιχειρήσεις ΕΕ · Ελληνικά, Αγγλικά &amp; Γερμανικά</span>
       </div>
     </div>
 
@@ -120,7 +135,7 @@
     <div class="hero-visual">
       <div class="float-badge float-badge-1">
         <div class="fb-val">+247</div>
-        <div class="fb-label">leads this week</div>
+        <div class="fb-label" data-i18n="lp.leadsWeek">leads αυτήν την εβδομάδα</div>
       </div>
 
       <div class="mockup">
@@ -129,20 +144,21 @@
           <div class="mockup-dot"></div>
           <div class="mockup-dot"></div>
           <div class="mockup-url">eureach.eu / lead-finder</div>
+          <div style="margin-left:auto;font-size:0.68rem;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:0.05em;border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:2px 6px" data-i18n="lp.exampleLabel">Παράδειγμα</div>
         </div>
 
         <div class="mockup-stats">
           <div class="mstat">
             <div class="mstat-val">1,840</div>
-            <div class="mstat-label">Leads found</div>
+            <div class="mstat-label" data-i18n="lp.leadsFound">Leads που βρέθηκαν</div>
           </div>
           <div class="mstat">
             <div class="mstat-val">94</div>
-            <div class="mstat-label">Articles written</div>
+            <div class="mstat-label" data-i18n="lp.articlesWritten">Άρθρα που γράφτηκαν</div>
           </div>
           <div class="mstat">
             <div class="mstat-val">€3.2k</div>
-            <div class="mstat-label">MRR gained</div>
+            <div class="mstat-label" data-i18n="lp.mrrGained">MRR που κερδήθηκε</div>
           </div>
         </div>
 
@@ -153,7 +169,7 @@
               <div class="mlead-name">Dental Studio Müller</div>
               <div class="mlead-cat">Dentist · Munich</div>
             </div>
-            <div class="mlead-tag tag-new">New</div>
+            <div class="mlead-tag tag-new" data-i18n="lp.tagNew">Νέο</div>
           </div>
           <div class="mlead">
             <div class="mlead-icon" style="background:rgba(245,158,11,0.15)">🏨</div>
@@ -161,7 +177,7 @@
               <div class="mlead-name">Hotel Santorini View</div>
               <div class="mlead-cat">Boutique Hotel · Thira</div>
             </div>
-            <div class="mlead-tag tag-hot">Hot</div>
+            <div class="mlead-tag tag-hot" data-i18n="lp.tagHot">Καυτό</div>
           </div>
           <div class="mlead">
             <div class="mlead-icon" style="background:rgba(124,58,237,0.15)">⚖️</div>
@@ -169,7 +185,7 @@
               <div class="mlead-name">Kanzlei Weber &amp; Partner</div>
               <div class="mlead-cat">Law firm · Berlin</div>
             </div>
-            <div class="mlead-tag tag-warm">Warm</div>
+            <div class="mlead-tag tag-warm" data-i18n="lp.tagWarm">Ζεστό</div>
           </div>
           <div class="mlead">
             <div class="mlead-icon" style="background:rgba(34,197,94,0.15)">🏥</div>
@@ -177,26 +193,22 @@
               <div class="mlead-name">Ιατρείο Παπαδόπουλου</div>
               <div class="mlead-cat">Doctor · Athens</div>
             </div>
-            <div class="mlead-tag tag-new">New</div>
+            <div class="mlead-tag tag-new" data-i18n="lp.tagNew">Νέο</div>
           </div>
         </div>
 
         <div class="mockup-article">
-          <div class="ma-label">✦ AI Article — Generating</div>
+          <div class="ma-label" data-i18n="lp.aiGenerating">✦ AI Άρθρο — Δημιουργία</div>
           <div class="ma-title">"10 Λόγοι να Επισκεφτείτε έναν Οδοντίατρο φέτος"</div>
           <div class="ma-bar-wrap">
             <div class="ma-bar"></div>
             <div class="ma-bar"></div>
             <div class="ma-bar"></div>
           </div>
-          <div class="ma-meta">Greek · SEO-optimised · 1,800 words · Schema included</div>
+          <div class="ma-meta" data-i18n="lp.artMeta">Ελληνικά · SEO-βελτιστοποιημένο · 1.800 λέξεις · Schema included</div>
         </div>
       </div>
 
-      <div class="float-badge float-badge-2">
-        <div class="fb-val">91%</div>
-        <div class="fb-label">gross margin</div>
-      </div>
     </div>
   </div>
 </section>
@@ -204,13 +216,13 @@
 <!-- ── FLAGS STRIP ───────────────────────────────────────── -->
 <div class="flags-strip">
   <div class="flags-inner">
-    <span style="font-size:0.75rem;color:var(--muted);font-weight:600;letter-spacing:0.06em;text-transform:uppercase">Available for</span>
-    <div class="flag-item"><span class="flag">🇬🇷</span> Greece</div>
-    <div class="flag-item"><span class="flag">🇩🇪</span> Germany</div>
-    <div class="flag-item"><span class="flag">🇦🇹</span> Austria</div>
-    <div class="flag-item"><span class="flag">🇨🇭</span> Switzerland</div>
-    <div class="flag-item"><span class="flag">🇬🇧</span> United Kingdom</div>
-    <div class="flag-item"><span class="flag">🇨🇾</span> Cyprus</div>
+    <span style="font-size:0.75rem;color:var(--muted);font-weight:600;letter-spacing:0.06em;text-transform:uppercase" data-i18n="lp.availFor">Διαθέσιμο για</span>
+    <div class="flag-item"><span class="flag">🇬🇷</span> <span data-i18n="lp.flagGreece">Ελλάδα</span></div>
+    <div class="flag-item"><span class="flag">🇩🇪</span> <span data-i18n="lp.flagGermany">Γερμανία</span></div>
+    <div class="flag-item"><span class="flag">🇦🇹</span> <span data-i18n="lp.flagAustria">Αυστρία</span></div>
+    <div class="flag-item"><span class="flag">🇨🇭</span> <span data-i18n="lp.flagSwitzerland">Ελβετία</span></div>
+    <div class="flag-item"><span class="flag">🇬🇧</span> <span data-i18n="lp.flagUK">Ηνωμένο Βασίλειο</span></div>
+    <div class="flag-item"><span class="flag">🇨🇾</span> <span data-i18n="lp.flagCyprus">Κύπρος</span></div>
   </div>
 </div>
 
@@ -218,73 +230,73 @@
 <section class="features" id="features">
   <div class="container">
     <div class="section-head reveal">
-      <div class="section-label">What eureach does</div>
-      <h2 class="section-title">Five tools. <span class="gradient-text">One platform.</span></h2>
-      <p class="section-sub">Everything a European business or digital agency needs to find clients, create content, and dominate local search.</p>
+      <div class="section-label" data-i18n="lp.featLabel">Τι κάνει το eureach</div>
+      <h2 class="section-title" data-i18n-html="lp.featTitle">Πέντε εργαλεία. <span class="gradient-text">Μία πλατφόρμα.</span></h2>
+      <p class="section-sub" data-i18n="lp.featSub">Όλα όσα χρειάζεται μια ευρωπαϊκή επιχείρηση ή digital agency για να βρει πελάτες, να δημιουργήσει περιεχόμενο και να κυριαρχήσει στην τοπική αναζήτηση.</p>
     </div>
 
     <div class="features-grid">
 
       <div class="feat-card reveal" style="--card-color:#2563eb;--card-glow:rgba(37,99,235,0.25)">
         <div class="feat-icon" style="background:rgba(37,99,235,0.15)">🔍</div>
-        <h3>Local Lead Finder</h3>
-        <p>Search for any type of business in any Greek or German-speaking city. Get real data — phones, websites, ratings — straight from Google Maps.</p>
+        <h3 data-i18n="lp.feat1Title">Local Lead Finder</h3>
+        <p data-i18n="lp.feat1Desc">Αναζήτησε οποιοδήποτε είδος επιχείρησης σε οποιαδήποτε ελληνική ή γερμανόφωνη πόλη. Πραγματικά δεδομένα — τηλέφωνα, websites, ratings — απευθείας από το Google Maps.</p>
         <ul class="feat-list">
-          <li style="--dot-color:#3b82f6"><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0"></span>15+ industry groups, 70+ subcategories</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0"></span>Greece, Germany, Austria, Switzerland, UK</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0"></span>Export CSV / PDF with one click</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0"></span>AI email enrichment per lead</li>
+          <li style="--dot-color:#3b82f6"><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0"></span><span data-i18n="lp.feat1b1">15+ ομάδες κλάδων, 70+ subcategories</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0"></span><span data-i18n="lp.feat1b2">Ελλάδα, Γερμανία, Αυστρία, Ελβετία, ΗΒ</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0"></span><span data-i18n="lp.feat1b3">Εξαγωγή CSV / PDF με ένα κλικ</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;flex-shrink:0"></span><span data-i18n="lp.feat1b4">AI εμπλουτισμός email ανά lead</span></li>
         </ul>
       </div>
 
       <div class="feat-card reveal" style="--card-color:#7c3aed;--card-glow:rgba(124,58,237,0.25)">
         <div class="feat-icon" style="background:rgba(124,58,237,0.15)">✍️</div>
-        <h3>AI Article Generator</h3>
-        <p>Generate full SEO articles in Greek, English, or German in seconds. Schema markup, keyword targeting, and a social promotion kit included every time.</p>
+        <h3 data-i18n="lp.feat2Title">AI Article Generator</h3>
+        <p data-i18n="lp.feat2Desc">Δημιούργησε πλήρη SEO άρθρα in Greek, English, or German in seconds. Schema markup, keyword targeting, and a social promotion kit included every time.</p>
         <ul class="feat-list">
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span>11 article types — How-to, Listicle, Review...</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span>Greek, English &amp; German output</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span>Schema.org markup auto-generated</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span>Powered by Claude AI (Sonnet &amp; Opus)</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span><span data-i18n="lp.feat2b1">11 τύποι άρθρων — How-to, Listicle, Review...</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span><span data-i18n="lp.feat2b2">Ελληνικά, Αγγλικά &amp; Γερμανικά</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span><span data-i18n="lp.feat2b3">Αυτόματη δημιουργία Schema.org markup</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;flex-shrink:0"></span><span data-i18n="lp.feat2b4">Τεχνολογία Claude AI (Sonnet &amp; Opus)</span></li>
         </ul>
       </div>
 
       <div class="feat-card reveal" style="--card-color:#0891b2;--card-glow:rgba(8,145,178,0.25)">
         <div class="feat-icon" style="background:rgba(8,145,178,0.15)">🤖</div>
-        <h3>AI Visibility Audit</h3>
-        <p>Find out if your business shows up when people ask ChatGPT, Perplexity, or Google AI. The first audit tool built specifically for EU businesses.</p>
+        <h3 data-i18n="lp.feat3Title">AI Visibility Audit</h3>
+        <p data-i18n="lp.feat3Desc">Μάθε αν η επιχείρησή σου εμφανίζεται when people ask ChatGPT, Perplexity, or Google AI. The first audit tool built specifically for EU businesses.</p>
         <ul class="feat-list">
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span>Score across ChatGPT, Gemini, Perplexity</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span>Actionable improvement report</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span>White-label PDF for agencies</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span>Monthly monitoring available</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span><span data-i18n="lp.feat3b1">Βαθμολογία σε ChatGPT, Gemini, Perplexity</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span><span data-i18n="lp.feat3b2">Αναλυτική έκθεση βελτίωσης</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span><span data-i18n="lp.feat3b3">White-label PDF για agencies</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#06b6d4;flex-shrink:0"></span><span data-i18n="lp.feat3b4">Διαθέσιμη μηνιαία παρακολούθηση</span></li>
         </ul>
       </div>
 
       <div class="feat-card reveal" style="--card-color:#059669;--card-glow:rgba(5,150,105,0.25)">
         <div class="feat-icon" style="background:rgba(5,150,105,0.15)">📡</div>
-        <h3>Competitor Tracker</h3>
-        <p>eureach finds your competitors automatically and runs a full AI visibility audit on each one — so you always know where you stand and where they're ahead.</p>
+        <h3 data-i18n="lp.feat4Title">Competitor Tracker</h3>
+        <p data-i18n="lp.feat4Desc">Το eureach βρίσκει αυτόματα τους ανταγωνιστές and runs a full AI visibility audit on each one — so you always know where you stand and where they're ahead.</p>
         <ul class="feat-list">
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span>Auto-discover competitors in your niche</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span>AI visibility score for every competitor</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span><span data-i18n="lp.feat4b1">Αυτόματη ανακάλυψη ανταγωνιστών</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span><span data-i18n="lp.feat4b2">AI visibility score για κάθε ανταγωνιστή</span></li>
           <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span>Side-by-side breakdown & gap analysis</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span>Alerts when a competitor's score drops</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#10b981;flex-shrink:0"></span><span data-i18n="lp.feat4b4">Ειδοποιήσεις όταν το score πέφτει</span></li>
         </ul>
       </div>
 
       <div class="feat-card reveal feat-card-wide" style="--card-color:#d97706;--card-glow:rgba(217,119,6,0.25)">
         <div class="feat-icon" style="background:rgba(217,119,6,0.15)">🔗</div>
-        <h3>Citation Builder</h3>
-        <p>Get your business listed on high-authority EU directories and niche sites — the backlinks that move the needle for local SEO and AI search visibility. Fully managed by the eureach team.</p>
+        <h3 data-i18n="lp.feat5Title">Citation Builder</h3>
+        <p data-i18n="lp.feat5Desc">Καταχώρισε την επιχείρησή σου on high-authority EU directories and niche sites — the backlinks that move the needle for local SEO and AI search visibility. Fully managed by the eureach team.</p>
         <ul class="feat-list">
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>Placements on DR 50–90 sites in your niche</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>AI-written articles tailored to your business</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>YouTube mention add-on for video creators</li>
-          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span>Live placement tracker — see every link go live</li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span data-i18n="lp.feat5b1">Τοποθετήσεις σε sites DR 50–90 στον κλάδο σου</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span data-i18n="lp.feat5b2">AI-γραμμένα άρθρα για την επιχείρησή σου</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span data-i18n="lp.feat5b3">YouTube mention add-on για creators</span></li>
+          <li><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span><span data-i18n="lp.feat5b4">Live tracker τοποθετήσεων — δες κάθε link να ανεβαίνει</span></li>
         </ul>
-        <p style="margin-top:1rem;font-size:0.82rem;color:#fbbf24;opacity:0.85;">🎥 Already partnered with 12+ YouTube creators across Greece &amp; Germany</p>
-        <a href="/citations.html" style="display:inline-block;position:relative;z-index:1;margin-top:1.2rem;padding:0.55rem 1.4rem;background:rgba(217,119,6,0.18);border:1px solid rgba(245,158,11,0.4);border-radius:8px;color:#fbbf24;font-size:0.9rem;font-weight:600;text-decoration:none;">View packages &rarr;</a>
+        <p style="margin-top:1rem;font-size:0.82rem;color:#fbbf24;opacity:0.85;">🎥 <span data-i18n="lp.feat5note">Ήδη σε συνεργασία με 12+ YouTube creators σε Ελλάδα &amp; Germany</span></p>
+        <a href="/citations.html" style="display:inline-block;position:relative;z-index:1;margin-top:1.2rem;padding:0.55rem 1.4rem;background:rgba(217,119,6,0.18);border:1px solid rgba(245,158,11,0.4);border-radius:8px;color:#fbbf24;font-size:0.9rem;font-weight:600;text-decoration:none;" data-i18n="lp.feat5cta">Δες τα πακέτα →</a>
       </div>
 
     </div>
@@ -297,19 +309,19 @@
     <div class="stats-grid">
       <div class="reveal" style="text-align:center">
         <div class="stat-val gradient-text">70+</div>
-        <div class="stat-label">Business categories covered</div>
+        <div class="stat-label" data-i18n="lp.stat1">Κατηγορίες επιχειρήσεων</div>
       </div>
       <div class="reveal" style="text-align:center">
         <div class="stat-val gradient-text">6</div>
-        <div class="stat-label">EU countries supported</div>
+        <div class="stat-label" data-i18n="lp.stat2">Χώρες ΕΕ</div>
       </div>
       <div class="reveal" style="text-align:center">
         <div class="stat-val gradient-text">3</div>
-        <div class="stat-label">Languages — GR, EN, DE</div>
+        <div class="stat-label" data-i18n="lp.stat3">Γλώσσες — ΕΛ, ΑΓ, ΓΕΡ</div>
       </div>
       <div class="reveal" style="text-align:center">
         <div class="stat-val gradient-text">~€0.05</div>
-        <div class="stat-label">Cost per AI article generated</div>
+        <div class="stat-label" data-i18n="lp.stat4">Κόστος ανά AI άρθρο</div>
       </div>
     </div>
   </div>
@@ -319,26 +331,26 @@
 <section class="how" id="how">
   <div class="container">
     <div class="section-head reveal">
-      <div class="section-label">How it works</div>
-      <h2 class="section-title">From zero to <span class="gradient-text">paying clients</span></h2>
-      <p class="section-sub">Three steps is all it takes to go from a cold start to a warm pipeline.</p>
+      <div class="section-label" data-i18n="lp.howLabel">Πώς λειτουργεί</div>
+      <h2 class="section-title" data-i18n-html="lp.howTitle">Από το μηδέν σε <span class="gradient-text">πληρωμένους πελάτες</span></h2>
+      <p class="section-sub" data-i18n="lp.howSub">Τρία βήματα για να περάσεις από το μηδέν σε ζεστό pipeline υποψήφιων πελατών.</p>
     </div>
 
     <div class="steps">
       <div class="step reveal">
         <div class="step-num">1</div>
-        <h3>Find your leads</h3>
-        <p>Pick an industry and a city. eureach searches Google Maps and returns real local businesses with contact info, ratings, and websites — filtered and ready.</p>
+        <h3 data-i18n="lp.step1Title">Βρες τα leads σου</h3>
+        <p data-i18n="lp.step1Desc">Επίλεξε κλάδο και πόλη. Το eureach ψάχνει στο Google Maps και επιστρέφει πραγματικές τοπικές επιχειρήσεις με στοιχεία επικοινωνίας, ratings και websites.</p>
       </div>
       <div class="step reveal">
         <div class="step-num">2</div>
-        <h3>Write the content</h3>
-        <p>Generate a targeted SEO article or outreach email for that exact industry, in the right language, with schema markup and a promotion kit already included.</p>
+        <h3 data-i18n="lp.step2Title">Γράψε το περιεχόμενο</h3>
+        <p data-i18n="lp.step2Desc">Δημιούργησε στοχευμένο SEO άρθρο ή outreach email για αυτόν τον κλάδο, στη σωστή γλώσσα, με schema markup και promotion kit ήδη ενσωματωμένα.</p>
       </div>
       <div class="step reveal">
         <div class="step-num">3</div>
-        <h3>Audit &amp; close</h3>
-        <p>Run an AI Visibility Audit on any prospect's website. Show them their score. Offer to fix it. Turn a cold lead into a paying client with a concrete proposal.</p>
+        <h3 data-i18n="lp.step3Title">Audit &amp; κλείσιμο</h3>
+        <p data-i18n="lp.step3Desc">Τρέξε AI Visibility Audit on any prospect's website. Show them their score. Offer to fix it. Turn a cold lead into a paying client with a concrete proposal.</p>
       </div>
     </div>
   </div>
@@ -348,9 +360,9 @@
 <section class="comparison" id="compare">
   <div class="container">
     <div class="section-head reveal">
-      <div class="section-label">How we compare</div>
-      <h2 class="section-title">Built for EU local business. <span class="gradient-text">Nothing else is.</span></h2>
-      <p class="section-sub">Apollo finds Fortune 500s. Clay enriches spreadsheets. eureach finds the dentist in Thessaloniki who needs you — and writes the email to reach them.</p>
+      <div class="section-label" data-i18n="lp.cmpLabel">Σύγκριση</div>
+      <h2 class="section-title" data-i18n-html="lp.cmpTitle">Φτιαγμένο για τοπικές ΕΕ επιχειρήσεις. <span class="gradient-text">Τίποτα άλλο δεν είναι.</span></h2>
+      <p class="section-sub" data-i18n="lp.cmpSub">Το Apollo βρίσκει Fortune 500. Το Clay εμπλουτίζει spreadsheets. Το eureach βρίσκει τον οδοντίατρο στη Θεσσαλονίκη που σε χρειάζεται — και γράφει το email για να τον φτάσεις.</p>
     </div>
 
     <div class="cmp-wrap reveal">
@@ -358,7 +370,7 @@
         <table class="cmp-table">
           <thead>
             <tr>
-              <th class="cmp-feature-col">Feature</th>
+              <th class="cmp-feature-col" data-i18n="lp.cmpFeat">Δυνατότητα</th>
               <th class="cmp-us">eureach.eu</th>
               <th>contacter.ai</th>
               <th>Apollo.io</th>
@@ -370,7 +382,7 @@
           </thead>
           <tbody>
             <tr>
-              <td class="cmp-row-label">Finds local SMBs (Google Maps)</td>
+              <td class="cmp-row-label" data-i18n="lp.cmpF1">Βρίσκει τοπικές ΜΜΕ (Google Maps)</td>
               <td class="cmp-us"><span class="cmp-yes">✓</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-no">✗</span></td>
@@ -380,17 +392,17 @@
               <td><span class="cmp-no">✗</span></td>
             </tr>
             <tr>
-              <td class="cmp-row-label">Greek &amp; German language support</td>
+              <td class="cmp-row-label" data-i18n="lp.cmpF2">Υποστήριξη Ελληνικών &amp; Γερμανικών</td>
               <td class="cmp-us"><span class="cmp-yes">✓</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-partial">partial</span></td>
-              <td><span class="cmp-partial">partial</span></td>
+              <td><span class="cmp-partial" data-i18n="lp.partial">μερικώς</span></td>
+              <td><span class="cmp-partial" data-i18n="lp.partial">μερικώς</span></td>
             </tr>
             <tr>
-              <td class="cmp-row-label">AI article generation</td>
+              <td class="cmp-row-label" data-i18n="lp.cmpF3">Δημιουργία AI άρθρων</td>
               <td class="cmp-us"><span class="cmp-yes">✓</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-no">✗</span></td>
@@ -400,8 +412,8 @@
               <td><span class="cmp-no">✗</span></td>
             </tr>
             <tr>
-              <td class="cmp-row-label">Social media DM automation</td>
-              <td class="cmp-us"><span class="cmp-soon">soon</span></td>
+              <td class="cmp-row-label" data-i18n="lp.cmpF4">Αυτοματισμός social media DM</td>
+              <td class="cmp-us"><span class="cmp-soon" data-i18n="lp.soon">σύντομα</span></td>
               <td><span class="cmp-yes">✓</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-no">✗</span></td>
@@ -410,8 +422,8 @@
               <td><span class="cmp-no">✗</span></td>
             </tr>
             <tr>
-              <td class="cmp-row-label">AI email outreach sequences</td>
-              <td class="cmp-us"><span class="cmp-soon">soon</span></td>
+              <td class="cmp-row-label" data-i18n="lp.cmpF5">AI email outreach sequences</td>
+              <td class="cmp-us"><span class="cmp-soon" data-i18n="lp.soon">σύντομα</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-yes">✓</span></td>
               <td><span class="cmp-no">✗</span></td>
@@ -420,29 +432,29 @@
               <td><span class="cmp-no">✗</span></td>
             </tr>
             <tr>
-              <td class="cmp-row-label">GDPR / §7 UWG compliant outreach</td>
+              <td class="cmp-row-label" data-i18n="lp.cmpF6">GDPR / §7 UWG συμμόρφωση</td>
               <td class="cmp-us"><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-partial">partial</span></td>
+              <td><span class="cmp-partial" data-i18n="lp.partial">μερικώς</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-partial">partial</span></td>
+              <td><span class="cmp-partial" data-i18n="lp.partial">μερικώς</span></td>
               <td><span class="cmp-no">✗</span></td>
             </tr>
             <tr>
-              <td class="cmp-row-label">AI visibility audit (ChatGPT/Gemini)</td>
-              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-              <td><span class="cmp-no">✗</span></td>
-            </tr>
-            <tr>
-              <td class="cmp-row-label">Built-in CRM pipeline</td>
+              <td class="cmp-row-label" data-i18n="lp.cmpF7">AI visibility audit (ChatGPT/Gemini)</td>
               <td class="cmp-us"><span class="cmp-yes">✓</span></td>
               <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+              <td><span class="cmp-no">✗</span></td>
+            </tr>
+            <tr>
+              <td class="cmp-row-label" data-i18n="lp.cmpF8">Ενσωματωμένο CRM pipeline</td>
+              <td class="cmp-us"><span class="cmp-yes">✓</span></td>
+              <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-yes">✓</span></td>
               <td><span class="cmp-no">✗</span></td>
               <td><span class="cmp-no">✗</span></td>
@@ -450,7 +462,7 @@
               <td><span class="cmp-yes">✓</span></td>
             </tr>
             <tr>
-              <td class="cmp-row-label">Starting price / month</td>
+              <td class="cmp-row-label" data-i18n="lp.cmpF9">Τιμή εκκίνησης / μήνα</td>
               <td class="cmp-us cmp-price">Free → €29</td>
               <td class="cmp-price">Demo only</td>
               <td class="cmp-price">$49 / user</td>
@@ -462,7 +474,7 @@
           </tbody>
         </table>
       </div>
-      <p class="cmp-note">contacter.ai automates social DMs but can't find real local businesses or write content. eureach combines both — and outreach automation is coming soon.</p>
+      <p class="cmp-note" data-i18n="lp.cmpNote">Το contacter.ai αυτοματοποιεί social DMs but can't find real local businesses or write content. eureach combines both — and outreach automation is coming soon.</p>
     </div>
   </div>
 </section>
@@ -471,40 +483,21 @@
 <section class="pricing" id="pricing">
   <div class="container">
     <div class="section-head reveal">
-      <div class="section-label">Simple pricing</div>
-      <h2 class="section-title">Start free. <span class="gradient-text">Scale when ready.</span></h2>
-      <p class="section-sub">No contracts. Cancel any time. 150 free AI credits every month — no credit card needed.</p>
+      <div class="section-label" data-i18n="lp.pricLabel">Απλή τιμολόγηση</div>
+      <h2 class="section-title" data-i18n-html="lp.pricTitle">Ξεκίνα δωρεάν. <span class="gradient-text">Αναβάθμισε όταν είσαι έτοιμος.</span></h2>
+      <p class="section-sub" data-i18n="lp.pricSub">Χωρίς συμβόλαια. Ακύρωση οποτεδήποτε. 150 δωρεάν AI credits κάθε μήνα — χωρίς κάρτα.</p>
     </div>
 
     <div class="pricing-grid">
-
-      <!-- Free -->
-      <div class="price-card reveal">
-        <div class="price-name">Free</div>
-        <div class="price-amount"><span>€</span>0</div>
-        <div class="price-period">forever · no card needed</div>
-        <div class="price-divider"></div>
-        <ul class="price-features">
-          <li><span class="check">✓</span> 150 AI credits / month</li>
-          <li><span class="check">✓</span> 1 website</li>
-          <li><span class="check">✓</span> Lead Finder · Articles · AI Audit</li>
-          <li><span class="check">✓</span> Greek &amp; English output</li>
-          <li class="dim"><span class="x">✗</span> German output</li>
-          <li class="dim"><span class="x">✗</span> CSV export</li>
-          <li class="dim"><span class="x">✗</span> CRM pipeline</li>
-          <li class="dim"><span class="x">✗</span> Team seats</li>
-        </ul>
-        <a href="signup.html" class="btn btn-ghost price-cta">Start free →</a>
-      </div>
 
       <!-- Starter -->
       <div class="price-card reveal">
         <div class="price-name">Starter</div>
         <div class="price-amount"><span>€</span>29</div>
-        <div class="price-period">per month · billed monthly</div>
+        <div class="price-period" data-i18n="lp.planPerMonth">per month · billed monthly</div>
         <div class="price-divider"></div>
         <ul class="price-features">
-          <li><span class="check">✓</span> 500 AI credits / month</li>
+          <li><span class="check">✓</span> 500 AI credits / month<br><small style="color:var(--muted);font-size:0.78rem;padding-left:24px;display:block">≈ 50 άρθρα ή 100 audits ή 250 lead searches</small></li>
           <li><span class="check">✓</span> 2 websites · all 6 countries</li>
           <li><span class="check">✓</span> Greek &amp; English output</li>
           <li><span class="check">✓</span> CSV export</li>
@@ -518,13 +511,13 @@
 
       <!-- Pro -->
       <div class="price-card featured reveal">
-        <div class="price-badge">✦ Most Popular</div>
+        <div class="price-badge" data-i18n="lp.planPopular">✦ Πιο Δημοφιλές</div>
         <div class="price-name">Pro</div>
         <div class="price-amount"><span>€</span>79</div>
-        <div class="price-period">per month · billed monthly</div>
+        <div class="price-period" data-i18n="lp.planPerMonth">per month · billed monthly</div>
         <div class="price-divider"></div>
         <ul class="price-features">
-          <li><span class="check">✓</span> 1,500 AI credits / month</li>
+          <li><span class="check">✓</span> 1,500 AI credits / month<br><small style="color:var(--muted);font-size:0.78rem;padding-left:24px;display:block">≈ 150 άρθρα ή 300 audits ή 750 lead searches</small></li>
           <li><span class="check">✓</span> 3 websites · all 6 countries</li>
           <li><span class="check">✓</span> Greek, English &amp; German</li>
           <li><span class="check">✓</span> CSV + PDF export</li>
@@ -540,7 +533,7 @@
       <div class="price-card reveal">
         <div class="price-name">Agency</div>
         <div class="price-amount"><span>€</span>199</div>
-        <div class="price-period">per month · billed monthly</div>
+        <div class="price-period" data-i18n="lp.planPerMonth">per month · billed monthly</div>
         <div class="price-divider"></div>
         <ul class="price-features">
           <li><span class="check">✓</span> Unlimited AI credits</li>
@@ -563,13 +556,13 @@
 <section class="final-cta">
   <div class="container">
     <div class="reveal">
-      <h2>Ready to find your next <span class="gradient-text">100 clients?</span></h2>
-      <p>Start free today. No credit card. No commitment. Your first 150 AI credits are on us.</p>
+      <h2 data-i18n-html="lp.ctaTitle">Έτοιμος να βρεις τους επόμενους <span class="gradient-text">100 πελάτες σου;</span></h2>
+      <p data-i18n="lp.ctaSub">Ξεκίνα δωρεάν σήμερα. Χωρίς κάρτα. Χωρίς δέσμευση. Τα πρώτα 150 AI credits είναι δωρεάν.</p>
       <div class="final-cta-btns">
-        <a href="signup.html" class="btn btn-primary btn-lg">Create free account →</a>
-        <a href="#pricing" class="btn btn-ghost btn-lg">View pricing</a>
+        <a href="signup.html" class="btn btn-primary btn-lg" data-i18n="lp.ctaBtn1">Δημιούργησε δωρεάν λογαριασμό →</a>
+        <a href="#pricing" class="btn btn-ghost btn-lg" data-i18n="lp.ctaBtn2">Δες τιμές</a>
       </div>
-      <p class="free-note">Free forever plan available · Cancel paid plan any time</p>
+      <p class="free-note">Δωρεάν πλάνο διαθέσιμο πάντα · Ακύρωση οποτεδήποτε</p>
     </div>
   </div>
 </section>
@@ -580,41 +573,44 @@
     <div class="footer-grid">
       <div class="footer-brand">
         <div class="footer-logo">eureach<span style="color:var(--gold)">.</span>eu</div>
-        <p class="footer-tagline">AI-powered lead generation and content platform for European businesses.</p>
+        <p class="footer-tagline" data-i18n="lp.footerTagline">AI-powered πλατφόρμα εύρεσης leads και δημιουργίας περιεχομένου για ευρωπαϊκές επιχειρήσεις.</p>
         <div class="footer-flags">🇬🇷 🇩🇪 🇦🇹 🇨🇭 🇬🇧 🇨🇾</div>
       </div>
       <div class="footer-col">
-        <h4>Product</h4>
+        <h4 data-i18n="lp.footerProduct">Εργαλεία</h4>
         <ul>
-          <li><a href="#features">Lead Finder</a></li>
-          <li><a href="#features">Article Generator</a></li>
-          <li><a href="#features">AI Audit</a></li>
-          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="leads.html" data-i18n="nav.leadFinder">Lead Finder</a></li>
+          <li><a href="articles.html" data-i18n="nav.articles">Άρθρα</a></li>
+          <li><a href="competitors.html" data-i18n="nav.competitors">Ανταγωνιστές</a></li>
+          <li><a href="citations.html" data-i18n="nav.citations">Αναφορές</a></li>
+          <li><a href="marketing.html" data-i18n="lp.navMarketing">Marketing Creator</a></li>
+          <li><a href="audit.html" data-i18n="lp.navAudit">AI Audit</a></li>
+          <li><a href="youtube-join.html" data-i18n="nav.becomeCreator">Γίνε Creator</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Company</h4>
+        <h4 data-i18n="lp.footerCompany">Εταιρεία</h4>
         <ul>
-          <li><a href="mailto:hello@eureach.eu">Contact us</a></li>
-          <li><a href="membership.html">Pricing</a></li>
-          <li><a href="signup.html">Get started</a></li>
-          <li><a href="youtube-join.html">Become a Creator</a></li>
+          <li><a href="mailto:hello@eureach.eu" data-i18n="lp.footerContact">Επικοινωνία</a></li>
+          <li><a href="membership.html" data-i18n="lp.footerPricing">Τιμές</a></li>
+          <li><a href="signup.html" data-i18n="lp.footerGetStarted">Ξεκίνα</a></li>
+          <li><a href="youtube-join.html" data-i18n="lp.footerBecomeCreator">Γίνε Creator</a></li>
         </ul>
       </div>
       <div class="footer-col">
-        <h4>Legal</h4>
+        <h4 data-i18n="lp.footerLegal">Νομικά</h4>
         <ul>
-          <li><a href="privacy.html">Privacy Policy</a></li>
-          <li><a href="terms.html">Terms of Service</a></li>
-          <li><a href="privacy.html#gdpr">GDPR Rights</a></li>
+          <li><a href="privacy.html" data-i18n="lp.footerPrivacy">Πολιτική Απορρήτου</a></li>
+          <li><a href="terms.html" data-i18n="lp.footerTerms">Όροι Χρήσης</a></li>
+          <li><a href="privacy.html#gdpr" data-i18n="lp.footerGdpr">Δικαιώματα GDPR</a></li>
         </ul>
       </div>
     </div>
     <!-- Newsletter signup strip -->
     <div style="border-top:1px solid rgba(255,255,255,.08);margin-top:32px;padding-top:32px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
       <div>
-        <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:4px;">Stay ahead of the competition</div>
-        <div style="font-size:.82rem;color:#94a3b8;">Weekly insights on lead generation &amp; growth for European markets.</div>
+        <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:4px;" data-i18n="lp.nlTitle">Μείνε μπροστά από τον ανταγωνισμό</div>
+        <div style="font-size:.82rem;color:#94a3b8;" data-i18n="lp.nlSub">Εβδομαδιαίες συμβουλές για lead generation &amp; ανάπτυξη σε ευρωπαϊκές αγορές.</div>
       </div>
       <form id="nl-form" onsubmit="nlSubmit(event)" style="display:flex;gap:.5rem;flex-wrap:wrap;min-width:280px;">
         <input type="email" id="nl-email" placeholder="your@email.com" required
@@ -643,7 +639,7 @@
         const d = await r.json();
         if (d.success) {
           msg.style.color = '#4ade80';
-          msg.textContent = '✓ Check your inbox to confirm your subscription.';
+          msg.textContent = (window.EUREACH_T && window.EUREACH_T[window.euLang()] && window.EUREACH_T[window.euLang()]['lp.nlSuccess']) || '✓ Check your inbox to confirm your subscription.';
           document.getElementById('nl-email').value = '';
         } else {
           msg.style.color = '#f87171';
@@ -657,7 +653,7 @@
     }
     </script>
     <div class="footer-bottom">
-      <span>© 2026 eureach.eu — All rights reserved</span>
+      <span data-i18n="lp.copyright">© 2026 eureach.eu — Όλα τα δικαιώματα διατηρούνται</span>
       <div class="footer-bottom-links">
         <a href="privacy.html">Privacy</a>
         <a href="terms.html">Terms</a>
@@ -669,24 +665,23 @@
 
 <script src="js/main.js"></script>
 <script>
-// 80% usage nudge banner — shown to logged-in free users at 80%+ searches used
-(async () => {
-  try {
-    const res = await fetch("/api/auth/me");
-    if (!res.ok) return;
-    const { user } = await res.json();
-    if (!user || user.plan !== "free") return;
-    const left = user.creditsLeft, max = user.creditsMax;
-    if (left === -1 || max === null || max === -1 || max === 0) return;
-    const used = max - left;
-    if (used / max < 0.8) return;
-    const banner = document.createElement("div");
-    banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#7c3aed,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;gap:16px;padding:10px 20px;font-size:0.85rem;";
-    banner.innerHTML = `<span>⚡ You've used <strong>${used} of ${max}</strong> AI credits this month. <a href="leads.html" style="color:#fff;font-weight:700;text-decoration:underline">Use them wisely →</a> or <a href="membership.html" style="color:#fff;font-weight:700;text-decoration:underline">upgrade your plan</a></span><button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;opacity:0.7;margin-left:8px">✕</button>`;
-    document.body.prepend(banner);
-  } catch {}
-})();
+// Auth-aware nav: show tool links for logged-in users
+fetch("/api/auth/me").then(function(r){return r.ok?r.json():null;}).then(function(d){
+  if(d&&d.user){
+    var g=document.getElementById("nav-links-guest");
+    var u=document.getElementById("nav-links-user");
+    var si=document.getElementById("nav-signin-btn");
+    var su=document.getElementById("nav-signup-btn");
+    var pb=document.getElementById("nav-profile-btn");
+    if(g)g.style.display="none";
+    if(u)u.style.display="";
+    if(si)si.style.display="none";
+    if(su)su.style.display="none";
+    if(pb){pb.style.display="";pb.textContent=d.user.firstName||d.user.email;}
+  }
+}).catch(function(){});
 </script>
+
 <script src="/js/api.js?v=5"></script>
 </body>
 </html>

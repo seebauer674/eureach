@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,7 +47,7 @@
       background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02));
       border: 1px solid rgba(34,197,94,0.3);
     }
-    .status-banner.expired, .status-banner.free {
+    .status-banner.expired {
       background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
       border: 1px solid var(--border);
     }
@@ -241,7 +241,7 @@
       <a href="citations.html">Citations</a>
     
       <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="nav.dashboard">Dashboard</a>
     </div>
     <div class="nav-lang">
       <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
@@ -273,40 +273,66 @@
     <div id="sb-action"></div>
   </div>
 
-  <!-- Solo Pro plan card -->
-  <div class="plan-card">
-    <div class="plan-top">
-      <div class="plan-name-area">
-        <div class="plan-name">
-          Solo Pro
-          <span class="plan-badge">All features</span>
+  <!-- Plan cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px" class="plan-grid">
+    <!-- Beginners -->
+    <div class="plan-card" style="background:linear-gradient(145deg,rgba(34,197,94,0.1),rgba(34,197,94,0.04));border-color:rgba(34,197,94,0.35)">
+      <div class="plan-top" style="margin-bottom:20px">
+        <div class="plan-name-area">
+          <div class="plan-name" style="font-size:1.1rem">Beginners <span class="plan-badge" style="background:linear-gradient(135deg,#16a34a,#15803d)">Popular</span></div>
+          <div class="plan-tagline">For growing businesses</div>
         </div>
-        <div class="plan-tagline">Everything you need to grow your local business reach.</div>
+        <div class="plan-price-area">
+          <div class="plan-price" style="font-size:2rem"><sup>€</sup>9</div>
+          <div class="plan-period">per month · cancel any time</div>
+        </div>
       </div>
-      <div class="plan-price-area">
-        <div class="plan-price"><sup>€</sup>20</div>
-        <div class="plan-period">per month · cancel any time</div>
-        <div class="trial-note">7-day free trial included</div>
-      </div>
+      <ul class="plan-features" style="grid-template-columns:1fr;gap:8px;margin-bottom:20px">
+        <li><span class="ck">✓</span> <strong>350 credits/month</strong></li>
+        <li><span class="ck">✓</span> <strong>3 AI articles/month</strong></li>
+        <li><span class="ck">✓</span> <strong>20 lead searches/month</strong></li>
+        <li><span class="ck">✓</span> <strong>3 AI audits/month</strong></li>
+        <li><span class="ck">✓</span> <strong>50 CRM leads</strong></li>
+        <li><span class="ck">✓</span> <strong>Track 3 competitors</strong></li>
+        <li><span class="ck">✓</span> Outreach &amp; WhatsApp</li>
+        <li><span class="ck">✓</span> Email verification</li>
+        <li style="color:var(--muted)">✗ WordPress publishing</li>
+      </ul>
+      <div id="beginners-cta-row"></div>
     </div>
 
-    <ul class="plan-features">
-      <li><span class="ck">✓</span> <strong>6 AI articles/month</strong> — Greek, English &amp; German</li>
-      <li><span class="ck">✓</span> Lead finder — <strong>all 6 countries</strong>, 100 searches/month</li>
-      <li><span class="ck">✓</span> CRM — <strong>unlimited leads</strong> &amp; email outreach</li>
-      <li><span class="ck">✓</span> AI Visibility Audit — <strong>10 audits/month</strong></li>
-      <li><span class="ck">✓</span> Competitor tracking — <strong>track up to 10</strong></li>
-      <li><span class="ck">✓</span> Outreach sequences — <strong>10/month</strong></li>
-      <li><span class="ck">✓</span> WordPress publishing &amp; CSV export</li>
-      <li><span class="ck">✓</span> Up to <strong>3 connected websites</strong></li>
-      <li><span class="ck">✓</span> WhatsApp &amp; email campaigns</li>
-      <li><span class="ck">✓</span> Priority support</li>
-    </ul>
-
-    <div class="plan-cta-row" id="plan-cta-row">
-      <!-- filled by JS -->
+    <!-- Pro -->
+    <div class="plan-card">
+      <div class="plan-top" style="margin-bottom:20px">
+        <div class="plan-name-area">
+          <div class="plan-name" style="font-size:1.1rem">Solo Pro <span class="plan-badge">All features</span></div>
+          <div class="plan-tagline">Full power, no limits</div>
+        </div>
+        <div class="plan-price-area">
+          <div class="plan-price" style="font-size:2rem"><sup>€</sup>20</div>
+          <div class="plan-period">per month · cancel any time</div>
+        </div>
+      </div>
+      <ul class="plan-features" style="grid-template-columns:1fr;gap:8px;margin-bottom:20px">
+        <li><span class="ck">✓</span> <strong>800 credits/month</strong></li>
+        <li><span class="ck">✓</span> <strong>6 AI articles/month</strong></li>
+        <li><span class="ck">✓</span> <strong>100 lead searches/month</strong></li>
+        <li><span class="ck">✓</span> <strong>10 AI audits/month</strong></li>
+        <li><span class="ck">✓</span> <strong>Unlimited CRM leads</strong></li>
+        <li><span class="ck">✓</span> <strong>Track up to 10 competitors</strong></li>
+        <li><span class="ck">✓</span> Outreach &amp; WhatsApp</li>
+        <li><span class="ck">✓</span> WordPress publishing</li>
+        <li><span class="ck">✓</span> Up to 3 websites · Priority support</li>
+      </ul>
+      <div id="plan-cta-row"></div>
     </div>
   </div>
+
+  <style>
+    @media (max-width: 700px) {
+      .plan-grid { grid-template-columns: 1fr !important; }
+    }
+  </style>
 
   <!-- Billing details (shown when paid/trial) -->
   <div class="billing-section" id="billing-details" style="display:none">
@@ -336,10 +362,10 @@
 
     <div class="faq-item">
       <button class="faq-q" onclick="toggleFaq(this)">
-        How does the free trial work?
+        How does the free plan work?
         <span class="faq-chevron">▼</span>
       </button>
-      <div class="faq-a">You get 7 days of full access at no charge. Your card is only charged €20 on day 8. You can cancel any time before that with no fee.</div>
+      <div class="faq-a">The Free plan gives you 150 AI credits every month at no charge, forever — no credit card needed. Upgrade to a paid plan any time to get more credits and features.</div>
     </div>
 
     <div class="faq-item">
@@ -396,8 +422,16 @@ async function init() {
 
 function renderUnauthenticated() {
   const ctaRow = document.getElementById('plan-cta-row');
-  ctaRow.innerHTML = `<a href="signup.html" class="btn btn-primary" style="flex:1;text-align:center">Start free trial →</a>
+  ctaRow.innerHTML = `<a href="signup.html" class="btn btn-primary" style="flex:1;text-align:center">Get started →</a>
     <a href="signin.html" class="btn btn-ghost" style="font-size:0.82rem">Sign in</a>`;
+}
+
+function planPrice(plan) {
+  return plan === 'beginners' ? '€9' : '€20';
+}
+function planName(plan) {
+  if (plan === 'beginners') return 'Beginners';
+  return 'Solo Pro';
 }
 
 function renderStatus(user, billing) {
@@ -405,83 +439,73 @@ function renderStatus(user, billing) {
   const badge  = document.getElementById('sb-badge');
   const sbName = document.getElementById('sb-name');
   const sbMeta = document.getElementById('sb-meta');
-  const sbAction = document.getElementById('sb-action');
-  const ctaRow = document.getElementById('plan-cta-row');
   const billDetails = document.getElementById('billing-details');
 
   banner.style.display = 'flex';
 
-  const now = new Date();
-  const trialEnd = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
+  const now         = new Date();
+  const trialEnd    = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
   const trialActive = trialEnd && trialEnd > now;
-  const isPaid = user.stripeStatus === 'active' || user.stripeStatus === 'trialing';
+  const isPaid      = ['paid','beginners','starter','pro','agency'].includes(user.plan);
   const trialStarted = !!user.trialStartedAt;
-  const trialExpired = trialStarted && trialEnd && trialEnd <= now && !isPaid;
+  const trialExpired = trialStarted && trialEnd && trialEnd <= now && !isPaid && !trialActive;
+  const currentPlan = user.plan || 'free';
+  const price       = planPrice(currentPlan);
+  const pName       = planName(currentPlan);
 
   document.getElementById('bill-email').textContent = user.email || '—';
-  document.getElementById('bill-plan').textContent = 'Solo Pro — €20/month';
+  document.getElementById('bill-plan').textContent  = `${pName} — ${price}/month`;
+
+  // Highlight active plan card
+  const highlight = isPaid ? currentPlan : (trialActive ? currentPlan : 'free');
+  ['beginners-cta-row','plan-cta-row'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerHTML = '';
+  });
 
   if (isPaid && !trialActive) {
-    // Active subscriber
     banner.className = 'status-banner active';
-    badge.className = 'sb-badge active';
+    badge.className  = 'sb-badge active';
     badge.textContent = 'Active';
-    sbName.textContent = 'Solo Pro — €20 / month';
+    sbName.textContent = `${pName} — ${price}/month`;
     sbMeta.textContent = user.email || '';
-    ctaRow.innerHTML = `<button class="btn btn-ghost" onclick="confirmCancel()" style="font-size:0.82rem">Cancel subscription</button>
-      <a href="billing.html" class="btn btn-ghost" style="font-size:0.82rem">Manage billing</a>`;
+    const cta = document.getElementById(currentPlan === 'beginners' ? 'beginners-cta-row' : 'plan-cta-row');
+    if (cta) cta.innerHTML = `<button class="btn btn-ghost" onclick="confirmCancel()" style="font-size:0.82rem;width:100%">Cancel subscription</button>`;
     billDetails.style.display = 'block';
     if (billing?.nextBillingDate) {
       const d = new Date(billing.nextBillingDate).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
       document.getElementById('bill-next-label').textContent = 'Next charge';
-      document.getElementById('bill-next-val').textContent = `€20 on ${d}`;
+      document.getElementById('bill-next-val').textContent   = `${price} on ${d}`;
       document.getElementById('bill-next-row').style.display = 'flex';
-    }
-    if (billing?.cardLast4) {
-      document.getElementById('bill-card-val').textContent = `•••• ${billing.cardLast4}`;
-      document.getElementById('bill-card-row').style.display = 'flex';
     }
 
   } else if (trialActive) {
-    // In trial
     const daysLeft = Math.ceil((trialEnd - now) / 86400000);
-    const endStr = trialEnd.toLocaleDateString('en-GB', { day:'numeric', month:'long' });
-    banner.className = 'status-banner trial';
-    badge.className = 'sb-badge trial';
+    const endStr   = trialEnd.toLocaleDateString('en-GB', { day:'numeric', month:'long' });
+    banner.className  = 'status-banner trial';
+    badge.className   = 'sb-badge trial';
     badge.textContent = `Trial — ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`;
-    sbName.textContent = 'Solo Pro — 7-day free trial';
-    sbMeta.textContent = `Trial ends ${endStr} · €20 charged on day 8`;
-    ctaRow.innerHTML = `<button class="btn btn-primary" onclick="upgradeNow()" style="flex:1">Activate now — €20/month</button>
-      <button class="btn btn-ghost" onclick="confirmCancelTrial()" style="font-size:0.82rem">Cancel trial</button>`;
+    sbName.textContent = `${pName} — ${price}/month`;
+    sbMeta.textContent = `Next charge: ${price} on ${endStr}`;
+    const cta = document.getElementById(currentPlan === 'beginners' ? 'beginners-cta-row' : 'plan-cta-row');
+    if (cta) cta.innerHTML = `<button class="btn btn-primary" onclick="upgradeNow()" style="width:100%;margin-bottom:8px">Activate now — ${price}/month</button>
+      <button class="btn btn-ghost" onclick="confirmCancelTrial()" style="font-size:0.82rem;width:100%">Cancel trial</button>`;
     billDetails.style.display = 'block';
     document.getElementById('bill-next-label').textContent = 'First charge';
-    document.getElementById('bill-next-val').textContent = `€20 on ${endStr}`;
+    document.getElementById('bill-next-val').textContent   = `${price} on ${endStr}`;
     document.getElementById('bill-next-row').style.display = 'flex';
-    if (billing?.cardLast4) {
-      document.getElementById('bill-card-val').textContent = `•••• ${billing.cardLast4}`;
-      document.getElementById('bill-card-row').style.display = 'flex';
-    }
 
   } else if (trialExpired) {
-    // Trial expired, not paid
-    banner.className = 'status-banner expired';
-    badge.className = 'sb-badge expired';
+    banner.className  = 'status-banner expired';
+    badge.className   = 'sb-badge expired';
     badge.textContent = 'Trial expired';
-    sbName.textContent = 'Your free trial has ended';
+    sbName.textContent = 'Your subscription has ended';
     sbMeta.textContent = 'Reactivate to restore full access';
-    ctaRow.innerHTML = `<a href="upgrade.html" class="btn btn-primary" style="flex:1;text-align:center">Reactivate — €20/month →</a>`;
+    document.getElementById('plan-cta-row').innerHTML      = `<a href="signup.html?plan=pro" class="btn btn-primary" style="width:100%;text-align:center;margin-bottom:8px">Subscribe Solo Pro — €20/month →</a>`;
+    document.getElementById('beginners-cta-row').innerHTML = `<a href="signup.html?plan=beginners" class="btn btn-ghost" style="width:100%;text-align:center">Subscribe Beginners — €9/month →</a>`;
 
   } else {
-    // Never started trial
-    banner.className = 'status-banner free';
-    badge.className = 'sb-badge';
-    badge.style.background = 'rgba(255,255,255,0.08)';
-    badge.style.border = '1px solid var(--border)';
-    badge.style.color = 'var(--muted)';
-    badge.textContent = 'No active plan';
-    sbName.textContent = 'Start your free trial';
-    sbMeta.textContent = '7 days free · €20/month after · cancel any time';
-    ctaRow.innerHTML = `<button class="btn btn-primary" onclick="startTrial()" style="flex:1">Start 7-day free trial →</button>`;
+    document.getElementById('beginners-cta-row').innerHTML = `<a href="signup.html?plan=beginners" class="btn btn-primary" style="width:100%;text-align:center">Subscribe — Beginners €9/mo →</a>`;
+    document.getElementById('plan-cta-row').innerHTML      = `<a href="signup.html?plan=pro" class="btn btn-ghost" style="width:100%;text-align:center">Subscribe — Solo Pro €20/mo →</a>`;
   }
 }
 
@@ -494,7 +518,7 @@ async function upgradeNow() {
 }
 
 async function confirmCancelTrial() {
-  if (!confirm('Cancel your free trial?\n\nYou will lose access to all paid features immediately.')) return;
+  if (!confirm('Cancel your subscription?\n\nYou will lose access to all paid features immediately.')) return;
   try {
     const res = await fetch('/api/trial/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
     const data = await res.json();
@@ -528,6 +552,6 @@ init();
 </script>
 <script src="/js/api.js?v=5"></script>
 <script src="/js/trial-banner.js"></script>
-<script src="js/nav-init.js?v=2"></script>
+<script src="js/nav-init.js?v=5"></script>
 </body>
 </html>

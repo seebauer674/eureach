@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "id": "ab5b98251ddd14e8251e923d",
+    "userId": "669c87088f8594eb7a72398c",
+    "name": "Eureach",
+    "type": "page",
+    "entityId": "61594609443852",
+    "targetId": "61594609443852",
+    "url": "https://www.facebook.com/profile.php?id=61594609443852",
+    "niche": "Internet Marketing",
+    "joinStatus": "joined",
+    "usePageToken": false,
+    "active": true,
+    "createdAt": "2026-09-22T19:32:49.905Z"
+  }
+]

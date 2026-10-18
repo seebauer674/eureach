@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard &mdash; eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="db-page">
+
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<style>
+.nav-dropdown { position: relative; }
+.nav-dropdown-toggle {
+  font-size: 0.875rem; font-weight: 500; color: var(--muted);
+  cursor: pointer; display: flex; align-items: center; gap: 4px;
+  background: none; border: none; padding: 0; transition: color 0.2s;
+  white-space: nowrap;
+}
+.nav-dropdown-toggle:hover { color: var(--white); }
+.nav-dropdown-toggle svg { width: 10px; height: 10px; transition: transform 0.2s; }
+.nav-dropdown:hover .nav-dropdown-toggle svg { transform: rotate(180deg); }
+.nav-dropdown-menu {
+  display: none; position: absolute; top: 100%; left: 0;
+  padding-top: 12px; min-width: 190px; z-index: 200;
+}
+.nav-dropdown-menu-inner {
+  background: rgba(10,16,36,0.97); border: 1px solid var(--border);
+  border-radius: 12px; padding: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.nav-dropdown:hover .nav-dropdown-menu { display: block; }
+.nav-dropdown-menu a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 8px;
+  font-size: 0.85rem; color: var(--muted); text-decoration: none;
+  white-space: nowrap; transition: background 0.15s, color 0.15s;
+}
+.nav-dropdown-menu a:hover { background: rgba(255,255,255,0.07); color: var(--white); }
+.nav-dropdown-menu .ndm-icon { font-size: 1rem; width: 20px; text-align: center; }
+.nav-dropdown-divider { height: 1px; background: var(--border); margin: 6px 0; }
+</style>
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle">
+          Tools
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">&#128269;</span>Lead Finder</a>
+            <a href="articles.html"><span class="ndm-icon">&#9997;&#65039;</span>Articles</a>
+            <a href="competitors.html"><span class="ndm-icon">&#128225;</span>Competitors</a>
+            <a href="citations.html"><span class="ndm-icon">&#128279;</span>Citations</a>
+            <a href="marketing.html"><span class="ndm-icon">&#128640;</span>Marketing Creator</a>
+          </div>
+        </div>
+      </div>
+      <a href="dashboard.html" style="color:var(--white);font-weight:700">Dashboard</a>
+      <a href="audit.html">AI Audit</a>
+      <a href="blog.html">Blog</a>
+      <a href="membership.html">Membership</a>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" id="nav-profile-btn" style="font-size:0.78rem;padding:7px 14px;display:none"></a>
+      <a href="signin.html" class="btn btn-ghost">Log in</a>
+      <a href="signup.html" class="btn btn-primary" id="nav-signup-btn">Start free &rarr;</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── BODY ─────────────────────────────────────────────── -->
+<div class="db-body">
+
+  <!-- Site rail -->
+  <aside class="db-rail">
+    <div class="db-rail-title">My Sites</div>
+    <div id="db-site-list"></div>
+    <div class="db-rail-actions">
+      <button class="db-new-site-btn" id="db-new-site-btn">+ New site</button>
+      <div class="db-usage-line" id="db-usage-line"></div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="db-main">
+    <!-- Toolbar -->
+    <div class="db-toolbar">
+      <div class="db-date-nav">
+        <button class="db-date-arrow" id="db-date-prev" aria-label="Previous day">&#8592;</button>
+        <input type="date" class="db-date-input" id="db-date-input" aria-label="Select date">
+        <button class="db-date-arrow" id="db-date-next" aria-label="Next day">&#8594;</button>
+        <button class="db-today-btn" id="db-today-btn">Today</button>
+      </div>
+      <span id="db-date-label" style="font-size:0.85rem;color:var(--muted);"></span>
+
+      <div class="db-counters">
+        <div class="db-counter">
+          <div class="db-counter-val" id="db-count-jobs">0</div>
+          <div class="db-counter-label">Jobs</div>
+        </div>
+        <div class="db-counter">
+          <div class="db-counter-val" id="db-count-mins">0 min</div>
+          <div class="db-counter-label">Est. time</div>
+        </div>
+        <div class="db-progress">
+          <div class="db-progress-bar"><div class="db-progress-fill" id="db-progress-fill" style="width:0%"></div></div>
+          <span class="db-progress-text" id="db-progress-text">0/0 done</span>
+        </div>
+      </div>
+
+      <button class="db-add-btn" id="db-add-job-btn">+ Add task</button>
+    </div>
+
+    <style>
+.db-todo-widget{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;margin:18px 0 4px}
+.db-todo-widget-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:.78rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.7px}
+.db-todo-date{background:#1a2236;border:1px solid rgba(255,255,255,.12);border-radius:6px;color:#e2e8f0;font-size:.78rem;padding:4px 7px;outline:none;cursor:pointer;color-scheme:dark}
+.db-todo-wlist{list-style:none;margin:0 0 10px;padding:0}
+.db-todo-wlist li{display:flex;align-items:center;gap:8px;padding:5px 3px;border-radius:5px}
+.db-todo-wlist li:hover{background:rgba(255,255,255,.04)}
+.db-todo-wlist .tw-cb{width:15px;height:15px;accent-color:#3b82f6;cursor:pointer;flex-shrink:0}
+.db-todo-wlist .tw-txt{flex:1;font-size:.84rem;color:#cbd5e1}
+.db-todo-wlist .tw-txt.done{text-decoration:line-through;color:rgba(255,255,255,.28)}
+.db-todo-wlist .tw-del{background:none;border:none;color:rgba(255,255,255,.18);font-size:.9rem;cursor:pointer;padding:0 3px}
+.db-todo-wlist .tw-del:hover{color:#ef4444}
+.db-todo-wadd{display:flex;gap:7px}
+.db-todo-winput{flex:1;background:#1a2236;border:1px solid rgba(255,255,255,.12);border-radius:7px;color:#e2e8f0;font-size:.83rem;padding:7px 10px;outline:none}
+.db-todo-winput:focus{border-color:#3b82f6}
+.db-todo-wbtn{background:#3b82f6;border:none;border-radius:7px;color:#fff;font-size:1rem;font-weight:700;padding:7px 14px;cursor:pointer}
+.db-todo-wbtn:hover{background:#2563eb}
+</style>
+    <!-- Job list -->
+    <div class="db-content">
+      <div id="db-jobs-area">
+        <div class="db-empty"><div class="db-empty-icon">&#9203;</div><div class="db-empty-title">Loading&hellip;</div></div>
+      </div>
+      <div class="db-todo-widget" id="db-todo-widget">
+        <div class="db-todo-widget-hd">
+          <span>&#9989; Personal To-Do</span>
+          <input type="date" class="db-todo-date" id="db-todo-date">
+        </div>
+        <ul class="db-todo-wlist" id="db-todo-wlist"></ul>
+        <div class="db-todo-wadd">
+          <input class="db-todo-winput" id="db-todo-winput" placeholder="Add to-do for this day..." maxlength="120">
+          <button class="db-todo-wbtn" id="db-todo-wbtn">+</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: New Site ──────────────────────────────────── -->
+<div class="db-modal-overlay" id="modal-new-site">
+  <div class="db-modal">
+    <button class="db-modal-close" id="modal-new-site-close">&#x2715;</button>
+    <div class="db-modal-title">Add a new site</div>
+    <div class="db-modal-sub">Each site gets its own recurring marketing jobs.</div>
+    <form id="modal-new-site-form" novalidate>
+      <div class="db-field">
+        <label class="db-label" for="ns-domain">Domain</label>
+        <input class="db-input" type="text" id="ns-domain" placeholder="example.com" required>
+      </div>
+      <div class="db-field">
+        <label class="db-label" for="ns-name">Display name</label>
+        <input class="db-input" type="text" id="ns-name" placeholder="My Site" required>
+      </div>
+      <div class="db-field">
+        <label class="db-label" for="ns-market">Market (optional)</label>
+        <select class="db-select" id="ns-market">
+          <option value="">&mdash; any &mdash;</option>
+          <option value="GR">Greece (GR)</option>
+          <option value="DE">Germany (DE)</option>
+          <option value="EU">European Union (EU)</option>
+          <option value="US">United States (US)</option>
+          <option value="UK">United Kingdom (UK)</option>
+          <option value="FR">France (FR)</option>
+        </select>
+      </div>
+      <div class="db-modal-error" id="modal-new-site-error"></div>
+      <div class="db-modal-actions">
+        <button type="button" class="db-btn-ghost" id="modal-new-site-cancel">Cancel</button>
+        <button type="submit" class="db-btn-primary" id="modal-new-site-submit">Create site</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── MODAL: Seed ──────────────────────────────────────── -->
+<div class="db-modal-overlay" id="modal-seed">
+  <div class="db-modal">
+    <button class="db-modal-close" id="modal-seed-close">&#x2715;</button>
+    <div class="db-modal-title">Start with a rhythm?</div>
+    <div class="db-modal-sub">Pick a starter template and we&rsquo;ll add 6 recurring jobs spread across the week. You can edit or remove them any time.</div>
+    <input type="hidden" id="modal-seed-selected">
+    <div class="db-seed-card" data-template="services_marketplace">
+      <div class="db-seed-card-title">Services Marketplace</div>
+      <div class="db-seed-card-desc">Lead outreach, Instagram, Facebook ads, email newsletter, GSC review</div>
+    </div>
+    <div class="db-seed-card" data-template="b2b_service">
+      <div class="db-seed-card-title">B2B Service</div>
+      <div class="db-seed-card-desc">LinkedIn posts + ads, outreach, thought-leadership articles, email</div>
+    </div>
+    <div class="db-seed-card" data-template="content_site">
+      <div class="db-seed-card-title">Content Site</div>
+      <div class="db-seed-card-desc">2&times; articles/week, citations, Instagram, GA4 + GSC review</div>
+    </div>
+    <div class="db-modal-actions">
+      <button type="button" class="db-btn-ghost" id="modal-seed-skip">Skip &mdash; start empty</button>
+      <button type="button" class="db-btn-primary" id="modal-seed-confirm">Use template</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Upgrade ──────────────────────────────────── -->
+<div class="db-modal-overlay" id="modal-upgrade">
+  <div class="db-modal">
+    <button class="db-modal-close" id="modal-upgrade-close">&#x2715;</button>
+    <div class="db-upgrade-icon">&#128640;</div>
+    <div class="db-modal-title">Upgrade to add more sites</div>
+    <div class="db-modal-sub">You&rsquo;ve reached the site limit on your current plan. Pro gives you more sites plus all the AI tools.</div>
+    <ul class="db-upgrade-features">
+      <li>Up to 3 sites (vs 1 on Free)</li>
+      <li>800 AI credits per month</li>
+      <li>6 articles per month</li>
+      <li>Unlimited CRM leads</li>
+      <li>WordPress publishing</li>
+    </ul>
+    <div class="db-modal-actions">
+      <button type="button" class="db-btn-ghost" id="modal-upgrade-cancel">Maybe later</button>
+      <a href="/membership.html" class="db-btn-primary" style="text-decoration:none;display:inline-flex;align-items:center;padding:10px 22px;">See Pro plans &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Add one-off job ──────────────────────────── -->
+<div class="db-modal-overlay" id="modal-add-job">
+  <div class="db-modal">
+    <button class="db-modal-close" id="modal-add-job-close">&#x2715;</button>
+    <div class="db-modal-title">Add a one-off task</div>
+    <div class="db-modal-sub">This task will appear on the selected date only.</div>
+    <form id="modal-add-job-form" novalidate>
+      <div class="db-field">
+        <label class="db-label" for="aj-site">Site</label>
+        <select class="db-select" id="aj-site"></select>
+      </div>
+      <div class="db-modal-row">
+        <div class="db-field">
+          <label class="db-label" for="aj-date">Date</label>
+          <input class="db-input" type="date" id="aj-date" required>
+        </div>
+        <div class="db-field">
+          <label class="db-label" for="aj-mins">Est. minutes</label>
+          <input class="db-input" type="number" id="aj-mins" value="30" min="0" max="480">
+        </div>
+      </div>
+      <div class="db-modal-row">
+        <div class="db-field">
+          <label class="db-label" for="aj-job-type">Job type</label>
+          <select class="db-select" id="aj-job-type"></select>
+        </div>
+        <div class="db-field">
+          <label class="db-label" for="aj-channel">Channel</label>
+          <input class="db-input" type="text" id="aj-channel" placeholder="e.g. Social">
+        </div>
+      </div>
+      <div class="db-field">
+        <label class="db-label" for="aj-title">Task description</label>
+        <input class="db-input" type="text" id="aj-title" placeholder="What needs doing?" required>
+      </div>
+      <div class="db-modal-error" id="modal-add-job-error"></div>
+      <div class="db-modal-actions">
+        <button type="button" class="db-btn-ghost" id="modal-add-job-cancel">Cancel</button>
+        <button type="submit" class="db-btn-primary" id="modal-add-job-submit">Add task</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  var wdate=todayStr();
+  var wdateEl=document.getElementById("db-todo-date");
+  if(wdateEl) wdateEl.value=wdate;
+  function loadWTodos(){
+    fetch("/api/todos?date="+wdate).then(function(r){return r.json();}).then(function(d){renderWTodos(d.todos||[]);}).catch(function(){});
+  }
+  function renderWTodos(todos){
+    var ul=document.getElementById("db-todo-wlist"); if(!ul) return; ul.innerHTML="";
+    if(!todos.length){var li=document.createElement("li");li.style.cssText="color:rgba(255,255,255,.25);font-size:.8rem;padding:4px 3px";li.textContent="No to-dos for this day";ul.appendChild(li);return;}
+    todos.forEach(function(t){
+      var li=document.createElement("li");
+      var cb=document.createElement("input");cb.type="checkbox";cb.className="tw-cb";cb.checked=!!t.done;
+      var txt=document.createElement("span");txt.className="tw-txt"+(t.done?" done":"");txt.textContent=t.text;
+      var del=document.createElement("button");del.className="tw-del";del.textContent="u00d7";
+      cb.addEventListener("change",function(){fetch("/api/todos/"+t.id,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({done:cb.checked})}).then(loadWTodos);});
+      del.addEventListener("click",function(){fetch("/api/todos/"+t.id,{method:"DELETE"}).then(loadWTodos);});
+      li.appendChild(cb);li.appendChild(txt);li.appendChild(del);ul.appendChild(li);
+    });
+  }
+  if(wdateEl) wdateEl.addEventListener("change",function(){wdate=this.value;loadWTodos();});
+  var addBtn=document.getElementById("db-todo-wbtn");
+  var addInp=document.getElementById("db-todo-winput");
+  function addWTodo(){var text=(addInp&&addInp.value.trim())||"";
+    if(!text) return;
+    fetch("/api/todos",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:text,date:wdate})}).then(function(){if(addInp)addInp.value="";loadWTodos();});
+  }
+  if(addBtn) addBtn.addEventListener("click",addWTodo);
+  if(addInp) addInp.addEventListener("keydown",function(e){if(e.key==="Enter")addWTodo();});
+  loadWTodos();
+})();
+</script>
+<script src="/js/api.js?v=5"></script>
+<script src="/js/dashboard.js?v=1"></script>
+</body>
+</html>

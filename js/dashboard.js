@@ -93,6 +93,10 @@ async function init() {
 function syncDateInput() {
   document.getElementById('db-date-input').value = state.date;
   document.getElementById('db-date-label').textContent = fmtDate(state.date);
+  // keep todo widget in sync
+  var todoDateEl = document.getElementById('db-todo-date');
+  if (todoDateEl) todoDateEl.value = state.date;
+  if (typeof window.loadWTodos === 'function') window.loadWTodos(state.date);
 }
 
 // ── Data loaders ─────────────────────────────────────────
@@ -235,18 +239,23 @@ function renderJobCard(job) {
   const done = job.status === 'done';
   const actionBtn = buildActionBtn(job);
   const copyBtn = `<button class="db-job-copy-btn" data-job-id="${job.id}">Copy brief</button>`;
+  const typeOptions = state.jobTypes.map(jt =>
+    `<option value="${escAttr(jt.key)}" ${jt.key === job.job_type ? 'selected' : ''}>${escHtml(jt.icon || '')} ${escHtml(jt.label)}</option>`
+  ).join('');
   return `<div class="db-job-card ${done ? 'done' : ''}" data-job-id="${job.id}">
     <div class="db-job-check">
       <input type="checkbox" ${done ? 'checked' : ''} data-job-id="${job.id}" aria-label="Mark done">
     </div>
     <div class="db-job-body">
       <div class="db-job-meta">
-        <span class="db-job-type-icon">${escHtml(job.job_type_icon || '')}</span>
+        <select class="db-job-type-select" data-job-id="${job.id}" aria-label="Job type">
+          ${typeOptions}
+        </select>
         <span class="db-job-channel">${escHtml(job.channel)}</span>
         <span class="db-job-mins">${job.est_minutes || 0} min</span>
       </div>
       <div class="db-job-title">${escHtml(job.title)}</div>
-      <div class="db-job-actions">
+      <div class="db-job-actions" id="db-job-actions-${escAttr(job.id)}">
         ${actionBtn}
         ${copyBtn}
       </div>
@@ -295,6 +304,29 @@ function attachCardListeners() {
     });
   });
 
+  document.querySelectorAll('.db-job-type-select').forEach(sel => {
+    sel.addEventListener('change', async () => {
+      const id = sel.dataset.jobId;
+      const newType = sel.value;
+      try {
+        const data = await api('PATCH', '/api/jobs/' + id, { job_type: newType });
+        const job = state.jobs.find(j => j.id === id);
+        if (job) {
+          job.job_type = data.job.job_type;
+          job.action_kind = data.job.action_kind;
+          job.action_url = data.job.action_url;
+          job.action_label = data.job.action_label;
+          job.job_type_icon = data.job.job_type_icon;
+          const actionsEl = document.getElementById('db-job-actions-' + id);
+          if (actionsEl) {
+            const copyBtn = actionsEl.querySelector('.db-job-copy-btn');
+            actionsEl.innerHTML = buildActionBtn(job) + (copyBtn ? copyBtn.outerHTML : '');
+          }
+        }
+      } catch (e) { console.error('update job type', e); }
+    });
+  });
+
   document.querySelectorAll('.db-job-copy-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.dataset.jobId;
@@ -308,6 +340,7 @@ function attachCardListeners() {
       });
     });
   });
+
 }
 
 // ── Modals ───────────────────────────────────────────────
@@ -440,4 +473,6 @@ function escHtml(s) {
 function escAttr(s) { return escHtml(s); }
 
 document.addEventListener('DOMContentLoaded', init);
+window.dashState = state;
+window.loadJobs = loadJobs;
 })();

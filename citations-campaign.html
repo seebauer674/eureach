@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +15,7 @@
       <a href="citations.html" style="color:var(--white)">← My Campaigns</a>
     
       <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="nav.dashboard">Dashboard</a>
     </div>
   </div>
 </nav>
@@ -177,6 +177,8 @@ async function takeSnapshot() {
 fetch("/api/auth/me").then(r => { if (!r.ok) window.location.href = "signin.html"; });
 load();
 </script>
-<script src="js/nav-init.js?v=2"></script>
+<script src="js/translations.js?v=7"></script>
+  <script src="js/i18n.js?v=5"></script>
+  <script src="js/nav-init.js?v=5"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 /* ── eureach.eu — Settings: My Sites ────────────────── */
 let MAX_SITES = 3;
-let USER_PLAN = 'free';
+let USER_PLAN = 'expired';
 const STORE_KEY = "eureach_sites"; // used only for one-time migration
 
 let _sites = []; // in-memory cache, always synced to server
@@ -39,7 +39,7 @@ async function initSites() {
     if (meRes.user.sitesMax !== undefined) {
       MAX_SITES = meRes.user.sitesMax === -1 ? 999 : meRes.user.sitesMax;
     }
-    USER_PLAN = meRes.user.plan || 'free';
+    USER_PLAN = meRes.user.plan || 'expired';
   }
 
   if (serverSites !== null && serverSites.length > 0) {
@@ -115,7 +115,7 @@ function renderSites() {
       </div>
       <div class="st-site-actions">
         <button class="st-site-btn" onclick="openModal(${s.id})">✏ Edit</button>
-        <button class="st-site-btn st-site-btn-danger" onclick="deleteSite(${s.id})" ${USER_PLAN === 'free' ? 'disabled title="Upgrade to remove sites"' : ''} style="${USER_PLAN === 'free' ? 'opacity:0.35;cursor:not-allowed' : ''}">🗑 Remove</button>
+        <button class="st-site-btn st-site-btn-danger" onclick="deleteSite(${s.id})">🗑 Remove</button>
         <button class="st-site-btn st-site-btn-audit" data-site-id="${s.id}">🔍 Audit</button>
         <button class="st-site-btn st-site-btn-improve" onclick="openImproveModal(${s.id})">💡 How to improve</button>
       </div>
@@ -159,6 +159,7 @@ function openModal(id) {
     document.getElementById("st-niche").value    = site.niche  || "";
     document.getElementById("st-audience").value = site.audience || "";
     document.getElementById("st-geo").value      = site.geo    || "";
+    document.getElementById("st-about").value    = site.about  || "";
     (site.languages || []).forEach(l => {
       const cb = document.querySelector(`#st-lang-chips input[value="${l}"]`);
       if (cb) cb.checked = true;
@@ -208,6 +209,7 @@ async function saveSite(e) {
     niche:     document.getElementById("st-niche").value,
     audience:  document.getElementById("st-audience").value.trim(),
     geo:       document.getElementById("st-geo").value.trim(),
+    about:     document.getElementById("st-about").value.trim(),
     tones,
     addedAt:   editingId ? (_sites.find(s => s.id === editingId)?.addedAt || new Date().toISOString()) : new Date().toISOString(),
   };

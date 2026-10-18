@@ -3,7 +3,7 @@
   var LANG_KEY = "eureach_lang";
 
   window.euLang = function () {
-    return localStorage.getItem(LANG_KEY) || "en";
+    return localStorage.getItem(LANG_KEY) || "el";
   };
 
   window.setLang = function (lang) {

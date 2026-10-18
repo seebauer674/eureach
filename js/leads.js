@@ -168,6 +168,12 @@ const CATEGORIES = [
     { icon:"🎬", name:"Videographers", slug:"videographer" },
     { icon:"🎉", name:"Event Planners", slug:"event-planner" },
   ]},
+  { icon:"♥️", name:"Dating Sites", slug:"dating", sub:[
+    { icon:"♥️", name:"Dating Sites", slug:"dating-site" },
+    { icon:"🔥", name:"Adult Dating", slug:"adult-dating" },
+    { icon:"💏", name:"Matchmaking Services", slug:"matchmaking" },
+    { icon:"🌐", name:"Online Dating Platforms", slug:"online-dating" },
+  ]},
   { icon:"📌", name:"Other", slug:"other-group", sub:[
     { icon:"📌", name:"Other / Miscellaneous", slug:"other" },
   ]},
@@ -849,6 +855,7 @@ function cardHTML(l, i) {
     <div class="lead-card-actions">
       <button class="lc-btn primary" data-action="save" data-id="${l.id}">💾 Save</button>
       <button class="lc-btn" data-action="crm" data-id="${l.id}">➕ CRM</button>
+      <button class="lc-btn" data-action="pipeline" data-id="${l.id}" id="pl-btn-${l.id}">📊 Pipeline</button>
       ${l.website ? `<button class="lc-btn" data-action="open" data-url="${l.website}">↗</button>` : ""}
     </div>
   </div>`;
@@ -900,6 +907,8 @@ function bindCardActions() {
         showToast(`${lead.name} saved`);
       } else if (action === "crm") {
         addLeadToCrm(lead, btn);
+      } else if (action === "pipeline") {
+        addLeadToPipeline(lead, btn);
       } else if (action === "audit") {
         showToast("AI Audit — coming with Pro plan");
       } else if (action === "open" && url) {
@@ -947,6 +956,41 @@ function bindCardActions() {
 }
 
 /* ── Add to CRM ──────────────────────────────────────── */
+
+async function addLeadToPipeline(lead, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const res = await fetch('/api/pipeline', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window._csrf || '' },
+      body: JSON.stringify({
+        name:     lead.name,
+        city:     lead.city || lead.address || '',
+        category: lead.category || '',
+        phone:    lead.phone    || null,
+        email:    lead.email    || null,
+        website:  lead.website  || null,
+        rating:   lead.rating   || null,
+        reviews:  lead.reviews  || null,
+      }),
+    });
+    if (res.status === 409) {
+      if (btn) { btn.textContent = '✓ In Pipeline'; btn.disabled = true; }
+      return;
+    }
+    if (!res.ok) {
+      const d = await res.json();
+      showToast(d.error || 'Failed to add to pipeline');
+      if (btn) { btn.disabled = false; btn.textContent = '📊 Pipeline'; }
+      return;
+    }
+    if (btn) { btn.textContent = '✓ Added'; btn.disabled = true; }
+    showToast(lead.name + ' added to pipeline');
+  } catch {
+    if (btn) { btn.disabled = false; btn.textContent = '📊 Pipeline'; }
+  }
+}
+
 async function addLeadToCrm(lead, btn) {
   const city     = citySel.value;
   const subLabel = subcatSel.options[subcatSel.selectedIndex]?.textContent?.replace(/^[^ ]+ /, "") || "";

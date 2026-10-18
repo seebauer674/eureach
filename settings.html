@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Settings — eureach.eu</title>
   <link rel="stylesheet" href="css/style.css?v=2">
   <link rel="stylesheet" href="css/settings.css?v=2">
-  <script src="js/translations.js?v=5"></script>
+  <script src="js/translations.js?v=7"></script>
   <script src="js/i18n.js?v=5"></script>
 <style>
 .biz-audit-wrap{display:flex;gap:20px;align-items:flex-start}.biz-col-form{flex:1;min-width:0}#site-audit-panel{flex-shrink:0}.audit-panel{background:linear-gradient(145deg,rgba(37,99,235,.1),rgba(124,58,237,.06));border:1px solid rgba(99,102,241,.35);border-radius:16px;padding:24px}.audit-panel-title{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}.audit-score-ring{display:flex;align-items:center;gap:16px;margin-bottom:20px}.audit-score-circle{width:72px;height:72px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid #2563eb;flex-shrink:0}.audit-score-num{font-size:1.6rem;font-weight:800;line-height:1}.audit-score-label{font-size:.6rem;color:var(--muted);text-transform:uppercase}.audit-score-right{flex:1;min-width:0}.audit-score-grade{font-size:.78rem;color:var(--muted)}.audit-breakdown{margin-bottom:16px}.audit-bk-item{margin-bottom:10px}.audit-bk-top{display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:4px}.audit-bk-lbl{color:var(--muted)}.audit-bk-val{color:var(--white);font-weight:600}.audit-bk-bar{height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}.audit-bk-fill{height:100%;border-radius:4px;transition:width .6s}.audit-section-title{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:14px 0 8px}.audit-list{list-style:none;display:flex;flex-direction:column;gap:6px}.audit-list li{font-size:.78rem;color:var(--text);display:flex;gap:7px;line-height:1.4}.audit-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 0;text-align:center}.audit-spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.audit-loading-text{font-size:.82rem;color:var(--muted)}.audit-view-link{display:block;text-align:center;margin-top:14px;font-size:.78rem;color:#60a5fa;text-decoration:none}@media(max-width:900px){.biz-audit-wrap{flex-direction:column}#site-audit-panel{width:100%!important}}
@@ -26,8 +26,8 @@
     <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
     <div class="nav-links">
       <div class="nav-dropdown">
-        <button class="nav-dropdown-toggle" data-i18n="nav.tools">
-          Tools
+        <button class="nav-dropdown-toggle">
+          <span data-i18n="nav.tools">Tools</span>
           <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
         </button>
         <div class="nav-dropdown-menu">
@@ -36,6 +36,7 @@
             <a href="articles.html"><span class="ndm-icon">✍️</span><span data-i18n="nav.articles">Articles</span></a>
             <a href="competitors.html"><span class="ndm-icon">📡</span><span data-i18n="nav.competitors">Competitors</span></a>
             <a href="citations.html"><span class="ndm-icon">🔗</span><span data-i18n="nav.citations">Citations</span></a>
+            <a href="fb-posts.html"><span class="ndm-icon">📘</span><span data-i18n="nav.fbPosts">FB Post Agent</span></a>
             <div class="nav-dropdown-divider"></div>
             <a href="youtube.html"><span class="ndm-icon">🎥</span><span data-i18n="nav.creatorPortal">Creator Portal</span></a>
             <a href="youtube-join.html"><span class="ndm-icon">✨</span><span data-i18n="nav.becomeCreator">Become a Creator</span></a>
@@ -51,7 +52,7 @@
       <a href="citations.html">Citations</a>
     
       <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="nav.dashboard">Dashboard</a>
     </div>
     <div class="nav-lang">
       <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
@@ -804,14 +805,22 @@
       </div>
     </div>
 
-    <div class="st-modal-actions">
+    <div class="st-form-row">
+      <div class="st-field st-field-full">
+        <label>About this site <span class="st-req">*</span></label>
+        <textarea id="st-about" rows="3" required placeholder="Describe what your site is about — services, products, who your customers are, and what makes you unique. The AI uses this to tailor every article to your business." style="resize:vertical"></textarea>
+        <div class="st-field-hint">Used by the AI to tailor every article to your specific business</div>
+      </div>
+    </div>
+
+        <div class="st-modal-actions">
       <button type="button" class="st-cancel-btn" onclick="closeModal()">Cancel</button>
       <button type="submit" class="st-save-btn" id="st-save-btn">Save Site</button>
     </div>
   </form>
 </div>
 
-<script src="js/settings.js?v=4"></script>
+<script src="js/settings.js?v=5"></script>
 <script>
 // ── Tab switching ─────────────────────────────────────────
 const tabs    = document.querySelectorAll('.st-tab');
@@ -978,7 +987,7 @@ async function loadProfile() {
     const planPrice = PLAN_PRICES[planKey] || 0;
     document.getElementById('plan-name-label').textContent = planName + ' Plan';
     document.getElementById('plan-meta-label').textContent = planPrice === 0
-      ? 'Free forever — no credit card required'
+      ? '1st month free — no credit card required'
       : '€' + planPrice + ' / month · contact hello@eureach.eu to manage billing';
 
     // Upgrade button
@@ -1479,7 +1488,7 @@ async function saveAdmUser() {
 </script>
 <script src="/js/api.js?v=5"></script>
 <script src="/js/trial-banner.js"></script>
-<script src="js/nav-init.js?v=2"></script>
+<script src="js/nav-init.js?v=5"></script>
 
 <!-- ── Admin User Edit Modal ──────────────────────────────── -->
 <div id="adm-user-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:3000;display:none;align-items:center;justify-content:center;">

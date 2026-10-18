@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plan & Billing — eureach.eu</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="/js/translations.js"></script>
+  <script src="/js/i18n.js"></script>
+  <style>
+    .app-nav { background: rgba(7,13,31,0.98); }
+
+    .mem-page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 96px 24px 80px;
+    }
+
+    .mem-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .mem-header .section-label { margin-bottom: 10px; }
+    .mem-header h1 {
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+    }
+    .mem-header p { font-size: 0.95rem; color: var(--muted); }
+
+    /* ── Status banner ───────────────────────────── */
+    .status-banner {
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+    .status-banner.trial {
+      background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.04));
+      border: 1px solid rgba(245,158,11,0.3);
+    }
+    .status-banner.active {
+      background: linear-gradient(135deg, rgba(34,197,94,0.08), rgba(34,197,94,0.02));
+      border: 1px solid rgba(34,197,94,0.3);
+    }
+    .status-banner.expired, .status-banner.free {
+      background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+    }
+    .sb-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+    .sb-badge.trial { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; }
+    .sb-badge.active { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
+    .sb-badge.expired { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+    .sb-info { flex: 1; min-width: 180px; }
+    .sb-name { font-size: 1rem; font-weight: 700; color: var(--white); }
+    .sb-meta { font-size: 0.82rem; color: var(--muted); margin-top: 3px; }
+
+    /* ── Plan card ───────────────────────────────── */
+    .plan-card {
+      background: linear-gradient(145deg, rgba(37,99,235,0.12), rgba(124,58,237,0.08));
+      border: 1px solid rgba(99,102,241,0.4);
+      border-radius: var(--radius2);
+      padding: 36px 32px;
+      margin-bottom: 32px;
+      box-shadow: 0 0 60px rgba(37,99,235,0.12);
+      position: relative;
+    }
+    .plan-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .plan-name-area {}
+    .plan-name {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--white);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .plan-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 100px;
+      background: linear-gradient(135deg, var(--blue), var(--purple));
+      color: white;
+      letter-spacing: 0.04em;
+    }
+    .plan-tagline { font-size: 0.85rem; color: var(--muted); }
+    .plan-price-area { text-align: right; }
+    .plan-price {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: var(--white);
+      line-height: 1;
+    }
+    .plan-price sup { font-size: 1.1rem; font-weight: 600; vertical-align: super; letter-spacing: 0; }
+    .plan-period { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+    .trial-note {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.72rem;
+      color: #fbbf24;
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 100px;
+      padding: 3px 10px;
+    }
+
+    .plan-features {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px 24px;
+      margin-bottom: 28px;
+    }
+    .plan-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .plan-features li .ck { color: #4ade80; flex-shrink: 0; margin-top: 1px; }
+
+    .plan-cta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ── Billing section ─────────────────────────── */
+    .billing-section {
+      background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 32px;
+    }
+    .billing-section h2 {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: var(--white);
+    }
+    .billing-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.84rem;
+    }
+    .billing-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .billing-row-label { color: var(--muted); }
+    .billing-row-val { color: var(--white); font-weight: 600; }
+
+    /* ── FAQ ─────────────────────────────────────── */
+    .faq-section { margin-bottom: 40px; }
+    .faq-section h2 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .faq-section h2::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+    .faq-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .faq-q {
+      width: 100%;
+      background: none;
+      border: none;
+      text-align: left;
+      padding: 15px 0;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: inherit;
+      transition: color 0.2s;
+    }
+    .faq-q:hover { color: var(--white); }
+    .faq-chevron { font-size: 0.75rem; color: var(--muted); transition: transform 0.25s; flex-shrink: 0; }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-a {
+      font-size: 0.84rem;
+      color: var(--muted);
+      line-height: 1.7;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      padding-bottom: 0;
+    }
+    .faq-item.open .faq-a { max-height: 200px; padding-bottom: 14px; }
+
+    @media (max-width: 560px) {
+      .plan-features { grid-template-columns: 1fr; }
+      .plan-top { flex-direction: column; }
+      .plan-price-area { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+
+<nav id="nav" class="app-nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="leads.html" data-i18n="navLeads">Lead Finder</a>
+      <a href="articles.html" data-i18n="navArticles">Articles</a>
+      <a href="crm.html" data-i18n="navCrm">CRM</a>
+      <a href="outreach.html" data-i18n="navOutreach">Outreach</a>
+      <a href="competitors.html" data-i18n="navCompetitors">Competitors</a>
+      <a href="audit.html" data-i18n="navAudit">AI Audit</a>
+      <a href="citations.html">Citations</a>
+    
+      <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="nav.dashboard">Dashboard</a>
+    </div>
+    <div class="nav-lang">
+      <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
+      <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" id="nav-profile-btn" style="font-size:0.78rem;padding:7px 14px;display:none">&#128100; <span id="nav-profile-name"></span></a>
+      <a href="signin.html" class="btn btn-ghost" id="nav-signin-btn" style="font-size:0.78rem;padding:7px 14px" data-i18n="navSignIn">Sign in</a>
+    </div>
+  </div>
+</nav>
+
+<div class="mem-page">
+
+  <div class="mem-header">
+    <div class="section-label">Plan &amp; Billing</div>
+    <h1>Your <span class="gradient-text">subscription</span></h1>
+    <p>One simple plan. Cancel any time. No contracts.</p>
+  </div>
+
+  <!-- Status banner (filled by JS) -->
+  <div class="status-banner free" id="status-banner" style="display:none">
+    <div class="sb-badge free" id="sb-badge">Free</div>
+    <div class="sb-info">
+      <div class="sb-name" id="sb-name">—</div>
+      <div class="sb-meta" id="sb-meta">—</div>
+    </div>
+    <div id="sb-action"></div>
+  </div>
+
+  <!-- Plan cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:32px" class="plan-grid">
+
+    <!-- Free -->
+    <div class="plan-card" style="background:linear-gradient(145deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));border-color:rgba(255,255,255,0.12);box-shadow:none">
+      <div class="plan-top" style="margin-bottom:20px">
+        <div class="plan-name-area">
+          <div class="plan-name" style="font-size:1.1rem">Free</div>
+          <div class="plan-tagline">Try the basics</div>
+        </div>
+        <div class="plan-price-area">
+          <div class="plan-price" style="font-size:2rem"><sup>€</sup>0</div>
+          <div class="plan-period">1st month free</div>
+        </div>
+      </div>
+      <ul class="plan-features" style="grid-template-columns:1fr;gap:8px;margin-bottom:20px">
+        <li><span class="ck">✓</span> 150 credits/month</li>
+        <li><span class="ck">✓</span> 1 AI article/month</li>
+        <li><span class="ck">✓</span> 3 lead searches/month</li>
+        <li><span class="ck">✓</span> 1 AI audit/month</li>
+        <li><span class="ck">✓</span> 5 CRM leads</li>
+        <li><span class="ck">✓</span> 1 website</li>
+        <li style="color:var(--muted)">✗ Outreach &amp; WhatsApp</li>
+        <li style="color:var(--muted)">✗ Competitor tracking</li>
+        <li style="color:var(--muted)">✗ WordPress publishing</li>
+      </ul>
+      <div id="free-cta-row"></div>
+    </div>
+
+    <!-- Beginners -->
+    <div class="plan-card" style="background:linear-gradient(145deg,rgba(34,197,94,0.1),rgba(34,197,94,0.04));border-color:rgba(34,197,94,0.35)">
+      <div class="plan-top" style="margin-bottom:20px">
+        <div class="plan-name-area">
+          <div class="plan-name" style="font-size:1.1rem">Beginners <span class="plan-badge" style="background:linear-gradient(135deg,#16a34a,#15803d)">Popular</span></div>
+          <div class="plan-tagline">For growing businesses</div>
+        </div>
+        <div class="plan-price-area">
+          <div class="plan-price" style="font-size:2rem"><sup>€</sup>9</div>
+          <div class="plan-period">per month · cancel any time</div>
+        </div>
+      </div>
+      <ul class="plan-features" style="grid-template-columns:1fr;gap:8px;margin-bottom:20px">
+        <li><span class="ck">✓</span> <strong>350 credits/month</strong></li>
+        <li><span class="ck">✓</span> <strong>3 AI articles/month</strong></li>
+        <li><span class="ck">✓</span> <strong>20 lead searches/month</strong></li>
+        <li><span class="ck">✓</span> <strong>3 AI audits/month</strong></li>
+        <li><span class="ck">✓</span> <strong>50 CRM leads</strong></li>
+        <li><span class="ck">✓</span> <strong>Track 3 competitors</strong></li>
+        <li><span class="ck">✓</span> Outreach &amp; WhatsApp</li>
+        <li><span class="ck">✓</span> Email verification</li>
+        <li style="color:var(--muted)">✗ WordPress publishing</li>
+      </ul>
+      <div id="beginners-cta-row"></div>
+    </div>
+
+    <!-- Pro -->
+    <div class="plan-card">
+      <div class="plan-top" style="margin-bottom:20px">
+        <div class="plan-name-area">
+          <div class="plan-name" style="font-size:1.1rem">Solo Pro <span class="plan-badge">All features</span></div>
+          <div class="plan-tagline">Full power, no limits</div>
+        </div>
+        <div class="plan-price-area">
+          <div class="plan-price" style="font-size:2rem"><sup>€</sup>20</div>
+          <div class="plan-period">per month · cancel any time</div>
+        </div>
+      </div>
+      <ul class="plan-features" style="grid-template-columns:1fr;gap:8px;margin-bottom:20px">
+        <li><span class="ck">✓</span> <strong>800 credits/month</strong></li>
+        <li><span class="ck">✓</span> <strong>6 AI articles/month</strong></li>
+        <li><span class="ck">✓</span> <strong>100 lead searches/month</strong></li>
+        <li><span class="ck">✓</span> <strong>10 AI audits/month</strong></li>
+        <li><span class="ck">✓</span> <strong>Unlimited CRM leads</strong></li>
+        <li><span class="ck">✓</span> <strong>Track up to 10 competitors</strong></li>
+        <li><span class="ck">✓</span> Outreach &amp; WhatsApp</li>
+        <li><span class="ck">✓</span> WordPress publishing</li>
+        <li><span class="ck">✓</span> Up to 3 websites · Priority support</li>
+      </ul>
+      <div id="plan-cta-row"></div>
+    </div>
+  </div>
+
+  <style>
+    @media (max-width: 700px) {
+      .plan-grid { grid-template-columns: 1fr !important; }
+    }
+  </style>
+
+  <!-- Billing details (shown when paid/trial) -->
+  <div class="billing-section" id="billing-details" style="display:none">
+    <h2>Billing details</h2>
+    <div class="billing-row">
+      <span class="billing-row-label">Plan</span>
+      <span class="billing-row-val" id="bill-plan">Solo Pro</span>
+    </div>
+    <div class="billing-row">
+      <span class="billing-row-label">Email</span>
+      <span class="billing-row-val" id="bill-email">—</span>
+    </div>
+    <div class="billing-row" id="bill-next-row" style="display:none">
+      <span class="billing-row-label" id="bill-next-label">Next charge</span>
+      <span class="billing-row-val" id="bill-next-val">—</span>
+    </div>
+    <div class="billing-row" id="bill-card-row" style="display:none">
+      <span class="billing-row-label">Payment method</span>
+      <span class="billing-row-val" id="bill-card-val">—</span>
+      <a href="billing.html" style="font-size:0.78rem;color:var(--blue2);cursor:pointer;text-decoration:none">Update card</a>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div class="faq-section">
+    <h2>Common questions</h2>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        How does the free trial work?
+        <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">You get 7 days of full access at no charge. Your card is charged €9/month (Beginners) or €20/month (Solo Pro) on day 8, depending on which plan you chose. Cancel any time before that with no fee.</div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        What happens if I cancel?
+        <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">Access continues until the end of your current billing period. All your data, leads, articles, and history are preserved. You can resubscribe any time.</div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Can I change my card?
+        <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">Yes — go to the Billing page to update your payment method at any time.</div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)">
+        Is there a contract or commitment?
+        <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">No. It's month-to-month. Cancel with one click — no emails, no forms.</div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+async function init() {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (!res.ok) { renderUnauthenticated(); return; }
+    const { user } = await res.json();
+
+    // nav
+    document.getElementById('nav-signin-btn').style.display = 'none';
+    const pb = document.getElementById('nav-profile-btn');
+    const pn = document.getElementById('nav-profile-name');
+    if (pb && pn) { pn.textContent = user.firstName || 'Profile'; pb.style.display = ''; }
+
+    // billing status
+    let billing = null;
+    try {
+      const br = await fetch('/api/billing/status');
+      if (br.ok) billing = await br.json();
+    } catch {}
+
+    renderStatus(user, billing);
+  } catch { renderUnauthenticated(); }
+}
+
+function renderUnauthenticated() {
+  const ctaRow = document.getElementById('plan-cta-row');
+  ctaRow.innerHTML = `<a href="signup.html" class="btn btn-primary" style="flex:1;text-align:center">Get started →</a>
+    <a href="signin.html" class="btn btn-ghost" style="font-size:0.82rem">Sign in</a>`;
+}
+
+function planPrice(plan) {
+  return plan === 'beginners' ? '€9' : '€20';
+}
+function planName(plan) {
+  if (plan === 'beginners') return 'Beginners';
+  return 'Solo Pro';
+}
+
+function renderStatus(user, billing) {
+  const banner = document.getElementById('status-banner');
+  const badge  = document.getElementById('sb-badge');
+  const sbName = document.getElementById('sb-name');
+  const sbMeta = document.getElementById('sb-meta');
+  const billDetails = document.getElementById('billing-details');
+
+  banner.style.display = 'flex';
+
+  const now         = new Date();
+  const trialEnd    = user.trialEndsAt ? new Date(user.trialEndsAt) : null;
+  const trialActive = trialEnd && trialEnd > now;
+  const isPaid      = ['paid','beginners','starter','pro','agency'].includes(user.plan);
+  const trialStarted = !!user.trialStartedAt;
+  const trialExpired = trialStarted && trialEnd && trialEnd <= now && !isPaid && !trialActive;
+  const currentPlan = user.plan || 'free';
+  const price       = planPrice(currentPlan);
+  const pName       = planName(currentPlan);
+
+  document.getElementById('bill-email').textContent = user.email || '—';
+  document.getElementById('bill-plan').textContent  = `${pName} — ${price}/month`;
+
+  // Highlight active plan card
+  const highlight = isPaid ? currentPlan : (trialActive ? currentPlan : 'free');
+  ['free-cta-row','beginners-cta-row','plan-cta-row'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.innerHTML = '';
+  });
+
+  if (isPaid && !trialActive) {
+    banner.className = 'status-banner active';
+    badge.className  = 'sb-badge active';
+    badge.textContent = 'Active';
+    sbName.textContent = `${pName} — ${price}/month`;
+    sbMeta.textContent = user.email || '';
+    const cta = document.getElementById(currentPlan === 'beginners' ? 'beginners-cta-row' : 'plan-cta-row');
+    if (cta) cta.innerHTML = `<button class="btn btn-ghost" onclick="confirmCancel()" style="font-size:0.82rem;width:100%">Cancel subscription</button>`;
+    billDetails.style.display = 'block';
+    if (billing?.nextBillingDate) {
+      const d = new Date(billing.nextBillingDate).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+      document.getElementById('bill-next-label').textContent = 'Next charge';
+      document.getElementById('bill-next-val').textContent   = `${price} on ${d}`;
+      document.getElementById('bill-next-row').style.display = 'flex';
+    }
+
+  } else if (trialActive) {
+    const daysLeft = Math.ceil((trialEnd - now) / 86400000);
+    const endStr   = trialEnd.toLocaleDateString('en-GB', { day:'numeric', month:'long' });
+    banner.className  = 'status-banner trial';
+    badge.className   = 'sb-badge trial';
+    badge.textContent = `Trial — ${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`;
+    sbName.textContent = `${pName} — ${price}/month`;
+    sbMeta.textContent = `Next charge: ${price} on ${endStr}`;
+    const cta = document.getElementById(currentPlan === 'beginners' ? 'beginners-cta-row' : 'plan-cta-row');
+    if (cta) cta.innerHTML = `<button class="btn btn-primary" onclick="upgradeNow()" style="width:100%;margin-bottom:8px">Activate now — ${price}/month</button>
+      <button class="btn btn-ghost" onclick="confirmCancelTrial()" style="font-size:0.82rem;width:100%">Cancel trial</button>`;
+    billDetails.style.display = 'block';
+    document.getElementById('bill-next-label').textContent = 'First charge';
+    document.getElementById('bill-next-val').textContent   = `${price} on ${endStr}`;
+    document.getElementById('bill-next-row').style.display = 'flex';
+
+  } else if (trialExpired) {
+    banner.className  = 'status-banner expired';
+    badge.className   = 'sb-badge expired';
+    badge.textContent = 'Trial expired';
+    sbName.textContent = 'Your free trial has ended';
+    sbMeta.textContent = 'Reactivate to restore full access';
+    document.getElementById('plan-cta-row').innerHTML      = `<a href="signup.html?plan=pro" class="btn btn-primary" style="width:100%;text-align:center;margin-bottom:8px">Subscribe Solo Pro — €20/month →</a>`;
+    document.getElementById('beginners-cta-row').innerHTML = `<a href="signup.html?plan=beginners" class="btn btn-ghost" style="width:100%;text-align:center">Subscribe Beginners — €9/month →</a>`;
+
+  } else {
+    banner.className = 'status-banner free';
+    badge.className  = 'sb-badge';
+    badge.style.cssText = 'background:rgba(255,255,255,0.08);border:1px solid var(--border);color:var(--muted)';
+    badge.textContent = 'Free plan';
+    sbName.textContent = 'You are on the free plan';
+    sbMeta.textContent = 'Upgrade for more credits, leads, and features';
+    document.getElementById('beginners-cta-row').innerHTML = `<a href="signup.html?plan=beginners" class="btn btn-primary" style="width:100%;text-align:center">Subscribe — Beginners €9/mo →</a>`;
+    document.getElementById('plan-cta-row').innerHTML      = `<a href="signup.html?plan=pro" class="btn btn-ghost" style="width:100%;text-align:center">Subscribe — Solo Pro €20/mo →</a>`;
+  }
+}
+
+async function startTrial() {
+  window.location.href = 'signup.html';
+}
+
+async function upgradeNow() {
+  window.location.href = 'upgrade.html';
+}
+
+async function confirmCancelTrial() {
+  if (!confirm('Cancel your free trial?\n\nYou will lose access to all paid features immediately.')) return;
+  try {
+    const res = await fetch('/api/trial/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const data = await res.json();
+    if (data.success) { alert('Trial cancelled.'); location.reload(); }
+    else alert(data.error || 'Could not cancel trial.');
+  } catch { alert('Error cancelling trial.'); }
+}
+
+async function confirmCancel() {
+  if (!confirm('Cancel your Solo Pro subscription?\n\nAccess continues until end of current billing period. Your data is preserved.')) return;
+  try {
+    const res = await fetch('/api/billing/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+    const data = await res.json();
+    if (data.success) { alert('Subscription cancelled. You keep access until the end of this billing period.'); location.reload(); }
+    else alert(data.error || 'Could not cancel. Please contact hello@eureach.eu');
+  } catch { alert('Error. Please contact hello@eureach.eu'); }
+}
+
+function toggleFaq(btn) {
+  const item = btn.closest('.faq-item');
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+  if (!wasOpen) item.classList.add('open');
+}
+
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 10);
+});
+
+init();
+</script>
+<script src="/js/api.js?v=5"></script>
+<script src="/js/trial-banner.js"></script>
+<script src="js/nav-init.js?v=3"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="el">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -397,7 +397,7 @@
       <a href="citations.html">Citations</a>
     
       <a id="nav-creator-link" href="youtube.html" style="display:none">Creator Portal</a>
-      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600" data-i18n="nav.dashboard">Dashboard</a>
     </div>
     <div class="nav-lang">
       <button class="lang-btn" data-lang="el" onclick="setLang('el')" title="Ελληνικά">🇬🇷</button>
@@ -1218,7 +1218,7 @@
         const urgColor = days <= 3 ? '#f87171' : days <= 7 ? '#fbbf24' : '#4ade80';
         bscCard.className = 'billing-status-card trial';
         bscBadge.className = 'bsc-badge trial'; bscBadge.textContent = `Trial — ${days} day${days!==1?'s':''} left`;
-        bscName.textContent = 'Solo Pro — free trial';
+        bscName.textContent = 'Solo Pro';
         rows += `<div class="bsc-row"><span class="bsc-row-label">Trial ends</span><span class="bsc-row-val">${fmtShort(trialEnd)}</span></div>`;
         rows += `<div class="bsc-row"><span class="bsc-row-label">Days remaining</span><span class="bsc-row-val" style="color:${urgColor};font-size:1rem;font-weight:700">${days} day${days!==1?'s':''}</span></div>`;
         rows += `<div class="bsc-row"><span class="bsc-row-label">First charge</span><span class="bsc-row-val">€20 on ${fmtShort(trialEnd)}</span></div>`;
@@ -1641,6 +1641,6 @@ window.runBizAudit = runBizAudit;
 </script>
 <script src="js/start-modal.js?v=1"></script>
 <script src="/js/trial-banner.js"></script>
-<script src="js/nav-init.js?v=2"></script>
+<script src="js/nav-init.js?v=5"></script>
 </body>
 </html>

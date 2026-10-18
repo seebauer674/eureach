@@ -123,6 +123,66 @@
         ],
         "lastUpdated": null,
         "recentUpdates": []
+      },
+      {
+        "date": "2026-09-15T14:34:30.751Z",
+        "score": 61,
+        "breakdown": {
+          "ai_visibility": 55,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement comprehensive Schema.org markup (Product, Service, LocalBusiness, and FAQ) to define the entity and services for AI search engines and voice assistants.",
+          "Add a sitemap.xml file and submit it to Google Search Console to ensure all pages are indexed and easily discoverable by AI crawlers.",
+          "Integrate social media profile links and a Google Maps embed to improve citation readiness and strengthen the business's digital footprint and local trust signals.",
+          "Expand the H2 heading structure to include more specific service details and FAQ-based headings to better align with natural language queries used by AI search tools."
+        ],
+        "strengths": [
+          "High content quality score (100) with a clear, value-focused page title and meta description that effectively highlights key services and target regions.",
+          "Strong local SEO foundation (70) by explicitly targeting multiple European countries (Greece, Germany, EU) and offering multi-language content (Greek, English, German).",
+          "Accessible contact information is available on the site (phone and email), facilitating direct user engagement and trust-building."
+        ],
+        "weaknesses": [
+          "Critical lack of Schema.org markup (score 15), preventing search engines and AI assistants from structuring and understanding the service data.",
+          "Poor citation readiness (40) due to the absence of social media links (Facebook, Instagram, LinkedIn) and a Google Maps integration, which limits entity verification.",
+          "Missing technical SEO asset sitemap.xml, which may hinder efficient crawling and indexing of site pages by search engines and AI crawlers."
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-10-16T12:42:24.794Z",
+        "score": 61,
+        "breakdown": {
+          "ai_visibility": 55,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement JSON-LD schema markup for SoftwareApplication, LocalBusiness, and FAQPage to enhance machine readability.",
+          "Add a sitemap.xml file including all language and country-specific URLs to ensure full indexation of local content.",
+          "Embed social media profiles and a Google Maps embed to boost citation readiness and local SEO authority.",
+          "Integrate Open Graph tags more comprehensively to improve shareability and visual appeal in AI-driven social referrals."
+        ],
+        "strengths": [
+          "Strong content relevance with clear multilingual value propositions for Greek, German, and EU markets.",
+          "High content quality score indicates well-structured AI-generated copy and clear user intent alignment.",
+          "Inclusion of essential contact methods (phone and email) facilitates direct lead generation and conversion.",
+          "Presence of robots.txt demonstrates a basic foundation for technical SEO and crawler management."
+        ],
+        "weaknesses": [
+          "Complete absence of Schema.org markup severely limits structured data recognition by AI engines.",
+          "Lack of social media links and Google Maps integration hurts citation verification and local trust signals.",
+          "Missing sitemap.xml impedes comprehensive crawling of all regional and language-specific content subsets.",
+          "Low AI visibility score suggests the site's architecture may not be optimized for LLM citation or direct answer extraction."
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
       }
     ],
     "createdAt": "2026-05-25T19:06:38.648Z",
@@ -245,6 +305,64 @@
           "Lack of H1 headings, potentially affecting website structure and accessibility",
           "Low local SEO score, suggesting insufficient optimization for local search",
           "No schema markup or Google Maps link, hindering search engine understanding of the business"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-09-15T14:34:32.052Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement JSON-LD LocalBusiness or Organization schema markup to explicitly define NAP (Name, Address, Phone) data, services, and social profiles to boost schema_markup scores and entity understanding.",
+          "Add an embedded Google Map and a clear address with click-to-call and email links in the footer to improve local_seo signals and user accessibility.",
+          "Create and submit a sitemap.xml to ensure all active pages are efficiently indexed, and reinforce the primary keyword focus by introducing a strong, declarative H1 tag on the homepage.",
+          "Enhance the meta description and H1 to include specific service keywords (e.g., 'Performance Marketing Agency in [Location]') to bridge the gap between brand awareness and local search intent."
+        ],
+        "strengths": [
+          "Strong branding consistency across page title, meta description, and OG tags, explicitly highlighting AI-driven strategies to align with current search trends.",
+          "High citation readiness score indicates a solid foundation for trust signals and likely consistent business information across external directories.",
+          "Presence of structured heading elements (H2s) with descriptive, benefit-oriented text aids in clear content hierarchy for crawlers and users."
+        ],
+        "weaknesses": [
+          "Critical weakness in local SEO due to the absence of a Google Maps link and low local_seo score (70), hindering physical location visibility and map pack rankings.",
+          "Lack of detected Schema.org markup (score 65) results in richer data not being transmitted to search engines, reducing the likelihood of appearing in featured snippets or rich results.",
+          "no H1 heading found on the homepage, which is a significant technical SEO gap that reduces the clarity of the primary topic for both users and AI models."
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-10-16T12:43:31.080Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement JSON-LD Schema.org markup for 'LocalBusiness' or 'DigitalAgency' including name, address, phone, and opening hours to bridge the schema gap.",
+          "Add a primary H1 tag to the homepage clearly stating the agency name and main service (e.g., 'BrainWave™ 3.0 Digital Marketing Agency') to establish clear topical authority for AI engines.",
+          "Embed a Google Map or include precise local address information to improve local SEO signals and assist local intent queries from generative search engines.",
+          "Create and submit a sitemap.xml to ensure all service pages are indexed, allowing AI systems to fully map the agency's service capabilities."
+        ],
+        "strengths": [
+          "Strong content quality score (85) driven by clear, value-prop focused H2 headings that effectively communicate service offerings.",
+          "Ideal citation readiness (100) ensured by the presence of complete contact details (phone and email) and active social profiles on Facebook, Instagram, and LinkedIn.",
+          "High AI visibility (82) supported by meta descriptions and title tags that explicitly mention 'AI-driven strategies' and specific service categories."
+        ],
+        "weaknesses": [
+          "Missing structural data optimization, evidenced by an unknown Schema.org implementation and the absence of a sitemap.xml, which hinders automated parsing by AI crawlers.",
+          "Local SEO gaps (70) identified by the lack of an embedded Google Maps link and missing local NAP (Name, Address, Phone) structure, limiting geographic discovery.",
+          "Content hierarchy issues due to the absence of any H1 headings on the crawled page, potentially confusing AI models about the primary topic of the page."
         ],
         "lastUpdated": null,
         "recentUpdates": []
@@ -374,6 +492,64 @@
         ],
         "lastUpdated": "Sun, 21 Jun 2026 13:37:48 GMT",
         "recentUpdates": []
+      },
+      {
+        "date": "2026-09-16T14:34:31.758Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement a clear H1 heading on the homepage containing 'Digital Marketing Agency Athens' to anchor the page's primary topic.",
+          "Add JSON-LD LocalBusiness schema including services, aggregate ratings from Google Reviews, and Geo coordinates to strengthen entity recognition.",
+          "Integrate a Google Maps embed and link to improve local SEO signals and physical location verification for AI assistants.",
+          "Create a sitemap.xml file to improve crawl efficiency and ensure all service pages are indexed effectively."
+        ],
+        "strengths": [
+          "Strong brand authority signaled by the inclusion of 'Professor Michalis Botas' in the title and meta tags, which boosts credibility in AI responses.",
+          "Comprehensive service enumeration in H2 headings covers key digital marketing pillars (SEO, Copywriting, Performance), aiding crawler indexing.",
+          "High citation readiness (score 100) indicates consistent contact information (phone/email) and social presence across platforms."
+        ],
+        "weaknesses": [
+          "Missing H1 headings negatively impacts semantic structure and clarity for AI summaries, as H1s are critical primary signals.",
+          "Lack of schema.org markup (score 65) prevents AI engines from clearly identifying the business entity, services, and reviews.",
+          "No Google Maps link (scores 70 in local SEO) hinders local discovery and verification by local AI search features."
+        ],
+        "lastUpdated": "Sat, 08 Aug 2026 13:23:16 GMT",
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-10-17T12:42:25.910Z",
+        "score": 81,
+        "breakdown": {
+          "ai_visibility": 82,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement local business schema (Schema.org type: LocalBusiness or ProfessionalService) to clearly define the organization's type, location, and services for better machine understanding.",
+          "Embed a Google Maps location marker or include a direct link to the Google Business Profile to enhance local SEO signals and improve proximity-based search results.",
+          "Create and submit a comprehensive sitemap.xml file to ensure all service pages are indexable, aiding both traditional search engines and AI search crawlers.",
+          "Add a descriptive H1 heading to the homepage that reinforces the primary keyword and value proposition, as none were detected, to improve on-page SEO hierarchy."
+        ],
+        "strengths": [
+          "Citation readiness is at maximum (100), likely driven by the presence of contact details (phone/email) and active social media profiles on Facebook, Instagram, and LinkedIn.",
+          "High content quality score (85) suggests the site utilizes well-structured H2 headings to cover key services like SEO, Copywriting, and Performance Marketing effectively.",
+          "Strong AI visibility foundation (82) is supported by a descriptive page title and meta description that clearly identify the business as a Digital Marketing Agency in Athens associated with Professor Michalis Botas."
+        ],
+        "weaknesses": [
+          "Local SEO is moderate (70) primarily due to the absence of a Google Maps link/embed, which hinders direct local map pack visibility and user trust signals.",
+          "Schema markup is a weak point (65) with the schema type listed as 'Unknown', indicating a lack of structured data that helps AI engines and search engines parse entity relationships.",
+          "The absence of a sitemap.xml file impedes efficient crawling and indexing, potentially slowing down the discovery of new content by search engines and AI crawlers."
+        ],
+        "lastUpdated": "Sat, 08 Aug 2026 13:23:16 GMT",
+        "recentUpdates": []
       }
     ],
     "createdAt": "2026-05-29T17:13:03.336Z",
@@ -501,6 +677,34 @@
         ],
         "lastUpdated": null,
         "recentUpdates": []
+      },
+      {
+        "date": "2026-09-18T16:49:52.829Z",
+        "score": 36,
+        "breakdown": {
+          "ai_visibility": 33,
+          "content_quality": 40,
+          "local_seo": 45,
+          "schema_markup": 15,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Implement a unique, compelling meta description (150-160 characters) that includes primary keywords and a clear call to action for each page.",
+          "Add structured Schema.org markup (LocalBusiness and Organization) to provide AI systems with verifiable details about services, location, and contact info.",
+          "Create and submit a sitemap.xml and ensure a valid robots.txt to improve technical crawlability and ensure all service pages are indexed.",
+          "Consolidate social proof by linking to active LinkedIn and Instagram profiles, and add a visible phone number and map embed to strengthen local SEO signals."
+        ],
+        "strengths": [
+          "The page title is descriptive and keyword-rich, clearly stating the agency's value proposition and industry focus.",
+          "The site establishes social proof effectively by featuring a specific statistic ('Trusted by 172+ leading brands') and highlighting financial scale ('8 FIGURES IN TRACKABLE REVENUE')."
+        ],
+        "weaknesses": [
+          "Critical SEO signals are missing, including the meta description, H1 headings, and OG tags, which hinders both traditional search engines and AI summarization.",
+          "There is a complete absence of Schema.org markup, making it difficult for AI assistants to accurately categorize and extract structured data about the business.",
+          "Local SEO and citation readiness are weak due to the lack of a phone number, Google Maps link, and sitemap, limiting local discoverability and technical crawlability."
+        ],
+        "lastUpdated": "Fri, 11 Sep 2026 10:23:33 GMT",
+        "recentUpdates": []
       }
     ],
     "createdAt": "2026-05-31T09:48:17.950Z",
@@ -625,6 +829,35 @@
         ],
         "lastUpdated": "Sat, 01 Aug 2026 05:32:31 GMT",
         "recentUpdates": []
+      },
+      {
+        "date": "2026-09-18T16:50:09.892Z",
+        "score": 86,
+        "breakdown": {
+          "ai_visibility": 88,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement LocalBusiness or ProfessionalService schema markup to provide clear structured data (NAP, services, area served) for AI and search engines.",
+          "Embed a Google Maps widget or add a direct link to the Google Business Profile to boost local intent signals and improve local SEO score.",
+          "Generate and submit an XML sitemap.xml to search engine consoles to ensure complete indexing of all service pages and content assets.",
+          "Add distinctive location-based content blocks (e.g., 'Serving Thessaloniki businesses') to reinforce geographic relevance for AI-driven local searches."
+        ],
+        "strengths": [
+          "Perfect content quality score (100) driven by clear, benefit-oriented H1 and H2 headings that align well with user intent for e-shop development in Thessaloniki.",
+          "Excellent citation readiness (100) with presence on Facebook, Instagram, and LinkedIn, plus verified contact information (phone and email) supporting trust signals.",
+          "Strong meta description and title tag optimization specifically targeting the local keyword 'Thessaloniki' for e-shop construction."
+        ],
+        "weaknesses": [
+          "Schema markup score is low (65) with an 'Unknown' schema type detected, missing structured data opportunities for LocalBusiness or Service.",
+          "Local SEO is moderate (70) due to the absence of a Google Maps link on the website, which hinders local discovery and verification.",
+          "Crawlability is impeded by the lack of a sitemap.xml file, potentially limiting how thoroughly search engines and AI crawlers index the site's content."
+        ],
+        "lastUpdated": "Fri, 18 Sep 2026 10:38:27 GMT",
+        "recentUpdates": []
       }
     ],
     "createdAt": "2026-05-31T09:53:31.368Z",
@@ -747,6 +980,74 @@
         ],
         "lastUpdated": null,
         "recentUpdates": []
+      },
+      {
+        "date": "2026-09-16T14:34:39.369Z",
+        "score": 77,
+        "breakdown": {
+          "ai_visibility": 86,
+          "content_quality": 75,
+          "local_seo": 45,
+          "schema_markup": 100,
+          "citation_readiness": 85
+        },
+        "recommendations": [
+          "Implement a clear heading hierarchy on the homepage and key landing pages, ensuring a single, descriptive H1 and logical H2/H3 subheadings to improve content parsing by AI search engines.",
+          "Add a valid business phone number and a Google Maps link/embed to the website footer and contact page to boost local SEO score and establish physical trust signals.",
+          "Enhance the meta description or on-page content to include clearer calls-to-action or specific European location references to reinforce the 'European companies' claim for local relevance.",
+          "Ensure the FAQPage schema markup is accurately populated with questions and answers that reflect customer search intent regarding AI governance and data residency to maintain high AI visibility.",
+          "Verify that social media links are updated and consistent across the site to maximize citation readiness and brand entity resolution."
+        ],
+        "strengths": [
+          "Comprehensive schema markup implementation including Organization, Service, SoftwareApplication, and FAQPage, which significantly aids AI engines in understanding entity relationships and service offerings.",
+          "Strong AI visibility signals with a meta description that explicitly mentions specific enterprise technologies (Anthropic Claude, OpenAI Codex, SAP Joule) and differentiators like EU data residency.",
+          "Good foundational technical SEO with the presence of robots.txt and sitemap.xml files, ensuring crawlability and indexation.",
+          "Presence of corporate social media profiles (LinkedIn, Facebook, Instagram) contributes to citation readiness and offline/online brand authority."
+        ],
+        "weaknesses": [
+          "Critical lack of H1 and H2 headings in the homepage crawl data, which severely hampers content structure interpretation for both users and AI models.",
+          "Very low local SEO score (45) due to the absence of a phone number, which is a key local trust signal and citation element.",
+          "No Google Maps link detected, further weakening local presence and physical location verification for potential enterprise clients.",
+          "Content quality score (75) is moderate, likely dragged down by the structural issues (missing headings) and lack of on-page local signals."
+        ],
+        "lastUpdated": "2026-09-16",
+        "recentUpdates": [
+          "2026-09-16",
+          "2026-09-16",
+          "2026-09-16"
+        ]
+      },
+      {
+        "date": "2026-10-17T12:43:33.550Z",
+        "score": 91,
+        "breakdown": {
+          "ai_visibility": 96,
+          "content_quality": 90,
+          "local_seo": 70,
+          "schema_markup": 100,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Realign the H1 heading to match the page title and meta description (e.g., 'Enterprise AI Implementation with Control') to resolve topical inconsistency.",
+          "Implement a hierarchical H2 structure to break down service offerings (e.g., 'Anthropic Claude Integration', 'MCP System Integration', 'EU Data Governance') for better semantic parsing.",
+          "Add a Google Maps link or embedded map to capture local search signals and improve linkability for enterprise clients looking for regional partners.",
+          "Review internal linking to ensure the Shopify video service (currently H1) is properly separated or categorized, avoiding dilution of the primary 'Enterprise AI' brand query."
+        ],
+        "strengths": [
+          "Comprehensive Schema.org implementation (Organization, Service, SoftwareApplication, FAQPage) provides rich structured data for AI parsing and rich snippets.",
+          "Strong technical SEO foundation with existing robots.txt and sitemap.xml ensures crawlability and indexation readiness.",
+          "Clear value proposition in meta description targeting specific enterprise regions (EU) and technologies (Anthropic Claude, OpenAI Codex) enhances intent matching."
+        ],
+        "weaknesses": [
+          "Critical mismatch between page title/meta (Enterprise AI consultancy) and H1 heading (Shopify video creation), which confuses search engines and AI models about the primary service.",
+          "Lack of H2 headings prevents proper content hierarchy and section scoping, reducing the effectiveness of semantic search and featured snippet eligibility.",
+          "No Google Maps link despite high local SEO score potential, missing an easy opportunity for location-based citation and trust signals."
+        ],
+        "lastUpdated": "2026-10-17",
+        "recentUpdates": [
+          "2026-10-17",
+          "2026-10-17"
+        ]
       }
     ],
     "createdAt": "2026-05-31T10:07:05.717Z",
@@ -759,7 +1060,7 @@
     "competitorUrl": "luminelleai.com",
     "industry": "marketing",
     "shareToken": "89384e3ec05a75f61105be6cdbb8a3f9251a309f11b4bdb8730d604fc9d072d5",
-    "alert": false,
+    "alert": true,
     "snapshots": [
       {
         "date": "2026-05-31T10:09:04.300Z",
@@ -866,6 +1167,36 @@
           "Lack of schema markup implementation, hindering search engine understanding of the business",
           "Insufficient social media presence, with only Facebook being utilized",
           "Absence of a Google Maps link and sitemap.xml, impacting local SEO and crawlability"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-09-18T16:50:27.450Z",
+        "score": 51,
+        "breakdown": {
+          "ai_visibility": 53,
+          "content_quality": 100,
+          "local_seo": 30,
+          "schema_markup": 15,
+          "citation_readiness": 30
+        },
+        "recommendations": [
+          "Implement SoftwareApplication or Organization Schema.org markup to explicitly define the product feature set and vendor details for AI parsing.",
+          "Add a XML sitemap.xml file and submit it to search engine consoles to accelerate the indexing of content updates.",
+          "Include a footer contact section with a clickable phone number and email address to improve entity verification and local relevance signals.",
+          "Establish LinkedIn and Instagram profiles to create a multi-platform citation footprint that AI systems use to validate business existence and authority."
+        ],
+        "strengths": [
+          "Content quality is optimal with clear, benefit-driven H1 and H2 structures addressing customer pain points (privacy, cost reduction).",
+          "Meta titles and descriptions are concise, keyword-rich, and effectively communicate the 'privacy-focused' differentiator for AI agents.",
+          "Open Graph tags are present and match the site metadata, supporting consistent social and chat bot previews."
+        ],
+        "weaknesses": [
+          "Complete lack of Schema.org markup prevents AI engines and search consoles from structurally understanding the business offer.",
+          "No local business signals (phone, email, map link) are present, severely limiting local SEO and retrieval for 'near me' queries.",
+          "Absence of a sitemap.xml hinders efficient crawling and indexing of new content by AI crawlers and search engines.",
+          "Limited social presence (only Facebook) reduces off-site citation signals and brand authority backing for AI recommendation engines."
         ],
         "lastUpdated": null,
         "recentUpdates": []
@@ -987,6 +1318,68 @@
           "Lack of available website crawl data",
           "Unclear content strategy",
           "Potential lack of local SEO optimization"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-09-15T14:34:51.137Z",
+        "score": 25,
+        "breakdown": {
+          "ai_visibility": 15,
+          "content_quality": 20,
+          "local_seo": 5,
+          "schema_markup": 10,
+          "citation_readiness": 15
+        },
+        "recommendations": [
+          "Implement comprehensive JSON-LD schema on the website to explicitly define the business as a Marketing Agency",
+          "Claim and curate a Google Business Profile with accurate service areas to tap into local 'near me' marketing queries",
+          "Ensure all key service pages are crawlable by AI search engines by avoiding aggressive JavaScript rendering dependencies",
+          "Create a consistent NAP (Name, Address, Phone) standard across at least 5 major business directories to boost citation readiness",
+          "Publish a dedicated 'About' and 'Services' page with clearly structured headings to improve entity understanding by search algorithms"
+        ],
+        "strengths": [
+          "Established digital footprint with a professional .io domain name",
+          "Brand name 'Synapsis' is highly distinctive and descriptive for a marketing/connectivity industry",
+          "Global URL authority typical of .io domains often indexed well by major search engines"
+        ],
+        "weaknesses": [
+          "Complete lack of website crawl data makes on-page indexing and content analysis impossible",
+          "No verified local business entity or physical address found to support local search queries",
+          "Absence of structured data verification prevents accurate organization of business details for LLMs",
+          "Minimal visible citations or third-party directory listings to cross-verify business identity"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-10-16T12:44:41.421Z",
+        "score": 42,
+        "breakdown": {
+          "ai_visibility": 30,
+          "content_quality": 45,
+          "local_seo": 20,
+          "schema_markup": 35,
+          "citation_readiness": 50
+        },
+        "recommendations": [
+          "Conduct a full technical and content audit to establish baseline metrics for AI visibility and content quality.",
+          "Implement Local Business schema and optimize Google Business Profile to capture local marketing service searches.",
+          "Structure key content pages with FAQ and Service schema to enhance entity recognition by AI assistants.",
+          "Digitize and standardize business citations across at least 20 major directories to improve trust signals for LLMs.",
+          "Publish regularly updated, high-intent case studies and marketing guides with clear entity labeling to boost topical authority."
+        ],
+        "strengths": [
+          "Established brand identity in the marketing sector with a recognizable domain name.",
+          "Likely existing digital infrastructure capable of supporting technical SEO upgrades.",
+          "Industry relevance allows for broad topical authority in marketing discussions."
+        ],
+        "weaknesses": [
+          "Complete lack of website crawl data prevents verification of content freshness and technical health.",
+          "No evidence of local SEO signals, which is critical for service-based or agency marketing firms.",
+          "Absence of confirmed schema markup reduces structured data availability for AI consumption.",
+          "Unclear citation readiness across major directories and review platforms due to missing data points."
         ],
         "lastUpdated": null,
         "recentUpdates": []
@@ -1145,6 +1538,35 @@
         ],
         "lastUpdated": null,
         "recentUpdates": []
+      },
+      {
+        "date": "2026-09-18T16:50:44.651Z",
+        "score": 56,
+        "breakdown": {
+          "ai_visibility": 49,
+          "content_quality": 85,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 40
+        },
+        "recommendations": [
+          "Implement comprehensive Schema.org markup (LocalBusiness, Service, and FAQ) to provide structured data for AI models to accurately extract and cite business information.",
+          "Add missing H1 headings to primary pages and generate a sitemap.xml to improve crawl efficiency and semantic hierarchy for search and AI systems.",
+          "Integrate active social media profile links (especially LinkedIn for B2B/SaaS) to strengthen citation readiness and provide additional verification signals for AI visibility.",
+          "Optimize page titles and meta descriptions to be more specific and keyword-rich, moving beyond generic 'SaaS Lab Website' to capture specific service intent."
+        ],
+        "strengths": [
+          "High-quality content structure with clear value propositions and social proof ('Join 500+ FOUNDERS') supporting high content quality score.",
+          "Includes essential contact methods (phone and email) which aids in basic AI entity resolution and user contact paths.",
+          "Presence of robots.txt indicates a baseline level of technical SEO attention, helping search engines and AI crawlers navigate the site."
+        ],
+        "weaknesses": [
+          "Complete lack of Schema.org markup significantly hinders AI understanding of business details, services, and reputation (lowest sub-score at 15).",
+          "Absence of H1 headings and missing sitemap.xml reduces crawlability and semantic clarity for AI search engines.",
+          "No social media links (LinkedIn, Facebook, Instagram) are present, limiting citation readiness and cross-platform entity verification (score 40)."
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
       }
     ],
     "createdAt": "2026-05-31T10:12:29.578Z"
@@ -1264,6 +1686,35 @@
           "Lack of H1 headings on the website, which can negatively impact search engine understanding of the content structure",
           "Low schema markup score, indicating a potential missed opportunity for enhanced search engine results and improved user experience",
           "Missing sitemap.xml file, which can hinder search engine crawling and indexing of the website"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-09-18T16:51:01.524Z",
+        "score": 83,
+        "breakdown": {
+          "ai_visibility": 78,
+          "content_quality": 75,
+          "local_seo": 100,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Generate and submit a valid XML sitemap (sitemap.xml) to search engines to ensure all service pages and content are efficiently indexed.",
+          "Implement a semantic H1 heading on the homepage that clearly states the primary value proposition, such as 'Professional Web Design & Development in Athens'.",
+          "Expand schema.org implementation by adding 'WebSite', 'LocalBusiness', or 'Service' structured data to provide AI assistants with clearer business context and service offerings.",
+          "Optimize the Open Graph title, which currently mirrors the URL, to a unique, compelling marketing message that improves social sharing visibility."
+        ],
+        "strengths": [
+          "Secure effective local SEO presence with a perfect score, driven by complete contact information (phone, email) and a direct Google Maps integration.",
+          "Maintain strong citation readiness by actively maintaining profiles on key social platforms including LinkedIn, Facebook, and Instagram.",
+          "Implement basic technical foundations such as robots.txt, enabling crawler accessibility and initial structuring of site directives."
+        ],
+        "weaknesses": [
+          "Significant technical SEO gaps due to the absence of a sitemap.xml, which hinders comprehensive crawling and indexing.",
+          "Critical structural HTML deficiency with no H1 heading detected, negatively impacting content hierarchy and AI context interpretation.",
+          "Limited schema markup utilization, restricted to the basic Organization type, missing specialized WebSite, Service, or FAQ schemas that could enhance rich results."
         ],
         "lastUpdated": null,
         "recentUpdates": []
@@ -1422,6 +1873,34 @@
         ],
         "lastUpdated": "Fri, 24 Apr 2026 08:55:26 GMT",
         "recentUpdates": []
+      },
+      {
+        "date": "2026-09-18T16:51:17.892Z",
+        "score": 74,
+        "breakdown": {
+          "ai_visibility": 70,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 15,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement Schema.org markup (e.g., Organization, Service) to provide structured data about marketing services and business details.",
+          "Create and submit robots.txt and sitemap.xml files to ensure search engines and AI crawlers can fully index the website.",
+          "Add local business information including address and Google Maps integration to improve local search visibility and trust."
+        ],
+        "strengths": [
+          "Clear and keyword-rich meta description that explicitly mentions AI marketing, Google & Meta ads, and campaign automation.",
+          "Strong social media presence with active links to Facebook, Instagram, and LinkedIn.",
+          "Excellent citation readiness with visible contact information including phone and email."
+        ],
+        "weaknesses": [
+          "Complete absence of Schema.org markup, which hinders structured data interpretation by AI and search engines.",
+          "Missing robots.txt and sitemap.xml files, preventing proper crawling and indexing of site content.",
+          "Lack of local SEO signals such as a Google Maps link or physical address."
+        ],
+        "lastUpdated": "Sat, 22 Aug 2026 07:13:44 GMT",
+        "recentUpdates": []
       }
     ],
     "createdAt": "2026-05-31T10:14:03.543Z"
@@ -1536,6 +2015,61 @@
         "weaknesses": [
           "Lack of schema markup implementation, which can improve search engine understanding of the website's content",
           "Missing sitemap.xml file, which can hinder search engine crawlability and indexing"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-09-16T14:34:47.876Z",
+        "score": 92,
+        "breakdown": {
+          "ai_visibility": 88,
+          "content_quality": 100,
+          "local_seo": 100,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Deploy LocalBusiness and Service Schema: Implement structured data (Organization and Service) to provide AI assistants with semi-structured data about core offerings (Google Ads, SEO, etc.).",
+          "Refine H2 Headings: Replace the invisible/empty H2 tags with descriptive phrases like 'SEO Optimization' or 'Social Media Management' to create clear entity boundaries for AI retrieval.",
+          "Generate and Submit a Sitemap: Introduce a sitemap.xml file to help AI and search crawlers efficiently discover and index the 'ALL IN ONE' service pages."
+        ],
+        "strengths": [
+          "Complete Local SEO Foundation: Successfully implements contact details (phone, email), Google Maps embedding, and major social profiles, ensuring high local discoverability.",
+          "Strong Brand Authority: The title 'Digital Marketing since 2011' leverages brand longevity as a trust signal, a strong differentiator in AI search for marketing services.",
+          "Full Citation Readiness: The presence of a robots.txt and cross-platform social links indicates a high level of technical readiness for third-party citations and AI integration."
+        ],
+        "weaknesses": [
+          "Missing Schema Markup: The absence of structured data (Unknown Schema.org) is the primary drag on performance, preventing AI crawlers from easily parsing service categories and pricing.",
+          "Invisible H2 Structure: The H2 headings are empty or contain unparseable characters, hindering AI engines from identifying sub-topics within the 'ALL IN ONE' service offering."
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-10-17T12:44:41.835Z",
+        "score": 92,
+        "breakdown": {
+          "ai_visibility": 88,
+          "content_quality": 100,
+          "local_seo": 100,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement LocalBusiness or ProfessionalService Schema.org markup to clearly define services, geo-location, and contact details for AI context.",
+          "Generate and submit a valid XML sitemap (sitemap.xml) to ensure all service pages and blog posts are consistently indexed by search engines and AI tools.",
+          "Fix the empty H2 headings on the homepage to use descriptive text that mirrors the service offerings, improving semantic clarity for content analysis."
+        ],
+        "strengths": [
+          "Strong brand identity and clear value proposition established through the homepage title 'SNS Agency | Digital Marketing since 2011' and consistent branding.",
+          "Excellent fundamentals for local SEO with a configured robots.txt, presence of contact information (phone and email), and multiple social media profiles (Facebook, Instagram, LinkedIn).",
+          "High content quality score (100) relative to competitors, indicating the site structure supports effective information retrieval for AI crawlers."
+        ],
+        "weaknesses": [
+          "Schema markup is weak (65) with 'Unknown' type, significantly limiting structured data signals that AI engines use to classify services (e.g., LocalBusiness, ProfessionalService).",
+          "Missing sitemap.xml, which hinders comprehensive crawling and indexing of all service pages, potentially leaving parts of the site invisible to AI search indexes.",
+          "H2 headings on the homepage are empty or broken in the crawl data, which reduces the semantic hierarchy and clarity of content sections for AI parsing."
         ],
         "lastUpdated": null,
         "recentUpdates": []
@@ -1694,6 +2228,35 @@
         ],
         "lastUpdated": "Sat, 01 Aug 2026 08:30:57 GMT",
         "recentUpdates": []
+      },
+      {
+        "date": "2026-09-18T16:51:34.956Z",
+        "score": 92,
+        "breakdown": {
+          "ai_visibility": 88,
+          "content_quality": 100,
+          "local_seo": 100,
+          "schema_markup": 65,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement a valid sitemap.xml to ensure complete site discoverability.",
+          "Add specific LocalBusiness and Service schema markup to improve AI understanding of services.",
+          "Refine the H1 heading to clearly state 'Digital Marketing Agency [Location/Name]' to boost topical authority.",
+          "Ensure consistent contact information (NAP) across all cited directories to maintain entity trust."
+        ],
+        "strengths": [
+          "Comprehensive local SEO signals including phone, email, and Google Maps integration.",
+          "Strong content quality score indicating optimized meta descriptions and relevant digital marketing keywords.",
+          "Full citation readiness with active social profiles across Facebook, Instagram, and LinkedIn."
+        ],
+        "weaknesses": [
+          "Missing sitemap.xml hinders efficient crawling and indexing by both search engines and AI agents.",
+          "Schema markup is missing or unknown, reducing structured data clarity for AI-generated answers.",
+          "Fragmented or unclear H1 heading ('Το') may dilute topical relevance for key service queries."
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
       }
     ],
     "createdAt": "2026-05-31T10:34:03.138Z"
@@ -1822,6 +2385,71 @@
           "2026-06-18",
           "2026-06-18",
           "2026-06-04"
+        ]
+      },
+      {
+        "date": "2026-09-15T14:35:02.966Z",
+        "score": 77,
+        "breakdown": {
+          "ai_visibility": 84,
+          "content_quality": 90,
+          "local_seo": 45,
+          "schema_markup": 75,
+          "citation_readiness": 85
+        },
+        "recommendations": [
+          "Add visible schema markup (specifically 'Organization' or 'Service') to define the business type, services, and contact details for AI retrieval.",
+          "Include a local phone number and a Google Maps link to improve local SEO signals and trust, which currently restricts the local_seo score.",
+          "Optimize metadata to highlight 'B2B Lead Generation' and 'ΓΕΜΗ data' keywords more aggressively to capture specific long-tail AI queries."
+        ],
+        "strengths": [
+          "High-converting, clear value proposition in the H1 and meta description focused on specific B2B pain points (ΓΕΜΗ/Led generation).",
+          "Strong content quality (90) indicated by a logical H2 hierarchy that breaks down services clearly for both users and AI scrapers.",
+          "Good technical infrastructure with consistent robots.txt and sitemap.xml, facilitating easy crawling and indexing."
+        ],
+        "weaknesses": [
+          "Lack of local trust signals (local_seo: 45) due to the absence of a physical phone number and no Google Maps link on the page.",
+          "Schema.org markup is unidentified or missing, limiting how structured data is interpreted by AI assistants and search engines.",
+          "Reliance on text-only contact methods (email only) may reduce visibility in 'local business' or 'verified provider' AI queries."
+        ],
+        "lastUpdated": "2026-08-24",
+        "recentUpdates": [
+          "2026-08-24",
+          "2026-08-24",
+          "2026-08-24"
+        ]
+      },
+      {
+        "date": "2026-10-16T12:45:49.552Z",
+        "score": 77,
+        "breakdown": {
+          "ai_visibility": 84,
+          "content_quality": 90,
+          "local_seo": 45,
+          "schema_markup": 75,
+          "citation_readiness": 85
+        },
+        "recommendations": [
+          "Add a visible phone number and click-to-call functionality to the website header and footer to improve local SEO signals and conversion rates.",
+          "Implement localSchema.org markup (e.g., Location or Business) if the business has a physical address or service area to boost local search visibility.",
+          "Add a Google Maps embed or link if a physical location or service area is relevant, or clarify service areas in the footer for local intent matching.",
+          "Introduce structured data (JSON-LD) for the service, such as 'Service' or 'Product' schema, to help AI engines better understand the specific B2B data offerings."
+        ],
+        "strengths": [
+          "Highly specific and value-driven H1 and title tags that clearly communicate the B2B lead generation service using Greek local data sources (GEMI & NewLead).",
+          "Strong content quality with a compelling meta description and clear hierarchy focused on B2B sales outcomes rather than generic marketing terms.",
+          "Solid technical foundation with existing robots.txt and sitemap.xml files, ensuring proper crawlability for search engines and AI crawlers."
+        ],
+        "weaknesses": [
+          "Absence of a phone number on the website severely limits local SEO ranking factors and reduces immediate conversion opportunities for B2B clients.",
+          "Lack of Google Maps integration and weak local on-page signals result in a low local SEO score (45), especially for a service that may have a physical or local presence.",
+          "No explicit Schema.org markup detected, which limits structured data visibility and reduces the likelihood of rich snippets in AI and traditional search results."
+        ],
+        "lastUpdated": "2026-10-16",
+        "recentUpdates": [
+          "2026-10-16",
+          "2026-10-16",
+          "2026-10-16"
         ]
       }
     ],
@@ -2002,6 +2630,36 @@
         ],
         "lastUpdated": "Fri, 31 Jul 2026 11:24:02 GMT",
         "recentUpdates": []
+      },
+      {
+        "date": "2026-09-19T16:49:52.777Z",
+        "score": 69,
+        "breakdown": {
+          "ai_visibility": 74,
+          "content_quality": 100,
+          "local_seo": 45,
+          "schema_markup": 65,
+          "citation_readiness": 45
+        },
+        "recommendations": [
+          "Implement a comprehensive sitemap.xml to ensure all content is discoverable by search engines and AI crawlers.",
+          "Add product, FAQ, and Organization schema types to enhance structured data for better AI comprehension and rich results.",
+          "Incorporate social profile links for Instagram and LinkedIn to complete the digital footprint and improve local SEO citation signals.",
+          "Display a phone number on the website to improve local SEO consistency and provide a direct contact method."
+        ],
+        "strengths": [
+          "Excellent on-page content structure with a clear H1 targeting Facebook/Instagram ads and high-quality H2s addressing specific user queries and social proof (Stelios Awards).",
+          "Strong value proposition definition in meta description and title, clearly distinguishing the service from traditional agencies via keyword 'χωρίς τις χρεώσεις των digital marketing agencies'.",
+          "Presence of BreadcrumbList schema and robots.txt indicates a foundation for technical SEO and navigational clarity."
+        ],
+        "weaknesses": [
+          "Lack of a sitemap.xml hinders efficient crawling and indexing by both traditional search engines and AI models.",
+          "Incomplete social data with missing Instagram, LinkedIn, and Google Maps links reduces local SEO signals and potential citation reach, especially notable given the focus on Instagram ads.",
+          "Limited schema markup (only BreadcrumbList) misses opportunities for rich snippets and better entity understanding by AI engines.",
+          "Phone number is not visible on the page, reducing direct contact signals relevant for local SEO."
+        ],
+        "lastUpdated": "Fri, 31 Jul 2026 11:24:02 GMT",
+        "recentUpdates": []
       }
     ],
     "createdAt": "2026-05-31T12:24:44.688Z"
@@ -2153,6 +2811,34 @@
           "Lack of crucial metadata such as page title, meta description, and OG title",
           "No schema markup, which hinders search engine understanding of the site's content",
           "Absence of social media presence and Google Maps link, limiting online visibility"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-09-18T16:52:08.244Z",
+        "score": 28,
+        "breakdown": {
+          "ai_visibility": 26,
+          "content_quality": 45,
+          "local_seo": 30,
+          "schema_markup": 15,
+          "citation_readiness": 10
+        },
+        "recommendations": [
+          "Immediately fix the server configuration to resolve the 403 Forbidden error, as this is the primary blocker preventing any SEO or AI visibility.",
+          "Implement a sitemap.xml and index it in the robots.txt file to guide crawlers through the site's content structure efficiently.",
+          "Develop and deploy a LocalBusiness schema markup to clearly define the business type, location, and service offerings to AI systems and search engines.",
+          "Create and synchronize social media profiles (Facebook, LinkedIn, Instagram) and link them from the website to establish offline and online brand consistency."
+        ],
+        "strengths": [
+          "A robots.txt file is present, ensuring that search engine crawlers are not completely blocked from accessing the site structure, which is a foundational step for any SEO strategy.",
+          "The brand name 'instup' is short and memorable, offering a clear opportunity for strong brand recognition once technical issues are resolved."
+        ],
+        "weaknesses": [
+          "The website currently returns a 403 Forbidden error, making the site completely inaccessible to both users and AI crawlers, which results in a total loss of visibility.",
+          "Critical meta information is missing, including the meta description, OG title, and H1 headings, preventing search engines and AI models from understanding the business context.",
+          "There is a complete absence of schema markup and social media links, leaving the business with no structured data to support rich results or digital presence verification."
         ],
         "lastUpdated": null,
         "recentUpdates": []
@@ -2387,6 +3073,40 @@
           "2026-07-31",
           "2026-07-31"
         ]
+      },
+      {
+        "date": "2026-09-18T16:52:26.006Z",
+        "score": 82,
+        "breakdown": {
+          "ai_visibility": 91,
+          "content_quality": 100,
+          "local_seo": 45,
+          "schema_markup": 100,
+          "citation_readiness": 65
+        },
+        "recommendations": [
+          "Add a clickable phone number and a Google Maps link to the footer to resolve local SEO gaps and improve directory citation consistency.",
+          "Fix the HTML entity encoding in the meta description to display the ampersand correctly (replace '&amp;' with '&').",
+          "Create and link to a Facebook business page to complete the social media profile and boost citation readiness scores.",
+          "Implement LocalBusiness or Organization schema extensions (if applicable) to complement the existing SoftwareApplication markup for better entity understanding by search engines."
+        ],
+        "strengths": [
+          "Exceptional AI search visibility score (91) driven by clear H1 targeting 'AI Search on autopilot' and strong relevance to current LLM-assisted discovery trends.",
+          "Perfect content quality score (100) with a logical heading hierarchy from H1 to H2 that clearly structures the value proposition and social proof.",
+          "Robust technical foundation indicated by the presence of robots.txt, sitemap.xml, and valid SoftwareApplication schema markup.",
+          "High social signal diversity with active Instagram and LinkedIn profiles supporting brand consistency."
+        ],
+        "weaknesses": [
+          "Low local SEO score (45) due to the absence of a phone number and Google Maps link, making the business difficult to locate locally or physically.",
+          "Partial citation readiness (65) hindered by limited social presence, specifically the lack of a Facebook connection which may affect local business directory completeness.",
+          "Meta description contains an HTML entity error ('&amp;' instead of '&') which may display incorrectly in search snippets and impact CTR."
+        ],
+        "lastUpdated": "2026-09-18",
+        "recentUpdates": [
+          "2026-09-18",
+          "2026-09-18",
+          "2026-09-18"
+        ]
       }
     ],
     "createdAt": "2026-05-31T12:46:54.832Z"
@@ -2507,6 +3227,36 @@
           "Low schema markup score, which can negatively impact search engine understanding of the website's content",
           "Limited social media presence, with only two platforms being utilized",
           "No H1 or H2 headings found on the website, which can affect content structure and accessibility"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-09-19T16:50:09.598Z",
+        "score": 59,
+        "breakdown": {
+          "ai_visibility": 52,
+          "content_quality": 75,
+          "local_seo": 70,
+          "schema_markup": 5,
+          "citation_readiness": 80
+        },
+        "recommendations": [
+          "Implement proper heading hierarchy by adding a single H1 and relevant H2s to define the primary value proposition and service sections.",
+          "Add Schema.org markup (e.g., Service, Organization, FAQ) to explicitly define Tanganica's AI marketing offerings for AI consumption.",
+          "Create and submit a sitemap.xml and ensure a robots.txt is in place to guide AI crawlers and search engines to all indexable pages.",
+          "Integrate a Google Maps embed or link to strengthen local signals and provide geographic context for local search queries."
+        ],
+        "strengths": [
+          "High citation readiness (80) with a clear brand identity, though missing some social proof elements.",
+          "Solid content quality score (75) driven by a specific, benefit-oriented meta description targeting online store owners.",
+          "Local SEO score of 70 is supported by the presence of both phone and email contact information, despite the lack of a map."
+        ],
+        "weaknesses": [
+          "Critical lack of heading structure (no H1 or H2 detected) prevents AI models and search engines from understanding page hierarchy and key topics.",
+          "Missing schema markup (score 5) means zero structured data to help AI engines parse entity details, services, or reviews.",
+          "Absence of robots.txt and sitemap.xml (score 0 related issue) hinders systematic crawling and AI content discovery.",
+          "No Google Maps link despite a decent local SEO score, limiting geolocation context for local search results."
         ],
         "lastUpdated": null,
         "recentUpdates": []
@@ -2647,6 +3397,39 @@
           "2026-06-10",
           "2024-04-21"
         ]
+      },
+      {
+        "date": "2026-09-18T16:53:00.903Z",
+        "score": 88,
+        "breakdown": {
+          "ai_visibility": 91,
+          "content_quality": 100,
+          "local_seo": 70,
+          "schema_markup": 75,
+          "citation_readiness": 100
+        },
+        "recommendations": [
+          "Implement local business schema (LocalBusiness or MarketingAgency) to provide AI models with definitive context about service types, prices, and areas served.",
+          "Embed a Google Maps widget or GMB link to strengthen local entity linking and improve local search visibility scores.",
+          "Add hreflang tags if targeting both Greek and English speaking audiences to ensure AI search engines correctly associate content with the intended locale.",
+          "Standardize H2 headings to include specific service keywords (e.g., 'Our Social Media Services' instead of 'Our Services') to improve topical relevance."
+        ],
+        "strengths": [
+          "Comprehensive keyword coverage in the meta description, effectively signaling services like social media, Google ads, and influencer marketing to search engines.",
+          "High content quality score (100) driven by clear H1 headings like 'Let's Build Something.' and 'Boost your Creativity.' that establish strong brand value proposition.",
+          "Excellent citation readiness (100) backed by the presence of both robots.txt and sitemap.xml, ensuring streamlined crawler access and indexing."
+        ],
+        "weaknesses": [
+          "Local SEO score is limited to 70 due to the missing Google Maps link, which prevents AI systems from precisely associating the agency with a physical service area.",
+          "Schema markup is unknown, indicating a lack of structured data to explicitly define the business as a marketing agency, which hinders rich snippet eligibility.",
+          "Mixed language usage (English H1s and Greek H2s/metadesc) may confuse general AI semantic analysis if not properly handled with hreflang tags."
+        ],
+        "lastUpdated": "2026-06-10",
+        "recentUpdates": [
+          "2026-06-10",
+          "2026-06-10",
+          "2024-04-21"
+        ]
       }
     ],
     "createdAt": "2026-05-31T13:56:28.975Z"
@@ -2761,6 +3544,34 @@
         "weaknesses": [
           "No website crawl available, indicating potential issues with website accessibility or indexing",
           "Lack of available data to assess content quality, schema markup, and citation readiness"
+        ],
+        "lastUpdated": null,
+        "recentUpdates": []
+      },
+      {
+        "date": "2026-09-18T16:53:16.879Z",
+        "score": 50,
+        "breakdown": {
+          "ai_visibility": 50,
+          "content_quality": 40,
+          "local_seo": 60,
+          "schema_markup": 30,
+          "citation_readiness": 50
+        },
+        "recommendations": [
+          "Implement comprehensive local and service-area SEO schema markup (LocalBusiness, Service) to ensure AI parsers can extract key attributes.",
+          "Develop content clusters that directly answer common industry questions (e.g., 'Best marketing strategies for [niche]') to become a preferred source for AI synthesis.",
+          "Conduct a technical audit of trysos.com to fix any crawl barriers, ensuring search engines and AI bots can access and index core pages.",
+          "Create consistent citations across marketing and tech directories to reinforce the business name 'Soro' and domain association in AI training data."
+        ],
+        "strengths": [
+          "Clear brand identity with a distinguishable domain (trysos.com) suitable for industry-specific queries.",
+          "Operates in the marketing sector, which inherently involves digital presence building, likely leading to baseline online visibility."
+        ],
+        "weaknesses": [
+          "Complete lack of website crawl data prevents verification of content quality, structure, and technical SEO health.",
+          "No evidence of structured data (schema markup) to assist AI engines in accurately interpreting business details.",
+          "Absence of analyzable content means AI search assistants lack the specific textual signals needed to generate confident recommendations."
         ],
         "lastUpdated": null,
         "recentUpdates": []

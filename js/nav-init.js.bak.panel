@@ -1,0 +1,401 @@
+(function () {
+  // ── Inject sidebar styles immediately (before auth round-trip) ─────────────
+  var _topNav = document.querySelector('nav.app-nav');
+  if (_topNav) {
+    var _style = document.createElement('style');
+    _style.id = 'sidebar-styles';
+    _style.textContent =
+      '#sidebar{position:fixed;top:0;left:0;bottom:0;width:220px;background:#080d1c;border-right:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;z-index:9000;scrollbar-width:thin}' +
+      '#sidebar::-webkit-scrollbar{width:3px}#sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1)}' +
+      '.sb-logo-wrap{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:6px;flex-shrink:0}' +
+      '.sb-logo{font-size:1.1rem;font-weight:800;color:#fff;text-decoration:none;letter-spacing:-0.5px;display:block}' +
+      '.sb-dot{color:#f59e0b}' +
+      '.sb-section{padding:0 8px 2px}' +
+      '.sb-section-hd{font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:1px;padding:10px 8px 3px}' +
+      '.sb-item{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;color:rgba(255,255,255,0.5);text-decoration:none;font-size:0.82rem;font-weight:500;transition:background .15s,color .15s;cursor:pointer;border:none;background:none;width:100%;text-align:left;white-space:nowrap}' +
+      '.sb-item:hover{background:rgba(255,255,255,0.07);color:#fff}' +
+      '.sb-item.active{background:rgba(37,99,235,0.18);color:#60a5fa;font-weight:600}' +
+      '.sb-ic{font-size:0.9rem;width:18px;text-align:center;flex-shrink:0;line-height:1}' +
+      '.sb-lbl{overflow:hidden;text-overflow:ellipsis}' +
+      '.sb-spacer{flex:1;min-height:8px}' +
+      '.sb-bottom{padding:6px 8px 8px;border-top:1px solid rgba(255,255,255,0.06)}' +
+      '.sb-lang{display:flex;gap:2px;padding:6px 8px 8px}' +
+      '.sb-lb{background:none;border:none;font-size:0.95rem;cursor:pointer;padding:3px 5px;border-radius:4px;opacity:.55;transition:opacity .15s}' +
+      '.sb-lb:hover{opacity:1}' +
+      '.sb-signout .sb-lbl{color:rgba(239,68,68,0.7)}' +
+      '.sb-signout:hover .sb-lbl{color:#ef4444}' +
+      'body.has-sidebar{margin-left:220px;overflow-x:hidden}' +
+      'body.has-sidebar [class$="-page"],body.has-sidebar [class*="-page "],body.has-sidebar .or-page,body.has-sidebar .ag-page{padding-top:24px!important}' +
+      '@media(max-width:700px){#sidebar{width:56px}.sb-lbl,.sb-section-hd,.sb-logo{display:none}.sb-logo-wrap{padding:14px 8px}.sb-item{justify-content:center;padding:10px 0}.sb-ic{width:auto;font-size:1.1rem}body.has-sidebar{margin-left:56px}}';
+    document.head.appendChild(_style);
+  }
+
+  // ── Auth fetch + sidebar build ─────────────────────────────────────────────
+  fetch('/api/auth/me')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) {
+      var user     = d && d.user ? d.user : null;
+      var role     = user ? (user.role || '') : '';
+
+      // Translation lookup — reads lang from localStorage, falls back to 'en'
+      var lang = (typeof localStorage !== 'undefined' && localStorage.getItem('eureach_lang')) || 'en';
+      var T    = (window.EUREACH_T && window.EUREACH_T[lang]) || {};
+      function t(key, fallback) { return T[key] || fallback; }
+
+      // Legacy creator link in old nav
+      var legacyEl = document.getElementById('nav-creator-link');
+      if (legacyEl && (role === 'youtuber' || role === 'admin')) legacyEl.style.display = '';
+
+      var topNav = document.querySelector('nav.app-nav');
+      if (!topNav) return;
+
+      var cur  = window.location.pathname.split('/').pop() || '';
+      var path = window.location.pathname;
+
+      function isActive(href) {
+        if (href === '/coach') return path === '/coach' || path.startsWith('/coach/');
+        return cur === href;
+      }
+
+      function item(href, icon, label) {
+        return '<a href="' + href + '" class="sb-item' + (isActive(href) ? ' active' : '') + '">' +
+          '<span class="sb-ic">' + icon + '</span>' +
+          '<span class="sb-lbl">' + label + '</span>' +
+          '</a>';
+      }
+
+      function section(title, content) {
+        return '<div class="sb-section"><div class="sb-section-hd">' + title + '</div>' + content + '</div>';
+      }
+
+      var showCreator = role === 'youtuber' || role === 'admin';
+
+      var sidebar =
+        '<div id="sidebar">' +
+        '<div class="sb-logo-wrap"><a href="index.html" class="sb-logo">eureach<span class="sb-dot">.</span>eu</a></div>' +
+
+        section(t('sb.findGrow', 'Find &amp; Grow'),
+          item('leads.html',       '\ud83d\udd0d', t('sb.leadFinder',  'Lead Finder')) +
+          item('competitors.html', '\ud83d\udce1', t('sb.competitors', 'Competitors')) +
+          item('citations.html',   '\ud83d\udd17', t('sb.citations',   'Citations')) +
+          item('audit.html',       '\ud83d\udd0e', t('sb.aiAudit',     'AI Audit'))
+        ) +
+
+        section(t('sb.create', 'Create'),
+          item('articles.html',             '\u270d\ufe0f',  t('sb.articles',   'Articles')) +
+          item('marketing.html',            '\ud83d\ude80',  t('sb.marketing',  'Marketing')) +
+          item('newsletter-campaigns.html', '\ud83d\udce7',  t('sb.newsletter', 'Newsletter')) +
+          item('blog.html',                 '\ud83d\udcdd',  t('sb.blog',       'Blog'))
+        ) +
+
+        section(t('sb.manage', 'Manage'),
+          item('dashboard.html', '📊', t('sb.dashboard', 'Dashboard')) +
+          item('crm.html',       '\ud83d\uddc2\ufe0f',  t('sb.crm',       'CRM')) +
+          item('pipeline.html',  '\ud83d\udcca',         t('sb.pipeline',  'Pipeline')) +
+          item('outreach.html',  '\ud83d\udce4',         t('sb.outreach',  'Outreach')) +
+          item('templates.html', '\ud83d\udccb',         t('sb.templates', 'Templates')) +
+          item('email_log.html', '\ud83d\udcec',         t('sb.emailLog',  'Email Log'))
+        ) +
+
+        section(t('sb.coach', 'Coach'),
+          item('/coach', '\ud83c\udfaf', t('sb.weeklyCoach', 'Weekly Coach'))
+        ) +
+
+        (showCreator ? section(t('sb.creator', 'Creator'), item('youtube.html', '\ud83c\udfa5', t('sb.creatorHub', 'Creator Hub'))) : '') +
+
+        '<div class="sb-spacer"></div>' +
+
+        '<div class="sb-bottom">' +
+          '<div class="sb-lang">' +
+            '<button class="sb-lb" onclick="if(typeof setLang===\'function\')setLang(\'el\')" title="\u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ac">\ud83c\uddec\ud83c\uddf7</button>' +
+            '<button class="sb-lb" onclick="if(typeof setLang===\'function\')setLang(\'de\')" title="Deutsch">\ud83c\udde9\ud83c\uddea</button>' +
+            '<button class="sb-lb" onclick="if(typeof setLang===\'function\')setLang(\'en\')" title="English">\ud83c\uddec\ud83c\udde7</button>' +
+          '</div>' +
+          item('settings.html', '\u2699\ufe0f', t('sb.settings', 'Settings')) +
+          (user
+            ? '<a href="#" class="sb-item sb-signout" onclick="fetch(\'/api/auth/signout\',{method:\'POST\'}).then(function(){location.href=\'/signin.html\'});return false"><span class="sb-ic">\ud83d\udecb\ufe0f</span><span class="sb-lbl">' + t('sb.signOut', 'Sign out') + '</span></a>'
+            : '<a href="signin.html" class="sb-item"><span class="sb-ic">\ud83d\udd11</span><span class="sb-lbl">' + t('sb.signIn', 'Sign in') + '</span></a>'
+          ) +
+        '</div>' +
+        '</div>';
+
+      document.body.insertAdjacentHTML('afterbegin', sidebar);
+      topNav.style.display = 'none';
+      document.body.classList.add('has-sidebar');
+    })
+    .catch(function() {});
+})();
+
+// RIGHT PANEL — appended to nav-init.js
+(function () {
+  var s = document.createElement('style');
+  s.textContent = [
+    '#rp-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0);pointer-events:none;transition:background .25s}',
+    '#rp-overlay.open{background:rgba(0,0,0,0.35);pointer-events:all}',
+    '#rp{position:fixed;top:0;right:-340px;bottom:0;width:320px;background:#0d1428;border-left:1px solid rgba(255,255,255,0.09);z-index:9999;display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1);overflow:hidden}',
+    '#rp.open{right:0}',
+    '.rp-head{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0}',
+    '.rp-head h2{font-size:.85rem;font-weight:700;color:#fff;margin:0;letter-spacing:.3px}',
+    '.rp-close{background:none;border:none;color:rgba(255,255,255,.4);font-size:1.2rem;cursor:pointer;padding:2px 6px;border-radius:4px;line-height:1}',
+    '.rp-close:hover{color:#fff;background:rgba(255,255,255,.08)}',
+    '.rp-site-block{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}',
+    '.rp-site-name{font-size:.72rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}',
+    '.rp-site-val{font-size:.92rem;font-weight:600;color:#e2e8f0;margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.rp-select{width:100%;background:#1a2236;border:1px solid rgba(255,255,255,.12);border-radius:7px;color:#e2e8f0;font-size:.82rem;padding:7px 10px;outline:none;cursor:pointer}',
+    '.rp-select:focus{border-color:#3b82f6}',
+    '.rp-todo-block{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}',
+    '.rp-todo-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}',
+    '.rp-todo-hd span{font-size:.72rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px}',
+    '.rp-date{background:#1a2236;border:1px solid rgba(255,255,255,.12);border-radius:6px;color:#e2e8f0;font-size:.78rem;padding:4px 7px;outline:none;cursor:pointer;color-scheme:dark}',
+    '.rp-todo-list{list-style:none;margin:0 0 8px;padding:0;max-height:180px;overflow-y:auto;scrollbar-width:thin}',
+    '.rp-todo-item{display:flex;align-items:center;gap:8px;padding:5px 2px;border-radius:5px}',
+    '.rp-todo-item:hover{background:rgba(255,255,255,.04)}',
+    '.rp-todo-cb{width:15px;height:15px;accent-color:#3b82f6;cursor:pointer;flex-shrink:0}',
+    '.rp-todo-txt{flex:1;font-size:.82rem;color:#cbd5e1;cursor:default}',
+    '.rp-todo-txt.done{text-decoration:line-through;color:rgba(255,255,255,.3)}',
+    '.rp-todo-del{background:none;border:none;color:rgba(255,255,255,.2);font-size:.85rem;cursor:pointer;padding:0 3px;line-height:1}',
+    '.rp-todo-del:hover{color:#ef4444}',
+    '.rp-add-row{display:flex;gap:6px}',
+    '.rp-add-input{flex:1;background:#1a2236;border:1px solid rgba(255,255,255,.12);border-radius:6px;color:#e2e8f0;font-size:.82rem;padding:6px 9px;outline:none}',
+    '.rp-add-input:focus{border-color:#3b82f6}',
+    '.rp-add-btn{background:#3b82f6;border:none;border-radius:6px;color:#fff;font-size:.8rem;font-weight:600;padding:6px 11px;cursor:pointer}',
+    '.rp-add-btn:hover{background:#2563eb}',
+    '.rp-tabs{display:flex;gap:4px;padding:10px 14px 0;flex-shrink:0}',
+    '.rp-tab{background:none;border:1px solid rgba(255,255,255,.1);border-radius:6px;color:rgba(255,255,255,.45);font-size:.75rem;padding:5px 10px;cursor:pointer;transition:all .15s}',
+    '.rp-tab.active,.rp-tab:hover{background:rgba(59,130,246,.15);border-color:#3b82f6;color:#60a5fa}',
+    '.rp-panel-body{flex:1;overflow-y:auto;padding:12px 14px;scrollbar-width:thin}',
+    '.rp-stat-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05)}',
+    '.rp-stat-row:last-child{border-bottom:none}',
+    '.rp-stat-lbl{font-size:.8rem;color:rgba(255,255,255,.5)}',
+    '.rp-stat-val{font-size:.85rem;font-weight:700;color:#e2e8f0}',
+    '.rp-link-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:rgba(255,255,255,.6);text-decoration:none;font-size:.82rem;margin-bottom:3px}',
+    '.rp-link-item:hover{background:rgba(255,255,255,.07);color:#fff}',
+    '.rp-link-ic{font-size:.9rem;width:20px;text-align:center}',
+    '.rp-summary-item{margin-bottom:10px}',
+    '.rp-summary-lbl{font-size:.7rem;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.7px;margin-bottom:3px}',
+    '.rp-summary-bar-bg{background:rgba(255,255,255,.07);border-radius:4px;height:6px;overflow:hidden}',
+    '.rp-summary-bar{height:100%;border-radius:4px;background:#3b82f6;transition:width .4s}'
+  ].join('');
+  document.head.appendChild(s);
+
+  var overlay = document.createElement('div');
+  overlay.id = 'rp-overlay';
+  var panel = document.createElement('div');
+  panel.id = 'rp';
+  panel.innerHTML =
+    '<div class="rp-head"><h2>&#128202; Dashboard Panel</h2><button class="rp-close" id="rp-close-btn">&#10005;</button></div>' +
+    '<div class="rp-site-block">' +
+      '<div class="rp-site-name">Active Site / Company</div>' +
+      '<div class="rp-site-val" id="rp-site-val">Loading...</div>' +
+      '<select class="rp-select" id="rp-site-sel"></select>' +
+    '</div>' +
+    '<div class="rp-todo-block">' +
+      '<div class="rp-todo-hd"><span>To-Do</span><input type="date" class="rp-date" id="rp-date"></div>' +
+      '<ul class="rp-todo-list" id="rp-todo-list"></ul>' +
+      '<div class="rp-add-row">' +
+        '<input class="rp-add-input" id="rp-add-input" placeholder="Add task..." maxlength="120">' +
+        '<button class="rp-add-btn" id="rp-add-btn">+</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="rp-tabs">' +
+      '<button class="rp-tab active" data-tab="stats">&#9889; Stats</button>' +
+      '<button class="rp-tab" data-tab="links">&#128279; Links</button>' +
+      '<button class="rp-tab" data-tab="summary">&#128200; Summary</button>' +
+    '</div>' +
+    '<div class="rp-panel-body" id="rp-panel-body"></div>';
+  document.body.appendChild(overlay);
+  document.body.appendChild(panel);
+
+  var state = { open: false, sites: [], activeSiteId: 'all', date: '', stats: null, activeTab: 'stats' };
+
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+  function openPanel() {
+    panel.classList.add('open');
+    overlay.classList.add('open');
+    state.open = true;
+    if (!state.date) { state.date = todayStr(); document.getElementById('rp-date').value = state.date; }
+    loadAll();
+  }
+  function closePanel() {
+    panel.classList.remove('open');
+    overlay.classList.remove('open');
+    state.open = false;
+  }
+  document.getElementById('rp-close-btn').addEventListener('click', closePanel);
+  overlay.addEventListener('click', closePanel);
+
+  function buildSiteDropdown(sites) {
+    var sel = document.getElementById('rp-site-sel');
+    sel.innerHTML = '<option value="all">All sites</option>';
+    sites.forEach(function(s) {
+      var o = document.createElement('option');
+      o.value = s.id || s.url || s.name;
+      o.textContent = s.display_name || s.domain || s.id;
+      sel.appendChild(o);
+    });
+    sel.value = state.activeSiteId;
+    updateSiteLabel(sites);
+  }
+  function updateSiteLabel(sites) {
+    var el = document.getElementById('rp-site-val');
+    if (state.activeSiteId === 'all') { el.textContent = 'All sites'; return; }
+    var found = sites.find(function(s) { return (s.id || s.url || s.name) === state.activeSiteId; });
+    el.textContent = found ? (found.display_name || found.domain || found.id) : state.activeSiteId;
+  }
+  document.getElementById('rp-site-sel').addEventListener('change', function() {
+    state.activeSiteId = this.value;
+    updateSiteLabel(state.sites);
+    loadTodos();
+  });
+
+  document.getElementById('rp-date').value = todayStr();
+  state.date = todayStr();
+  document.getElementById('rp-date').addEventListener('change', function() {
+    state.date = this.value;
+    loadTodos();
+  });
+
+  function loadTodos() {
+    var params = '?date=' + state.date + (state.activeSiteId !== 'all' ? '&siteId=' + encodeURIComponent(state.activeSiteId) : '');
+    fetch('/api/todos' + params)
+      .then(function(r) { return r.json(); })
+      .then(function(d) { renderTodos(d.todos || []); })
+      .catch(function() {});
+  }
+  function renderTodos(todos) {
+    var ul = document.getElementById('rp-todo-list');
+    ul.innerHTML = '';
+    if (!todos.length) {
+      var li = document.createElement('li');
+      li.style.cssText = 'color:rgba(255,255,255,.25);font-size:.78rem;padding:6px 2px';
+      li.textContent = 'No tasks for this day';
+      ul.appendChild(li);
+      return;
+    }
+    todos.forEach(function(t) {
+      var li = document.createElement('li');
+      li.className = 'rp-todo-item';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.className = 'rp-todo-cb'; cb.checked = !!t.done;
+      var txt = document.createElement('span');
+      txt.className = 'rp-todo-txt' + (t.done ? ' done' : '');
+      txt.textContent = t.text;
+      var del = document.createElement('button');
+      del.className = 'rp-todo-del'; del.title = 'Delete'; del.textContent = '\u00d7';
+      cb.addEventListener('change', function() {
+        fetch('/api/todos/' + t.id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({done: cb.checked}) }).then(loadTodos);
+      });
+      del.addEventListener('click', function() {
+        fetch('/api/todos/' + t.id, { method: 'DELETE' }).then(loadTodos);
+      });
+      li.appendChild(cb); li.appendChild(txt); li.appendChild(del);
+      ul.appendChild(li);
+    });
+  }
+  document.getElementById('rp-add-btn').addEventListener('click', addTodo);
+  document.getElementById('rp-add-input').addEventListener('keydown', function(e) { if (e.key === 'Enter') addTodo(); });
+  function addTodo() {
+    var inp = document.getElementById('rp-add-input');
+    var text = inp.value.trim();
+    if (!text) return;
+    fetch('/api/todos', { method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ text: text, date: state.date, siteId: state.activeSiteId !== 'all' ? state.activeSiteId : null }) })
+      .then(function() { inp.value = ''; loadTodos(); });
+  }
+
+  document.querySelectorAll('.rp-tab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.rp-tab').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      state.activeTab = btn.dataset.tab;
+      renderTabBody();
+    });
+  });
+
+  function renderTabBody() {
+    var body = document.getElementById('rp-panel-body');
+    if (state.activeTab === 'stats') {
+      var st = state.stats || {}, m = st.month || {};
+      var credLeft = (st.stats && st.stats.credits !== undefined) ? st.stats.credits : '\u2014';
+      var credMax  = (st.stats && st.stats.creditsMax > 0) ? ' / ' + st.stats.creditsMax : '';
+      body.innerHTML =
+        statRow('Credits left', credLeft + credMax) +
+        statRow('Leads found', st.stats ? (st.stats.leadsFound || 0) : '\u2014') +
+        statRow('Articles this month', m.articles !== undefined ? m.articles : '\u2014') +
+        statRow('Audits this month', m.audits !== undefined ? m.audits : '\u2014') +
+        statRow('Competitors tracked', m.competitors !== undefined ? m.competitors : '\u2014') +
+        statRow('Searches done', st.stats ? (st.stats.searchesDone || 0) : '\u2014');
+    } else if (state.activeTab === 'links') {
+      body.innerHTML =
+        linkItem('leads.html',       '\ud83d\udd0d', 'Lead Finder') +
+        linkItem('crm.html',         '\ud83d\uddc2\ufe0f', 'CRM') +
+        linkItem('outreach.html',    '\ud83d\udce4', 'Outreach') +
+        linkItem('articles.html',    '\u270d\ufe0f', 'Articles') +
+        linkItem('competitors.html', '\ud83d\udce1', 'Competitors') +
+        linkItem('audit.html',       '\ud83d\udd0e', 'AI Audit') +
+        linkItem('marketing.html',   '\ud83d\ude80', 'Marketing') +
+        linkItem('citations.html',   '\ud83d\udd17', 'Citations') +
+        linkItem('pipeline.html',    '\ud83d\udcca', 'Pipeline') +
+        linkItem('settings.html',    '\u2699\ufe0f', 'Settings');
+    } else {
+      var st2 = state.stats || {}, m2 = st2.month || {};
+      var credLeft2 = (st2.stats && st2.stats.credits) || 0;
+      var credMax2  = (st2.stats && st2.stats.creditsMax) || 1;
+      var credPct   = credMax2 > 0 ? Math.min(100, Math.round((1 - credLeft2 / credMax2) * 100)) : 0;
+      body.innerHTML =
+        '<div class="rp-summary-item"><div class="rp-summary-lbl">Credits Used</div>' +
+        '<div class="rp-summary-bar-bg"><div class="rp-summary-bar" style="width:' + credPct + '%"></div></div>' +
+        '<div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:3px">' + credLeft2 + ' remaining</div></div>' +
+        '<div class="rp-summary-item"><div class="rp-summary-lbl">Articles This Month</div>' +
+        '<div style="font-size:1.3rem;font-weight:700;color:#60a5fa">' + (m2.articles || 0) + '</div></div>' +
+        '<div class="rp-summary-item"><div class="rp-summary-lbl">Leads Found</div>' +
+        '<div style="font-size:1.3rem;font-weight:700;color:#34d399">' + ((st2.stats && st2.stats.leadsFound) || 0) + '</div></div>' +
+        '<div class="rp-summary-item"><div class="rp-summary-lbl">Searches Done</div>' +
+        '<div style="font-size:1.3rem;font-weight:700;color:#a78bfa">' + ((st2.stats && st2.stats.searchesDone) || 0) + '</div></div>';
+    }
+  }
+
+  function statRow(lbl, val) {
+    return '<div class="rp-stat-row"><span class="rp-stat-lbl">' + lbl + '</span><span class="rp-stat-val">' + val + '</span></div>';
+  }
+  function linkItem(href, icon, lbl) {
+    return '<a href="' + href + '" class="rp-link-item"><span class="rp-link-ic">' + icon + '</span>' + lbl + '</a>';
+  }
+
+  function loadAll() {
+    fetch('/api/dashboard/sites')
+      .then(function(r) { return r.json(); })
+      .then(function(d) { state.sites = d.sites || []; buildSiteDropdown(state.sites); loadTodos(); })
+      .catch(function() { loadTodos(); });
+    fetch('/api/profile')
+      .then(function(r) { return r.json(); })
+      .then(function(d) { state.stats = d; renderTabBody(); })
+      .catch(function() {});
+  }
+
+  function wireDashboardLink() {
+    var onDashboard = window.location.pathname.indexOf('dashboard.html') !== -1;
+    var links = document.querySelectorAll('#sidebar .sb-item');
+    links.forEach(function(a) {
+      if ((a.getAttribute('href') || '').indexOf('dashboard.html') !== -1) {
+        if (onDashboard) {
+          a.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (state.open) { closePanel(); } else { openPanel(); }
+          });
+        }
+      }
+    });
+  }
+  if (window.location.pathname.indexOf('dashboard.html') !== -1) { openPanel(); }
+
+  if (document.getElementById('sidebar')) {
+    wireDashboardLink();
+  } else {
+    var obs = new MutationObserver(function(_, o) {
+      if (document.getElementById('sidebar')) { o.disconnect(); wireDashboardLink(); }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+})();
