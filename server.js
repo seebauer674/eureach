@@ -71,6 +71,25 @@ const YOUTUBER_ASSIGNMENTS_FILE = path.join(ROOT, "data/youtuber_assignments.jso
 const COACH_COMPLETIONS_FILE = path.join(ROOT, "data/coach-completions.json");
 const COACH_CONTENT_FILE     = path.join(ROOT, "data/coach-weekly-content.json");
 const AUDIT_JOBS_FILE        = path.join(ROOT, "data/audit-jobs.json");
+// Hero audit rate limit: 3 checks per IP per day (resets at midnight)
+const heroAuditLimitMap = new Map(); // ip -> { count, date }
+function heroAuditCheckLimit(ip) {
+  const today = new Date().toISOString().slice(0, 10);
+  const rec = heroAuditLimitMap.get(ip);
+  if (!rec || rec.date !== today) {
+    heroAuditLimitMap.set(ip, { count: 1, date: today });
+    return true;
+  }
+  if (rec.count >= 3) return false;
+  rec.count++;
+  return true;
+}
+function getClientIp(req) {
+  return (req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+    || req.socket.remoteAddress
+    || '0.0.0.0';
+}
+
 const DASHBOARD_SITES_FILE     = path.join(ROOT, "data/dashboard-sites.json");
 const DASHBOARD_RECURRING_FILE = path.join(ROOT, "data/dashboard-recurring.json");
 const DASHBOARD_INSTANCES_FILE = path.join(ROOT, "data/dashboard-instances.json");
@@ -6579,10 +6598,20 @@ function parseCookieValue(req, name) {
 
 async function handlePublicAuditStart(req, res) {
   const body = await readBody(req);
-  const { businessName, category, city, customCategory, utmSource, utmCampaign } = body;
-  const cat = category === "Άλλο" ? (customCategory || "Άλλο") : category;
+  const { businessName, category, city, customCategory, utmSource, utmCampaign, _trap } = body;
 
-  if (!businessName || !cat || !city) {
+  // Honeypot: bots fill this hidden field, humans don't
+  if (_trap) return json(res, 400, { error: "Bot detected" });
+
+  // IP rate limit: 3 hero audits per day
+  const clientIp = getClientIp(req);
+  if (!heroAuditCheckLimit(clientIp)) {
+    return json(res, 429, { error: "Έχεις κάνει το μέγιστο ελέγχων για σήμερα. Δοκίμασε αύριο ή δημιούργησε δωρεάν λογαριασμό." });
+  }
+
+  const cat = category === "Άλλο" ? (customCategory || "Άλλο") : (category || "Τοπική επιχείρηση");
+
+  if (!businessName || !city) {
     return json(res, 400, { error: "Συμπλήρωσε όλα τα πεδία" });
   }
 

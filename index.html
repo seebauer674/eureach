@@ -124,6 +124,26 @@
         <a href="agencies.html" class="btn btn-outline-gold btn-lg" data-i18n="lp.twoPathAgency">Είμαι agency ή freelancer</a>
       </div>
 
+
+      <!-- ── HERO AUDIT WIDGET ─── Step 7 ─────────────────────── -->
+      <div id="hero-audit-box" style="margin:22px 0 6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:18px 20px;max-width:420px;">
+        <div style="font-size:0.82rem;font-weight:700;color:#94a3b8;letter-spacing:.04em;margin-bottom:10px;" data-i18n="lp.auditWidgetLabel">🤖 ΕΛΕΓΞΕ ΑΝ ΣΕ ΒΡΙΣΚΕΙ ΤΟ CHATGPT</div>
+        <form id="hero-audit-form" onsubmit="heroAuditSubmit(event)" autocomplete="off" style="display:flex;flex-direction:column;gap:8px;">
+          <!-- honeypot: hidden from humans, filled by bots -->
+          <input type="text" name="_trap" style="display:none" tabindex="-1" autocomplete="off">
+          <input id="ha-biz" type="text" required maxlength="80"
+            placeholder="Όνομα επιχείρησης" data-i18n-placeholder="lp.auditBizPlaceholder"
+            style="padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#e2e8f0;font-size:0.9rem;outline:none;width:100%;box-sizing:border-box;">
+          <input id="ha-city" type="text" required maxlength="60"
+            placeholder="Πόλη (π.χ. Αθήνα)" data-i18n-placeholder="lp.auditCityPlaceholder"
+            style="padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);color:#e2e8f0;font-size:0.9rem;outline:none;width:100%;box-sizing:border-box;">
+          <button id="ha-btn" type="submit"
+            style="padding:10px 16px;border-radius:8px;background:var(--accent);border:none;color:#fff;font-weight:700;font-size:0.9rem;cursor:pointer;min-height:44px;"
+            data-i18n="lp.auditWidgetBtn">Δες αν σε προτείνει το ChatGPT →</button>
+        </form>
+        <div id="ha-result" style="display:none;margin-top:14px;"></div>
+      </div>
+
       <div class="hero-trust" style="margin-top:16px;">
         <div class="hero-trust-avatars">
           <span aria-label="Greece">🇬🇷</span><span aria-label="Germany">🇩🇪</span><span aria-label="Austria">🇦🇹</span><span aria-label="Switzerland">🇨🇭</span>
@@ -591,7 +611,7 @@
   </div>
 </footer>
 
-<script src="js/main.js"></script>
+<script src="js/main.js" defer></script>
 <script>
 // Auth-aware nav: show tool links for logged-in users
 fetch("/api/auth/me").then(function(r){return r.ok?r.json():null;}).then(function(d){
@@ -610,6 +630,122 @@ fetch("/api/auth/me").then(function(r){return r.ok?r.json():null;}).then(functio
 }).catch(function(){});
 </script>
 
-<script src="/js/api.js?v=5"></script>
+<script src="/js/api.js?v=5" defer></script>
+
+<!-- ── MOBILE STICKY CTA ─── Step 8a ───────────────────── -->
+<div id="mobile-sticky-cta" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:1000;padding:12px 16px;background:rgba(11,22,40,0.97);border-top:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(10px);">
+  <a href="signup.html" class="btn btn-primary" style="display:block;text-align:center;width:100%;font-size:1rem;padding:13px;min-height:44px;" data-i18n="lp.heroCta1">Ξεκίνα δωρεάν — χωρίς κάρτα →</a>
+</div>
+
+<script>
+// Step 7: Hero audit widget
+var _haStart = Date.now();
+async function heroAuditSubmit(e) {
+  e.preventDefault();
+  // Minimum 1.5s from page load (bot protection)
+  if (Date.now() - _haStart < 1500) return;
+  var btn = document.getElementById('ha-btn');
+  var res = document.getElementById('ha-result');
+  var biz = document.getElementById('ha-biz').value.trim();
+  var city = document.getElementById('ha-city').value.trim();
+  var trap = document.querySelector('#hero-audit-form input[name="_trap"]').value;
+  btn.disabled = true;
+  btn.textContent = '⏳ Ελέγχουμε...';
+  res.style.display = 'none';
+  try {
+    var r = await fetch('/api/audit-public/start', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ businessName: biz, city: city, category: 'Τοπική επιχείρηση', _trap: trap })
+    });
+    var d = await r.json();
+    if (!r.ok) {
+      res.innerHTML = '<p style="color:#f87171;font-size:0.85rem;">' + (d.error || 'Κάτι πήγε στραβά.') + '</p>';
+      res.style.display = 'block';
+      btn.disabled = false; btn.textContent = (window.EUREACH_T && window.EUREACH_T[window.euLang ? window.euLang() : "el"] && window.EUREACH_T[window.euLang ? window.euLang() : "el"]["lp.auditWidgetBtn"]) || "Δες αν σε προτείνει το ChatGPT →";
+      return;
+    }
+    var jobId = d.jobId;
+    // Poll for result
+    var attempts = 0;
+    var poll = setInterval(async function() {
+      attempts++;
+      if (attempts > 30) { clearInterval(poll); btn.disabled = false; return; }
+      try {
+        var sr = await fetch('/api/audit-public/status/' + jobId);
+        var sd = await sr.json();
+        if (sd.status === 'complete' || sd.status === 'failed') {
+          clearInterval(poll);
+          var rr = await fetch('/api/audit-public/results/' + jobId);
+          var rd = await rr.json();
+          heroAuditShowResult(rd, biz);
+          btn.disabled = false;
+          btn.textContent = (window.EUREACH_T && window.EUREACH_T[window.euLang ? window.euLang() : "el"] && window.EUREACH_T[window.euLang ? window.euLang() : "el"]["lp.auditWidgetBtn"]) || "Δες αν σε προτείνει το ChatGPT →";
+        }
+      } catch(e) {}
+    }, 2000);
+  } catch(e) {
+    res.innerHTML = '<p style="color:#f87171;font-size:0.85rem;">Σφάλμα σύνδεσης. Δοκίμασε ξανά.</p>';
+    res.style.display = 'block';
+    btn.disabled = false;
+  }
+}
+function heroAuditShowResult(data, bizName) {
+  var res = document.getElementById('ha-result');
+  if (!data || data.status === 'failed') {
+    res.innerHTML = '<p style="color:#f87171;font-size:0.85rem;">Δεν ήταν δυνατός ο έλεγχος. Δοκίμασε ξανά.</p>';
+    res.style.display = 'block';
+    return;
+  }
+  var overall = data.overall || 0;
+  var chatgpt = data.results && data.results.chatgpt;
+  var appeared = chatgpt && chatgpt.appeared;
+  var comps = (data.competitors || []).slice(0, 2);
+  var color = overall >= 60 ? '#4ade80' : overall >= 35 ? '#fbbf24' : '#f87171';
+  var lang = window.euLang ? window.euLang() : 'el';
+  var T = window.EUREACH_T && window.EUREACH_T[lang] || {};
+  var ctaText = T['lp.auditCtaFull'] || 'Δημιούργησε δωρεάν λογαριασμό για την πλήρη αναφορά →';
+  var foundText = appeared
+    ? (T['lp.auditFound'] || '✓ Εμφανίζεσαι στο ChatGPT')
+    : (T['lp.auditNotFound'] || '✗ Δεν εμφανίζεσαι στο ChatGPT');
+  var foundColor = appeared ? '#4ade80' : '#f87171';
+  var compHtml = comps.length ? '<div style="font-size:0.78rem;color:#94a3b8;margin-top:4px;">Εμφανίζονται: ' + comps.join(', ') + '</div>' : '';
+  res.innerHTML =
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;">' +
+      '<div style="width:52px;height:52px;border-radius:50%;border:3px solid ' + color + ';display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:' + color + ';flex-shrink:0;">' + overall + '</div>' +
+      '<div>' +
+        '<div style="font-size:0.9rem;font-weight:700;color:' + foundColor + ';">' + foundText + '</div>' +
+        compHtml +
+      '</div>' +
+    '</div>' +
+    '<a href="signup.html" style="display:block;text-align:center;padding:10px 16px;background:var(--accent);border-radius:8px;color:#fff;font-weight:700;font-size:0.85rem;text-decoration:none;min-height:44px;line-height:24px;">' + ctaText + '</a>';
+  res.style.display = 'block';
+}
+
+// Step 8a: Mobile sticky CTA — show on mobile, hide when pricing visible
+(function() {
+  var stickyCta = document.getElementById('mobile-sticky-cta');
+  if (!stickyCta) return;
+  function checkMobile() {
+    if (window.innerWidth <= 768) {
+      stickyCta.style.display = 'block';
+    } else {
+      stickyCta.style.display = 'none';
+      return;
+    }
+    // Hide when pricing section is visible
+    var pricing = document.getElementById('pricing');
+    if (pricing && 'IntersectionObserver' in window) {
+      var obs = new IntersectionObserver(function(entries) {
+        stickyCta.style.display = entries[0].isIntersecting ? 'none' : (window.innerWidth <= 768 ? 'block' : 'none');
+      }, { threshold: 0.3 });
+      obs.observe(pricing);
+    }
+  }
+  checkMobile();
+  window.addEventListener('resize', checkMobile);
+})();
+</script>
+
 </body>
 </html>

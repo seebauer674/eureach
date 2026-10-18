@@ -437,6 +437,18 @@ footer {
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.65s ease, transform 0.65s ease; }
 .reveal.visible { opacity: 1; transform: none; }
 
+
+/* ── Touch targets (Step 8b) ─────────────────────────── */
+@media (max-width: 900px) {
+  .btn { min-height: 44px; }
+  .lang-btn { min-height: 44px; min-width: 44px; padding: 8px 10px; }
+  .nav-dropdown-menu a { min-height: 44px; }
+  .price-cta { min-height: 44px; }
+}
+
+/* Prevent horizontal overflow at any viewport (Step 8b) */
+html, body { overflow-x: hidden; }
+
 /* ── RESPONSIVE ─────────────────────────────────────── */
 @media (max-width: 900px) {
   .hero-inner { grid-template-columns: 1fr; }
