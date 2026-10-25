@@ -8323,7 +8323,8 @@ async function handleStrategyGenerate(req, res) {
   try {
     if (groqKey) {
       const groqTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error("Groq timeout")), 15000));
-      const r = await Promise.race([callGroq(groqKey, systemPrompt, userPrompt, 2048), groqTimeout]);
+      const r = await Promise.race([callGroq(groqKey, systemPrompt, userPrompt, 900), groqTimeout]);
+      if (r.error) throw new Error(r.error.message || JSON.stringify(r.error));
       aiText = (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content) || null;
       tokensUsed = (r.usage && r.usage.total_tokens) || 0;
     }
