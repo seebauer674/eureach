@@ -8162,10 +8162,10 @@ ${blogNavHtml()}
 </footer>
 
 <script>
-let _stStart = Date.now(), _stData = null;
+let _stLastSubmit = 0, _stData = null;
 document.getElementById('st-form').addEventListener('submit', async function(e) {
   e.preventDefault();
-  if (Date.now() - _stStart < 1000) return;
+  if (Date.now() - _stLastSubmit < 1000) return; _stLastSubmit = Date.now();
   const btn = document.getElementById('st-btn');
   const errEl = document.getElementById('st-err');
   errEl.style.display = 'none';
@@ -8322,23 +8322,28 @@ async function handleStrategyGenerate(req, res) {
 
   try {
     if (groqKey) {
-      const r = await callGroq(groqKey, systemPrompt, userPrompt, 1500);
+      const groqTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error("Groq timeout")), 15000));
+      const r = await Promise.race([callGroq(groqKey, systemPrompt, userPrompt, 2048), groqTimeout]);
       aiText = (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content) || null;
       tokensUsed = (r.usage && r.usage.total_tokens) || 0;
-    } else if (anthropicKey) {
-      const r = await callClaude(anthropicKey, systemPrompt, userPrompt, 1500, 'claude-haiku-4-5-20251001');
+    }
+  } catch(groqErr) {
+    console.warn('[strategy] Groq failed (' + groqErr.message + '), falling back to Claude');
+  }
+  if (!aiText && anthropicKey) {
+    try {
+      const r = await callClaude(anthropicKey, systemPrompt, userPrompt, 2048, 'claude-haiku-4-5-20251001');
       aiText = (r.content && r.content[0] && r.content[0].text) || null;
       tokensUsed = r.usage ? (r.usage.input_tokens + r.usage.output_tokens) : 0;
-    } else {
-      return json(res, 500, { error: 'Η υπηρεσία AI δεν είναι διαθέσιμη.' });
+    } catch(e) {
+      console.error('[strategy] Claude fallback error:', e.message);
     }
-  } catch(e) {
-    console.error('[strategy] AI error:', e.message);
-    return json(res, 500, { error: 'Σφάλμα σύνδεσης με την AI. Δοκίμασε ξανά.' });
   }
+  if (!aiText)
+    return json(res, 500, { error: 'Σφάλμα σύνδεσης με την AI. Δοκίμασε ξανά.' });
 
-  if (!aiText) return json(res, 500, { error: 'Η AI δεν επέστρεψε απάντηση. Δοκίμασε ξανά.' });
-
+  // Strip markdown code fences if AI wrapped the JSON
+  if (aiText) aiText = aiText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
   let strategy = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {

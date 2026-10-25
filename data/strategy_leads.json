@@ -8,5 +8,95 @@
     "date": "2026-10-25T07:46:36.162Z",
     "source": "strategy-tool",
     "newsletterConsent": false
+  },
+  {
+    "id": "aff206a2c77246691b3928f2",
+    "email": "test-pw-1792920710830@example.com",
+    "businessType": "Φούρνος / Αρτοποιείο",
+    "city": "Αθήνα",
+    "goal": "Περισσότεροι νέοι πελάτες",
+    "date": "2026-10-25T09:31:51.446Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
+  },
+  {
+    "id": "73eaf5c98bc70e43b9fe259c",
+    "email": "test-pw-1792921048983@example.com",
+    "businessType": "Φούρνος / Αρτοποιείο",
+    "city": "Αθήνα",
+    "goal": "Περισσότεροι νέοι πελάτες",
+    "date": "2026-10-25T09:37:30.483Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
+  },
+  {
+    "id": "37c73d0d5ffe4f1e62b645d8",
+    "email": "test-pw-1792921254996@example.com",
+    "businessType": "Φούρνος / Αρτοποιείο",
+    "city": "Αθήνα",
+    "goal": "Περισσότεροι νέοι πελάτες",
+    "date": "2026-10-25T09:40:56.379Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
+  },
+  {
+    "id": "f9b3e1473cbb230f53e70fbb",
+    "email": "test-pw-1792921609342@example.com",
+    "businessType": "Φούρνος / Αρτοποιείο",
+    "city": "Αθήνα",
+    "goal": "Περισσότεροι νέοι πελάτες",
+    "date": "2026-10-25T09:46:50.881Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
+  },
+  {
+    "id": "b0fe025b30a6978c2d3fc178",
+    "email": "test-pw-1792921941179@example.com",
+    "businessType": "Φούρνος / Αρτοποιείο",
+    "city": "Αθήνα",
+    "goal": "Περισσότεροι νέοι πελάτες",
+    "date": "2026-10-25T09:52:22.550Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
+  },
+  {
+    "id": "abce4db73435b81fafadf4f3",
+    "email": "test-pw-1792925240287@example.com",
+    "businessType": "Φούρνος / Αρτοποιείο",
+    "city": "Αθήνα",
+    "goal": "Περισσότεροι νέοι πελάτες",
+    "date": "2026-10-25T10:47:21.758Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
+  },
+  {
+    "id": "0ab9727834a2cf01262ffbd5",
+    "email": "test-pw-1792925380723@example.com",
+    "businessType": "Φούρνος / Αρτοποιείο",
+    "city": "Αθήνα",
+    "goal": "Περισσότεροι νέοι πελάτες",
+    "date": "2026-10-25T10:49:42.106Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
+  },
+  {
+    "id": "bcb72a17edff2bc58edd4994",
+    "email": "test-pw-1792925580113@example.com",
+    "businessType": "Φούρνος / Αρτοποιείο",
+    "city": "Αθήνα",
+    "goal": "Περισσότεροι νέοι πελάτες",
+    "date": "2026-10-25T10:53:01.614Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
+  },
+  {
+    "id": "d66c05ec44959cbe4befeb04",
+    "email": "test-pw-1792925691299@example.com",
+    "businessType": "Φούρνος / Αρτοποιείο",
+    "city": "Αθήνα",
+    "goal": "Περισσότεροι νέοι πελάτες",
+    "date": "2026-10-25T10:54:52.648Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
   }
 ]
