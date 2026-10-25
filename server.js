@@ -36,6 +36,7 @@ const ROOT = __dirname;
 const USERS_FILE    = path.join(ROOT, "data/users.json");
 const SESSIONS_FILE = path.join(ROOT, "data/sessions.json");
 const BLOG_FILE     = path.join(ROOT, "data/blog_posts.json");
+const STRATEGY_LEADS_FILE = path.join(ROOT, "data/strategy_leads.json");
 const CRM_FILE       = path.join(ROOT, "data/crm.json");
 const SEQUENCES_FILE    = path.join(ROOT, "data/sequences.json");
 const WHATSAPP_FILE     = path.join(ROOT, "data/whatsapp_templates.json");
@@ -57,6 +58,7 @@ const OUTREACH_QUEUE_FILE    = path.join(ROOT, "data/outreach-queue.json");
 const NL_CAMPAIGNS_FILE      = path.join(ROOT, "data/newsletter-campaigns.json");
 const BUSINESS_PROFILE_FILE  = path.join(ROOT, "data/business-profiles.json");
 const SITES_FILE             = path.join(ROOT, "data/user-sites.json");
+const PUBLISH_SITES_FILE     = path.join(ROOT, "data/publish-sites.json");
 const CITATION_PUBLISHERS_FILE = path.join(ROOT, "data/citation_publishers.json");
 const CITATION_CAMPAIGNS_FILE  = path.join(ROOT, "data/citation_campaigns.json");
 const CITATION_PLACEMENTS_FILE = path.join(ROOT, "data/citation_placements.json");
@@ -73,6 +75,9 @@ const COACH_CONTENT_FILE     = path.join(ROOT, "data/coach-weekly-content.json")
 const AUDIT_JOBS_FILE        = path.join(ROOT, "data/audit-jobs.json");
 // Hero audit rate limit: 3 checks per IP per day (resets at midnight)
 const heroAuditLimitMap = new Map(); // ip -> { count, date }
+const strategyIpMap      = new Map(); // ip -> { count, date }
+const strategyEmailPdfMap = new Map(); // email -> { count, date }
+const strategyPdfTokens  = new Map(); // token -> { pdf: Buffer, expiresAt: number }
 function heroAuditCheckLimit(ip) {
   const today = new Date().toISOString().slice(0, 10);
   const rec = heroAuditLimitMap.get(ip);
@@ -1821,8 +1826,11 @@ async function handleBlogPublish(req, res) {
   const user    = getSessionUser(cookies.session);
   if (!user) return json(res, 401, { error: "Not authenticated." });
 
-  const { title, excerpt, html, lang, category, metaDescription } = await readBody(req);
+  const { title, excerpt, html, lang, category, metaDescription, featuredImage: fImg } = await readBody(req);
   if (!title || !html) return json(res, 400, { error: "title and html are required." });
+
+  const m = html.match(/<img[^>]+src=["']([^"'>]+)["'][^>]*>/i);
+  const featuredImage = fImg || (m ? m[1] : undefined);
 
   const posts = readJSON(BLOG_FILE) || [];
   const post  = {
@@ -1837,6 +1845,7 @@ async function handleBlogPublish(req, res) {
     publishedAt: new Date().toISOString(),
     status:      "pending",
     emoji:       "✍️",
+    ...(featuredImage ? { featuredImage } : {}),
   };
   posts.unshift(post);
   writeJSON(BLOG_FILE, posts);
@@ -3217,6 +3226,90 @@ async function handleSiteDelete(req, res, siteId) {
   if (filtered.length === all.length) return json(res, 404, { error: "Site not found." });
   writeJSON(SITES_FILE, filtered);
   json(res, 200, { ok: true });
+}
+
+// ── Publish Sites ───────────────────────────────────────────────────────────────────────────
+
+function handlePublishSitesGet(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all   = Array.isArray(readJSON(PUBLISH_SITES_FILE)) ? readJSON(PUBLISH_SITES_FILE) : [];
+  const sites = all.filter(s => s.userId === user.id).map(({ userId, passwordEnc, ...s }) => s);
+  json(res, 200, { sites });
+}
+
+async function handlePublishSitesSave(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const { name, url, cms, publishPath, username, password } = body;
+  if (!name || !url) return json(res, 400, { error: "name and url are required." });
+  let siteUrl;
+  try {
+    const u = new URL(url.startsWith("http") ? url : "https://" + url);
+    if (isPrivateHost(u.hostname)) return json(res, 400, { error: "Invalid URL." });
+    siteUrl = u.origin;
+  } catch { return json(res, 400, { error: "Invalid URL." }); }
+  const all  = Array.isArray(readJSON(PUBLISH_SITES_FILE)) ? readJSON(PUBLISH_SITES_FILE) : [];
+  const site = {
+    id:          Date.now(),
+    userId:      user.id,
+    name:        String(name).trim().slice(0, 100),
+    url:         siteUrl,
+    cms:         String(cms || "other").toLowerCase(),
+    publishPath: String(publishPath || "").trim().slice(0, 200),
+    username:    String(username || "").trim().slice(0, 200),
+    passwordEnc: password ? encryptStr(String(password).trim()) : "",
+    addedAt:     new Date().toISOString(),
+  };
+  all.push(site);
+  writeJSON(PUBLISH_SITES_FILE, all);
+  const { userId, passwordEnc, ...safe } = site;
+  json(res, 200, { ok: true, site: safe });
+}
+
+async function handlePublishSiteDelete(req, res, id) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const all      = Array.isArray(readJSON(PUBLISH_SITES_FILE)) ? readJSON(PUBLISH_SITES_FILE) : [];
+  const filtered = all.filter(s => !(String(s.id) === String(id) && s.userId === user.id));
+  if (filtered.length === all.length) return json(res, 404, { error: "Site not found." });
+  writeJSON(PUBLISH_SITES_FILE, filtered);
+  json(res, 200, { ok: true });
+}
+
+async function handlePublishToSite(req, res) {
+  const cookies = parseCookies(req);
+  const user    = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: "Not authenticated." });
+  const body = await readBody(req);
+  const { siteId, title, html, excerpt, status = "draft" } = body;
+  if (!siteId || !title || !html) return json(res, 400, { error: "siteId, title and html are required." });
+  const all  = Array.isArray(readJSON(PUBLISH_SITES_FILE)) ? readJSON(PUBLISH_SITES_FILE) : [];
+  const site = all.find(s => String(s.id) === String(siteId) && s.userId === user.id);
+  if (!site) return json(res, 404, { error: "Site not found." });
+  if (site.cms === "wordpress") {
+    if (!site.username || !site.passwordEnc) return json(res, 400, { error: "WordPress credentials not set." });
+    let appPassword;
+    try { appPassword = decryptStr(site.passwordEnc); }
+    catch { return json(res, 500, { error: "Failed to decrypt credentials." }); }
+    try {
+      const postData = { title, content: html, status, ...(excerpt ? { excerpt } : {}) };
+      const wpRes = await wpRequest(site.url, "/wp-json/wp/v2/posts", "POST", postData, site.username, appPassword);
+      if (wpRes.status !== 201) {
+        const msg = typeof wpRes.body === "object" ? (wpRes.body.message || JSON.stringify(wpRes.body)) : wpRes.body;
+        return json(res, 400, { error: "WordPress error: " + msg });
+      }
+      const wp = wpRes.body;
+      return json(res, 200, { ok: true, cms: "wordpress", postUrl: wp.link || wp.guid?.rendered, postStatus: wp.status });
+    } catch (err) {
+      return json(res, 500, { error: "Publish failed: " + err.message });
+    }
+  }
+  return json(res, 200, { ok: true, cms: site.cms, manual: true });
 }
 
 
@@ -5453,7 +5546,7 @@ const BLOCKED_STATIC_PREFIXES = ["/data/", "/config/", "/security/", "/."];
 const BLOCKED_STATIC_FILES    = ["/server.js", "/package.json", "/package-lock.json", "/.env"];
 
 // CSRF-exempt endpoints (before session exists)
-const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook", "/api/audit-public/start", "/api/audit-public/save", "/api/audit-public/email-save", "/api/newsletter/subscribe"];
+const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook", "/api/audit-public/start", "/api/audit-public/save", "/api/audit-public/email-save", "/api/newsletter/subscribe", "/api/strategy/generate", "/api/strategy/pdf"];
 
 function generateCsrfToken() { return crypto.randomBytes(24).toString("hex"); }
 
@@ -7759,6 +7852,736 @@ async function handleInternalMarketingGenerate(req, res, platform) {
   }
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STRATEGY TOOL — /stratigiki-marketing
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Clean up expired PDF tokens hourly
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of strategyPdfTokens) {
+    if (v.expiresAt < now) strategyPdfTokens.delete(k);
+  }
+}, 60 * 60 * 1000);
+
+function handleStrategyPage(req, res) {
+  const TOOL_URL = 'https://eureach.eu/stratigiki-marketing';
+  const BLOG_URL = 'https://eureach.eu/blog/stratigiki-marketing-se-mia-selida';
+  const INDUSTRY_OPTIONS = [
+    'Φούρνος / Αρτοποιείο','Εστιατόριο / Καφέ','Κομμωτήριο / Barber',
+    'Οδοντίατρος / Κλινική','Φαρμακείο','Γυμναστήριο / Fitness',
+    'Κατάστημα ρούχων / Mode','Ηλεκτρολόγος / Υδραυλικός',
+    'Λογιστής / Δικηγόρος','Ξενοδοχείο / Ενοικιαζόμενα',
+    'e-Commerce / Online shop','Κατάστημα ηλεκτρονικών','Σχολή / Εκπαίδευση',
+    'Αθλητικός σύλλογος','Κτηνίατρος','Ανθοπωλείο','Άλλο'
+  ];
+
+  const faqSchema = { "@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+    {"@type":"Question","name":"Τι είναι η στρατηγική marketing;","acceptedAnswer":{"@type":"Answer","text":"Στρατηγική marketing είναι ένα σύντομο πλάνο που απαντά σε τρία πράγματα: σε ποιον μιλάς, τι του λες και πού του το λες. Είναι το θεμέλιο κάθε ενέργειας marketing, από τα posts μέχρι τις διαφημίσεις."}},
+    {"@type":"Question","name":"Πόσο χρόνο θέλει;","acceptedAnswer":{"@type":"Answer","text":"Απαντάς σε 5 ερωτήσεις σε 2-3 λεπτά και η AI σου φτιάχνει τη στρατηγική σε λιγότερο από 30 δευτερόλεπτα."}},
+    {"@type":"Question","name":"Είναι πραγματικά δωρεάν;","acceptedAnswer":{"@type":"Answer","text":"Ναι, η δημιουργία της στρατηγικής είναι εντελώς δωρεάν. Το PDF επίσης. Δεν χρειάζεσαι κάρτα ή λογαριασμό."}},
+    {"@type":"Question","name":"Τι κάνετε με τα στοιχεία μου;","acceptedAnswer":{"@type":"Answer","text":"Τα στοιχεία σου χρησιμοποιούνται αποκλειστικά για να δημιουργήσουμε τη στρατηγική σου. Το email σου αποθηκεύεται μόνο αν έχεις δώσει ρητή συγκατάθεση για newsletters. Δείτε την πολιτική απορρήτου για περισσότερα."}}
+  ]};
+  const webAppSchema = {"@context":"https://schema.org","@type":"WebApplication",
+    "name":"Στρατηγική Marketing σε Μία Σελίδα","url":TOOL_URL,
+    "description":"Δωρεάν εργαλείο AI που δημιουργεί στρατηγική marketing για μικρές επιχειρήσεις σε 5 ερωτήσεις.",
+    "applicationCategory":"BusinessApplication","operatingSystem":"Web",
+    "offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},
+    "inLanguage":"el","publisher":{"@type":"Organization","name":"eureach.eu","url":"https://eureach.eu"}
+  };
+
+  const industryOpts = INDUSTRY_OPTIONS.map(i => `<option value="${i}">${i}</option>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Στρατηγική Marketing σε Μία Σελίδα – Δωρεάν Εργαλείο | eureach</title>
+  <meta name="description" content="Απάντησε σε 5 ερωτήσεις και πάρε δωρεάν τη στρατηγική marketing της επιχείρησής σου σε μία σελίδα, με πλάνο 30 ημερών. Χωρίς κάρτα.">
+  <link rel="canonical" href="${TOOL_URL}">
+  <meta property="og:title" content="Στρατηγική Marketing σε Μία Σελίδα – Δωρεάν Εργαλείο | eureach">
+  <meta property="og:description" content="Απάντησε σε 5 ερωτήσεις και πάρε δωρεάν τη στρατηγική marketing της επιχείρησής σου σε μία σελίδα, με πλάνο 30 ημερών. Χωρίς κάρτα.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="${TOOL_URL}">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/css/style.css">
+  <script type="application/ld+json">${JSON.stringify(faqSchema)}<\/script>
+  <script type="application/ld+json">${JSON.stringify(webAppSchema)}<\/script>
+  <style>
+    .st-hero{padding:120px 24px 56px;text-align:center}
+    .st-hero h1{font-size:clamp(1.8rem,4vw,2.9rem);font-weight:800;color:var(--white);line-height:1.2;margin-bottom:16px}
+    .st-hero .sub{font-size:1.05rem;color:var(--muted);max-width:600px;margin:0 auto 40px;line-height:1.7}
+    .st-wrap{max-width:680px;margin:0 auto;padding:0 24px 80px}
+    .st-field{margin-bottom:22px}
+    .st-field label{display:block;font-size:.9rem;font-weight:600;color:var(--white);margin-bottom:5px}
+    .st-field .hint{font-size:.77rem;color:var(--muted);margin-bottom:7px;display:block}
+    .st-field input[type=text],.st-field textarea,.st-field select{width:100%;padding:11px 13px;background:var(--glass2);border:1px solid var(--border);border-radius:var(--radius);color:var(--white);font-size:.88rem;outline:none;transition:border-color .2s;font-family:inherit}
+    .st-field input[type=text]:focus,.st-field textarea:focus,.st-field select:focus{border-color:#1D9E75}
+    .st-field textarea{min-height:72px;resize:vertical}
+    .st-channels{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+    .st-ch{display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:6px 13px;font-size:.82rem;color:var(--muted);transition:all .15s}
+    .st-ch:has(input:checked){background:rgba(29,158,117,.15);border-color:#1D9E75;color:#4ade80}
+    .st-ch input{display:none}
+    .st-goal-other{margin-top:10px;display:none}
+    .st-submit{width:100%;padding:14px;background:#1D9E75;border:none;border-radius:var(--radius);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s;margin-top:6px}
+    .st-submit:hover{background:#168f68}
+    .st-submit:disabled{opacity:.6;cursor:not-allowed}
+    .st-err{color:#f87171;font-size:.83rem;margin-top:10px;display:none}
+    .st-result-wrap{max-width:720px;margin:0 auto;padding:0 24px 80px}
+    .st-card{background:var(--glass2);border:1px solid rgba(29,158,117,.3);border-radius:20px;padding:32px}
+    .st-card-h{font-size:1.3rem;font-weight:800;color:var(--white);margin-bottom:24px}
+    .st-sec{margin-bottom:26px}
+    .st-sec h3{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#1D9E75;margin-bottom:7px}
+    .st-sec p,.st-sec div{color:var(--text);line-height:1.7;font-size:.91rem}
+    .st-msg-main{font-size:1rem;font-weight:600;color:var(--white);margin-bottom:7px}
+    .st-msg-v{font-size:.84rem;color:var(--muted);margin-bottom:3px}
+    .st-week{margin-bottom:13px}
+    .st-week-lbl{font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:5px}
+    .st-week ul{list-style:none;padding:0;margin:0}
+    .st-week ul li{font-size:.87rem;color:var(--text);padding:3px 0 3px 17px;position:relative;line-height:1.5}
+    .st-week ul li::before{content:"→";position:absolute;left:0;color:#1D9E75}
+    .st-oxi{display:flex;flex-direction:column;gap:7px}
+    .st-oxi-item{font-size:.87rem;color:var(--text);padding-left:18px;position:relative;line-height:1.5}
+    .st-oxi-item::before{content:"✗";position:absolute;left:0;color:#f87171;font-weight:700}
+    .st-pdf-box{background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.2);border-radius:16px;padding:26px;margin-top:28px}
+    .st-pdf-h{font-size:.95rem;font-weight:700;color:var(--white);margin-bottom:14px}
+    .st-pdf-input{width:100%;padding:11px 13px;background:var(--glass2);border:1px solid var(--border);border-radius:var(--radius);color:var(--white);font-size:.88rem;outline:none;margin-bottom:10px}
+    .st-pdf-input:focus{border-color:#1D9E75}
+    .st-cb{display:flex;align-items:flex-start;gap:9px;font-size:.8rem;color:var(--muted);line-height:1.5;margin-bottom:7px}
+    .st-cb input[type=checkbox]{margin-top:2px;accent-color:#1D9E75;flex-shrink:0}
+    .st-cb a{color:#1D9E75}
+    .st-pdf-btn{padding:11px 22px;background:#1D9E75;border:none;border-radius:var(--radius);color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;transition:background .2s;margin-top:6px}
+    .st-pdf-btn:hover{background:#168f68}
+    .st-pdf-btn:disabled{opacity:.6;cursor:not-allowed}
+    .st-pdf-msg{font-size:.82rem;margin-top:8px;display:none}
+    .st-cta-box{background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.18);border-radius:16px;padding:28px;margin-top:20px;text-align:center}
+    .st-cta-box h3{color:var(--white);margin-bottom:7px;font-size:.97rem}
+    .st-cta-box p{color:var(--muted);font-size:.84rem;margin-bottom:14px}
+    .st-how{max-width:700px;margin:0 auto;padding:0 24px 80px}
+    .st-how h2{font-size:1.5rem;font-weight:800;color:var(--white);margin-bottom:30px;text-align:center}
+    .st-steps{display:flex;flex-direction:column;gap:18px}
+    .st-step{display:flex;gap:14px;align-items:flex-start}
+    .st-step-num{width:34px;height:34px;border-radius:50%;background:rgba(29,158,117,.13);border:1px solid #1D9E75;display:flex;align-items:center;justify-content:center;font-size:.83rem;font-weight:700;color:#1D9E75;flex-shrink:0}
+    .st-step-text h4{color:var(--white);font-size:.93rem;margin-bottom:3px}
+    .st-step-text p{color:var(--muted);font-size:.84rem;line-height:1.6}
+    .st-faq{max-width:700px;margin:0 auto;padding:0 24px 80px}
+    .st-faq h2{font-size:1.5rem;font-weight:800;color:var(--white);margin-bottom:30px;text-align:center}
+    .st-faq-item{border-bottom:1px solid var(--border);padding:16px 0}
+    .st-faq-item:last-child{border-bottom:none}
+    .st-faq-item h3{font-size:.93rem;font-weight:600;color:var(--white);margin-bottom:7px}
+    .st-faq-item p{color:var(--muted);font-size:.86rem;line-height:1.7}
+    .st-faq-item a{color:#1D9E75}
+    .st-blog-link{max-width:700px;margin:0 auto;padding:0 24px 80px;text-align:center}
+    .st-blog-link a{color:#1D9E75;font-size:.93rem;text-decoration:underline}
+    @media(max-width:600px){.st-hero{padding:96px 16px 36px}.st-wrap,.st-result-wrap,.st-how,.st-faq,.st-blog-link{padding-left:16px;padding-right:16px}}
+    @media print{
+      nav,.st-hero,.st-wrap,.st-how,.st-faq,.st-blog-link,.st-pdf-box,.st-cta-box{display:none!important}
+      .st-result-wrap{padding:0;max-width:none}
+      .st-card{border:1px solid #ccc;border-radius:4px;page-break-inside:avoid;padding:16px}
+      .st-card-h{font-size:1.1rem}
+      .st-sec h3{font-size:.65rem}
+      .st-sec p,.st-sec div,.st-week ul li,.st-oxi-item{font-size:.78rem}
+      body{background:#fff;color:#000}
+      .st-card,.st-sec,.st-week-lbl,.st-msg-main,.st-msg-v{color:#000!important}
+    }
+  </style>
+</head>
+<body>
+${blogNavHtml()}
+
+<section class="st-hero">
+  <div style="display:inline-block;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.3);border-radius:20px;padding:4px 13px;font-size:.72rem;font-weight:700;color:#4ade80;letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px">Δωρεάν εργαλείο</div>
+  <h1>Στρατηγική marketing<br>σε μία σελίδα</h1>
+  <p class="sub">Απάντησε σε 5 απλές ερωτήσεις και πάρε έτοιμο το πλάνο marketing της επιχείρησής σου για τους επόμενους 3 μήνες. Δωρεάν.</p>
+</section>
+
+<div class="st-wrap">
+  <form id="st-form">
+    <input name="_trap" style="display:none" tabindex="-1" autocomplete="off">
+
+    <div class="st-field">
+      <label for="st-sells">1. Τι πουλάς;</label>
+      <span class="hint">π.χ. Φρέσκο ψωμί και γλυκά, με παραγγελίες για εκδηλώσεις</span>
+      <textarea id="st-sells" name="sells" maxlength="300" rows="2" placeholder="Περίγραψε τι πουλάς με λίγα λόγια…"></textarea>
+    </div>
+
+    <div class="st-field">
+      <label for="st-customer">2. Ποιος είναι ο ιδανικός σου πελάτης;</label>
+      <span class="hint">π.χ. Οικογένειες της γειτονιάς και γραφεία που παραγγέλνουν για συναντήσεις</span>
+      <textarea id="st-customer" name="customer" maxlength="300" rows="2" placeholder="Ποιοι είναι οι καλύτεροί σου πελάτες…"></textarea>
+    </div>
+
+    <div class="st-field">
+      <label>3. Πού σε ψάχνουν οι πελάτες σου;</label>
+      <span class="hint">Επίλεξε όλα που ισχύουν</span>
+      <div class="st-channels">
+        <label class="st-ch"><input type="checkbox" name="channels" value="Google"> Google</label>
+        <label class="st-ch"><input type="checkbox" name="channels" value="Google Maps"> Google Maps</label>
+        <label class="st-ch"><input type="checkbox" name="channels" value="Facebook"> Facebook</label>
+        <label class="st-ch"><input type="checkbox" name="channels" value="Instagram"> Instagram</label>
+        <label class="st-ch"><input type="checkbox" name="channels" value="TikTok"> TikTok</label>
+        <label class="st-ch"><input type="checkbox" name="channels" value="ChatGPT/AI"> ChatGPT/AI</label>
+        <label class="st-ch"><input type="checkbox" name="channels" value="Από στόμα σε στόμα"> Από στόμα σε στόμα</label>
+        <label class="st-ch"><input type="checkbox" name="channels" value="Άλλο"> Άλλο</label>
+      </div>
+    </div>
+
+    <div class="st-field">
+      <label for="st-diff">4. Τι σε κάνει διαφορετικό;</label>
+      <span class="hint">π.χ. Ψήνουμε με προζύμι κάθε πρωί</span>
+      <textarea id="st-diff" name="differentiator" maxlength="300" rows="2" placeholder="Γιατί να σε διαλέξει κάποιος…"></textarea>
+    </div>
+
+    <div class="st-field">
+      <label for="st-goal">5. Ποιος είναι ο στόχος σου για τους επόμενους 3 μήνες;</label>
+      <span class="hint">Επίλεξε ένα</span>
+      <select id="st-goal" name="goal" onchange="document.getElementById('st-goalo').style.display=this.value==='Άλλο'?'block':'none'">
+        <option value="">— Επίλεξε στόχο —</option>
+        <option>Περισσότεροι νέοι πελάτες</option>
+        <option>Περισσότερες παραγγελίες από υπάρχοντες</option>
+        <option>Να με βρίσκουν online</option>
+        <option>Λανσάρισμα νέου προϊόντος</option>
+        <option>Άλλο</option>
+      </select>
+      <div id="st-goalo" class="st-goal-other">
+        <input type="text" name="goalOther" placeholder="Περίγραψε τον στόχο σου…" maxlength="300">
+      </div>
+    </div>
+
+    <div class="st-field">
+      <label for="st-city">Πόλη / Περιοχή <span style="color:var(--muted);font-weight:400">(προαιρετικό)</span></label>
+      <input type="text" id="st-city" name="city" maxlength="100" placeholder="π.χ. Αθήνα, Θεσσαλονίκη…">
+    </div>
+
+    <div class="st-field">
+      <label for="st-industry">Τομέας επιχείρησης</label>
+      <select id="st-industry" name="industry">
+        <option value="">— Επίλεξε τομέα —</option>
+        ${industryOpts}
+      </select>
+    </div>
+
+    <div id="st-err" class="st-err"></div>
+    <button type="submit" class="st-submit" id="st-btn">Φτιάξε τη στρατηγική μου →</button>
+  </form>
+</div>
+
+<div class="st-result-wrap" id="st-result" style="display:none">
+  <div class="st-card" id="st-card">
+    <div class="st-card-h">📋 Η στρατηγική marketing σου</div>
+    <div class="st-sec"><h3>Ο πελάτης σου</h3><p id="r-pelatis"></p></div>
+    <div class="st-sec">
+      <h3>Το μήνυμά σου</h3>
+      <div class="st-msg-main" id="r-minima-main"></div>
+      <div class="st-msg-v" id="r-minima-v1"></div>
+      <div class="st-msg-v" id="r-minima-v2"></div>
+    </div>
+    <div class="st-sec"><h3>Το κύριο κανάλι σου</h3><p id="r-kanali"></p></div>
+    <div class="st-sec"><h3>Πλάνο 30 ημερών</h3><div id="r-plano"></div></div>
+    <div class="st-sec"><h3>Ο ένας αριθμός που μετράς</h3><p id="r-metriki"></p></div>
+    <div class="st-sec"><h3>Τι να ΜΗΝ κάνεις αυτό το τρίμηνο</h3><div class="st-oxi" id="r-oxi"></div></div>
+  </div>
+
+  <div class="st-pdf-box">
+    <div class="st-pdf-h">📥 Κατέβασε το PDF</div>
+    <input type="email" class="st-pdf-input" id="st-pdf-email" placeholder="Το email σου για να λάβεις το PDF">
+    <div class="st-cb"><input type="checkbox" id="st-privacy"><label for="st-privacy">Συμφωνώ με την <a href="/privacy.html" target="_blank">πολιτική απορρήτου</a> *</label></div>
+    <div class="st-cb"><input type="checkbox" id="st-nl"><label for="st-nl">Θέλω να λαμβάνω συμβουλές marketing από το eureach</label></div>
+    <div id="st-pdf-msg" class="st-pdf-msg"></div>
+    <button class="st-pdf-btn" id="st-pdf-btn" onclick="submitPdf()">Στείλε μου το PDF →</button>
+  </div>
+
+  <div class="st-cta-box">
+    <h3>Θέλεις το eureach να γράψει το περιεχόμενο αυτού του πλάνου;</h3>
+    <p>Άρθρα, posts, newsletters — στα ελληνικά, αγγλικά ή γερμανικά — ακριβώς για τους στόχους σου.</p>
+    <a href="/signup.html?ref=strategy-tool" class="btn btn-primary">Ξεκίνα δωρεάν →</a>
+  </div>
+</div>
+
+<div class="st-how">
+  <h2>Πώς λειτουργεί</h2>
+  <div class="st-steps">
+    <div class="st-step">
+      <div class="st-step-num">1</div>
+      <div class="st-step-text">
+        <h4>Απάντησε σε 5 ερωτήσεις</h4>
+        <p>Δεν χρειάζεσαι marketing γνώσεις — μόνο ειλικρίνεια για την επιχείρησή σου. Το φόρμα χρειάζεται 2–3 λεπτά.</p>
+      </div>
+    </div>
+    <div class="st-step">
+      <div class="st-step-num">2</div>
+      <div class="st-step-text">
+        <h4>Η AI αναλύει τις απαντήσεις σου</h4>
+        <p>Βάσει των στοιχείων σου, δημιουργούμε στρατηγική προσαρμοσμένη στον τομέα σου, τον στόχο σου και τα κανάλια που χρησιμοποιείς.</p>
+      </div>
+    </div>
+    <div class="st-step">
+      <div class="st-step-num">3</div>
+      <div class="st-step-text">
+        <h4>Πάρε το πλάνο σου — εντελώς δωρεάν</h4>
+        <p>Δες τη στρατηγική σου online, κατέβασε την ως PDF και ξεκίνα από αύριο. Χωρίς κάρτα, χωρίς λογαριασμό.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="st-faq">
+  <h2>Συχνές ερωτήσεις</h2>
+  <div class="st-faq-item">
+    <h3>Τι είναι η στρατηγική marketing;</h3>
+    <p>Στρατηγική marketing είναι ένα σύντομο πλάνο που απαντά σε τρία πράγματα: σε ποιον μιλάς, τι του λες και πού του το λες. Είναι το θεμέλιο κάθε ενέργειας marketing, από τα posts μέχρι τις διαφημίσεις.</p>
+  </div>
+  <div class="st-faq-item">
+    <h3>Πόσο χρόνο θέλει;</h3>
+    <p>Απαντάς σε 5 ερωτήσεις σε 2–3 λεπτά και η AI σου φτιάχνει τη στρατηγική σε λιγότερο από 30 δευτερόλεπτα.</p>
+  </div>
+  <div class="st-faq-item">
+    <h3>Είναι πραγματικά δωρεάν;</h3>
+    <p>Ναι, η δημιουργία της στρατηγικής είναι εντελώς δωρεάν. Το PDF επίσης. Δεν χρειάζεσαι κάρτα ή λογαριασμό.</p>
+  </div>
+  <div class="st-faq-item">
+    <h3>Τι κάνετε με τα στοιχεία μου;</h3>
+    <p>Τα στοιχεία σου χρησιμοποιούνται αποκλειστικά για να δημιουργήσουμε τη στρατηγική σου. Το email σου αποθηκεύεται μόνο αν έχεις δώσει ρητή συγκατάθεση για newsletters. <a href="/privacy.html">Πολιτική απορρήτου →</a></p>
+  </div>
+</div>
+
+<div class="st-blog-link">
+  <a href="${BLOG_URL}">Διάβασε τον πλήρη οδηγό →</a>
+</div>
+
+<footer style="border-top:1px solid var(--border);padding:32px 24px;text-align:center;color:var(--muted);font-size:.8rem;">
+  <div style="margin-bottom:10px;font-size:1rem;font-weight:800;color:var(--white)">eureach<span style="color:var(--gold)">.</span>eu</div>
+  <div style="display:flex;gap:20px;justify-content:center;margin-bottom:10px">
+    <a href="/privacy.html" style="color:var(--muted)">Privacy</a>
+    <a href="/terms.html" style="color:var(--muted)">Terms</a>
+    <a href="mailto:hello@eureach.eu" style="color:var(--muted)">Contact</a>
+  </div>
+  © 2026 eureach.eu
+</footer>
+
+<script>
+let _stStart = Date.now(), _stData = null;
+document.getElementById('st-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  if (Date.now() - _stStart < 1000) return;
+  const btn = document.getElementById('st-btn');
+  const errEl = document.getElementById('st-err');
+  errEl.style.display = 'none';
+  const sells = document.getElementById('st-sells').value.trim();
+  const customer = document.getElementById('st-customer').value.trim();
+  const diff = document.getElementById('st-diff').value.trim();
+  const goal = document.getElementById('st-goal').value;
+  const goalOther = (document.querySelector('[name=goalOther]') || {}).value || '';
+  const channels = [...document.querySelectorAll('[name=channels]:checked')].map(c => c.value);
+  const city = document.getElementById('st-city').value.trim();
+  const industry = document.getElementById('st-industry').value;
+  const trap = document.querySelector('[name=_trap]').value;
+  if (!sells || !customer || !diff || !goal) {
+    errEl.textContent = 'Παρακαλώ συμπλήρωσε τα 5 υποχρεωτικά πεδία.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!channels.length) {
+    errEl.textContent = 'Επίλεξε τουλάχιστον ένα κανάλι.';
+    errEl.style.display = 'block'; return;
+  }
+  btn.disabled = true; btn.textContent = '⏳ Δημιουργούμε τη στρατηγική σου…';
+  try {
+    const r = await fetch('/api/strategy/generate', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ sells, customer, channels, differentiator: diff,
+        goal: goal === 'Άλλο' ? (goalOther || goal) : goal,
+        city, industry, _trap: trap })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      errEl.textContent = d.error || 'Κάτι πήγε στραβά. Δοκίμασε ξανά.';
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Φτιάξε τη στρατηγική μου →'; return;
+    }
+    _stData = d.strategy;
+    showStrategy(d.strategy);
+    const res = document.getElementById('st-result');
+    res.style.display = '';
+    res.scrollIntoView({behavior:'smooth',block:'start'});
+    btn.disabled = false; btn.textContent = 'Δημιούργησε νέα στρατηγική';
+  } catch(e) {
+    errEl.textContent = 'Σφάλμα σύνδεσης. Δοκίμασε ξανά.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Φτιάξε τη στρατηγική μου →';
+  }
+});
+
+function showStrategy(s) {
+  document.getElementById('r-pelatis').textContent = s.pelatis || '';
+  document.getElementById('r-minima-main').textContent = '«' + ((s.minima||{}).main||'') + '»';
+  document.getElementById('r-minima-v1').textContent = 'Εναλλακτικά: «' + ((s.minima||{}).v1||'') + '»';
+  document.getElementById('r-minima-v2').textContent = 'Ή: «' + ((s.minima||{}).v2||'') + '»';
+  const k = s.kanali || {};
+  document.getElementById('r-kanali').textContent =
+    (k.primary||'') + ': ' + (k.primary_reason||'') + ' | Δευτερεύον: ' + (k.secondary||'');
+  const planoEl = document.getElementById('r-plano');
+  planoEl.innerHTML = (s.plano||[]).map(function(w){
+    return '<div class="st-week"><div class="st-week-lbl">Εβδομάδα ' + w.week + '</div><ul>' +
+      (w.actions||[]).map(function(a){return '<li>'+eh(a)+'</li>';}).join('') + '</ul></div>';
+  }).join('');
+  const m = s.metriki || {};
+  document.getElementById('r-metriki').textContent = (m.metric||'') + ' — ' + (m.how||'');
+  document.getElementById('r-oxi').innerHTML = (s.oxi||[]).map(function(o){
+    return '<div class="st-oxi-item">'+eh(o)+'</div>';
+  }).join('');
+}
+function eh(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+async function submitPdf() {
+  const btn = document.getElementById('st-pdf-btn');
+  const msg = document.getElementById('st-pdf-msg');
+  const email = document.getElementById('st-pdf-email').value.trim();
+  const privacy = document.getElementById('st-privacy').checked;
+  const nl = document.getElementById('st-nl').checked;
+  if (!email) { showPdfMsg('#f87171','Παρακαλώ εισάγετε το email σου.'); return; }
+  if (!privacy) { showPdfMsg('#f87171','Παρακαλώ αποδέξου την πολιτική απορρήτου.'); return; }
+  if (!_stData) return;
+  btn.disabled = true; btn.textContent = '⏳ Ετοιμάζουμε το PDF…';
+  try {
+    const r = await fetch('/api/strategy/pdf', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, newsletter: nl, strategy: _stData, privacyAccepted: true })
+    });
+    const d = await r.json();
+    if (!r.ok) { showPdfMsg('#f87171', d.error||'Κάτι πήγε στραβά.'); btn.disabled=false; btn.textContent='Στείλε μου το PDF →'; return; }
+    showPdfMsg('#4ade80', '✓ Το PDF στάλθηκε στο ' + email);
+    if (d.downloadUrl) {
+      const a = document.createElement('a');
+      a.href = d.downloadUrl; a.download = 'stratigiki-marketing-eureach.pdf';
+      a.style.display = 'none'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+    btn.textContent = '✓ Εστάλη';
+  } catch(e) { showPdfMsg('#f87171','Σφάλμα σύνδεσης. Δοκίμασε ξανά.'); btn.disabled=false; btn.textContent='Στείλε μου το PDF →'; }
+}
+function showPdfMsg(color, text) {
+  const m = document.getElementById('st-pdf-msg');
+  m.style.color = color; m.textContent = text; m.style.display = 'block';
+}
+</script>
+</body>
+</html>`;
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+
+async function handleStrategyGenerate(req, res) {
+  const ip = getIp(req);
+  const rl = checkRateLimit(ip, 'strategy_gen', 3, 24 * 60 * 60 * 1000);
+  if (!rl.allowed) return json(res, 429, { error: 'Έχεις υπερβεί το όριο 3 στρατηγικών για σήμερα. Δοκίμασε αύριο.' });
+
+  const body = await readBody(req);
+  if (body._trap) return json(res, 400, { error: 'Bot detected.' });
+
+  const { sells, customer, channels, differentiator, goal, city, industry } = body;
+  if (!sells || !customer || !differentiator || !goal)
+    return json(res, 400, { error: 'Παρακαλώ συμπλήρωσε όλα τα υποχρεωτικά πεδία.' });
+  if (String(sells).length > 300 || String(customer).length > 300 ||
+      String(differentiator).length > 300 || String(goal).length > 300)
+    return json(res, 400, { error: 'Κάποιο πεδίο υπερβαίνει τους 300 χαρακτήρες.' });
+
+  const channelList = Array.isArray(channels) ? channels.join(', ') : String(channels || '');
+
+  const systemPrompt = `Είσαι ειδικός σύμβουλος marketing για μικρές ελληνικές επιχειρήσεις. Δίνεις συγκεκριμένες, εφαρμόσιμες συμβουλές αποκλειστικά βασισμένες στα στοιχεία της επιχείρησης. Δεν εφεύρεις στοιχεία, δεν δίνεις γενικές συμβουλές. Απαντάς ΜΟΝΟ με έγκυρο JSON, χωρίς κανένα επιπλέον κείμενο πριν ή μετά.`;
+
+  const userPrompt = `Δημιούργησε στρατηγική marketing για αυτή την επιχείρηση:
+- Τι πουλά: ${String(sells).slice(0,300)}
+- Ιδανικός πελάτης: ${String(customer).slice(0,300)}
+- Πού ψάχνουν οι πελάτες: ${channelList}
+- Τι τη κάνει διαφορετική: ${String(differentiator).slice(0,300)}
+- Στόχος 3 μηνών: ${String(goal).slice(0,300)}
+- Τομέας: ${String(industry||'Γενική επιχείρηση').slice(0,100)}
+- Πόλη/Περιοχή: ${String(city||'Ελλάδα').slice(0,100)}
+
+Επέστρεψε ΑΥΣΤΗΡΑ αυτή τη δομή JSON (μόνο JSON, τίποτε άλλο):
+{
+  "pelatis": "2-3 προτάσεις για τον ιδανικό πελάτη βασισμένες στις απαντήσεις",
+  "minima": { "main": "μία συγκεκριμένη πρόταση γιατί να επιλέξουν αυτή την επιχείρηση", "v1": "εναλλακτική 1", "v2": "εναλλακτική 2" },
+  "kanali": { "primary": "ένα κανάλι", "primary_reason": "συγκεκριμένος λόγος για αυτή την επιχείρηση", "secondary": "δεύτερο κανάλι" },
+  "plano": [
+    { "week": 1, "actions": ["ενέργεια 1", "ενέργεια 2", "ενέργεια 3"] },
+    { "week": 2, "actions": ["ενέργεια 1", "ενέργεια 2"] },
+    { "week": 3, "actions": ["ενέργεια 1", "ενέργεια 2", "ενέργεια 3"] },
+    { "week": 4, "actions": ["ενέργεια 1", "ενέργεια 2"] }
+  ],
+  "metriki": { "metric": "ένας συγκεκριμένος αριθμός", "how": "πώς ελέγχεται μία φορά τον μήνα" },
+  "oxi": ["πράγμα 1", "πράγμα 2"]
+}`;
+
+  const groqKey = getGroqKey();
+  const anthropicKey = getAnthropicKey();
+  let aiText = null, tokensUsed = 0;
+  const t0 = Date.now();
+
+  try {
+    if (groqKey) {
+      const r = await callGroq(groqKey, systemPrompt, userPrompt, 1500);
+      aiText = (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content) || null;
+      tokensUsed = (r.usage && r.usage.total_tokens) || 0;
+    } else if (anthropicKey) {
+      const r = await callClaude(anthropicKey, systemPrompt, userPrompt, 1500, 'claude-haiku-4-5-20251001');
+      aiText = (r.content && r.content[0] && r.content[0].text) || null;
+      tokensUsed = r.usage ? (r.usage.input_tokens + r.usage.output_tokens) : 0;
+    } else {
+      return json(res, 500, { error: 'Η υπηρεσία AI δεν είναι διαθέσιμη.' });
+    }
+  } catch(e) {
+    console.error('[strategy] AI error:', e.message);
+    return json(res, 500, { error: 'Σφάλμα σύνδεσης με την AI. Δοκίμασε ξανά.' });
+  }
+
+  if (!aiText) return json(res, 500, { error: 'Η AI δεν επέστρεψε απάντηση. Δοκίμασε ξανά.' });
+
+  let strategy = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const m = aiText.match(/\{[\s\S]*\}/);
+      if (m) strategy = JSON.parse(m[0]);
+      if (strategy) break;
+    } catch(e) {
+      if (attempt === 1) console.error('[strategy] JSON parse failed:', aiText.slice(0, 200));
+    }
+  }
+  if (!strategy) return json(res, 500, { error: 'Δεν ήταν δυνατή η ανάλυση της στρατηγικής. Δοκίμασε ξανά.' });
+
+  strategy._industry = String(industry || '');
+  strategy._city     = String(city || '');
+  strategy._goal     = String(goal || '');
+  // Normalize AI output variations
+  if (Array.isArray(strategy.pelatis)) strategy.pelatis = strategy.pelatis.join(' ');
+  if (Array.isArray(strategy.oxi) && strategy.oxi.length && typeof strategy.oxi[0] === 'object') strategy.oxi = strategy.oxi.map(o => o.text || JSON.stringify(o));
+
+  console.log('[strategy] ok in ' + (Date.now()-t0) + 'ms, ' + tokensUsed + ' tokens, ip=' + ip);
+  return json(res, 200, { strategy, tokensUsed });
+}
+
+async function handleStrategyPdf(req, res) {
+  const ip   = getIp(req);
+  const body = await readBody(req);
+  const { email, newsletter, strategy, privacyAccepted } = body;
+
+  if (!privacyAccepted) return json(res, 400, { error: 'Πρέπει να αποδεχτείς την πολιτική απορρήτου.' });
+  if (!strategy) return json(res, 400, { error: 'Δεν βρέθηκε στρατηγική.' });
+
+  const cleanEmail = sanitizeEmail((email || '').trim().toLowerCase());
+  if (!cleanEmail) return json(res, 400, { error: 'Παρακαλώ εισάγετε έγκυρο email.' });
+
+  const rl = checkRateLimit(cleanEmail, 'strategy_pdf', 5, 24 * 60 * 60 * 1000);
+  if (!rl.allowed) return json(res, 429, { error: 'Έχεις στείλει πολλά PDFs σήμερα. Δοκίμασε αύριο.' });
+
+  let pdfBuffer;
+  try { pdfBuffer = await generateStrategyPdf(strategy); }
+  catch(e) { console.error('[strategy pdf]', e.message); return json(res, 500, { error: 'Σφάλμα κατά τη δημιουργία του PDF.' }); }
+
+  const token = require('crypto').randomBytes(24).toString('hex');
+  strategyPdfTokens.set(token, { pdf: pdfBuffer, expiresAt: Date.now() + 24 * 60 * 60 * 1000 });
+  const downloadUrl = '/api/strategy/download/' + token;
+
+  const emailSent = await sendStrategyEmail(cleanEmail, downloadUrl);
+
+  try {
+    const leads = readJSON(STRATEGY_LEADS_FILE) || [];
+    leads.push({
+      id: generateId(),
+      email: cleanEmail,
+      businessType: strategy._industry || '',
+      city: strategy._city || '',
+      goal: strategy._goal || '',
+      date: new Date().toISOString(),
+      source: 'strategy-tool',
+      newsletterConsent: !!(newsletter === true || newsletter === 'true')
+    });
+    writeJSON(STRATEGY_LEADS_FILE, leads);
+  } catch(e) { console.error('[strategy] lead save:', e.message); }
+
+  if (newsletter === true || newsletter === 'true') {
+    try {
+      await agoraPool.query(
+        `INSERT INTO newsletter_subscribers
+           (email, source_site, source_page, status, confirmed, confirm_token, gdpr_consent, gdpr_ip, gdpr_ua, gdpr_at)
+         VALUES ($1,'eureach.eu','/stratigiki-marketing','active',true,
+                 md5(random()::text||clock_timestamp()::text),true,$2,$3,now())
+         ON CONFLICT (email) DO NOTHING`,
+        [cleanEmail, ip, req.headers['user-agent'] || '']
+      );
+    } catch(e) { console.error('[strategy] nl insert:', e.message); }
+  }
+
+  return json(res, 200, { success: true, downloadUrl, emailSent });
+}
+
+function generateStrategyPdf(strategy) {
+  const PDFDocument = require('pdfkit');
+  const FONT   = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+  const FONTB  = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
+  const GREEN  = '#1D9E75';
+  const NAVY   = '#0B1628';
+  const NAVY2  = '#0d1f3c';
+  const WHITE  = '#FFFFFF';
+  const GRAY   = '#94A3B8';
+  const TEXT   = '#CBD5E1';
+  const W      = 495;
+
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: 'A4', margin: 48,
+        info: { Title: 'Στρατηγική Marketing — eureach.eu', Author: 'eureach.eu' } });
+      const chunks = [];
+      doc.on('data', c => chunks.push(c));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      doc.registerFont('Reg',  FONT);
+      doc.registerFont('Bold', FONTB);
+
+      // Background
+      doc.rect(0, 0, 595, 842).fill(NAVY);
+      // Header bar
+      doc.rect(0, 0, 595, 68).fill(NAVY2);
+      doc.font('Bold').fontSize(17).fillColor(WHITE).text('eureach.eu', 48, 22);
+      doc.font('Reg').fontSize(7.5).fillColor(GREEN).text('ΣΤΡΑΤΗΓΙΚΗ MARKETING', 48, 43);
+      doc.font('Reg').fontSize(7.5).fillColor(GRAY)
+         .text('eureach.eu/stratigiki-marketing', 48, 43, { align:'right', width: W });
+      // Title
+      doc.font('Bold').fontSize(21).fillColor(WHITE).text('Η στρατηγική marketing σου', 48, 88);
+      doc.font('Reg').fontSize(8.5).fillColor(GRAY)
+         .text(new Date().toLocaleDateString('el-GR',{day:'numeric',month:'long',year:'numeric'}), 48, 113);
+      doc.moveTo(48, 128).lineTo(547, 128).strokeColor(GREEN).lineWidth(0.8).stroke();
+
+      let y = 144;
+
+      function sec(title, lines) {
+        if (y > 750) { doc.addPage(); doc.rect(0,0,595,842).fill(NAVY); y = 48; }
+        doc.font('Bold').fontSize(7).fillColor(GREEN).text(title.toUpperCase(), 48, y, { characterSpacing: 1 });
+        y += 13;
+        for (const line of lines) {
+          if (!line) { y += 5; continue; }
+          const opts = { width: W, lineGap: 2 };
+          doc.font(line.bold ? 'Bold' : 'Reg').fontSize(line.size || 9)
+             .fillColor(line.color || TEXT).text(line.text || line, 48 + (line.indent||0), y, opts);
+          y = doc.y + 4;
+        }
+        y += 8;
+      }
+
+      const m = strategy.minima || {};
+      const k = strategy.kanali || {};
+      const mt = strategy.metriki || {};
+
+      sec('Ο πελάτης σου', [{ text: strategy.pelatis || '', color: TEXT }]);
+      sec('Το μήνυμά σου', [
+        { text: '«' + (m.main||'') + '»', bold: true, color: WHITE, size: 9.5 },
+        { text: 'Εναλλακτικά: «' + (m.v1||'') + '»', color: GRAY, size: 8.5 },
+        { text: 'Ή: «' + (m.v2||'') + '»', color: GRAY, size: 8.5 }
+      ]);
+      sec('Το κύριο κανάλι σου', [
+        { text: (k.primary||'') + ': ' + (k.primary_reason||''), bold: false },
+        { text: 'Δευτερεύον: ' + (k.secondary||''), color: GRAY, size: 8.5 }
+      ]);
+
+      // Plan
+      if (y > 640) { doc.addPage(); doc.rect(0,0,595,842).fill(NAVY); y = 48; }
+      doc.font('Bold').fontSize(7).fillColor(GREEN).text('ΠΛΑΝΟ 30 ΗΜΕΡΩΝ', 48, y, {characterSpacing:1});
+      y += 14;
+      for (const w of (strategy.plano || [])) {
+        if (y > 760) { doc.addPage(); doc.rect(0,0,595,842).fill(NAVY); y = 48; }
+        doc.font('Bold').fontSize(8).fillColor(GRAY).text('Εβδομάδα ' + w.week, 48, y);
+        y += 12;
+        for (const a of (w.actions || [])) {
+          doc.font('Reg').fontSize(8.5).fillColor(TEXT).text('→  ' + a, 56, y, {width: W - 8, lineGap:2});
+          y = doc.y + 3;
+        }
+        y += 5;
+      }
+      y += 6;
+
+      sec('Ο ένας αριθμός που μετράς', [
+        { text: (mt.metric||''), bold: true, color: WHITE },
+        { text: (mt.how||''), color: GRAY, size: 8.5 }
+      ]);
+      sec('Τι να ΜΗΝ κάνεις αυτό το τρίμηνο',
+        (strategy.oxi || []).map(o => ({ text: '✗  ' + o, color: '#FDA4AF', size: 8.5 })));
+
+      // Footer
+      const fy = 810;
+      doc.moveTo(48, fy).lineTo(547, fy).strokeColor('#1e3a5f').lineWidth(0.5).stroke();
+      doc.font('Reg').fontSize(7.5).fillColor(GRAY)
+         .text('Θέλεις το eureach να γράψει το περιεχόμενο αυτού του πλάνου; Ξεκίνα δωρεάν: eureach.eu',
+               48, fy + 9, { align: 'center', width: W });
+
+      doc.end();
+    } catch(e) { reject(e); }
+  });
+}
+
+async function sendStrategyEmail(email, downloadUrl) {
+  const host     = process.env.SYSTEM_EMAIL_HOST;
+  const port     = parseInt(process.env.SYSTEM_EMAIL_PORT || '587', 10);
+  const username = process.env.SYSTEM_EMAIL_USER;
+  const password = process.env.SYSTEM_EMAIL_PASS;
+  const from     = process.env.SYSTEM_EMAIL_FROM || username;
+  if (!host || !username || !password) return false;
+  const siteUrl  = process.env.SITE_URL || 'https://eureach.eu';
+  const fullUrl  = siteUrl + downloadUrl;
+  const html = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff;">' +
+    '<div style="margin-bottom:18px;font-size:1.2rem;font-weight:900;color:#0B1628;">eureach<span style="color:#1D9E75;">.</span>eu</div>' +
+    '<h2 style="color:#0B1628;margin:0 0 10px;font-size:1.05rem;">Η στρατηγική marketing σου είναι έτοιμη!</h2>' +
+    '<p style="color:#555;line-height:1.6;margin:0 0 20px;">Κατέβασε το PDF σου (διαθέσιμο για 24 ώρες):</p>' +
+    '<a href="' + fullUrl + '" style="display:inline-block;background:#1D9E75;color:#fff;text-decoration:none;padding:12px 26px;border-radius:6px;font-weight:700;font-size:.93rem;">Κατέβασε το PDF →</a>' +
+    '<p style="color:#aaa;font-size:.76rem;margin-top:26px;border-top:1px solid #eee;padding-top:12px;">Δημιουργήθηκε από το <a href="' + siteUrl + '" style="color:#1D9E75;">eureach.eu</a></p>' +
+    '</div>';
+  const text = 'Η στρατηγική marketing σου είναι έτοιμη!\nΚατέβασε το PDF: ' + fullUrl;
+  try {
+    await smtpSend({ host, port, username, password, from, fromName: 'eureach.eu',
+      to: email, subject: 'Η στρατηγική marketing σου — eureach.eu', body: text, html });
+    return true;
+  } catch(e) { console.error('[strategy email]', e.message); return false; }
+}
+
+function handleStrategyDownload(req, res, token) {
+  const entry = strategyPdfTokens.get(token);
+  if (!entry || entry.expiresAt < Date.now()) {
+    res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end('<html><body style="font-family:sans-serif;padding:40px;text-align:center">' +
+      '<p>Ο σύνδεσμος έχει λήξει ή δεν είναι έγκυρος.</p>' +
+      '<a href="/stratigiki-marketing" style="color:#1D9E75">Φτιάξε νέα στρατηγική →</a></body></html>');
+    return;
+  }
+  res.writeHead(200, {
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': 'attachment; filename="stratigiki-marketing-eureach.pdf"',
+    'Content-Length': entry.pdf.length
+  });
+  res.end(entry.pdf);
+}
+
+function handleSitemap(req, res) {
+  const posts  = (readJSON(BLOG_FILE) || []).filter(p => p.status === 'approved' || p.status === 'published');
+  const today  = new Date().toISOString().slice(0, 10);
+  const blogUrls = posts.map(p =>
+    `  <url><loc>https://eureach.eu/blog/${encodeURIComponent(p.slug)}</loc>` +
+    `<lastmod>${(p.updatedAt || p.publishedAt || today).slice(0,10)}</lastmod>` +
+    `<changefreq>monthly</changefreq><priority>0.7</priority></url>`
+  ).join('\n');
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://eureach.eu/</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://eureach.eu/stratigiki-marketing</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://eureach.eu/blog</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+${blogUrls}
+</urlset>`;
+  res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' });
+  res.end(xml);
+}
+
+
 async function handleRequest(req, res) {
   const urlPath = req.url.split("?")[0];
   const method  = req.method.toUpperCase();
@@ -7894,6 +8717,10 @@ async function handleRequest(req, res) {
   if (urlPath === "/api/sites"                       && method === "GET")    return handleSitesGet(req, res);
   if (urlPath === "/api/sites"                       && method === "POST")   return handleSitesSave(req, res);
   if (urlPath.startsWith("/api/sites/")              && method === "DELETE") return handleSiteDelete(req, res, urlPath.slice(11));
+  if (urlPath === "/api/publish-sites"              && method === "GET")    return handlePublishSitesGet(req, res);
+  if (urlPath === "/api/publish-sites"              && method === "POST")   return handlePublishSitesSave(req, res);
+  if (urlPath.startsWith("/api/publish-sites/")     && method === "DELETE") return handlePublishSiteDelete(req, res, urlPath.slice(20));
+  if (urlPath === "/api/publish-to-site"            && method === "POST")   return handlePublishToSite(req, res);
   if (urlPath === "/api/admin/stats"               && method === "GET")    return handleAdminStats(req, res);
   if (urlPath === "/api/admin/users"               && method === "GET")    return handleAdminUsers(req, res);
   if (urlPath === "/api/admin/users"               && method === "POST")   return handleAdminCreateUser(req, res);
@@ -8078,6 +8905,13 @@ async function handleRequest(req, res) {
   if (urlPath === "/audit" || urlPath === "/audit/")   { return fs.readFile(path.join(ROOT, "audit-landing.html"), (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
   if (urlPath === "/audit/running")                    { return fs.readFile(path.join(ROOT, "audit-running.html"),  (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
   if (urlPath === "/audit/results")                    { return fs.readFile(path.join(ROOT, "audit-results.html"), (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
+  // ── Strategy tool ──────────────────────────────────────────────────────
+  if (urlPath === '/stratigiki-marketing' && method === 'GET') return handleStrategyPage(req, res);
+  if (urlPath === '/api/strategy/generate' && method === 'POST') return handleStrategyGenerate(req, res);
+  if (urlPath === '/api/strategy/pdf'      && method === 'POST') return handleStrategyPdf(req, res);
+  if (urlPath.startsWith('/api/strategy/download/') && method === 'GET') return handleStrategyDownload(req, res, urlPath.slice(24));
+  if ((urlPath === '/sitemap.xml' || urlPath === '/sitemap') && method === 'GET') return handleSitemap(req, res);
+
   if (urlPath === "/api/audit-public/start"            && method === "POST") return handlePublicAuditStart(req, res);
   if (urlPath.startsWith("/api/audit-public/status/")  && method === "GET")  return handlePublicAuditStatus(req, res, urlPath.slice(25));
   if (urlPath.startsWith("/api/audit-public/results/") && method === "GET")  return handlePublicAuditResults(req, res, urlPath.slice(26));

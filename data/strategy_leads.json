@@ -1,0 +1,12 @@
+[
+  {
+    "id": "2a0b48c8eeb661e9657fec74",
+    "email": "test@test.com",
+    "businessType": "Φούρνος",
+    "city": "Αθήνα",
+    "goal": "Νέοι πελάτες",
+    "date": "2026-10-25T07:46:36.162Z",
+    "source": "strategy-tool",
+    "newsletterConsent": false
+  }
+]
