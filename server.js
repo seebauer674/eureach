@@ -9058,6 +9058,10 @@ function handleStrategyPage(req, res) {
     .st-oxi{display:flex;flex-direction:column;gap:7px}
     .st-oxi-item{font-size:.87rem;color:var(--text);padding-left:18px;position:relative;line-height:1.5}
     .st-oxi-item::before{content:"✗";position:absolute;left:0;color:#f87171;font-weight:700}
+    .st-article-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.15);border-radius:8px;padding:10px 13px;margin-bottom:8px}
+    .st-article-title{font-size:.87rem;font-weight:600;line-height:1.4}
+    .st-article-why{font-size:.77rem;color:var(--muted);margin-top:3px}
+    .st-article-cta{font-size:.75rem;font-weight:700;color:#4ade80;white-space:nowrap;text-decoration:none;border:1px solid rgba(29,158,117,.4);border-radius:6px;padding:5px 10px;flex-shrink:0}
     .st-pdf-box{background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.2);border-radius:16px;padding:26px;margin-top:28px}
     .st-pdf-h{font-size:.95rem;font-weight:700;color:var(--white);margin-bottom:14px}
     .st-pdf-input{width:100%;padding:11px 13px;background:var(--glass2);border:1px solid var(--border);border-radius:var(--radius);color:var(--white);font-size:.88rem;outline:none;margin-bottom:10px}
