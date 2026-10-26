@@ -9466,9 +9466,14 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
     showStrategy(d.strategy);
     const _pdfEmailEl = document.getElementById('st-pdf-email');
     if (_pdfEmailEl && email) _pdfEmailEl.value = email;
+    // Hide form and hero so result feels like a new screen
+    const stWrap = document.querySelector('.st-wrap');
+    const stHero = document.querySelector('.st-hero');
+    if (stWrap) stWrap.style.display = 'none';
+    if (stHero) stHero.style.display = 'none';
     const res = document.getElementById('st-result');
     res.style.display = '';
-    res.scrollIntoView({behavior:'smooth',block:'start'});
+    window.scrollTo({top: 0, behavior: 'smooth'});
     if (d.projectId) {
       const t = document.createElement('div');
       t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 20px;border-radius:8px;font-size:.85rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3)';
@@ -9480,6 +9485,18 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
       if (b) b.style.display = 'block';
     }
     btn.disabled = false; btn.textContent = 'Δημιούργησε νέα στρατηγική';
+    btn.onclick = function() {
+      const stWrap = document.querySelector('.st-wrap');
+      const stHero = document.querySelector('.st-hero');
+      const res = document.getElementById('st-result');
+      if (stWrap) stWrap.style.display = '';
+      if (stHero) stHero.style.display = '';
+      if (res) res.style.display = 'none';
+      btn.onclick = null;
+      btn.textContent = 'Φτιάξε τη στρατηγική μου →';
+      btn.disabled = true;
+      window.scrollTo({top: 0, behavior: 'smooth'});
+    };
   } catch(e) {
     errEl.textContent = 'Σφάλμα σύνδεσης. Δοκίμασε ξανά.';
     errEl.style.display = 'block';
