@@ -9217,6 +9217,16 @@ ${blogNavHtml()}
       </select>
     </div>
 
+    <div class="st-field" style="margin-top:8px">
+      <label for="st-email">Email σου <span style="color:#f87171;font-size:.8rem">*</span></label>
+      <input type="email" id="st-email" name="email" maxlength="200" placeholder="π.χ. maria@gmail.com" autocomplete="email">
+      <div style="margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px 14px;font-size:.78rem;color:var(--muted);line-height:1.75">
+        Πατώντας «Φτιάξε τη στρατηγική μου» συμφωνείς με τους <a href="/terms.html" target="_blank" style="color:#4ade80">Όρους Χρήσης</a> του eureach.eu
+        και εγγράφεσαι στο newsletter μας με tips για marketing μικρών επιχειρήσεων.
+        <span style="display:block;margin-top:5px;color:rgba(148,163,184,.6)">Μπορείς να διαγραφείς με ένα κλικ από το πρώτο email.</span>
+      </div>
+    </div>
+
     <div id="st-err" class="st-err"></div>
     <button type="submit" class="st-submit" id="st-btn">Φτιάξε τη στρατηγική μου →</button>
   </form>
@@ -9403,6 +9413,7 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
   errEl.style.display = 'none';
   const website = document.getElementById('st-website').value.trim();
   const siteDescription = (document.getElementById('st-desc') || {}).value || '';
+  const email = document.getElementById('st-email').value.trim();
   const sells = document.getElementById('st-sells').value.trim();
   const customer = document.getElementById('st-customer').value.trim();
   const diff = document.getElementById('st-diff').value.trim();
@@ -9412,6 +9423,10 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
   const city = document.getElementById('st-city').value.trim();
   const industry = document.getElementById('st-industry').value;
   const trap = document.querySelector('[name=_trap]').value;
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    errEl.textContent = 'Παρακαλώ εισάγετε ένα έγκυρο email.';
+    errEl.style.display = 'block'; return;
+  }
   if (!sells || !customer || !diff || !goal) {
     errEl.textContent = 'Παρακαλώ συμπλήρωσε τα υποχρεωτικά πεδία (1, 2, 4, 5).';
     errEl.style.display = 'block'; return;
@@ -9427,7 +9442,7 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ sells, customer, channels, differentiator: diff,
         goal: goal === 'Άλλο' ? (goalOther || goal) : goal,
-        city, industry, website, siteDescription: siteDescription.trim(), _trap: trap })
+        city, industry, website, siteDescription: siteDescription.trim(), email, _trap: trap })
     });
     const d = await r.json();
     if (!r.ok) {
@@ -9437,6 +9452,8 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
     }
     _stData = d.strategy;
     showStrategy(d.strategy);
+    const _pdfEmailEl = document.getElementById('st-pdf-email');
+    if (_pdfEmailEl && email) _pdfEmailEl.value = email;
     const res = document.getElementById('st-result');
     res.style.display = '';
     res.scrollIntoView({behavior:'smooth',block:'start'});
@@ -9632,7 +9649,7 @@ async function handleStrategyGenerate(req, res) {
   const body = await readBody(req);
   if (body._trap) return json(res, 400, { error: 'Bot detected.' });
 
-  const { sells, customer, channels, differentiator, goal, city, industry, website, siteDescription } = body;
+  const { sells, customer, channels, differentiator, goal, city, industry, website, siteDescription, email } = body;
   if (!sells || !customer || !differentiator || !goal)
     return json(res, 400, { error: 'Παρακαλώ συμπλήρωσε όλα τα υποχρεωτικά πεδία.' });
   if (String(sells).length > 300 || String(customer).length > 300 ||
@@ -9761,6 +9778,43 @@ async function handleStrategyGenerate(req, res) {
       _autoProjectId = _proj.id;
     } catch(e) { console.error('[project-auto]', e.message); }
   }
+
+  // Save strategy lead at generate time
+  if (email) {
+    const cleanEmail = sanitizeEmail(String(email).trim().toLowerCase());
+    if (cleanEmail) {
+      try {
+        const leads = readJSON(STRATEGY_LEADS_FILE) || [];
+        const existing = leads.find(l => l.email === cleanEmail);
+        if (!existing) {
+          leads.push({
+            id: generateId(),
+            email: cleanEmail,
+            businessType: strategy._industry || industry || '',
+            city: strategy._city || city || '',
+            goal: strategy._goal || goal || '',
+            date: new Date().toISOString(),
+            source: 'strategy-tool',
+            newsletterConsent: true,
+            followUpsSent: []
+          });
+          writeJSON(STRATEGY_LEADS_FILE, leads);
+        }
+      } catch(e) { console.error('[strategy] lead save:', e.message); }
+      // Subscribe to newsletter (GDPR: they agreed via form consent note)
+      try {
+        await agoraPool.query(
+          `INSERT INTO newsletter_subscribers
+             (email, source_site, source_page, status, confirmed, confirm_token, gdpr_consent, gdpr_ip, gdpr_ua, gdpr_at)
+           VALUES ($1,'eureach.eu','/stratigiki-marketing','active',true,
+                   md5(random()::text||clock_timestamp()::text),true,$2,$3,now())
+           ON CONFLICT (email) DO NOTHING`,
+          [cleanEmail, ip, req.headers['user-agent'] || '']
+        );
+      } catch(e) { console.error('[strategy] nl insert:', e.message); }
+    }
+  }
+
   return json(res, 200, { strategy, tokensUsed, projectId: _autoProjectId });
 }
 
