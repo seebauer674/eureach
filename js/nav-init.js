@@ -58,7 +58,20 @@
         return cur === href;
       }
 
+      var SERVICE_PAGES = ['leads.html','competitors.html','citations.html','audit.html',
+        'articles.html','marketing.html','newsletter-campaigns.html','fb-posts.html',
+        'dashboard.html','crm.html','pipeline.html','outreach.html','templates.html',
+        'email_log.html','/coach','youtube.html','blog.html'];
+
       function item(href, icon, label) {
+        var locked = !user && SERVICE_PAGES.indexOf(href) !== -1;
+        if (locked) {
+          return '<a href="/signin.html" class="sb-item sb-item-locked" title="Sign in to use this feature">' +
+            '<span class="sb-ic">' + icon + '</span>' +
+            '<span class="sb-lbl">' + label + '</span>' +
+            '<span class="sb-lock-ic">&#128274;</span>' +
+            '</a>';
+        }
         return '<a href="' + href + '" class="sb-item' + (isActive(href) ? ' active' : '') + '">' +
           '<span class="sb-ic">' + icon + '</span>' +
           '<span class="sb-lbl">' + label + '</span>' +
