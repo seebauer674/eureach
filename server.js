@@ -8643,6 +8643,13 @@ function handleSpotlightPage(req, res) {
     .sp-terms-note { text-align:center; font-size:.82rem; color:var(--muted); margin-top:24px; }
     .sp-terms-note a { color:var(--sp-accent); }
     @media(max-width:700px){ .sp-terms-grid { grid-template-columns:1fr; } }
+    .sp-creators-trust { background:rgba(29,158,117,.04); border-top:1px solid rgba(29,158,117,.15); border-bottom:1px solid rgba(29,158,117,.15); }
+    .sp-ct-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+    .sp-ct-block { text-align:center; padding:8px; }
+    .sp-ct-icon { font-size:1.8rem; margin-bottom:12px; }
+    .sp-ct-title { font-size:.95rem; font-weight:700; color:var(--white); margin-bottom:8px; }
+    .sp-ct-text { font-size:.85rem; color:var(--muted); line-height:1.7; }
+    @media(max-width:700px){ .sp-ct-grid { grid-template-columns:1fr; } }
     .sp-honest { background:rgba(248,113,113,.03); border-top:1px solid rgba(248,113,113,.12); border-bottom:1px solid rgba(248,113,113,.12); }
     .sp-honest h2 { color:var(--white); }
     .sp-honest p { color:var(--muted); font-size:.93rem; line-height:1.8; max-width:720px; margin:0 auto; text-align:center; }
@@ -8739,6 +8746,28 @@ ${blogNavHtml()}
     </div>
   </div>
 </section>
+
+<!-- Creator trust bar -->
+<section class="sp-section sp-creators-trust">
+  <div class="sp-ct-grid">
+    <div class="sp-ct-block">
+      <div class="sp-ct-icon">✅</div>
+      <div class="sp-ct-title" data-i18n="sp.ctTitle1">Επαληθευμένοι επαγγελματίες</div>
+      <div class="sp-ct-text" data-i18n="sp.ctText1">Κάθε creator ελέγχεται από την eureach πριν ενταχθεί στο δίκτυο. Επαληθεύουμε το κανάλι, το κοινό και την επαγγελματική του προσέγγιση.</div>
+    </div>
+    <div class="sp-ct-block">
+      <div class="sp-ct-icon">👁️</div>
+      <div class="sp-ct-title" data-i18n="sp.ctTitle2">Τουλάχιστον 3.000 views ανά βίντεο</div>
+      <div class="sp-ct-text" data-i18n="sp.ctText2">Τα βίντεο των creators μας συγκεντρώνουν κατά μέσο όρο 3.000+ views. Είναι το ελάχιστο επίπεδο που απαιτούμε για να ενταχθεί ένας creator στο δίκτυο.</div>
+    </div>
+    <div class="sp-ct-block">
+      <div class="sp-ct-icon">📍</div>
+      <div class="sp-ct-title" data-i18n="sp.ctTitle3">Τοπικό κοινό</div>
+      <div class="sp-ct-text" data-i18n="sp.ctText3">Οι creators μας έχουν κοινό στην περιοχή σου — όχι τυχαίους θεατές από άλλες χώρες. Αυτό σημαίνει πραγματική έκθεση στους δυνητικούς σου πελάτες.</div>
+    </div>
+  </div>
+</section>
+
 
 <!-- Packages -->
 <section class="sp-section sp-packages" id="sp-packages">

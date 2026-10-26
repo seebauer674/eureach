@@ -210,6 +210,12 @@
     "sp.termsSponsoredTitle": "Sponsored disclosure",
     "sp.termsSponsoredText": "Every video is explicitly marked as sponsored content (“paid partnership”) in accordance with YouTube policy and EU Directive 2005/29/EC on unfair commercial practices.",
     "sp.termsNote": "Questions? Contact us: support@eureach.eu",
+    "sp.ctTitle1": "Verified professionals",
+    "sp.ctText1": "Every creator is vetted by eureach before joining the network. We verify the channel, audience and professional approach.",
+    "sp.ctTitle2": "Minimum 3,000 views per video",
+    "sp.ctText2": "Our creators' videos average 3,000+ views. This is the minimum threshold we require before a creator joins the network.",
+    "sp.ctTitle3": "Local audience",
+    "sp.ctText3": "Our creators have an audience in your area — not random viewers from other countries. That means real exposure to your potential customers.",
     },
     el: {
       "lp.heroBadge":      "\u0393\u03b9\u03b1 \u0395\u03bb\u03bb\u03ac\u03b4\u03b1, \u0393\u03b5\u03c1\u03bc\u03b1\u03bd\u03af\u03b1 \u0026 \u0395\u0395",
@@ -378,6 +384,12 @@
     "sp.termsSponsoredTitle": "Χορηγούμενη αναφορά",
     "sp.termsSponsoredText": "Κάθε βίντεο σημειώνεται ρητά ως χορηγούμενο («paid partnership») σύμφωνα με την πολιτική του YouTube και την ευρωπαϊκή οδηγία 2005/29/ΕΚ.",
     "sp.termsNote": "Ερωτήσεις; Επικοινωνήστε μαζί μας: support@eureach.eu",
+    "sp.ctTitle1": "Επαληθευμένοι επαγγελματίες",
+    "sp.ctText1": "Κάθε creator ελέγχεται από την eureach πριν ενταχθεί στο δίκτυο. Επαληθεύουμε το κανάλι, το κοινό και την επαγγελματική του προσέγγιση.",
+    "sp.ctTitle2": "Τουλάχιστον 3.000 views ανά βίντεο",
+    "sp.ctText2": "Τα βίντεο των creators μας συγκεντρώνουν κατά μέσο όρο 3.000+ views. Είναι το ελάχιστο επίπεδο που απαιτούμε για να ενταχθεί ένας creator στο δίκτυο.",
+    "sp.ctTitle3": "Τοπικό κοινό",
+    "sp.ctText3": "Οι creators μας έχουν κοινό στην περιοχή σου — όχι τυχαίους θεατές από άλλες χώρες. Αυτό σημαίνει πραγματική έκθεση στους δυνητικούς σου πελάτες.",
     },
     de: {
       "lp.heroBadge":      "F\u00fcr Griechenland, Deutschland \u0026 EU",
@@ -552,6 +564,12 @@
     "sp.termsSponsoredTitle": "Werbekennzeichnung",
     "sp.termsSponsoredText": "Jedes Video wird ausdrücklich als gesponserter Inhalt („Paid Partnership“) gemäß den YouTube-Richtlinien und der EU-Richtlinie 2005/29/EG über unlautere Geschäftspraktiken gekennzeichnet.",
     "sp.termsNote": "Fragen? Kontaktieren Sie uns: support@eureach.eu",
+    "sp.ctTitle1": "Geprüfte Profis",
+    "sp.ctText1": "Jeder Creator wird von eureach geprüft, bevor er dem Netzwerk beitritt. Wir überprüfen den Kanal, die Zielgruppe und den professionellen Ansatz.",
+    "sp.ctTitle2": "Mindestens 3.000 Views pro Video",
+    "sp.ctText2": "Die Videos unserer Creators erreichen durchschnittlich 3.000+ Views. Das ist die Mindestanforderung für die Aufnahme in unser Netzwerk.",
+    "sp.ctTitle3": "Lokales Publikum",
+    "sp.ctText3": "Unsere Creators haben ein Publikum in deiner Region — keine zufälligen Zuschauer aus anderen Ländern. Das bedeutet echte Sichtbarkeit bei deinen potenziellen Kunden.",
     }
   };
   for (var lang in lp) {
