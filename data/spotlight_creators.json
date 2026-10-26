@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "id": "cr_1793006241104",
+    "name": "seebauer",
+    "channel_url": "https://studio.youtube.com/channel/UCSCWQ5xDqUCM560lFrzsJXw",
+    "cities": [
+      "Athens",
+      "Thessaloniki"
+    ],
+    "trades": [
+      "webpages",
+      "ai implementation"
+    ],
+    "price_per_mention": 50,
+    "email": "qyoseeb@gmail.com",
+    "created_at": "2026-10-26T09:17:21.104Z"
+  }
+]

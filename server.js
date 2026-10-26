@@ -9022,10 +9022,16 @@ function handleStrategyPage(req, res) {
     .st-field input[type=text],.st-field textarea,.st-field select{width:100%;padding:11px 13px;background:var(--glass2);border:1px solid var(--border);border-radius:var(--radius);color:var(--white);font-size:.88rem;outline:none;transition:border-color .2s;font-family:inherit}
     .st-field input[type=text]:focus,.st-field textarea:focus,.st-field select:focus{border-color:#1D9E75}
     .st-field textarea{min-height:72px;resize:vertical}
+    .st-intro-note{text-align:center;color:var(--muted);font-size:.9rem;margin:0 auto 28px;max-width:480px;background:rgba(29,158,117,.08);border:1px solid rgba(29,158,117,.2);border-radius:var(--radius);padding:10px 16px}
     .st-channels{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
     .st-ch{display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:6px 13px;font-size:.82rem;color:var(--muted);transition:all .15s}
     .st-ch:has(input:checked){background:rgba(29,158,117,.15);border-color:#1D9E75;color:#4ade80}
     .st-ch input{display:none}
+    .st-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+    .st-chip{cursor:pointer;background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:.84rem;color:var(--muted);transition:all .15s;white-space:nowrap}
+    .st-chip.active{background:rgba(29,158,117,.15);border-color:#1D9E75;color:#4ade80}
+    .st-chips-sm .st-chip{font-size:.78rem;padding:5px 11px;background:rgba(255,255,255,.04);color:var(--muted)}
+    .st-chips-sm .st-chip:hover{border-color:#1D9E75;color:#4ade80}
     .st-goal-other{margin-top:10px;display:none}
     .st-submit{width:100%;padding:14px;background:#1D9E75;border:none;border-radius:var(--radius);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s;margin-top:6px}
     .st-submit:hover{background:#168f68}
@@ -9100,24 +9106,35 @@ ${blogNavHtml()}
 </section>
 
 <div class="st-wrap">
+  <p class="st-intro-note">Δεν χρειάζεσαι marketing γνώσεις — απλά απάντησε ειλικρινά. Χρειάζεται λιγότερο από 3 λεπτά.</p>
   <form id="st-form">
     <input name="_trap" style="display:none" tabindex="-1" autocomplete="off">
 
     <div class="st-field">
       <label for="st-sells">1. Τι πουλάς;</label>
-      <span class="hint">π.χ. Φρέσκο ψωμί και γλυκά, με παραγγελίες για εκδηλώσεις</span>
+      <span class="hint">π.χ. Φρέσκο ψωμί · υπηρεσίες καθαρισμού · μαθήματα γιόγκα · κομμωτήριο</span>
       <textarea id="st-sells" name="sells" maxlength="300" rows="2" placeholder="Περίγραψε τι πουλάς με λίγα λόγια…"></textarea>
     </div>
 
     <div class="st-field">
-      <label for="st-customer">2. Ποιος είναι ο ιδανικός σου πελάτης;</label>
-      <span class="hint">π.χ. Οικογένειες της γειτονιάς και γραφεία που παραγγέλνουν για συναντήσεις</span>
-      <textarea id="st-customer" name="customer" maxlength="300" rows="2" placeholder="Ποιοι είναι οι καλύτεροί σου πελάτες…"></textarea>
+      <label>2. Ποιος είναι ο ιδανικός σου πελάτης;</label>
+      <span class="hint">Επίλεξε τον τύπο που σου φέρνει τα περισσότερα χρήματα — μπορείς να επιλέξεις και παραπάνω</span>
+      <div class="st-chips" id="st-cust-chips">
+        <button type="button" class="st-chip" data-val="Ιδιώτες της γειτονιάς">🏘️ Ιδιώτες της γειτονιάς</button>
+        <button type="button" class="st-chip" data-val="Οικογένειες με παιδιά">👨‍👩‍👧 Οικογένειες με παιδιά</button>
+        <button type="button" class="st-chip" data-val="Επαγγελματίες / γραφεία">💼 Επαγγελματίες / γραφεία</button>
+        <button type="button" class="st-chip" data-val="Τουρίστες">✈️ Τουρίστες</button>
+        <button type="button" class="st-chip" data-val="Νέοι 18-35">🎯 Νέοι 18–35</button>
+        <button type="button" class="st-chip" data-val="Ηλικιωμένοι άνω των 50">👴 Ηλικιωμένοι 50+</button>
+        <button type="button" class="st-chip" data-val="Άλλο / Δεν ξέρω ακόμα">🤷 Δεν ξέρω ακόμα</button>
+      </div>
+      <input type="hidden" id="st-customer" name="customer">
+      <textarea id="st-customer-extra" name="customerExtra" maxlength="200" rows="1" placeholder="Προσθέτεις κάτι; (προαιρετικό)…" style="margin-top:8px"></textarea>
     </div>
 
     <div class="st-field">
       <label>3. Πού σε ψάχνουν οι πελάτες σου;</label>
-      <span class="hint">Επίλεξε όλα που ισχύουν</span>
+      <span class="hint">Επίλεξε όλα που ισχύουν — αν δεν ξέρεις, τσέκαρε το τελευταίο</span>
       <div class="st-channels">
         <label class="st-ch"><input type="checkbox" name="channels" value="Google"> Google</label>
         <label class="st-ch"><input type="checkbox" name="channels" value="Google Maps"> Google Maps</label>
@@ -9127,13 +9144,21 @@ ${blogNavHtml()}
         <label class="st-ch"><input type="checkbox" name="channels" value="ChatGPT/AI"> ChatGPT/AI</label>
         <label class="st-ch"><input type="checkbox" name="channels" value="Από στόμα σε στόμα"> Από στόμα σε στόμα</label>
         <label class="st-ch"><input type="checkbox" name="channels" value="Άλλο"> Άλλο</label>
+        <label class="st-ch"><input type="checkbox" name="channels" value="Δεν ξέρω"> Δεν ξέρω</label>
       </div>
     </div>
 
     <div class="st-field">
-      <label for="st-diff">4. Τι σε κάνει διαφορετικό;</label>
-      <span class="hint">π.χ. Ψήνουμε με προζύμι κάθε πρωί</span>
-      <textarea id="st-diff" name="differentiator" maxlength="300" rows="2" placeholder="Γιατί να σε διαλέξει κάποιος…"></textarea>
+      <label for="st-diff">4. Τι σε κάνει διαφορετικό από τον ανταγωνισμό;</label>
+      <span class="hint">Αν δεν ξέρεις, πάτα κάποιο παράδειγμα για έμπνευση:</span>
+      <div class="st-chips st-chips-sm" id="st-diff-chips" style="margin-bottom:8px">
+        <button type="button" class="st-chip st-chip-hint" data-target="st-diff" data-val="Ψήνουμε φρέσκο κάθε πρωί">Φρέσκο κάθε πρωί</button>
+        <button type="button" class="st-chip st-chip-hint" data-target="st-diff" data-val="Παραδίδουμε στο σπίτι την ίδια μέρα">Παράδοση ίδια μέρα</button>
+        <button type="button" class="st-chip st-chip-hint" data-target="st-diff" data-val="Μιλάμε και αγγλικά, εξυπηρετούμε τουρίστες">Εξυπηρέτηση τουριστών</button>
+        <button type="button" class="st-chip st-chip-hint" data-target="st-diff" data-val="Έχουμε 15 χρόνια εμπειρία στον τομέα">15 χρόνια εμπειρία</button>
+        <button type="button" class="st-chip st-chip-hint" data-target="st-diff" data-val="Τιμές καλύτερες από τον ανταγωνισμό">Καλύτερες τιμές</button>
+      </div>
+      <textarea id="st-diff" name="differentiator" maxlength="300" rows="2" placeholder="Γράψε με δικά σου λόγια — ή πάτα κάποιο παράδειγμα παραπάνω…"></textarea>
     </div>
 
     <div class="st-field">
@@ -9264,6 +9289,30 @@ ${blogNavHtml()}
 </footer>
 
 <script>
+// Customer type chips (Q2) — multi-select, syncs to hidden input
+(function(){
+  const chips = document.querySelectorAll('#st-cust-chips .st-chip');
+  const hidden = document.getElementById('st-customer');
+  chips.forEach(btn => {
+    btn.addEventListener('click', function(){
+      this.classList.toggle('active');
+      const selected = [...document.querySelectorAll('#st-cust-chips .st-chip.active')].map(b => b.dataset.val);
+      hidden.value = selected.join(', ');
+    });
+  });
+})();
+
+// Differentiator hint chips (Q4) — click to fill textarea
+(function(){
+  const chips = document.querySelectorAll('.st-chip-hint');
+  chips.forEach(btn => {
+    btn.addEventListener('click', function(){
+      const ta = document.getElementById(this.dataset.target);
+      if (ta) { ta.value = this.dataset.val; ta.focus(); }
+    });
+  });
+})();
+
 let _stLastSubmit = 0, _stData = null;
 document.getElementById('st-form').addEventListener('submit', async function(e) {
   e.preventDefault();
@@ -9281,7 +9330,7 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
   const industry = document.getElementById('st-industry').value;
   const trap = document.querySelector('[name=_trap]').value;
   if (!sells || !customer || !diff || !goal) {
-    errEl.textContent = 'Παρακαλώ συμπλήρωσε τα 5 υποχρεωτικά πεδία.';
+    errEl.textContent = 'Παρακαλώ συμπλήρωσε τα υποχρεωτικά πεδία (1, 2, 4, 5).';
     errEl.style.display = 'block'; return;
   }
   if (!channels.length) {

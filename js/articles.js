@@ -358,6 +358,15 @@
     try { _sites = JSON.parse(localStorage.getItem("eureach_sites") || "[]"); } catch { _sites = []; }
   }
 
+  /* ── publish sites store ─────────────────────────────── */
+  let _publishSites = [];
+  async function fetchPublishSites() {
+    try {
+      const r = await fetch('/api/publish-sites');
+      if (r.ok) { const d = await r.json(); _publishSites = Array.isArray(d.sites) ? d.sites : []; }
+    } catch { _publishSites = []; }
+  }
+
   /* ── helpers ─────────────────────────────────────────── */
   function esc(s) {
     const d = document.createElement("div");
@@ -2712,10 +2721,18 @@
         </div>
       </div>` : "";
 
+    const customSiteChecks = _publishSites.map(s =>
+      `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;color:var(--text,#e2e8f0);">
+        <input type="checkbox" class="pub-custom-site" data-site-id="${s.id}" checked style="width:16px;height:16px;accent-color:#10b981;">
+        <span>${esc(s.name)} <span style="font-size:0.75rem;color:var(--text-muted,#8b9ab7)">(${esc(s.cms)})</span></span>
+        <button class="pub-remove-site" data-site-id="${s.id}" title="Remove site" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.85rem;padding:0 2px;margin-left:4px;">✕</button>
+      </label>`
+    ).join('');
+
     wrap.innerHTML = `
       ${exportRowHtml}
       <div style="font-size:0.85rem;font-weight:600;color:var(--text-muted,#8b9ab7);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em;">Publish to</div>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+      <div id="pub-sites-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;color:var(--text,#e2e8f0);">
           <input type="checkbox" id="pub-eureach" checked style="width:16px;height:16px;accent-color:#7c3aed;">
           <span>📝 Eureach Blog</span>
@@ -2724,6 +2741,10 @@
           <input type="checkbox" id="pub-agora" checked style="width:16px;height:16px;accent-color:#0ea5e9;">
           <span>🌐 Agora (agora.sos.gr)</span>
         </label>
+        ${customSiteChecks}
+        <div style="margin-top:4px;">
+          <button id="pub-add-site-btn" style="background:none;border:1px dashed rgba(255,255,255,.2);color:var(--text-muted,#8b9ab7);border-radius:8px;padding:6px 14px;font-size:0.82rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">＋ Add site</button>
+        </div>
       </div>
       <button id="pub-btn" style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;border:none;padding:12px 28px;border-radius:10px;font-size:0.95rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">🚀 Publish</button>
       <div id="pub-status" style="margin-top:12px;font-size:0.85rem;color:var(--text-muted,#8b9ab7);min-height:20px;"></div>
@@ -2754,10 +2775,140 @@
     const btn    = wrap.querySelector("#pub-btn");
     const status = wrap.querySelector("#pub-status");
 
+    // Remove site buttons
+    wrap.querySelectorAll(".pub-remove-site").forEach(rb => {
+      rb.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const sid = rb.dataset.siteId;
+        if (!confirm("Remove this site?")) return;
+        await fetch("/api/publish-sites/" + sid, { method: "DELETE" });
+        _publishSites = _publishSites.filter(s => String(s.id) !== String(sid));
+        rb.closest("label").remove();
+      });
+    });
+
+    // Add site modal
+    wrap.querySelector("#pub-add-site-btn").addEventListener("click", () => {
+      const overlay = document.createElement("div");
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px";
+      overlay.innerHTML = `<div style="background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+          <span style="font-weight:700;font-size:1rem;color:#f1f5f9">Add publish site</span>
+          <button id="ps-close" style="background:none;border:none;color:#94a3b8;font-size:1.2rem;cursor:pointer">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <label style="font-size:0.82rem;color:#94a3b8">Site name *
+            <input id="ps-name" type="text" placeholder="My company blog" style="display:block;width:100%;margin-top:4px;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:#f1f5f9;font-size:0.9rem;box-sizing:border-box">
+          </label>
+          <label style="font-size:0.82rem;color:#94a3b8">Site URL *
+            <input id="ps-url" type="url" placeholder="https://mysite.com" style="display:block;width:100%;margin-top:4px;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:#f1f5f9;font-size:0.9rem;box-sizing:border-box">
+          </label>
+          <label style="font-size:0.82rem;color:#94a3b8">CMS / Platform *
+            <select id="ps-cms" style="display:block;width:100%;margin-top:4px;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:#f1f5f9;font-size:0.9rem;box-sizing:border-box">
+              <option value="wordpress">WordPress</option>
+              <option value="joomla">Joomla</option>
+              <option value="drupal">Drupal</option>
+              <option value="other">Other / Custom</option>
+            </select>
+          </label>
+          <label style="font-size:0.82rem;color:#94a3b8">Publish section / path
+            <input id="ps-path" type="text" placeholder="e.g. blog, news (optional)" style="display:block;width:100%;margin-top:4px;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:#f1f5f9;font-size:0.9rem;box-sizing:border-box">
+          </label>
+          <div id="ps-creds-wp">
+            <div style="font-size:0.78rem;color:#60a5fa;background:rgba(37,99,235,.1);border:1px solid rgba(37,99,235,.2);border-radius:8px;padding:10px 12px;margin-bottom:10px;">
+              ℹ️ WordPress requires an <strong>Application Password</strong>.<br>
+              Go to <em>Users → Profile → Application Passwords</em> in your WP admin to generate one.
+            </div>
+            <label style="font-size:0.82rem;color:#94a3b8">WordPress username *
+              <input id="ps-username" type="text" autocomplete="off" placeholder="admin" style="display:block;width:100%;margin-top:4px;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:#f1f5f9;font-size:0.9rem;box-sizing:border-box">
+            </label>
+            <label style="font-size:0.82rem;color:#94a3b8;margin-top:10px;display:block">Application Password *
+              <input id="ps-password" type="password" autocomplete="new-password" placeholder="xxxx xxxx xxxx xxxx" style="display:block;width:100%;margin-top:4px;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:#f1f5f9;font-size:0.9rem;box-sizing:border-box">
+            </label>
+          </div>
+          <div id="ps-creds-other" style="display:none">
+            <div style="font-size:0.78rem;color:#fbbf24;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:10px 12px;">
+              ℹ️ For <strong id="ps-cms-label">this CMS</strong>, direct API publishing is not yet supported.<br>
+              After clicking Publish, the article HTML will be ready to copy and paste into your CMS.
+            </div>
+            <label style="font-size:0.82rem;color:#94a3b8;margin-top:10px;display:block">Admin username (optional)
+              <input id="ps-username-other" type="text" autocomplete="off" placeholder="admin" style="display:block;width:100%;margin-top:4px;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:#f1f5f9;font-size:0.9rem;box-sizing:border-box">
+            </label>
+            <label style="font-size:0.82rem;color:#94a3b8;margin-top:10px;display:block">Password (optional)
+              <input id="ps-password-other" type="password" autocomplete="new-password" style="display:block;width:100%;margin-top:4px;background:#1e293b;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;color:#f1f5f9;font-size:0.9rem;box-sizing:border-box">
+            </label>
+          </div>
+          <div id="ps-err" style="color:#f87171;font-size:0.82rem;display:none"></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+            <button id="ps-cancel" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#94a3b8;border-radius:8px;padding:9px 18px;font-size:0.88rem;cursor:pointer">Cancel</button>
+            <button id="ps-save" style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:0.88rem;font-weight:600;cursor:pointer">Save site</button>
+          </div>
+        </div>
+      </div>`;
+      document.body.appendChild(overlay);
+
+      const cmsSelect = overlay.querySelector("#ps-cms");
+      const wpCreds   = overlay.querySelector("#ps-creds-wp");
+      const otherCreds = overlay.querySelector("#ps-creds-other");
+      const cmsLabel  = overlay.querySelector("#ps-cms-label");
+      cmsSelect.addEventListener("change", () => {
+        const isWp = cmsSelect.value === "wordpress";
+        wpCreds.style.display    = isWp ? "" : "none";
+        otherCreds.style.display = isWp ? "none" : "";
+        cmsLabel.textContent = { joomla: "Joomla", drupal: "Drupal", other: "Custom CMS" }[cmsSelect.value] || cmsSelect.value;
+      });
+
+      const close = () => document.body.removeChild(overlay);
+      overlay.querySelector("#ps-close").addEventListener("click", close);
+      overlay.querySelector("#ps-cancel").addEventListener("click", close);
+      overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+
+      overlay.querySelector("#ps-save").addEventListener("click", async () => {
+        const errEl = overlay.querySelector("#ps-err");
+        const saveBtn = overlay.querySelector("#ps-save");
+        errEl.style.display = "none";
+        const name     = overlay.querySelector("#ps-name").value.trim();
+        const url      = overlay.querySelector("#ps-url").value.trim();
+        const cms      = cmsSelect.value;
+        const path     = overlay.querySelector("#ps-path").value.trim();
+        const isWp     = cms === "wordpress";
+        const username = isWp ? overlay.querySelector("#ps-username").value.trim() : overlay.querySelector("#ps-username-other").value.trim();
+        const password = isWp ? overlay.querySelector("#ps-password").value.trim() : overlay.querySelector("#ps-password-other").value.trim();
+        if (!name) { errEl.textContent = "Site name is required."; errEl.style.display = ""; return; }
+        if (!url)  { errEl.textContent = "Site URL is required."; errEl.style.display = ""; return; }
+        if (isWp && !username) { errEl.textContent = "WordPress username is required."; errEl.style.display = ""; return; }
+        if (isWp && !password) { errEl.textContent = "Application Password is required."; errEl.style.display = ""; return; }
+        saveBtn.textContent = "Saving…"; saveBtn.disabled = true;
+        try {
+          const r = await fetch("/api/publish-sites", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, url, cms, publishPath: path, username, password }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "Failed to save site");
+          _publishSites.push(d.site);
+          // Add checkbox to list
+          const lbl = document.createElement("label");
+          lbl.style.cssText = "display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;color:var(--text,#e2e8f0)";
+          lbl.innerHTML = `<input type="checkbox" class="pub-custom-site" data-site-id="${d.site.id}" checked style="width:16px;height:16px;accent-color:#10b981;"><span>${esc(d.site.name)} <span style="font-size:0.75rem;color:var(--text-muted,#8b9ab7)">(${esc(d.site.cms)})</span></span><button class="pub-remove-site" data-site-id="${d.site.id}" title="Remove site" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:0.85rem;padding:0 2px;margin-left:4px;">✕</button>`;
+          lbl.querySelector(".pub-remove-site").addEventListener("click", async (e) => {
+            e.preventDefault();
+            if (!confirm("Remove this site?")) return;
+            await fetch("/api/publish-sites/" + d.site.id, { method: "DELETE" });
+            _publishSites = _publishSites.filter(s => String(s.id) !== String(d.site.id));
+            lbl.remove();
+          });
+          wrap.querySelector("#pub-add-site-btn").closest("div").before(lbl);
+          close();
+        } catch(err) { errEl.textContent = err.message; errEl.style.display = ""; saveBtn.textContent = "Save site"; saveBtn.disabled = false; }
+      });
+    });
+
     btn.addEventListener("click", async () => {
-      const toEureach = wrap.querySelector("#pub-eureach").checked;
-      const toAgora   = wrap.querySelector("#pub-agora").checked;
-      if (!toEureach && !toAgora) {
+      const toEureach    = wrap.querySelector("#pub-eureach").checked;
+      const toAgora      = wrap.querySelector("#pub-agora").checked;
+      const customChecks = [...wrap.querySelectorAll(".pub-custom-site:checked")].map(el => el.dataset.siteId);
+      if (!toEureach && !toAgora && !customChecks.length) {
         status.style.color = "#f87171";
         status.textContent = "Select at least one destination.";
         return;
@@ -2769,6 +2920,7 @@
       status.textContent = "";
 
       const results = [];
+      const articleHtml = liveHtml();
 
       if (toEureach) {
         try {
@@ -2778,7 +2930,7 @@
             body: JSON.stringify({
               title: title || "Article",
               excerpt: excerpt || metaDescription || "",
-              html: liveHtml(),
+              html: articleHtml,
               lang: lang || "en",
               category: "article",
             }),
@@ -2799,7 +2951,7 @@
             body: JSON.stringify({
               title: title || "Article",
               excerpt: excerpt || metaDescription || "",
-              html: liveHtml(),
+              html: articleHtml,
               lang: lang || "en",
             }),
           });
@@ -2808,6 +2960,35 @@
           results.push(`✅ Agora — submitted for admin approval.`);
         } catch (err) {
           results.push(`❌ Agora: ${err.message}`);
+        }
+      }
+
+      for (const siteId of customChecks) {
+        const site = _publishSites.find(s => String(s.id) === String(siteId));
+        const label = site ? site.name : siteId;
+        try {
+          const r = await fetch("/api/publish-to-site", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              siteId,
+              title: title || "Article",
+              excerpt: excerpt || metaDescription || "",
+              html: articleHtml,
+              lang: lang || "en",
+              status: "draft",
+            }),
+          });
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "Publish failed");
+          if (d.manual) {
+            results.push(`✅ ${esc(label)} — HTML ready. Open your CMS and paste the article content.`);
+          } else {
+            const link = d.postUrl ? ` <a href="${d.postUrl}" target="_blank" style="color:#60a5fa">View post</a>` : "";
+            results.push(`✅ ${esc(label)} — published as draft.${link}`);
+          }
+        } catch (err) {
+          results.push(`❌ ${esc(label)}: ${err.message}`);
         }
       }
 
@@ -2829,6 +3010,7 @@
     formData.topic = _coachParams.get("topic");
     if (_coachParams.get("brief")) formData.brief = _coachParams.get("brief");
   }
+  fetchPublishSites().then(() => {}).catch(() => {});
   fetchSites().then(() => render());
 
 })();
