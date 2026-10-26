@@ -61,6 +61,11 @@ const SITES_FILE             = path.join(ROOT, "data/user-sites.json");
 const PUBLISH_SITES_FILE     = path.join(ROOT, "data/publish-sites.json");
 const CITATION_PUBLISHERS_FILE = path.join(ROOT, "data/citation_publishers.json");
 const CITATION_CAMPAIGNS_FILE  = path.join(ROOT, "data/citation_campaigns.json");
+const SPOTLIGHT_ORDERS_FILE   = path.join(ROOT, 'data/spotlight_orders.json');
+const SPOTLIGHT_CREATORS_FILE = path.join(ROOT, 'data/spotlight_creators.json');
+const SPOTLIGHT_WAITLIST_FILE = path.join(ROOT, 'data/spotlight_waitlist.json');
+const SPOTLIGHT_INVOICE_FILE  = path.join(ROOT, 'data/spotlight_invoice_counter.json');
+const SPOTLIGHT_CONFIG_FILE   = path.join(ROOT, 'config/spotlight.json');
 const CITATION_PLACEMENTS_FILE = path.join(ROOT, "data/citation_placements.json");
 const CITATION_SNAPSHOTS_FILE  = path.join(ROOT, "data/citation_snapshots.json");
 const BRAND_KITS_FILE        = path.join(ROOT, "data/brand-kits.json");
@@ -4726,7 +4731,7 @@ function handleAuditShareDelete(req, res, id) {
 }
 
 // ── Raw SMTP sender (no external libraries) ───────────────────────────────────
-function smtpSend({ host, port, username, password, from, fromName, to, subject, body, html = null, testOnly = false }) {
+function smtpSend({ host, port, username, password, from, fromName, to, subject, body, html = null, testOnly = false, attachments = null }) {
   const useSSL = (port === 465);
   return new Promise((resolve, reject) => {
     let socket = null;
@@ -4820,6 +4825,31 @@ function smtpSend({ host, port, username, password, from, fromName, to, subject,
             ...html.split("\n").map(l => l.startsWith(".") ? "." + l : l),
             "",`--${boundary}--`,
           ];
+          msgData = parts.join("\r\n") + "\r\n.\r\n";
+        } else if (attachments && attachments.length > 0) {
+          const boundary = `----_MP_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+          const parts = [
+            `From: ${displayFrom}`,`To: ${to}`,
+            `Subject: =?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`,
+            `Date: ${new Date().toUTCString()}`,`MIME-Version: 1.0`,
+            `Content-Type: multipart/mixed; boundary="${boundary}"`,
+            ``,`--${boundary}`,
+            `Content-Type: text/plain; charset=UTF-8`,`Content-Transfer-Encoding: 8bit`,``,
+            ...body.split("\n").map(l => l.startsWith(".") ? "." + l : l),
+          ];
+          for (const att of attachments) {
+            const b64 = Buffer.isBuffer(att.content) ? att.content.toString("base64") : Buffer.from(att.content).toString("base64");
+            const ct = att.contentType || "application/octet-stream";
+            const fn = att.filename || "attachment";
+            parts.push(``, `--${boundary}`);
+            parts.push(`Content-Type: ${ct}`);
+            parts.push(`Content-Disposition: attachment; filename="${fn}"`);
+            parts.push(`Content-Transfer-Encoding: base64`, ``);
+            // split base64 into 76-char lines
+            const b64lines = b64.match(/.{1,76}/g) || [];
+            parts.push(...b64lines);
+          }
+          parts.push(``, `--${boundary}--`);
           msgData = parts.join("\r\n") + "\r\n.\r\n";
         } else {
           const msgParts = [
@@ -5133,6 +5163,34 @@ async function runOutreachScheduler() {
   } catch { /* scheduler errors are silent */ }
 }
 setInterval(runOutreachScheduler, 15 * 60 * 1000);
+// Spotlight: remind admin if paid order not published within (refund_days - 7) days
+setInterval(async () => {
+  try {
+    const cfg = loadSpotlightConfig();
+    const warningDays = (cfg.refund_days || 30) - 7;
+    const now = Date.now();
+    const orders = readJSON(SPOTLIGHT_ORDERS_FILE) || [];
+    for (const o of orders) {
+      if (o.status === 'paid' && o.paid_at) {
+        const daysSincePaid = (now - new Date(o.paid_at).getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSincePaid >= warningDays && !o._admin_reminded) {
+          const adminEmail = process.env.ADMIN_EMAIL || process.env.SYSTEM_EMAIL_FROM || process.env.SYSTEM_EMAIL_USER;
+          await sendSystemEmail(adminEmail,
+            `⚠️ Spotlight order ${o.id} not published — ${Math.floor(daysSincePaid)} days since payment`,
+            `Order ${o.id} for ${o.business_name} (${o.email}) was paid ${Math.floor(daysSincePaid)} days ago and has not been published.\n\nRefund deadline: ${cfg.refund_days} days from payment (${new Date(new Date(o.paid_at).getTime() + cfg.refund_days * 86400000).toLocaleDateString('el-GR')}).\n\nAdmin panel: https://eureach.eu/admin.html`
+          ).catch(() => {});
+          // Mark as reminded to avoid repeat emails today
+          const idx = orders.findIndex(x => x.id === o.id);
+          if (idx !== -1) {
+            orders[idx]._admin_reminded = new Date().toDateString();
+            writeJSON(SPOTLIGHT_ORDERS_FILE, orders);
+          }
+        }
+      }
+    }
+  } catch(e) { console.error('[spotlight-scheduler]', e.message); }
+}, 24 * 60 * 60 * 1000); // once per day
+
 
 // ── Trial / Billing handlers ──────────────────────────────────────────────────
 
@@ -5485,6 +5543,119 @@ async function handlePayPalSubscriptionActivate(req, res) {
 }
 
 
+// POST /api/billing/paypal/webhook
+async function handlePayPalWebhook(req, res) {
+  const rawBody = await readRawBody(req);
+
+  // Verify signature with PayPal
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID;
+  if (webhookId) {
+    const pp = await getPayPalToken();
+    if (!pp) return json(res, 500, { error: "PayPal not configured." });
+
+    const verifyRes = await fetch(pp.base + "/v1/notifications/verify-webhook-signature", {
+      method: "POST",
+      headers: { "Authorization": "Bearer " + pp.token, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        auth_algo:         req.headers["paypal-auth-algo"]        || "",
+        cert_url:          req.headers["paypal-cert-url"]         || "",
+        transmission_id:   req.headers["paypal-transmission-id"]  || "",
+        transmission_sig:  req.headers["paypal-transmission-sig"] || "",
+        transmission_time: req.headers["paypal-transmission-time"]|| "",
+        webhook_id:        webhookId,
+        webhook_event:     JSON.parse(rawBody.toString()),
+      }),
+    });
+    const vd = await verifyRes.json();
+    if (vd.verification_status !== "SUCCESS") {
+      console.error("[paypal-webhook] Signature verification failed:", vd);
+      return json(res, 400, { error: "Invalid signature." });
+    }
+  } else {
+    console.warn("[paypal-webhook] PAYPAL_WEBHOOK_ID not set — skipping signature verification");
+  }
+
+  let event;
+  try { event = JSON.parse(rawBody.toString()); }
+  catch (e) { return json(res, 400, { error: "Invalid JSON." }); }
+
+  const eventType = event.event_type || "";
+  const resource  = event.resource   || {};
+  console.log("[paypal-webhook] event:", eventType, resource.id || "");
+
+  const users = readJSON(USERS_FILE);
+
+  // Subscription cancelled by user or PayPal
+  if (eventType === "BILLING.SUBSCRIPTION.CANCELLED" || eventType === "BILLING.SUBSCRIPTION.EXPIRED") {
+    const subId = resource.id;
+    const idx   = users.findIndex(u => u.paypalSubscriptionId === subId);
+    if (idx !== -1) {
+      users[idx].plan        = "cancelled";
+      users[idx].trialStatus = "cancelled";
+      users[idx].cancelledAt = new Date().toISOString();
+      writeJSON(USERS_FILE, users);
+      sendSystemEmail(
+        users[idx].email,
+        "eureach — subscription cancelled",
+        `Hi ${users[idx].firstName || "there"},\n\nYour eureach subscription has been cancelled via PayPal.\n\nYou can resubscribe at any time: https://eureach.eu/billing\n\n– The eureach team`
+      ).catch(() => {});
+      console.log("[paypal-webhook] cancelled subscription for user", users[idx].id);
+    }
+  }
+
+  // Payment failed / subscription suspended
+  if (eventType === "BILLING.SUBSCRIPTION.SUSPENDED" || eventType === "PAYMENT.SALE.DENIED") {
+    const subId = resource.billing_agreement_id || resource.id;
+    const idx   = users.findIndex(u => u.paypalSubscriptionId === subId);
+    if (idx !== -1) {
+      users[idx].plan        = "expired";
+      users[idx].trialStatus = "expired";
+      writeJSON(USERS_FILE, users);
+      sendSystemEmail(
+        users[idx].email,
+        "eureach — payment failed, account paused",
+        `Hi ${users[idx].firstName || "there"},\n\nWe couldn't process your PayPal payment for eureach.\n\nYour account has been paused. To continue, please update your payment method in PayPal and reactivate your subscription.\n\nManage at: https://eureach.eu/billing\n\n– The eureach team`
+      ).catch(() => {});
+      console.log("[paypal-webhook] suspended/payment failed for user", users[idx].id);
+    }
+  }
+
+  // Subscription reactivated after suspension
+  if (eventType === "BILLING.SUBSCRIPTION.ACTIVATED" || eventType === "BILLING.SUBSCRIPTION.RE-ACTIVATED") {
+    const subId = resource.id;
+    const idx   = users.findIndex(u => u.paypalSubscriptionId === subId);
+    if (idx !== -1 && users[idx].plan !== "trial" && users[idx].plan !== "paid" && users[idx].plan !== "beginners") {
+      users[idx].plan        = "trial";
+      users[idx].trialStatus = "active";
+      writeJSON(USERS_FILE, users);
+      console.log("[paypal-webhook] reactivated subscription for user", users[idx].id);
+    }
+  }
+
+  // Successful recurring payment — convert trial → paid
+  if (eventType === "PAYMENT.SALE.COMPLETED") {
+    const subId = resource.billing_agreement_id;
+    if (subId) {
+      const idx = users.findIndex(u => u.paypalSubscriptionId === subId);
+      if (idx !== -1 && users[idx].plan === "trial") {
+        users[idx].plan        = "paid";
+        users[idx].trialStatus = "converted";
+        users[idx].paidSince   = new Date().toISOString();
+        users[idx].trialUsage  = { competitorSearches: 0, articlesGenerated: 0, auditsToday: 0, auditsTodayDate: null };
+        writeJSON(USERS_FILE, users);
+        sendSystemEmail(
+          users[idx].email,
+          "eureach — payment received, subscription active",
+          `Hi ${users[idx].firstName || "there"},\n\nYour PayPal payment has been received and your eureach subscription is now fully active.\n\nManage at: https://eureach.eu/billing\n\n– The eureach team`
+        ).catch(() => {});
+        console.log("[paypal-webhook] trial converted to paid for user", users[idx].id);
+      }
+    }
+  }
+
+  json(res, 200, { received: true });
+}
+
 // ── Startup migration — add trial fields to existing users ────────────────────
 (function migrateUsers() {
   try {
@@ -5539,6 +5710,470 @@ async function handlePayPalSubscriptionActivate(req, res) {
     console.error('[migration] migrateDashboard failed:', err.message);
   }
 })();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Spotlight — order/payment system
+// ══════════════════════════════════════════════════════════════════════════════
+
+(function initSpotlightData() {
+  [SPOTLIGHT_ORDERS_FILE, SPOTLIGHT_CREATORS_FILE, SPOTLIGHT_WAITLIST_FILE].forEach(f => {
+    if (!fs.existsSync(f)) writeJSON(f, []);
+  });
+  if (!fs.existsSync(SPOTLIGHT_INVOICE_FILE)) writeJSON(SPOTLIGHT_INVOICE_FILE, { next: 1 });
+})();
+
+function loadSpotlightConfig() {
+  return JSON.parse(require('fs').readFileSync(SPOTLIGHT_CONFIG_FILE, 'utf8'));
+}
+
+function nextSpotlightInvoiceNumber() {
+  const counter = readJSON(SPOTLIGHT_INVOICE_FILE);
+  const num = counter.next || 1;
+  writeJSON(SPOTLIGHT_INVOICE_FILE, { next: num + 1 });
+  return 'SP-' + String(num).padStart(5, '0');
+}
+
+function generateSpotlightInvoicePdf(order) {
+  const PDFDocument = require('pdfkit');
+  const FONT  = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+  const FONTB = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
+  const doc = new PDFDocument({ size: 'A4', margin: 50 });
+  const chunks = [];
+  doc.on('data', c => chunks.push(c));
+  return new Promise((resolve, reject) => {
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+    try {
+      if (require('fs').existsSync(FONT))  doc.registerFont('Reg',  FONT);
+      if (require('fs').existsSync(FONTB)) doc.registerFont('Bold', FONTB);
+    } catch(e) {}
+    // Header
+    try { doc.font('Bold'); } catch(e) {}
+    doc.fontSize(20).fillColor('#1D9E75').text('eureach.eu', 50, 50);
+    doc.fontSize(10).fillColor('#666').text('eureach.eu | support@eureach.eu', 50, 75);
+    doc.moveDown(2);
+    // Invoice title
+    doc.fontSize(16).fillColor('#000').text('ΤΙΜΟΛΟΓΙΟ / INVOICE', { align: 'center' });
+    doc.fontSize(10).fillColor('#444').text('Αρ. / No: ' + order.invoice_number, { align: 'center' });
+    doc.text('Ημερομηνία / Date: ' + new Date(order.paid_at).toLocaleDateString('el-GR'), { align: 'center' });
+    doc.moveDown(2);
+    // Customer
+    doc.fontSize(11).fillColor('#000').text('Πελάτης / Customer:');
+    doc.fontSize(10).fillColor('#444').text(order.contact_name || order.business_name);
+    doc.text(order.email);
+    doc.text(order.business_name);
+    doc.moveDown(1.5);
+    // Line item
+    let cfg; try { cfg = loadSpotlightConfig(); } catch(e) { cfg = { packages: {}, vat_rate: 0.24 }; }
+    const pkg = cfg.packages && cfg.packages[order.package_id];
+    const pkgName = (pkg && pkg.name && pkg.name.el) ? pkg.name.el : order.package_id;
+    const netPrice = order.price_at_order || 0;
+    const vatRate = cfg.vat_rate || 0.24;
+    const vatAmount = Math.round(netPrice * vatRate * 100) / 100;
+    const total = Math.round((netPrice + vatAmount) * 100) / 100;
+    doc.fontSize(11).fillColor('#000').text('Υπηρεσία / Service:');
+    doc.fontSize(10).fillColor('#444').text('eureach Spotlight — ' + pkgName);
+    doc.moveDown();
+    doc.text('Καθαρή αξία / Net: €' + netPrice.toFixed(2));
+    doc.text('ΦΠΑ / VAT (' + (vatRate * 100) + '%): €' + vatAmount.toFixed(2));
+    doc.fontSize(12).fillColor('#000').text('Σύνολο / Total: €' + total.toFixed(2), { underline: true });
+    doc.moveDown(2);
+    doc.fontSize(9).fillColor('#888').text('Η υπηρεσία eureach Spotlight είναι εφάπαξ χρέωση, όχι συνδρομή.', { align: 'center' });
+    doc.end();
+  });
+}
+
+// GET /api/spotlight/check-availability
+function handleSpotlightCheckAvailability(req, res) {
+  const params = new URLSearchParams(req.url.split('?')[1] || '');
+  const city  = (params.get('city') || '').toLowerCase().trim();
+  const trade = (params.get('trade') || '').toLowerCase().trim();
+  let cfg; try { cfg = loadSpotlightConfig(); } catch(e) { cfg = { available_areas: [] }; }
+  const areas = cfg.available_areas || [];
+  const available = areas.some(a =>
+    a.city.toLowerCase() === city &&
+    (!trade || !a.trades || a.trades.length === 0 || a.trades.some(t => t.toLowerCase().includes(trade) || trade.includes(t.toLowerCase())))
+  );
+  json(res, 200, { available, city, trade });
+}
+
+// POST /api/spotlight/request
+async function handleSpotlightRequest(req, res) {
+  const body = await readBody(req);
+  const { business_name, website, city, trade, contact_name, email, phone, package: pkg, note, privacy } = body;
+  if (!business_name || !city || !contact_name || !email || !pkg) return json(res, 400, { error: 'Missing required fields.' });
+  if (!privacy) return json(res, 400, { error: 'Privacy consent required.' });
+
+  let cfg; try { cfg = loadSpotlightConfig(); } catch(e) { return json(res, 500, { error: 'Config unavailable.' }); }
+  const pkgConfig = cfg.packages[pkg];
+  if (!pkgConfig) return json(res, 400, { error: 'Invalid package.' });
+
+  const cookies = parseCookies(req);
+  const sessionUser = getSessionUser(cookies.session);
+
+  const orderId = 'spo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const order = {
+    id: orderId,
+    user_id: sessionUser ? sessionUser.id : null,
+    business_name, website: website || '', city, trade: trade || '',
+    contact_name, email, phone: phone || '',
+    package_id: pkg,
+    price_at_order: pkgConfig.price,
+    quote_only: pkgConfig.quote_only || false,
+    note: note || '',
+    status: 'requested',
+    status_history: [{ status: 'requested', at: new Date().toISOString() }],
+    creator_id: null, creator_name: null, creator_channel: null,
+    video_url: null, publish_date: null, view_count_30d: null,
+    audit_before: null, audit_after: null,
+    stripe_session_id: null, paypal_order_id: null,
+    payment_provider: null, invoice_number: null,
+    paid_at: null, quote_price: null,
+    mentions: [],
+    created_at: new Date().toISOString(),
+  };
+
+  if (pkg === 'spotlight_3') {
+    order.mentions = [1, 2, 3].map(n => ({ mention_n: n, creator_id: null, video_url: null, publish_date: null, view_count_30d: null, status: 'pending' }));
+  }
+
+  const orders = readJSON(SPOTLIGHT_ORDERS_FILE) || [];
+  orders.push(order);
+  writeJSON(SPOTLIGHT_ORDERS_FILE, orders);
+
+  const pkgNameEl = (pkgConfig.name && pkgConfig.name.el) ? pkgConfig.name.el : pkg;
+  sendSystemEmail(email, 'eureach Spotlight — Λάβαμε το αίτημά σου',
+    `Γεια σου ${contact_name},\n\nΛάβαμε το αίτημά σου για eureach Spotlight.\n\nΕπιχείρηση: ${business_name}\nΠακέτο: ${pkgNameEl}\nΠόλη: ${city}\n\nΘα επικοινωνήσουμε μαζί σου σύντομα για να σου παρουσιάσουμε τον creator.\n\n— eureach`
+  ).catch(() => {});
+
+  json(res, 200, { success: true, order_id: orderId });
+}
+
+// POST /api/spotlight/waitlist
+async function handleSpotlightWaitlist(req, res) {
+  const body = await readBody(req);
+  const { email, city, trade } = body;
+  if (!email || !city) return json(res, 400, { error: 'Email and city required.' });
+  const entry = { email, city, trade: trade || '', added_at: new Date().toISOString() };
+  const list = readJSON(SPOTLIGHT_WAITLIST_FILE) || [];
+  if (!list.some(e => e.email === email && e.city.toLowerCase() === city.toLowerCase())) {
+    list.push(entry);
+    writeJSON(SPOTLIGHT_WAITLIST_FILE, list);
+  }
+  json(res, 200, { success: true });
+}
+
+// GET /api/spotlight/order/:id
+function handleSpotlightOrderStatus(req, res, orderId) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  const orders = readJSON(SPOTLIGHT_ORDERS_FILE) || [];
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return json(res, 404, { error: 'Order not found.' });
+  if (user && user.role !== 'admin' && order.user_id && order.user_id !== user.id) return json(res, 403, { error: 'Forbidden.' });
+  json(res, 200, { order });
+}
+
+// POST /api/spotlight/checkout/stripe  (admin only — sends payment link to customer)
+async function handleSpotlightStripeCheckout(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user || user.role !== 'admin') return json(res, 403, { error: 'Admin only.' });
+
+  const body = await readBody(req);
+  const { order_id } = body;
+  const orders = readJSON(SPOTLIGHT_ORDERS_FILE) || [];
+  const idx = orders.findIndex(o => o.id === order_id);
+  if (idx === -1) return json(res, 404, { error: 'Order not found.' });
+  const order = orders[idx];
+  if (order.status !== 'matched') return json(res, 400, { error: 'Order must be in matched status.' });
+
+  const stripe = getStripe();
+  if (!stripe) return json(res, 500, { error: 'Stripe not configured.' });
+
+  let cfg; try { cfg = loadSpotlightConfig(); } catch(e) { cfg = { packages: {}, vat_rate: 0.24 }; }
+  const pkg = cfg.packages && cfg.packages[order.package_id];
+  const priceGross = Math.round((order.quote_price || order.price_at_order) * (1 + (cfg.vat_rate || 0.24)) * 100);
+  const siteBase = process.env.SITE_URL || 'https://eureach.eu';
+  const pkgNameEl = (pkg && pkg.name && pkg.name.el) ? pkg.name.el : order.package_id;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          unit_amount: priceGross,
+          product_data: { name: 'eureach Spotlight — ' + pkgNameEl, description: order.business_name + ' · ' + order.city },
+        },
+        quantity: 1,
+      }],
+      customer_email: order.email,
+      metadata: { spotlight_order_id: order.id },
+      success_url: siteBase + '/spotlight-order?id=' + order.id + '&paid=1',
+      cancel_url:  siteBase + '/spotlight-order?id=' + order.id + '&cancelled=1',
+    });
+
+    orders[idx].stripe_session_id = session.id;
+    orders[idx].payment_provider = 'stripe';
+    orders[idx].status = 'payment_sent';
+    orders[idx].status_history.push({ status: 'payment_sent', at: new Date().toISOString(), session_id: session.id });
+    writeJSON(SPOTLIGHT_ORDERS_FILE, orders);
+
+    json(res, 200, { success: true, checkout_url: session.url, session_id: session.id });
+  } catch(e) {
+    json(res, 500, { error: e.message });
+  }
+}
+
+// POST /api/spotlight/checkout/paypal/create  (admin only)
+async function handleSpotlightPayPalCreate(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user || user.role !== 'admin') return json(res, 403, { error: 'Admin only.' });
+
+  const body = await readBody(req);
+  const { order_id } = body;
+  const orders = readJSON(SPOTLIGHT_ORDERS_FILE) || [];
+  const idx = orders.findIndex(o => o.id === order_id);
+  if (idx === -1) return json(res, 404, { error: 'Order not found.' });
+  const order = orders[idx];
+  if (order.status !== 'matched') return json(res, 400, { error: 'Order must be in matched status.' });
+
+  const pp = await getPayPalToken();
+  if (!pp) return json(res, 500, { error: 'PayPal not configured.' });
+
+  let cfg; try { cfg = loadSpotlightConfig(); } catch(e) { cfg = { packages: {}, vat_rate: 0.24 }; }
+  const priceGross = ((order.quote_price || order.price_at_order) * (1 + (cfg.vat_rate || 0.24))).toFixed(2);
+  const siteBase = process.env.SITE_URL || 'https://eureach.eu';
+
+  try {
+    const r = await fetch(pp.base + '/v2/checkout/orders', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + pp.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: { currency_code: 'EUR', value: priceGross },
+          description: 'eureach Spotlight — ' + order.business_name,
+          custom_id: order.id,
+        }],
+        application_context: {
+          return_url: siteBase + '/spotlight-order?id=' + order.id + '&paid=1',
+          cancel_url:  siteBase + '/spotlight-order?id=' + order.id + '&cancelled=1',
+        },
+      }),
+    });
+    const ppOrder = await r.json();
+    if (!r.ok) return json(res, 500, { error: ppOrder.message || 'PayPal error.' });
+
+    const approveLink = ppOrder.links && ppOrder.links.find(l => l.rel === 'approve');
+    orders[idx].paypal_order_id = ppOrder.id;
+    orders[idx].payment_provider = 'paypal';
+    orders[idx].status = 'payment_sent';
+    orders[idx].status_history.push({ status: 'payment_sent', at: new Date().toISOString(), paypal_order_id: ppOrder.id });
+    writeJSON(SPOTLIGHT_ORDERS_FILE, orders);
+
+    json(res, 200, { success: true, checkout_url: approveLink ? approveLink.href : null, paypal_order_id: ppOrder.id });
+  } catch(e) {
+    json(res, 500, { error: e.message });
+  }
+}
+
+// POST /api/spotlight/checkout/paypal/capture
+async function handleSpotlightPayPalCapture(req, res) {
+  const body = await readBody(req);
+  const { paypal_order_id, spotlight_order_id } = body;
+  if (!paypal_order_id || !spotlight_order_id) return json(res, 400, { error: 'Missing IDs.' });
+
+  const pp = await getPayPalToken();
+  if (!pp) return json(res, 500, { error: 'PayPal not configured.' });
+
+  try {
+    const r = await fetch(pp.base + '/v2/checkout/orders/' + paypal_order_id + '/capture', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + pp.token, 'Content-Type': 'application/json' },
+    });
+    const captured = await r.json();
+    if (!r.ok || captured.status !== 'COMPLETED') return json(res, 400, { error: 'Capture failed: ' + (captured.message || captured.status) });
+
+    await markSpotlightPaid(spotlight_order_id, 'paypal', paypal_order_id);
+    json(res, 200, { success: true });
+  } catch(e) {
+    json(res, 500, { error: e.message });
+  }
+}
+
+// GET /api/spotlight/my-orders
+function handleSpotlightMyOrders(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const orders = (readJSON(SPOTLIGHT_ORDERS_FILE) || []).filter(o => o.user_id === user.id);
+  json(res, 200, { orders });
+}
+
+// POST /api/spotlight/webhook/stripe
+async function handleSpotlightStripeWebhook(req, res) {
+  const stripe = getStripe();
+  if (!stripe) return json(res, 500, { error: 'Stripe not configured.' });
+  const rawBody = await readRawBody(req);
+  const sig = req.headers['stripe-signature'];
+  const secret = process.env.STRIPE_SPOTLIGHT_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
+  let event;
+  try { event = stripe.webhooks.constructEvent(rawBody, sig, secret); }
+  catch (e) { return json(res, 400, { error: 'Invalid signature.' }); }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const orderId = session.metadata && session.metadata.spotlight_order_id;
+    if (orderId) await markSpotlightPaid(orderId, 'stripe', session.id);
+  }
+  json(res, 200, { received: true });
+}
+
+// markSpotlightPaid — called by Stripe webhook and PayPal capture
+async function markSpotlightPaid(orderId, provider, paymentRef) {
+  const orders = readJSON(SPOTLIGHT_ORDERS_FILE) || [];
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx === -1) return;
+  const currentStatus = orders[idx].status;
+  if (currentStatus === 'paid' || currentStatus === 'scheduled' || currentStatus === 'published') return; // idempotent
+
+  const invoiceNumber = nextSpotlightInvoiceNumber();
+  orders[idx].status = 'paid';
+  orders[idx].paid_at = new Date().toISOString();
+  orders[idx].payment_provider = provider;
+  orders[idx].invoice_number = invoiceNumber;
+  orders[idx].status_history.push({ status: 'paid', at: new Date().toISOString(), ref: paymentRef });
+  writeJSON(SPOTLIGHT_ORDERS_FILE, orders);
+
+  const order = orders[idx];
+
+  // Generate and email invoice PDF
+  try {
+    const pdfBuf = await generateSpotlightInvoicePdf(order);
+    await smtpSend({
+      host: process.env.SYSTEM_EMAIL_HOST,
+      port: parseInt(process.env.SYSTEM_EMAIL_PORT || '587'),
+      username: process.env.SYSTEM_EMAIL_USER,
+      password: process.env.SYSTEM_EMAIL_PASS,
+      from: process.env.SYSTEM_EMAIL_FROM || process.env.SYSTEM_EMAIL_USER,
+      fromName: 'eureach.eu',
+      to: order.email,
+      subject: 'eureach Spotlight — Επιβεβαίωση πληρωμής & τιμολόγιο',
+      body: `Γεια σου ${order.contact_name},\n\nΗ πληρωμή σου επιβεβαιώθηκε!\n\nΤιμολόγιο: ${invoiceNumber}\nΠακέτο: ${order.package_id}\nΕπιχείρηση: ${order.business_name}\n\nΘα επικοινωνήσουμε για τις λεπτομέρειες δημοσίευσης.\n\n— eureach`,
+      attachments: [{ filename: 'invoice-' + invoiceNumber + '.pdf', content: pdfBuf, contentType: 'application/pdf' }],
+    });
+  } catch(e) { console.error('[spotlight] invoice email error:', e.message); }
+}
+
+// PUT /api/admin/spotlight/orders/:id
+async function handleAdminSpotlightOrderUpdate(req, res, orderId) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user || user.role !== 'admin') return json(res, 403, { error: 'Admin only.' });
+
+  const body = await readBody(req);
+  const orders = readJSON(SPOTLIGHT_ORDERS_FILE) || [];
+  const idx = orders.findIndex(o => o.id === orderId);
+  if (idx === -1) return json(res, 404, { error: 'Not found.' });
+
+  const allowed = ['matched','scheduled','published','report_sent','completed','cancelled','refunded'];
+  if (body.status && allowed.includes(body.status)) {
+    orders[idx].status = body.status;
+    orders[idx].status_history.push({ status: body.status, at: new Date().toISOString(), by: user.email });
+  }
+  const updatable = ['creator_id','creator_name','creator_channel','video_url','publish_date','view_count_30d','audit_before','audit_after','quote_price','note'];
+  updatable.forEach(k => { if (body[k] !== undefined) orders[idx][k] = body[k]; });
+  writeJSON(SPOTLIGHT_ORDERS_FILE, orders);
+  // Send email notification based on new status
+  if (body.status === 'matched')     spotlightEmailCreatorMatched(orders[idx]);
+  else if (body.status === 'published')  spotlightEmailVideoPublished(orders[idx]);
+  else if (body.status === 'report_sent') spotlightEmail30DayReport(orders[idx]);
+  else if (body.status === 'completed')  spotlightEmail60DayReport(orders[idx]);
+  json(res, 200, { success: true, order: orders[idx] });
+}
+
+// GET /api/admin/spotlight/orders
+function handleAdminSpotlightOrders(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user || user.role !== 'admin') return json(res, 403, { error: 'Admin only.' });
+  const params = new URLSearchParams(req.url.split('?')[1] || '');
+  const status = params.get('status');
+  let orders = readJSON(SPOTLIGHT_ORDERS_FILE) || [];
+  if (status) orders = orders.filter(o => o.status === status);
+  json(res, 200, { orders });
+}
+
+// GET|POST /api/admin/spotlight/creators
+async function handleAdminSpotlightCreators(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user || user.role !== 'admin') return json(res, 403, { error: 'Admin only.' });
+  if (req.method === 'GET') {
+    json(res, 200, { creators: readJSON(SPOTLIGHT_CREATORS_FILE) || [] });
+  } else {
+    const body = await readBody(req);
+    const creators = readJSON(SPOTLIGHT_CREATORS_FILE) || [];
+    const creator = { id: 'cr_' + Date.now(), ...body, created_at: new Date().toISOString() };
+    creators.push(creator);
+    writeJSON(SPOTLIGHT_CREATORS_FILE, creators);
+    json(res, 200, { success: true, creator });
+  }
+}
+
+// GET /api/admin/spotlight/waitlist
+function handleAdminSpotlightWaitlist(req, res) {
+  const cookies = parseCookies(req);
+  const user = getSessionUser(cookies.session);
+  if (!user || user.role !== 'admin') return json(res, 403, { error: 'Admin only.' });
+  const list = readJSON(SPOTLIGHT_WAITLIST_FILE) || [];
+  const params = new URLSearchParams(req.url.split('?')[1] || '');
+  if (params.get('format') === 'csv') {
+    const rows = [['email','city','trade','added_at'], ...list.map(e => [e.email, e.city, e.trade, e.added_at])];
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\n');
+    res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment;filename=spotlight-waitlist.csv' });
+    res.end(csv);
+  } else {
+    json(res, 200, { waitlist: list });
+  }
+}
+
+// ── Spotlight emails ──────────────────────────────────────────────────────────
+
+function spotlightEmailCreatorMatched(order) {
+  const lines = {
+    el: `Γεια σου ${order.contact_name},\n\nΒρήκαμε τον creator για το eureach Spotlight σου!\n\nCreator: ${order.creator_name || '[Όνομα creator]'}\nΚανάλι: ${order.creator_channel || '[URL καναλιού]'}\nΕπιχείρηση: ${order.business_name}\nΠακέτο: ${order.package_id}\n\nΘα λάβεις σύνδεσμο πληρωμής σύντομα. Πληρώνεις μόνο αφού επιβεβαιωθεί ο creator.\n\n— eureach`,
+    en: `Hi ${order.contact_name},\n\nWe found a creator for your eureach Spotlight!\n\nCreator: ${order.creator_name || '[Creator name]'}\nChannel: ${order.creator_channel || '[Channel URL]'}\nBusiness: ${order.business_name}\nPackage: ${order.package_id}\n\nYou'll receive a payment link shortly. You only pay once the creator is confirmed.\n\n— eureach`,
+    de: `Hallo ${order.contact_name},\n\nWir haben einen Creator für dein eureach Spotlight gefunden!\n\nCreator: ${order.creator_name || '[Creator-Name]'}\nKanal: ${order.creator_channel || '[Kanal-URL]'}\nUnternehmen: ${order.business_name}\nPaket: ${order.package_id}\n\nDu erhältst bald einen Zahlungslink. Du zahlst erst, wenn der Creator bestätigt ist.\n\n— eureach`,
+  };
+  const body = lines.el + '\n\n---\n\n' + lines.en;
+  return sendSystemEmail(order.email, 'eureach Spotlight — Creator επιβεβαιωμένος / Creator confirmed', body).catch(() => {});
+}
+
+function spotlightEmailVideoPublished(order) {
+  const videoLink = order.video_url || '[URL βίντεο]';
+  const body = `Γεια σου ${order.contact_name},\n\nΤο βίντεο Spotlight δημοσιεύτηκε!\n\nΒίντεο: ${videoLink}\nΕπιχείρηση: ${order.business_name}\n\nΣε 30 ημέρες θα λάβεις αναφορά αποτελεσμάτων (views, link βίντεο, audit παρουσίας).\n\n---\n\nHi ${order.contact_name},\n\nYour Spotlight video has been published!\n\nVideo: ${videoLink}\nBusiness: ${order.business_name}\n\nYou will receive a 30-day results report (views, video link, visibility audit) in 30 days.\n\n— eureach`;
+  return sendSystemEmail(order.email, 'eureach Spotlight — Το βίντεο δημοσιεύτηκε / Video published', body).catch(() => {});
+}
+
+function spotlightEmail30DayReport(order) {
+  const videoLink = order.video_url || '[URL βίντεο]';
+  const views = order.view_count_30d != null ? order.view_count_30d : '[PLACEHOLDER: views at 30 days]';
+  const body = `Γεια σου ${order.contact_name},\n\nΑναφορά 30 ημερών για το eureach Spotlight σου:\n\nΒίντεο: ${videoLink}\nViews (30 ημέρες): ${views}\nΕπιχείρηση: ${order.business_name}\n\n[PLACEHOLDER: Επιπλέον στοιχεία αναφοράς]\n\n---\n\nHi ${order.contact_name},\n\n30-day Spotlight report:\n\nVideo: ${videoLink}\nViews (30 days): ${views}\nBusiness: ${order.business_name}\n\n[PLACEHOLDER: Additional report data]\n\n— eureach`;
+  return sendSystemEmail(order.email, 'eureach Spotlight — Αναφορά 30 ημερών / 30-day report', body).catch(() => {});
+}
+
+function spotlightEmail60DayReport(order) {
+  const videoLink = order.video_url || '[URL βίντεο]';
+  const auditBefore = order.audit_before ? JSON.stringify(order.audit_before) : '[PLACEHOLDER: audit scores before]';
+  const auditAfter  = order.audit_after  ? JSON.stringify(order.audit_after)  : '[PLACEHOLDER: audit scores after]';
+  const body = `Γεια σου ${order.contact_name},\n\nΤελική αναφορά eureach Spotlight (60 ημέρες):\n\nΒίντεο: ${videoLink}\nAudit παρουσίας ΠΡΙΝ: ${auditBefore}\nAudit παρουσίας ΜΕΤΑ: ${auditAfter}\n\n[PLACEHOLDER: Πλήρης ανάλυση αποτελεσμάτων]\n\n---\n\nHi ${order.contact_name},\n\nFinal eureach Spotlight report (60 days):\n\nVideo: ${videoLink}\nVisibility audit BEFORE: ${auditBefore}\nVisibility audit AFTER: ${auditAfter}\n\n[PLACEHOLDER: Full results analysis]\n\n— eureach`;
+  return sendSystemEmail(order.email, 'eureach Spotlight — Τελική αναφορά / Final report', body).catch(() => {});
+}
+
 // ── Router ────────────────────────────────────────────────────────────────────
 
 // Paths that must never be served as static files
@@ -5546,7 +6181,7 @@ const BLOCKED_STATIC_PREFIXES = ["/data/", "/config/", "/security/", "/."];
 const BLOCKED_STATIC_FILES    = ["/server.js", "/package.json", "/package-lock.json", "/.env"];
 
 // CSRF-exempt endpoints (before session exists)
-const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook", "/api/audit-public/start", "/api/audit-public/save", "/api/audit-public/email-save", "/api/newsletter/subscribe", "/api/strategy/generate", "/api/strategy/pdf"];
+const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook", "/api/billing/paypal/webhook", "/api/audit-public/start", "/api/audit-public/save", "/api/audit-public/email-save", "/api/newsletter/subscribe", "/api/strategy/generate", "/api/strategy/pdf", "/api/spotlight/webhook/stripe"];
 
 function generateCsrfToken() { return crypto.randomBytes(24).toString("hex"); }
 
@@ -7865,6 +8500,406 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000);
 
+
+// ── Spotlight page ─────────────────────────────────────────────────────────
+function handleSpotlightPage(req, res) {
+  const PAGE_URL = 'https://eureach.eu/spotlight';
+  let config;
+  try {
+    config = JSON.parse(require('fs').readFileSync('/home/eureach/htdocs/eureach.eu/config/spotlight.json', 'utf8'));
+  } catch(e) {
+    config = { packages: {}, show_example_video: false };
+  }
+
+  const pkgs = config.packages || {};
+
+  // Build package cards from config
+  function packCard(pkg, highlight) {
+    if (!pkg) return '';
+    const nameEl = (pkg.name && pkg.name.el) || pkg.id || '';
+    const descEl = (pkg.description && pkg.description.el) || '';
+    const inclEl = (pkg.includes && pkg.includes.el) || [];
+    let priceHtml;
+    if (pkg.quote_only) {
+      const pd = (pkg.price_display && pkg.price_display.el) || 'από €590';
+      priceHtml = `<div class="sp-price sp-price-quote">${pd}</div>`;
+    } else {
+      priceHtml = `<div class="sp-price">€${pkg.price} <span class="sp-vat">+ ΦΠΑ</span></div>`;
+    }
+    const ctaHtml = pkg.quote_only
+      ? `<a href="#sp-check" class="sp-pack-btn sp-pack-btn-ghost" data-i18n="sp.requestQuote">Αίτημα προσφοράς →</a>`
+      : `<a href="#sp-check" class="sp-pack-btn">Ξεκινήστε →</a>`;
+    const inclList = inclEl.map(i => `<li>${i}</li>`).join('');
+    const highlightClass = highlight ? ' sp-pack-card--highlight' : '';
+    return `<div class="sp-pack-card${highlightClass}">
+      ${highlight ? '<div class="sp-pack-badge">Δημοφιλές</div>' : ''}
+      <div class="sp-pack-name">${nameEl}</div>
+      ${priceHtml}
+      <p class="sp-pack-desc">${descEl}</p>
+      <ul class="sp-pack-includes">${inclList}</ul>
+      ${ctaHtml}
+    </div>`;
+  }
+
+  const packGrid = [
+    packCard(pkgs.spotlight_1, false),
+    packCard(pkgs.spotlight_3, true),
+    packCard(pkgs.spotlight_feature, false),
+  ].join('\n');
+
+  const exampleSection = config.show_example_video ? `
+  <section class="sp-section sp-example">
+    <h2 data-i18n="sp.exampleTitle">Παράδειγμα βίντεο</h2>
+    <div class="sp-video-placeholder">[ΠΑΡΑΔΕΙΓΜΑ ΒΙΝΤΕΟ — προσθέστε URL στο config/spotlight.json]</div>
+  </section>` : '';
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {"@type":"Question","name":"Τι είναι το eureach Spotlight;","acceptedAnswer":{"@type":"Answer","text":"Το eureach Spotlight συνδέει την επιχείρησή σου με έναν τοπικό creator στην περιοχή σου, ο οποίος σε αναφέρει σε βίντεο YouTube. Το βίντεο μένει online και λαμβάνεις αναφορά αποτελεσμάτων 30 ημέρες μετά."}},
+      {"@type":"Question","name":"Ποιος κάνει το βίντεο;","acceptedAnswer":{"@type":"Answer","text":"Η eureach επιλέγει έναν κατάλληλο creator στην περιοχή σου. Σου τον παρουσιάζουμε πριν πληρώσεις — μπορείς να τον δεις και να αποφασίσεις."}},
+      {"@type":"Question","name":"Πόσο καιρό μένει online το βίντεο;","acceptedAnswer":{"@type":"Answer","text":"Το βίντεο δημοσιεύεται στο κανάλι του creator και μένει online μόνιμα, εκτός αν ο creator αποφασίσει να το αποσύρει για δικούς του λόγους."}},
+      {"@type":"Question","name":"Τι γίνεται αν δεν δημοσιευτεί;","acceptedAnswer":{"@type":"Answer","text":"Αν το βίντεο δεν δημοσιευτεί εντός 30 ημερών από την πληρωμή, επιστρέφουμε το ποσό πλήρως. Χωρίς διαδικασίες, χωρίς ερωτήσεις."}},
+      {"@type":"Question","name":"Μπορώ να δω τον creator πριν πληρώσω;","acceptedAnswer":{"@type":"Answer","text":"Ναι. Αφού συμπληρώσεις τη φόρμα αιτήματος, σου παρουσιάζουμε τον creator (κανάλι, κοινό, τελευταία βίντεο) πριν σου στείλουμε link πληρωμής."}}
+    ]
+  };
+
+  const html = `<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eureach Spotlight — Τοπικός Creator Προβάλλει την Επιχείρησή σου σε YouTube</title>
+  <meta name="description" content="Ένας τοπικός creator δείχνει την επιχείρησή σου στο κοινό της περιοχής σου μέσω YouTube. Εφάπαξ. Χωρίς συνδρομή. Αναφορά αποτελεσμάτων εγγυημένη.">
+  <link rel="canonical" href="${PAGE_URL}">
+  <meta property="og:title" content="eureach Spotlight — Τοπικός Creator για την Επιχείρησή σου">
+  <meta property="og:description" content="Ένας τοπικός creator δείχνει την επιχείρησή σου στο κοινό της περιοχής σου μέσω YouTube. Εφάπαξ. Χωρίς συνδρομή.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="${PAGE_URL}">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/translations.js?v=7"><\/script>
+  <script src="/js/lp-translations.js?v=1"><\/script>
+  <script src="/js/i18n.js?v=5"><\/script>
+  <script type="application/ld+json">${JSON.stringify(faqSchema)}<\/script>
+  <style>
+    /* ── Spotlight page styles ─────────────────────────────── */
+    :root { --sp-accent: #1D9E75; --sp-accent-dim: rgba(29,158,117,.12); --sp-accent-border: rgba(29,158,117,.3); }
+
+    .sp-section { max-width:860px; margin:0 auto; padding:60px 20px; }
+    .sp-section h2 { font-size:clamp(1.35rem,3vw,1.9rem); font-weight:800; color:var(--white); margin-bottom:32px; text-align:center; }
+
+    /* Hero */
+    .sp-hero { max-width:860px; margin:0 auto; padding:110px 20px 64px; text-align:center; }
+    .sp-badge { display:inline-block; background:var(--sp-accent-dim); border:1px solid var(--sp-accent-border); border-radius:20px; padding:4px 14px; font-size:.72rem; font-weight:700; color:#4ade80; letter-spacing:.08em; text-transform:uppercase; margin-bottom:20px; }
+    .sp-hero h1 { font-size:clamp(1.8rem,4.5vw,3rem); font-weight:800; color:var(--white); line-height:1.2; margin-bottom:18px; }
+    .sp-sub { font-size:1.05rem; color:var(--muted); max-width:580px; margin:0 auto 36px; line-height:1.7; }
+    .sp-cta-btn { display:inline-block; background:var(--sp-accent); color:#fff; font-weight:700; font-size:1rem; padding:14px 28px; border-radius:var(--radius); text-decoration:none; transition:background .2s; }
+    .sp-cta-btn:hover { background:#168f68; }
+
+    /* Steps */
+    .sp-how { background:rgba(255,255,255,.02); }
+    .sp-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+    .sp-step { background:var(--glass2); border:1px solid var(--border); border-radius:16px; padding:22px 18px; }
+    .sp-step-n { width:36px; height:36px; border-radius:50%; background:var(--sp-accent-dim); border:1px solid var(--sp-accent); display:flex; align-items:center; justify-content:center; font-size:.85rem; font-weight:700; color:var(--sp-accent); margin-bottom:14px; }
+    .sp-step h4 { color:var(--white); font-size:.92rem; font-weight:700; margin-bottom:7px; }
+    .sp-step p { color:var(--muted); font-size:.83rem; line-height:1.6; }
+
+    /* Packages */
+    .sp-pack-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+    .sp-pack-card { background:var(--glass2); border:1px solid var(--border); border-radius:20px; padding:28px 22px; position:relative; display:flex; flex-direction:column; gap:12px; }
+    .sp-pack-card--highlight { border-color:var(--sp-accent); background:rgba(29,158,117,.06); }
+    .sp-pack-badge { position:absolute; top:-12px; left:50%; transform:translateX(-50%); background:var(--sp-accent); color:#fff; font-size:.68rem; font-weight:700; padding:3px 12px; border-radius:20px; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
+    .sp-pack-name { font-size:1.05rem; font-weight:800; color:var(--white); }
+    .sp-price { font-size:1.6rem; font-weight:800; color:var(--sp-accent); }
+    .sp-price-quote { font-size:1.3rem; }
+    .sp-vat { font-size:.72rem; font-weight:400; color:var(--muted); }
+    .sp-pack-desc { color:var(--muted); font-size:.83rem; line-height:1.6; margin:0; }
+    .sp-pack-includes { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px; flex:1; }
+    .sp-pack-includes li { font-size:.83rem; color:var(--text); padding-left:18px; position:relative; line-height:1.5; }
+    .sp-pack-includes li::before { content:"✓"; position:absolute; left:0; color:var(--sp-accent); font-weight:700; }
+    .sp-pack-btn { display:block; text-align:center; background:var(--sp-accent); color:#fff; font-weight:700; font-size:.88rem; padding:11px 0; border-radius:var(--radius); text-decoration:none; transition:background .2s; margin-top:auto; }
+    .sp-pack-btn:hover { background:#168f68; }
+    .sp-pack-btn-ghost { background:transparent; border:1px solid var(--sp-accent); color:var(--sp-accent); }
+    .sp-pack-btn-ghost:hover { background:var(--sp-accent-dim); }
+
+    /* Video placeholder */
+    .sp-video-placeholder { background:var(--glass2); border:2px dashed var(--border); border-radius:16px; padding:48px 20px; text-align:center; color:var(--muted); font-size:.9rem; }
+
+    /* Guarantees */
+    .sp-guarantees ul { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:14px; }
+    .sp-guarantees li { font-size:.93rem; color:var(--text); padding-left:28px; position:relative; line-height:1.6; }
+    .sp-guarantees li::before { content:"✓"; position:absolute; left:0; color:var(--sp-accent); font-weight:700; font-size:1rem; }
+
+    /* Honest section */
+    .sp-honest { background:rgba(248,113,113,.03); border-top:1px solid rgba(248,113,113,.12); border-bottom:1px solid rgba(248,113,113,.12); }
+    .sp-honest h2 { color:var(--white); }
+    .sp-honest p { color:var(--muted); font-size:.93rem; line-height:1.8; max-width:720px; margin:0 auto; text-align:center; }
+
+    /* FAQ */
+    .sp-faq-list { display:flex; flex-direction:column; gap:0; }
+    .sp-faq-item { border-bottom:1px solid var(--border); }
+    .sp-faq-item:first-child { border-top:1px solid var(--border); }
+    .sp-faq-q { width:100%; background:none; border:none; text-align:left; padding:18px 0; font-size:.95rem; font-weight:600; color:var(--white); cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:12px; font-family:inherit; }
+    .sp-faq-q:hover { color:#4ade80; }
+    .sp-faq-icon { font-size:1.1rem; color:var(--sp-accent); flex-shrink:0; transition:transform .2s; }
+    .sp-faq-item.open .sp-faq-icon { transform:rotate(45deg); }
+    .sp-faq-a { display:none; padding-bottom:18px; color:var(--muted); font-size:.88rem; line-height:1.75; }
+    .sp-faq-item.open .sp-faq-a { display:block; }
+
+    /* Availability checker */
+    .sp-check { background:rgba(29,158,117,.04); border-top:1px solid var(--sp-accent-border); }
+    .sp-check-form { display:flex; gap:10px; max-width:560px; margin:0 auto 24px; flex-wrap:wrap; }
+    .sp-check-form input { flex:1; min-width:140px; padding:11px 14px; background:var(--glass2); border:1px solid var(--border); border-radius:var(--radius); color:var(--white); font-size:.88rem; outline:none; font-family:inherit; }
+    .sp-check-form input:focus { border-color:var(--sp-accent); }
+    .sp-check-form button { padding:11px 22px; background:var(--sp-accent); border:none; border-radius:var(--radius); color:#fff; font-size:.88rem; font-weight:700; cursor:pointer; transition:background .2s; font-family:inherit; }
+    .sp-check-form button:hover { background:#168f68; }
+    #sp-check-result { max-width:560px; margin:0 auto 20px; text-align:center; }
+    .sp-avail-ok { color:#4ade80; font-weight:600; font-size:.95rem; padding:12px; background:rgba(74,222,128,.07); border-radius:10px; }
+    .sp-avail-no { color:#f87171; font-weight:600; font-size:.95rem; padding:12px; background:rgba(248,113,113,.07); border-radius:10px; }
+
+    /* Forms */
+    #sp-request-form, #sp-waitlist-form { max-width:560px; margin:0 auto; display:flex; flex-direction:column; gap:12px; }
+    #sp-request-form input, #sp-request-form textarea, #sp-request-form select,
+    #sp-waitlist-form input, #sp-waitlist-form textarea { width:100%; padding:11px 14px; background:var(--glass2); border:1px solid var(--border); border-radius:var(--radius); color:var(--white); font-size:.88rem; outline:none; font-family:inherit; box-sizing:border-box; }
+    #sp-request-form input:focus, #sp-request-form textarea:focus, #sp-request-form select:focus,
+    #sp-waitlist-form input:focus { border-color:var(--sp-accent); }
+    #sp-request-form select { background:var(--glass2); }
+    #sp-request-form select option { background:#0B1628; }
+    #sp-request-form textarea { resize:vertical; }
+    .sp-privacy-label { display:flex; align-items:flex-start; gap:9px; font-size:.8rem; color:var(--muted); line-height:1.5; }
+    .sp-privacy-label input[type=checkbox] { margin-top:2px; accent-color:var(--sp-accent); flex-shrink:0; }
+    .sp-privacy-label a { color:var(--sp-accent); }
+    .sp-submit-btn { padding:13px; background:var(--sp-accent); border:none; border-radius:var(--radius); color:#fff; font-size:.95rem; font-weight:700; cursor:pointer; transition:background .2s; font-family:inherit; }
+    .sp-submit-btn:hover { background:#168f68; }
+    .sp-submit-btn:disabled { opacity:.6; cursor:not-allowed; }
+    .sp-success { color:#4ade80; background:rgba(74,222,128,.08); border-radius:10px; padding:12px; font-size:.88rem; margin-top:6px; }
+    .sp-error { color:#f87171; background:rgba(248,113,113,.08); border-radius:10px; padding:12px; font-size:.88rem; margin-top:6px; }
+    #sp-waitlist-form p { color:var(--muted); font-size:.88rem; margin:0; }
+
+    /* Responsive */
+    @media(max-width:900px) {
+      .sp-steps { grid-template-columns:repeat(2,1fr); }
+      .sp-pack-grid { grid-template-columns:repeat(2,1fr); }
+    }
+    @media(max-width:580px) {
+      .sp-hero { padding:90px 16px 48px; }
+      .sp-section { padding:40px 16px; }
+      .sp-steps { grid-template-columns:1fr; }
+      .sp-pack-grid { grid-template-columns:1fr; }
+      .sp-check-form { flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+${blogNavHtml()}
+
+<!-- Hero -->
+<section class="sp-hero">
+  <div class="sp-badge" data-i18n="sp.badge">🎬 eureach Spotlight</div>
+  <h1 data-i18n="sp.heroTitle">Ένας τοπικός creator δείχνει την επιχείρησή σου στο κοινό της περιοχής σου.</h1>
+  <p class="sp-sub" data-i18n="sp.heroSub">Το βίντεο μένει online. Εσύ παίρνεις αναφορά αποτελεσμάτων.</p>
+  <a href="#sp-check" class="sp-cta-btn" data-i18n="sp.heroCta">Δες αν είναι διαθέσιμο στην περιοχή σου →</a>
+</section>
+
+<!-- How it works -->
+<section class="sp-section sp-how">
+  <h2 data-i18n="sp.howTitle">Πώς λειτουργεί</h2>
+  <div class="sp-steps">
+    <div class="sp-step">
+      <div class="sp-step-n">1</div>
+      <h4 data-i18n="sp.step1h">Ζητάς Spotlight</h4>
+      <p data-i18n="sp.step1p">Συμπληρώνεις τη φόρμα με στοιχεία της επιχείρησής σου και επιλέγεις πακέτο.</p>
+    </div>
+    <div class="sp-step">
+      <div class="sp-step-n">2</div>
+      <h4 data-i18n="sp.step2h">Βρίσκουμε τον κατάλληλο creator</h4>
+      <p data-i18n="sp.step2p">Η eureach επιλέγει creator στην περιοχή σου και σου τον παρουσιάζει πριν πληρώσεις.</p>
+    </div>
+    <div class="sp-step">
+      <div class="sp-step-n">3</div>
+      <h4 data-i18n="sp.step3h">Πληρώνεις μόνο όταν επιβεβαιωθεί</h4>
+      <p data-i18n="sp.step3p">Λαμβάνεις link πληρωμής μόνο αφού επιβεβαιωθεί ο creator. Εφάπαξ. Χωρίς συνδρομή.</p>
+    </div>
+    <div class="sp-step">
+      <div class="sp-step-n">4</div>
+      <h4 data-i18n="sp.step4h">Δημοσιεύεται το βίντεο</h4>
+      <p data-i18n="sp.step4p">Παίρνεις αναφορά με views, link βίντεο και audit παρουσίας πριν & μετά.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Packages -->
+<section class="sp-section sp-packages" id="sp-packages">
+  <h2 data-i18n="sp.packTitle">Διαλέξτε πακέτο</h2>
+  <div class="sp-pack-grid">
+    ${packGrid}
+  </div>
+</section>
+${exampleSection}
+
+<!-- Guarantees -->
+<section class="sp-section sp-guarantees">
+  <h2 data-i18n="sp.guarTitle">Εγγυήσεις</h2>
+  <ul>
+    <li data-i18n="sp.guar1">Επιστροφή χρημάτων αν το βίντεο δεν δημοσιευτεί εντός 30 ημερών από την πληρωμή.</li>
+    <li data-i18n="sp.guar2">Κάθε αναφορά σημειώνεται ως χορηγούμενη, σύμφωνα με τους κανόνες του YouTube και την ευρωπαϊκή νομοθεσία.</li>
+    <li data-i18n="sp.guar3">Λαμβάνεις αναφορά αποτελεσμάτων 30 ημέρες μετά τη δημοσίευση.</li>
+  </ul>
+</section>
+
+<!-- Honest -->
+<section class="sp-section sp-honest">
+  <h2 data-i18n="sp.honestTitle">Τι δεν υποσχόμαστε</h2>
+  <p data-i18n="sp.honestText">Το eureach Spotlight εξασφαλίζει ότι η επιχείρησή σου αναφέρεται σε βίντεο YouTube από τοπικό creator. Δεν εγγυόμαστε συγκεκριμένο αριθμό views, κατάταξη στη Google ή εμφάνιση σε αποτελέσματα AI (ChatGPT, Perplexity κ.λπ.). Κάθε βίντεο σημειώνεται ως χορηγούμενο.</p>
+</section>
+
+<!-- FAQ -->
+<section class="sp-section sp-faq">
+  <h2 data-i18n="sp.faqTitle">Συχνές ερωτήσεις</h2>
+  <div class="sp-faq-list">
+    <div class="sp-faq-item">
+      <button class="sp-faq-q" onclick="toggleFaq(this)"><span data-i18n="sp.faq1q">Τι είναι το eureach Spotlight;</span><span class="sp-faq-icon">+</span></button>
+      <div class="sp-faq-a" data-i18n="sp.faq1a">Το eureach Spotlight συνδέει την επιχείρησή σου με έναν τοπικό creator στην περιοχή σου, ο οποίος σε αναφέρει σε βίντεο YouTube. Το βίντεο μένει online και λαμβάνεις αναφορά αποτελεσμάτων 30 ημέρες μετά.</div>
+    </div>
+    <div class="sp-faq-item">
+      <button class="sp-faq-q" onclick="toggleFaq(this)"><span data-i18n="sp.faq2q">Ποιος κάνει το βίντεο;</span><span class="sp-faq-icon">+</span></button>
+      <div class="sp-faq-a" data-i18n="sp.faq2a">Η eureach επιλέγει έναν κατάλληλο creator στην περιοχή σου. Σου τον παρουσιάζουμε πριν πληρώσεις — μπορείς να τον δεις και να αποφασίσεις.</div>
+    </div>
+    <div class="sp-faq-item">
+      <button class="sp-faq-q" onclick="toggleFaq(this)"><span data-i18n="sp.faq3q">Πόσο καιρό μένει online το βίντεο;</span><span class="sp-faq-icon">+</span></button>
+      <div class="sp-faq-a" data-i18n="sp.faq3a">Το βίντεο δημοσιεύεται στο κανάλι του creator και μένει online μόνιμα, εκτός αν ο creator αποφασίσει να το αποσύρει για δικούς του λόγους.</div>
+    </div>
+    <div class="sp-faq-item">
+      <button class="sp-faq-q" onclick="toggleFaq(this)"><span data-i18n="sp.faq4q">Τι γίνεται αν δεν δημοσιευτεί;</span><span class="sp-faq-icon">+</span></button>
+      <div class="sp-faq-a" data-i18n="sp.faq4a">Αν το βίντεο δεν δημοσιευτεί εντός 30 ημερών από την πληρωμή, επιστρέφουμε το ποσό πλήρως. Χωρίς διαδικασίες, χωρίς ερωτήσεις.</div>
+    </div>
+    <div class="sp-faq-item">
+      <button class="sp-faq-q" onclick="toggleFaq(this)"><span data-i18n="sp.faq5q">Μπορώ να δω τον creator πριν πληρώσω;</span><span class="sp-faq-icon">+</span></button>
+      <div class="sp-faq-a" data-i18n="sp.faq5a">Ναι. Αφού συμπληρώσεις τη φόρμα αιτήματος, σου παρουσιάζουμε τον creator (κανάλι, κοινό, τελευταία βίντεο) πριν σου στείλουμε link πληρωμής.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Availability check + forms -->
+<section class="sp-section sp-check" id="sp-check">
+  <h2 data-i18n="sp.checkTitle">Ελέγξτε διαθεσιμότητα</h2>
+  <div class="sp-check-form">
+    <input id="sp-city" placeholder="Πόλη..." data-i18n-ph="sp.cityPh">
+    <input id="sp-trade" placeholder="Κλάδος..." data-i18n-ph="sp.tradePh">
+    <button onclick="checkAvailability()" data-i18n="sp.checkBtn">Έλεγχος →</button>
+  </div>
+  <div id="sp-check-result" style="display:none"></div>
+
+  <!-- Request form (shown if available) -->
+  <form id="sp-request-form" style="display:none" onsubmit="submitSpotlightRequest(event)">
+    <input name="business_name" required placeholder="Όνομα επιχείρησης" data-i18n-ph="sp.bizName">
+    <input name="website" placeholder="Website" data-i18n-ph="sp.website">
+    <input name="city" required placeholder="Πόλη" data-i18n-ph="sp.city">
+    <input name="trade" required placeholder="Κλάδος" data-i18n-ph="sp.trade">
+    <input name="contact_name" required placeholder="Όνομα επικοινωνίας" data-i18n-ph="sp.contactName">
+    <input name="email" type="email" required placeholder="Email" data-i18n-ph="sp.email">
+    <input name="phone" type="tel" placeholder="Τηλέφωνο (προαιρετικό)" data-i18n-ph="sp.phone">
+    <select name="package" required>
+      <option value="">-- Επιλογή πακέτου --</option>
+      <option value="spotlight_1">Spotlight 1 — €149</option>
+      <option value="spotlight_3">Spotlight 3 — €399</option>
+      <option value="spotlight_feature">Spotlight Feature — Κατόπιν αιτήματος</option>
+    </select>
+    <textarea name="note" rows="3" placeholder="Σχόλια (προαιρετικά)" data-i18n-ph="sp.note"></textarea>
+    <label class="sp-privacy-label"><input type="checkbox" name="privacy" required> <span data-i18n="sp.privacyLabel">Συμφωνώ με την <a href="/privacy.html">πολιτική απορρήτου</a></span></label>
+    <button type="submit" class="sp-submit-btn" data-i18n="sp.submitBtn">Αποστολή αιτήματος →</button>
+    <div id="sp-request-msg"></div>
+  </form>
+
+  <!-- Waitlist form (shown if not available) -->
+  <form id="sp-waitlist-form" style="display:none" onsubmit="submitWaitlist(event)">
+    <p data-i18n="sp.waitlistSub">Σύντομα στην περιοχή σου. Άφησε το email σου για να σε ειδοποιήσουμε.</p>
+    <input name="email" type="email" required placeholder="Email" data-i18n-ph="sp.email">
+    <input name="city" required placeholder="Πόλη" data-i18n-ph="sp.city">
+    <input name="trade" placeholder="Κλάδος" data-i18n-ph="sp.trade">
+    <button type="submit" class="sp-submit-btn" data-i18n="sp.waitlistBtn">Ειδοποίησέ με →</button>
+    <div id="sp-waitlist-msg"></div>
+  </form>
+</section>
+
+<script>
+function toggleFaq(btn) {
+  const item = btn.closest('.sp-faq-item');
+  item.classList.toggle('open');
+}
+
+async function checkAvailability() {
+  const city = document.getElementById('sp-city').value.trim();
+  const trade = document.getElementById('sp-trade').value.trim();
+  if (!city) return;
+  const r = await fetch('/api/spotlight/check-availability?city=' + encodeURIComponent(city) + '&trade=' + encodeURIComponent(trade));
+  const d = await r.json();
+  const res = document.getElementById('sp-check-result');
+  res.style.display = 'block';
+  if (d.available) {
+    res.innerHTML = '<div class="sp-avail-ok">✓ <span data-i18n="sp.availOk">Διαθέσιμο στην περιοχή σου!</span></div>';
+    document.getElementById('sp-request-form').style.display = 'flex';
+    document.getElementById('sp-waitlist-form').style.display = 'none';
+    document.querySelector('#sp-request-form [name=city]').value = city;
+    document.querySelector('#sp-request-form [name=trade]').value = trade;
+  } else {
+    res.innerHTML = '<div class="sp-avail-no">— <span data-i18n="sp.availNo">Δεν έχουμε creators ακόμα στην περιοχή σου.</span></div>';
+    document.getElementById('sp-waitlist-form').style.display = 'flex';
+    document.getElementById('sp-request-form').style.display = 'none';
+    document.querySelector('#sp-waitlist-form [name=city]').value = city;
+    document.querySelector('#sp-waitlist-form [name=trade]').value = trade;
+  }
+}
+
+async function submitSpotlightRequest(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.disabled = true;
+  const data = Object.fromEntries(new FormData(e.target));
+  const r = await fetch('/api/spotlight/request', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  const d = await r.json();
+  const msg = document.getElementById('sp-request-msg');
+  if (d.success) {
+    msg.innerHTML = '<div class="sp-success">✓ Λάβαμε το αίτημά σου. Θα επικοινωνήσουμε σύντομα.</div>';
+    e.target.style.display = 'none';
+    // save order ID to localStorage for dashboard
+    if (d.order_id) {
+      const ids = JSON.parse(localStorage.getItem('spotlight_order_ids') || '[]');
+      if (!ids.includes(d.order_id)) { ids.push(d.order_id); localStorage.setItem('spotlight_order_ids', JSON.stringify(ids)); }
+    }
+  } else {
+    msg.innerHTML = '<div class="sp-error">' + (d.error || 'Σφάλμα') + '</div>';
+    btn.disabled = false;
+  }
+}
+
+async function submitWaitlist(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.disabled = true;
+  const data = Object.fromEntries(new FormData(e.target));
+  const r = await fetch('/api/spotlight/waitlist', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  const d = await r.json();
+  const msg = document.getElementById('sp-waitlist-msg');
+  if (d.success) {
+    msg.innerHTML = '<div class="sp-success">✓ Σε έχουμε στη λίστα!</div>';
+    e.target.style.display = 'none';
+  } else {
+    msg.innerHTML = '<div class="sp-error">' + (d.error || 'Σφάλμα') + '</div>';
+    btn.disabled = false;
+  }
+}
+<\/script>
+</body>
+</html>`;
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+// ── End Spotlight page ──────────────────────────────────────────────────────
+
 function handleStrategyPage(req, res) {
   const TOOL_URL = 'https://eureach.eu/stratigiki-marketing';
   const BLOG_URL = 'https://eureach.eu/blog/stratigiki-marketing-se-mia-selida';
@@ -8666,6 +9701,7 @@ async function handleRequest(req, res) {
   });
   if (urlPath === "/api/billing/paypal-info"              && method === "GET")  return handlePayPalBillingInfo(req, res);
   if (urlPath === "/api/billing/paypal/activate"          && method === "POST") return handlePayPalSubscriptionActivate(req, res);
+  if (urlPath === "/api/billing/paypal/webhook"           && method === "POST") return handlePayPalWebhook(req, res);
   if (urlPath === "/api/leads/search"        && method === "POST") return handleLeadsSearch(req, res);
   if (urlPath === "/api/leads/verify-email" && method === "POST") return handleVerifyEmail(req, res);
   if (urlPath === "/api/leads/score"         && method === "POST") return handleLeadsScore(req, res);
@@ -8912,6 +9948,21 @@ async function handleRequest(req, res) {
   if (urlPath === "/audit/running")                    { return fs.readFile(path.join(ROOT, "audit-running.html"),  (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
   if (urlPath === "/audit/results")                    { return fs.readFile(path.join(ROOT, "audit-results.html"), (e,d) => { if(e){res.writeHead(404);res.end();return;} res.writeHead(200,{"Content-Type":"text/html;charset=utf-8"});res.end(d); }); }
   // ── Strategy tool ──────────────────────────────────────────────────────
+  if (urlPath === '/spotlight' && method === 'GET') return handleSpotlightPage(req, res);
+  if (urlPath === '/api/spotlight/check-availability' && method === 'GET') return handleSpotlightCheckAvailability(req, res);
+  if (urlPath === '/api/spotlight/request' && method === 'POST') return handleSpotlightRequest(req, res);
+  if (urlPath === '/api/spotlight/waitlist' && method === 'POST') return handleSpotlightWaitlist(req, res);
+  { const _sm = urlPath.match(/^\/api\/spotlight\/order\/([^\/]+)$/); if (_sm && method === 'GET') return handleSpotlightOrderStatus(req, res, _sm[1]); }
+  if (urlPath === '/api/spotlight/checkout/stripe' && method === 'POST') return handleSpotlightStripeCheckout(req, res);
+  if (urlPath === '/api/spotlight/checkout/paypal/create' && method === 'POST') return handleSpotlightPayPalCreate(req, res);
+  if (urlPath === '/api/spotlight/checkout/paypal/capture' && method === 'POST') return handleSpotlightPayPalCapture(req, res);
+  if (urlPath === '/api/spotlight/my-orders' && method === 'GET') return handleSpotlightMyOrders(req, res);
+  if (urlPath === '/api/spotlight/webhook/stripe' && method === 'POST') return handleSpotlightStripeWebhook(req, res);
+  if (urlPath === '/api/admin/spotlight/orders' && method === 'GET') return handleAdminSpotlightOrders(req, res);
+  { const _so = urlPath.match(/^\/api\/admin\/spotlight\/orders\/([^\/]+)$/); if (_so && method === 'PUT') return handleAdminSpotlightOrderUpdate(req, res, _so[1]); }
+  if (urlPath === '/api/admin/spotlight/creators' && method === 'GET') return handleAdminSpotlightCreators(req, res);
+  if (urlPath === '/api/admin/spotlight/creators' && method === 'POST') return handleAdminSpotlightCreators(req, res);
+  if (urlPath === '/api/admin/spotlight/waitlist' && method === 'GET') return handleAdminSpotlightWaitlist(req, res);
   if (urlPath === '/stratigiki-marketing' && method === 'GET') return handleStrategyPage(req, res);
   if (urlPath === '/api/strategy/generate' && method === 'POST') return handleStrategyGenerate(req, res);
   if (urlPath === '/api/strategy/pdf'      && method === 'POST') return handleStrategyPdf(req, res);

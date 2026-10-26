@@ -186,6 +186,22 @@
       <div id="db-jobs-area">
         <div class="db-empty"><div class="db-empty-icon">&#9203;</div><div class="db-empty-title">Loading&hellip;</div></div>
       </div>
+
+      <!-- Spotlight nudge card -->
+      <div id="spotlight-nudge" style="display:none;margin-top:16px;background:linear-gradient(135deg,rgba(29,158,117,0.1),rgba(29,158,117,0.04));border:1px solid rgba(29,158,117,0.3);border-radius:12px;padding:16px 20px">
+        <div style="font-size:0.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent,#1D9E75);margin-bottom:8px">&#127916; eureach Spotlight</div>
+        <div id="spotlight-nudge-text" style="font-size:0.88rem;color:var(--muted,#64748b);margin-bottom:12px">&#913;&#973;&#958;&#951;&#963;&#949; &#964;&#951;&#957; &#960;&#945;&#961;&#959;&#965;&#963;&#943;&#945; &#963;&#959;&#965; &#956;&#949; eureach Spotlight</div>
+        <a id="spotlight-nudge-link" href="/spotlight" style="font-size:0.82rem;color:var(--accent,#1D9E75);font-weight:600;text-decoration:none">&#924;&#940;&#952;&#949; &#960;&#949;&#961;&#953;&#963;&#963;&#972;&#964;&#949;&#961;&#945; &#8594;</a>
+      </div>
+
+      <!-- Spotlight orders panel (hidden until orders exist) -->
+      <div id="dash-tab-spotlight" style="display:none;margin-top:24px">
+        <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:700">eureach Spotlight</h3>
+        <div id="spotlight-orders-container">
+          <p style="color:var(--muted,#64748b)">Loading...</p>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -727,6 +743,96 @@
   }
 
   function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+})();
+</script>
+
+<script>
+// ── Spotlight dashboard integration ──────────────────────────────────────────
+
+async function loadSpotlightOrders() {
+  try {
+    // Try the authenticated endpoint first
+    let orders = [];
+    try {
+      const r = await fetch('/api/spotlight/my-orders');
+      if (r.ok) {
+        const d = await r.json();
+        orders = d.orders || [];
+      }
+    } catch(e) {}
+
+    // Fall back to localStorage IDs if needed
+    if (orders.length === 0) {
+      const orderIds = JSON.parse(localStorage.getItem('spotlight_order_ids') || '[]');
+      if (orderIds.length === 0) return;
+      for (const id of orderIds) {
+        const r = await fetch('/api/spotlight/order/' + id);
+        if (r.ok) { const d = await r.json(); if (d.order) orders.push(d.order); }
+      }
+    }
+
+    if (orders.length === 0) return;
+
+    // Show the spotlight panel
+    const panel = document.getElementById('dash-tab-spotlight');
+    if (panel) panel.style.display = 'block';
+
+    const container = document.getElementById('spotlight-orders-container');
+    if (!container) return;
+
+    container.innerHTML = orders.map(function(o) {
+      return '<div style="background:var(--card,#0f1c35);border:1px solid var(--border,rgba(255,255,255,.08));border-radius:12px;padding:18px;margin-bottom:14px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
+          '<div>' +
+            '<div style="font-weight:600;color:var(--white,#fff)">' + escHtmlSp(o.business_name || '') + '</div>' +
+            '<div style="font-size:0.82rem;color:var(--muted,#64748b);margin-top:2px">' + escHtmlSp(o.package_id || '') + ' · ' + escHtmlSp(o.city || '') + '</div>' +
+          '</div>' +
+          '<span style="padding:3px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;background:' + spStatusColor(o.status) + ';color:#fff">' + escHtmlSp(o.status || '') + '</span>' +
+        '</div>' +
+        (o.video_url ? '<div style="margin-top:10px"><a href="' + o.video_url + '" target="_blank" style="color:var(--accent,#1D9E75);font-size:0.85rem">▶ Δες το βίντεο</a></div>' : '') +
+        (o.view_count_30d != null ? '<div style="margin-top:6px;font-size:0.82rem;color:var(--muted,#64748b)">Views (30d): ' + o.view_count_30d + '</div>' : '') +
+        '<div style="margin-top:8px;font-size:0.75rem;color:var(--muted,#64748b)">' +
+          ((o.status_history || []).map(function(h){ return escHtmlSp(h.status); }).join(' → ')) +
+        '</div>' +
+      '</div>';
+    }).join('');
+  } catch(e) { console.error('[spotlight dashboard]', e); }
+}
+
+function spStatusColor(s) {
+  var m = { requested:'#64748b', matched:'#7c3aed', payment_sent:'#d97706', paid:'#059669', scheduled:'#0284c7', published:'#16a34a', report_sent:'#0891b2', completed:'#15803d', cancelled:'#dc2626', refunded:'#9333ea' };
+  return m[s] || '#64748b';
+}
+
+function escHtmlSp(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function showSpotlightNudge() {
+  try {
+    var city = ((window.__USER_CITY__ || localStorage.getItem('user_city') || '')).toLowerCase();
+    var nudge = document.getElementById('spotlight-nudge');
+    if (!nudge) return;
+    if (!city) { nudge.style.display = 'block'; return; }
+    var r = await fetch('/api/spotlight/check-availability?city=' + encodeURIComponent(city));
+    var d = await r.json();
+    nudge.style.display = 'block';
+    if (d.available) {
+      document.getElementById('spotlight-nudge-text').textContent = 'Υπάρχει διαθέσιμος creator στην περιοχή σου!';
+      document.getElementById('spotlight-nudge-link').href = '/spotlight#sp-check';
+      document.getElementById('spotlight-nudge-link').textContent = 'Ζήτησε Spotlight τώρα →';
+    } else {
+      document.getElementById('spotlight-nudge-text').textContent = 'Σύντομα στην περιοχή σου. Γράψου στη λίστα αναμονής.';
+      document.getElementById('spotlight-nudge-link').href = '/spotlight#sp-check';
+      document.getElementById('spotlight-nudge-link').textContent = 'Γράψου στη λίστα →';
+    }
+  } catch(e) {}
+}
+
+// Init on load
+(function() {
+  loadSpotlightOrders();
+  showSpotlightNudge();
 })();
 </script>
 </body>

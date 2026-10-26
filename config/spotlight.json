@@ -1,0 +1,135 @@
+{
+  "packages": {
+    "spotlight_1": {
+      "id": "spotlight_1",
+      "name": {
+        "el": "Spotlight 1",
+        "en": "Spotlight 1",
+        "de": "Spotlight 1"
+      },
+      "price": 149,
+      "currency": "EUR",
+      "vat_excluded": true,
+      "mentions": 1,
+      "period_months": null,
+      "quote_only": false,
+      "description": {
+        "el": "1 αναφορά σε βίντεο YouTube από τοπικό creator",
+        "en": "1 mention in a YouTube video by a local creator",
+        "de": "1 Erwähnung in einem YouTube-Video eines lokalen Creators"
+      },
+      "includes": {
+        "el": [
+          "1 αναφορά σε βίντεο",
+          "Brief από την eureach",
+          "Αναφορά 30 ημερών (views, link)",
+          "Audit παρουσίας πριν & μετά"
+        ],
+        "en": [
+          "1 video mention",
+          "Brief written by eureach",
+          "30-day report (views, link)",
+          "Before & after visibility audit"
+        ],
+        "de": [
+          "1 Video-Erwähnung",
+          "Briefing durch eureach",
+          "30-Tage-Bericht (Views, Link)",
+          "Vorher-Nachher-Sichtbarkeitsaudit"
+        ]
+      }
+    },
+    "spotlight_3": {
+      "id": "spotlight_3",
+      "name": {
+        "el": "Spotlight 3",
+        "en": "Spotlight 3",
+        "de": "Spotlight 3"
+      },
+      "price": 399,
+      "currency": "EUR",
+      "vat_excluded": true,
+      "mentions": 3,
+      "period_months": 3,
+      "quote_only": false,
+      "description": {
+        "el": "3 αναφορές σε βίντεο YouTube σε διάστημα 3 μηνών",
+        "en": "3 YouTube video mentions over 3 months",
+        "de": "3 YouTube-Video-Erwähnungen über 3 Monate"
+      },
+      "includes": {
+        "el": [
+          "3 αναφορές σε βίντεο (1/μήνα)",
+          "Brief από την eureach για κάθε βίντεο",
+          "Αναφορά 30 ημερών για κάθε βίντεο",
+          "Τελική αναφορά με audit πριν & μετά"
+        ],
+        "en": [
+          "3 video mentions (1/month)",
+          "eureach brief for each video",
+          "30-day report per video",
+          "Final report with before & after audit"
+        ],
+        "de": [
+          "3 Video-Erwähnungen (1/Monat)",
+          "eureach-Briefing für jedes Video",
+          "30-Tage-Bericht pro Video",
+          "Abschlussbericht mit Vorher-Nachher-Audit"
+        ]
+      }
+    },
+    "spotlight_feature": {
+      "id": "spotlight_feature",
+      "name": {
+        "el": "Spotlight Feature",
+        "en": "Spotlight Feature",
+        "de": "Spotlight Feature"
+      },
+      "price_display": {
+        "el": "από €590",
+        "en": "from €590",
+        "de": "ab €590"
+      },
+      "price": null,
+      "currency": "EUR",
+      "vat_excluded": true,
+      "mentions": null,
+      "period_months": null,
+      "quote_only": true,
+      "description": {
+        "el": "Αφιερωμένο βίντεο ή σειρά βίντεο για την επιχείρησή σου",
+        "en": "A dedicated video or video series for your business",
+        "de": "Ein eigenes Video oder eine Video-Serie für dein Unternehmen"
+      },
+      "includes": {
+        "el": [
+          "Αφιερωμένο βίντεο (όχι απλή αναφορά)",
+          "Σενάριο & brief από την eureach",
+          "Πλήρης αναφορά αποτελεσμάτων",
+          "Audit παρουσίας πριν & μετά",
+          "Τιμή κατόπιν αιτήματος"
+        ],
+        "en": [
+          "Dedicated video (not just a mention)",
+          "Script & brief by eureach",
+          "Full results report",
+          "Before & after visibility audit",
+          "Price on request"
+        ],
+        "de": [
+          "Eigenes Video (keine einfache Erwähnung)",
+          "Skript & Briefing durch eureach",
+          "Vollständiger Ergebnisbericht",
+          "Vorher-Nachher-Sichtbarkeitsaudit",
+          "Preis auf Anfrage"
+        ]
+      }
+    }
+  },
+  "vat_rate": 0.24,
+  "vat_country": "GR",
+  "refund_days": 30,
+  "show_example_video": false,
+  "example_video_url": "",
+  "available_areas": []
+}

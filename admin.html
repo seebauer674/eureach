@@ -59,6 +59,7 @@
   <a class="adm-nav-item" data-section="users" href="#users">👥 Users</a>
   <a class="adm-nav-item" data-section="articles" href="#articles">📝 Articles</a>
   <a class="adm-nav-item" data-section="security" href="#security">🔒 Security Log</a>
+  <a class="adm-nav-item" data-section="spotlight" href="#spotlight">🎬 Spotlight</a>
 </div>
 
 <!-- ── Content ───────────────────────────────────────────── -->
@@ -181,6 +182,80 @@
           </tbody>
         </table>
       </div>
+    </section>
+
+
+    <!-- ── Spotlight ─── -->
+    <section id="section-spotlight" class="adm-section">
+      <div class="adm-page-header">
+        <div>
+          <div class="adm-page-title">Spotlight</div>
+          <div class="adm-page-sub">Orders, creators, and waitlist for YouTube Spotlight placements</div>
+        </div>
+      </div>
+
+      <!-- Orders -->
+      <div class="sp-admin-section">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="margin:0;color:var(--white)">Spotlight Orders</h3>
+          <div style="display:flex;gap:8px">
+            <select id="sp-status-filter" onchange="loadSpotlightOrders()" style="background:var(--card);border:1px solid var(--border);color:var(--white);padding:6px 10px;border-radius:6px;font-size:0.82rem">
+              <option value="">All statuses</option>
+              <option value="requested">requested</option>
+              <option value="matched">matched</option>
+              <option value="payment_sent">payment_sent</option>
+              <option value="paid">paid</option>
+              <option value="scheduled">scheduled</option>
+              <option value="published">published</option>
+              <option value="report_sent">report_sent</option>
+              <option value="completed">completed</option>
+              <option value="cancelled">cancelled</option>
+              <option value="refunded">refunded</option>
+            </select>
+            <button onclick="loadSpotlightOrders()" style="background:none;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:6px;font-size:0.82rem;cursor:pointer">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="sp-orders-list" style="color:var(--muted)">Loading...</div>
+      </div>
+
+      <!-- Creators -->
+      <div class="sp-admin-section" style="margin-top:32px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="margin:0;color:var(--white)">Creators</h3>
+          <button onclick="showAddCreatorForm()" style="background:none;border:1px solid #22c55e;color:#22c55e;padding:6px 14px;border-radius:6px;font-size:0.82rem;cursor:pointer">+ Add Creator</button>
+        </div>
+        <div id="sp-add-creator-form" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <input id="cr-name" placeholder="Creator name" style="background:var(--bg);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:6px;font-size:0.82rem;width:100%;box-sizing:border-box">
+            <input id="cr-channel" placeholder="Channel URL" style="background:var(--bg);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:6px;font-size:0.82rem;width:100%;box-sizing:border-box">
+            <input id="cr-cities" placeholder="Cities (comma-separated)" style="background:var(--bg);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:6px;font-size:0.82rem;width:100%;box-sizing:border-box">
+            <input id="cr-trades" placeholder="Trades (comma-separated)" style="background:var(--bg);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:6px;font-size:0.82rem;width:100%;box-sizing:border-box">
+            <input id="cr-price" placeholder="Price per mention (internal, €)" type="number" style="background:var(--bg);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:6px;font-size:0.82rem;width:100%;box-sizing:border-box">
+            <input id="cr-email" placeholder="Creator email" style="background:var(--bg);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:6px;font-size:0.82rem;width:100%;box-sizing:border-box">
+          </div>
+          <div style="margin-top:12px;display:flex;gap:8px">
+            <button onclick="saveCreator()" style="background:#22c55e;border:none;color:#fff;padding:8px 18px;border-radius:6px;font-size:0.82rem;cursor:pointer;font-weight:600">Save Creator</button>
+            <button onclick="document.getElementById('sp-add-creator-form').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);padding:8px 18px;border-radius:6px;font-size:0.82rem;cursor:pointer">Cancel</button>
+          </div>
+        </div>
+        <div id="sp-creators-list" style="color:var(--muted)">Loading...</div>
+      </div>
+
+      <!-- Waitlist -->
+      <div class="sp-admin-section" style="margin-top:32px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="margin:0;color:var(--white)">Waitlist</h3>
+          <a href="/api/admin/spotlight/waitlist?format=csv" style="background:none;border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:6px;font-size:0.82rem;text-decoration:none">↓ Export CSV</a>
+        </div>
+        <div id="sp-waitlist-list" style="color:var(--muted)">Loading...</div>
+      </div>
+
+      <!-- Available Areas -->
+      <div class="sp-admin-section" style="margin-top:32px">
+        <h3 style="color:var(--white)">Available Areas <small style="color:var(--muted);font-size:0.8rem;font-weight:400">(edit config/spotlight.json directly on server or use creator cities)</small></h3>
+        <div id="sp-areas-list" style="color:var(--muted)">Loading...</div>
+      </div>
+
     </section>
 
   </main>
@@ -508,6 +583,7 @@ document.querySelectorAll(".adm-nav-item").forEach(a => {
     if (sec === "users" && allUsers.length === 0) loadUsers();
     if (sec === "security") loadSecurity();
     if (sec === "articles") loadPendingArticles();
+    if (sec === "spotlight") { loadSpotlightOrders(); loadSpotlightCreators(); loadSpotlightWaitlist(); }
   });
 });
 
@@ -1198,6 +1274,169 @@ async function deleteUserDirect(uid, email) {
     toast('Deleted ✓');
   } catch { toast('Network error', false); }
 }
+
+/* ══ Spotlight admin ═══════════════════════════════════════════════════════ */
+async function loadSpotlightOrders() {
+  const filterEl = document.getElementById("sp-status-filter");
+  const status = filterEl ? filterEl.value : "";
+  const url = "/api/admin/spotlight/orders" + (status ? "?status=" + status : "");
+  let d;
+  try { const r = await fetch(url); d = await r.json(); }
+  catch(e) { const el = document.getElementById("sp-orders-list"); if (el) el.innerHTML = "<p style=\"color:var(--muted)\">Error loading orders.</p>"; return; }
+  const el = document.getElementById("sp-orders-list");
+  if (!el) return;
+  if (!d.orders || d.orders.length === 0) { el.innerHTML = "<p style=\"color:var(--muted)\">No orders yet.</p>"; return; }
+  el.innerHTML = d.orders.map(o => `
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div>
+          <div style="font-weight:600;color:var(--white)">${o.business_name || "(no name)"} <span style="font-size:0.78rem;color:var(--muted)">· ${o.city || ""}</span></div>
+          <div style="font-size:0.82rem;color:var(--muted);margin-top:2px">${o.email || ""} · ${o.package_id || ""} · €${o.price_at_order || "?"}</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">${new Date(o.created_at).toLocaleString("el-GR")}</div>
+          ${o.creator_name ? `<div style="font-size:0.82rem;color:#94a3b8;margin-top:4px">Creator: ${o.creator_name}${o.creator_channel ? ` · <a href="${o.creator_channel}" target="_blank" style="color:var(--accent)">${o.creator_channel}</a>` : ""}</div>` : ""}
+          ${o.video_url ? `<div style="font-size:0.82rem;margin-top:4px"><a href="${o.video_url}" target="_blank" style="color:var(--accent)">📹 Video</a></div>` : ""}
+          ${o.note ? `<div style="font-size:0.82rem;color:#94a3b8;margin-top:4px">Note: ${o.note}</div>` : ""}
+        </div>
+        <span style="padding:3px 10px;border-radius:12px;font-size:0.75rem;font-weight:700;background:${spStatusColor(o.status)};color:#fff">${o.status}</span>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        ${spOrderActions(o)}
+      </div>
+      <div style="margin-top:8px;font-size:0.75rem;color:var(--muted)">
+        History: ${(o.status_history||[]).map(h => h.status + " " + new Date(h.at).toLocaleDateString("el-GR")).join(" → ")}
+      </div>
+    </div>
+  `).join("");
+}
+
+function spStatusColor(s) {
+  const map = { requested:"#64748b", matched:"#7c3aed", payment_sent:"#d97706", paid:"#059669", scheduled:"#0284c7", published:"#16a34a", report_sent:"#0891b2", completed:"#15803d", cancelled:"#dc2626", refunded:"#9333ea" };
+  return map[s] || "#64748b";
+}
+
+function spOrderActions(o) {
+  const btn = (label, onclick, color) =>
+    `<button onclick="${onclick}" style="background:none;border:1px solid ${color};color:${color};padding:5px 12px;border-radius:6px;font-size:0.78rem;cursor:pointer">${label}</button>`;
+  const parts = [];
+  if (o.status === "requested") parts.push(btn("Match + Assign Creator", `spMatchOrder("${o.id}")`, "var(--accent)"));
+  if (o.status === "matched") {
+    parts.push(btn("Send Stripe Link", `spSendPaymentLink("${o.id}","stripe")`, "var(--accent)"));
+    parts.push(btn("Send PayPal Link", `spSendPaymentLink("${o.id}","paypal")`, "var(--accent)"));
+  }
+  if (o.status === "paid") parts.push(btn("Mark Scheduled", `spUpdateStatus("${o.id}","scheduled")`, "var(--accent)"));
+  if (o.status === "scheduled") parts.push(btn("Mark Published", `spMarkPublished("${o.id}")`, "var(--accent)"));
+  if (o.status === "published") parts.push(btn("Mark Report Sent", `spUpdateStatus("${o.id}","report_sent")`, "var(--accent)"));
+  if (o.status === "report_sent") parts.push(btn("Mark Completed", `spUpdateStatus("${o.id}","completed")`, "var(--accent)"));
+  if (!["cancelled","refunded","completed"].includes(o.status)) parts.push(btn("Cancel", `spUpdateStatus("${o.id}","cancelled")`, "#ef4444"));
+  if (o.status === "paid") parts.push(btn("Refund", `spRefundOrder("${o.id}")`, "#9333ea"));
+  return parts.join("");
+}
+
+async function spUpdateStatus(orderId, status, extra) {
+  if (!confirm("Set status to " + status + "?")) return;
+  const body = Object.assign({status}, extra || {});
+  const r = await fetch("/api/admin/spotlight/orders/" + orderId, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
+  if (r.ok) loadSpotlightOrders(); else alert("Error updating status.");
+}
+
+async function spMatchOrder(orderId) {
+  const creatorName = prompt("Creator name to assign:");
+  if (!creatorName) return;
+  const creatorChannel = prompt("Creator channel URL:") || "";
+  const r = await fetch("/api/admin/spotlight/orders/" + orderId, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({status:"matched", creator_name:creatorName, creator_channel:creatorChannel}) });
+  if (r.ok) loadSpotlightOrders(); else alert("Error matching order.");
+}
+
+async function spSendPaymentLink(orderId, provider) {
+  const endpoint = provider === "stripe" ? "/api/spotlight/checkout/stripe" : "/api/spotlight/checkout/paypal/create";
+  let d;
+  try {
+    const r = await fetch(endpoint, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({order_id: orderId}) });
+    d = await r.json();
+  } catch(e) { alert("Network error"); return; }
+  if (d.checkout_url) {
+    try { await navigator.clipboard.writeText(d.checkout_url); } catch(e) {}
+    alert("Payment link (copied to clipboard):\n\n" + d.checkout_url);
+    loadSpotlightOrders();
+  } else alert("Error: " + (d.error || "unknown"));
+}
+
+async function spMarkPublished(orderId) {
+  const videoUrl = prompt("YouTube video URL:");
+  if (!videoUrl) return;
+  const r = await fetch("/api/admin/spotlight/orders/" + orderId, { method:"PUT", headers:{"Content-Type":"application/json"}, body: JSON.stringify({status:"published", video_url:videoUrl, publish_date:new Date().toISOString()}) });
+  if (r.ok) loadSpotlightOrders(); else alert("Error marking published.");
+}
+
+async function spRefundOrder(orderId) {
+  if (!confirm("Issue refund? Status will be set to refunded — process the actual refund in Stripe/PayPal manually.")) return;
+  spUpdateStatus(orderId, "refunded");
+}
+
+async function loadSpotlightCreators() {
+  let d;
+  try { const r = await fetch("/api/admin/spotlight/creators"); d = await r.json(); }
+  catch(e) { const el = document.getElementById("sp-creators-list"); if (el) el.innerHTML = "<p style=\"color:var(--muted)\">Error.</p>"; return; }
+  const el = document.getElementById("sp-creators-list");
+  if (!el) return;
+  if (!d.creators || d.creators.length === 0) { el.innerHTML = "<p style=\"color:var(--muted)\">No creators yet. Add one above.</p>"; return; }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+    <tr style="color:var(--muted)">
+      <th style="text-align:left;padding:6px 8px">Name</th><th style="text-align:left;padding:6px 8px">Channel</th>
+      <th style="text-align:left;padding:6px 8px">Cities</th><th style="text-align:left;padding:6px 8px">Trades</th>
+      <th style="text-align:left;padding:6px 8px">€/mention</th><th style="text-align:left;padding:6px 8px">Email</th>
+    </tr>
+    ${d.creators.map(c => `<tr style="border-top:1px solid var(--border)">
+      <td style="padding:8px;color:var(--white)">${c.name||""}</td>
+      <td style="padding:8px"><a href="${c.channel_url||"#"}" target="_blank" style="color:var(--accent);font-size:0.82rem">${c.channel_url||"—"}</a></td>
+      <td style="padding:8px;color:var(--muted)">${(c.cities||[]).join(", ")||"—"}</td>
+      <td style="padding:8px;color:var(--muted)">${(c.trades||[]).join(", ")||"—"}</td>
+      <td style="padding:8px;color:var(--white)">€${c.price_per_mention||"?"}</td>
+      <td style="padding:8px;color:var(--muted)">${c.email||"—"}</td>
+    </tr>`).join("")}
+  </table>`;
+}
+
+function showAddCreatorForm() {
+  document.getElementById("sp-add-creator-form").style.display = "block";
+}
+
+async function saveCreator() {
+  const data = {
+    name:              document.getElementById("cr-name").value.trim(),
+    channel_url:       document.getElementById("cr-channel").value.trim(),
+    cities:            document.getElementById("cr-cities").value.split(",").map(s=>s.trim()).filter(Boolean),
+    trades:            document.getElementById("cr-trades").value.split(",").map(s=>s.trim()).filter(Boolean),
+    price_per_mention: parseFloat(document.getElementById("cr-price").value) || null,
+    email:             document.getElementById("cr-email").value.trim(),
+  };
+  if (!data.name) { alert("Creator name is required."); return; }
+  const r = await fetch("/api/admin/spotlight/creators", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(data) });
+  if (r.ok) {
+    document.getElementById("sp-add-creator-form").style.display = "none";
+    ["cr-name","cr-channel","cr-cities","cr-trades","cr-price","cr-email"].forEach(id => { document.getElementById(id).value = ""; });
+    loadSpotlightCreators();
+  } else { const d = await r.json().catch(()=>({})); alert("Error: " + (d.error || "unknown")); }
+}
+
+async function loadSpotlightWaitlist() {
+  let d;
+  try { const r = await fetch("/api/admin/spotlight/waitlist"); d = await r.json(); }
+  catch(e) { const el = document.getElementById("sp-waitlist-list"); if (el) el.innerHTML = "<p style=\"color:var(--muted)\">Error.</p>"; return; }
+  const el = document.getElementById("sp-waitlist-list");
+  if (!el) return;
+  if (!d.waitlist || d.waitlist.length === 0) { el.innerHTML = "<p style=\"color:var(--muted)\">No waitlist entries yet.</p>"; return; }
+  const byCity = {};
+  d.waitlist.forEach(e => { (byCity[e.city] = byCity[e.city]||[]).push(e); });
+  el.innerHTML = Object.entries(byCity).map(([city, entries]) => `
+    <div style="margin-bottom:16px">
+      <div style="font-weight:600;color:var(--white);margin-bottom:6px">${city} <span style="color:var(--muted);font-size:0.82rem">(${entries.length})</span></div>
+      ${entries.map(e => `<div style="font-size:0.82rem;color:var(--muted);padding:3px 0">${e.email} · ${e.trade||"any trade"} · ${new Date(e.created_at||e.date||Date.now()).toLocaleDateString("el-GR")}</div>`).join("")}
+    </div>
+  `).join("");
+}
+/* ══ End Spotlight admin ═══════════════════════════════════════════════════ */
+
 </script>
 </body>
 </html>
