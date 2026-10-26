@@ -9118,7 +9118,7 @@ ${blogNavHtml()}
 
 <div class="st-wrap">
   <p class="st-intro-note">Δεν χρειάζεσαι marketing γνώσεις — απλά απάντησε ειλικρινά. Χρειάζεται λιγότερο από 3 λεπτά.</p>
-  <form id="st-form">
+  <form id="st-form" onsubmit="return false">
     <input name="_trap" style="display:none" tabindex="-1" autocomplete="off">
 
     <div class="st-field">
@@ -9370,12 +9370,12 @@ function stEmailInput(v) {
   if (!btn) return;
   btn.disabled = !(v || '').trim().includes('@');
 }
-document.addEventListener('DOMContentLoaded', function() {
+(function() {
   var emailEl = document.getElementById('st-email');
   if (emailEl) ['input','change','keyup','paste'].forEach(function(ev) {
     emailEl.addEventListener(ev, function() { stEmailInput(emailEl.value); });
   });
-});
+})();
 
 function stWebsiteChanged() {
   // Reset description if URL changes
