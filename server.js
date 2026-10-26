@@ -8633,6 +8633,16 @@ function handleSpotlightPage(req, res) {
     .sp-guarantees li::before { content:"✓"; position:absolute; left:0; color:var(--sp-accent); font-weight:700; font-size:1rem; }
 
     /* Honest section */
+    .sp-terms { background:rgba(29,158,117,.03); border-top:1px solid rgba(29,158,117,.12); border-bottom:1px solid rgba(29,158,117,.12); }
+    .sp-terms h2 { text-align:center; }
+    .sp-terms-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:24px; }
+    .sp-terms-block { background:rgba(255,255,255,.03); border:1px solid var(--sp-border); border-radius:12px; padding:20px; }
+    .sp-terms-icon { font-size:1.6rem; margin-bottom:10px; }
+    .sp-terms-block h4 { font-size:.95rem; font-weight:700; color:var(--white); margin:0 0 8px; }
+    .sp-terms-block p { font-size:.85rem; color:var(--muted); line-height:1.7; margin:0; }
+    .sp-terms-note { text-align:center; font-size:.82rem; color:var(--muted); margin-top:24px; }
+    .sp-terms-note a { color:var(--sp-accent); }
+    @media(max-width:700px){ .sp-terms-grid { grid-template-columns:1fr; } }
     .sp-honest { background:rgba(248,113,113,.03); border-top:1px solid rgba(248,113,113,.12); border-bottom:1px solid rgba(248,113,113,.12); }
     .sp-honest h2 { color:var(--white); }
     .sp-honest p { color:var(--muted); font-size:.93rem; line-height:1.8; max-width:720px; margin:0 auto; text-align:center; }
@@ -8754,6 +8764,34 @@ ${exampleSection}
   <h2 data-i18n="sp.honestTitle">Τι δεν υποσχόμαστε</h2>
   <p data-i18n="sp.honestText">Το eureach Spotlight εξασφαλίζει ότι η επιχείρησή σου αναφέρεται σε βίντεο YouTube από τοπικό creator. Δεν εγγυόμαστε συγκεκριμένο αριθμό views, κατάταξη στη Google ή εμφάνιση σε αποτελέσματα AI (ChatGPT, Perplexity κ.λπ.). Κάθε βίντεο σημειώνεται ως χορηγούμενο.</p>
 </section>
+
+<!-- Terms -->
+<section class="sp-section sp-terms">
+  <h2 data-i18n="sp.termsTitle">\u038c\u03c1\u03bf\u03b9 \u03c5\u03c0\u03b7\u03c1\u03b5\u03c3\u03af\u03b1\u03c2</h2>
+  <div class="sp-terms-grid">
+
+    <div class="sp-terms-block">
+      <div class="sp-terms-icon">\U0001f4f9</div>
+      <h4 data-i18n="sp.termsPublishedTitle">\u03a4\u03b9 \u03c3\u03b7\u03bc\u03b1\u03af\u03bd\u03b5\u03b9 \u00ab\u03b4\u03b7\u03bc\u03bf\u03c3\u03b9\u03b5\u03c5\u03bc\u03ad\u03bd\u03bf\u00bb</h4>
+      <p data-i18n="sp.termsPublishedText">\u03a4\u03bf \u03b2\u03af\u03bd\u03c4\u03b5\u03bf \u03b8\u03b5\u03c9\u03c1\u03b5\u03af\u03c4\u03b1\u03b9 \u03b4\u03b7\u03bc\u03bf\u03c3\u03b9\u03b5\u03c5\u03bc\u03ad\u03bd\u03bf \u03cc\u03c4\u03b1\u03bd \u03b5\u03af\u03bd\u03b1\u03b9 \u03b4\u03b7\u03bc\u03cc\u03c3\u03b9\u03b1 \u03c0\u03c1\u03bf\u03c3\u03b2\u03ac\u03c3\u03b9\u03bc\u03bf \u03c3\u03c4\u03bf YouTube \u03ba\u03b1\u03b9 \u03c0\u03b5\u03c1\u03b9\u03ad\u03c7\u03b5\u03b9 \u03c4\u03b7\u03bd \u03c3\u03c5\u03bc\u03c6\u03c9\u03bd\u03b7\u03bc\u03ad\u03bd\u03b7 \u03b1\u03bd\u03b1\u03c6\u03bf\u03c1\u03ac. \u03a3\u03c4\u03bf\u03c7\u03b5\u03cd\u03bf\u03c5\u03bc\u03b5 \u03b4\u03b7\u03bc\u03bf\u03c3\u03af\u03b5\u03c5\u03c3\u03b7 \u03b5\u03bd\u03c4\u03cc\u03c2 30 \u03b7\u03bc\u03b5\u03c1\u03ce\u03bd \u03b1\u03c0\u03cc \u03c4\u03b7\u03bd \u03b5\u03c0\u03b9\u03b2\u03b5\u03b2\u03b1\u03af\u03c9\u03c3\u03b7 \u03c0\u03bb\u03b7\u03c1\u03c9\u03bc\u03ae\u03c2.</p>
+    </div>
+
+    <div class="sp-terms-block">
+      <div class="sp-terms-icon">\U0001f4b0</div>
+      <h4 data-i18n="sp.termsRefundTitle">\u0395\u03c0\u03b9\u03c3\u03c4\u03c1\u03bf\u03c6\u03ae \u03c7\u03c1\u03b7\u03bc\u03ac\u03c4\u03c9\u03bd</h4>
+      <p data-i18n="sp.termsRefundText">\u0391\u03bd \u03c4\u03bf \u03b2\u03af\u03bd\u03c4\u03b5\u03bf \u03b4\u03b5\u03bd \u03b4\u03b7\u03bc\u03bf\u03c3\u03b9\u03b5\u03c5\u03c4\u03b5\u03af \u03b5\u03bd\u03c4\u03cc\u03c2 30 \u03b7\u03bc\u03b5\u03c1\u03ce\u03bd \u03b1\u03c0\u03cc \u03c4\u03b7\u03bd \u03c0\u03bb\u03b7\u03c1\u03c9\u03bc\u03ae, \u03b5\u03c0\u03b9\u03c3\u03c4\u03c1\u03ad\u03c6\u03bf\u03c5\u03bc\u03b5 \u03c4\u03bf \u03c0\u03bb\u03ae\u03c1\u03b5\u03c2 \u03c0\u03bf\u03c3\u03cc. \u039c\u03cc\u03bb\u03b9\u03c2 \u03b4\u03b7\u03bc\u03bf\u03c3\u03b9\u03b5\u03c5\u03c4\u03b5\u03af \u03c4\u03bf \u03b2\u03af\u03bd\u03c4\u03b5\u03bf, \u03b4\u03b5\u03bd \u03c0\u03c1\u03b1\u03b3\u03bc\u03b1\u03c4\u03bf\u03c0\u03bf\u03b9\u03b5\u03af\u03c4\u03b1\u03b9 \u03b5\u03c0\u03b9\u03c3\u03c4\u03c1\u03bf\u03c6\u03ae \u03b3\u03b9\u03b1\u03c4\u03af \u03b7 \u03c5\u03c0\u03b7\u03c1\u03b5\u03c3\u03af\u03b1 \u03ad\u03c7\u03b5\u03b9 \u03c0\u03b1\u03c1\u03b1\u03c3\u03c7\u03b5\u03b8\u03b5\u03af. \u0393\u03b9\u03b1 \u03b5\u03c0\u03b9\u03c3\u03c4\u03c1\u03bf\u03c6\u03ad\u03c2: support@eureach.eu</p>
+    </div>
+
+    <div class="sp-terms-block">
+      <div class="sp-terms-icon">\U0001f3f7\ufe0f</div>
+      <h4 data-i18n="sp.termsSponsoredTitle">\u03a7\u03bf\u03c1\u03b7\u03b3\u03bf\u03cd\u03bc\u03b5\u03bd\u03b7 \u03b1\u03bd\u03b1\u03c6\u03bf\u03c1\u03ac</h4>
+      <p data-i18n="sp.termsSponsoredText">\u039a\u03ac\u03b8\u03b5 \u03b2\u03af\u03bd\u03c4\u03b5\u03bf \u03c3\u03b7\u03bc\u03b5\u03b9\u03ce\u03bd\u03b5\u03c4\u03b1\u03b9 \u03c1\u03b7\u03c4\u03ac \u03c9\u03c2 \u03c7\u03bf\u03c1\u03b7\u03b3\u03bf\u03cd\u03bc\u03b5\u03bd\u03bf \u03c0\u03b5\u03c1\u03b9\u03b5\u03c7\u03cc\u03bc\u03b5\u03bd\u03bf (\u00abpaid partnership\u00bb) \u03c3\u03cd\u03bc\u03c6\u03c9\u03bd\u03b1 \u03bc\u03b5 \u03c4\u03b7\u03bd \u03c0\u03bf\u03bb\u03b9\u03c4\u03b9\u03ba\u03ae \u03c4\u03bf\u03c5 YouTube \u03ba\u03b1\u03b9 \u03c4\u03b7\u03bd \u03b5\u03c5\u03c1\u03c9\u03c0\u03b1\u03ca\u03ba\u03ae \u03bf\u03b4\u03b7\u03b3\u03af\u03b1 2005/29/\u0395\u039a \u03b3\u03b9\u03b1 \u03b1\u03b4\u03af\u03ba\u03b5\u03c2 \u03b5\u03bc\u03c0\u03bf\u03c1\u03b9\u03ba\u03ad\u03c2 \u03c0\u03c1\u03b1\u03ba\u03c4\u03b9\u03ba\u03ad\u03c2.</p>
+    </div>
+
+  </div>
+  <p class="sp-terms-note" data-i18n="sp.termsNote">\u03a0\u03bb\u03ae\u03c1\u03b7\u03c2 \u03b5\u03c0\u03b9\u03ba\u03bf\u03b9\u03bd\u03c9\u03bd\u03af\u03b1: <a href="mailto:support@eureach.eu">support@eureach.eu</a></p>
+</section>
+
 
 <!-- FAQ -->
 <section class="sp-section sp-faq">
