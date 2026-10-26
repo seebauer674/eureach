@@ -6186,7 +6186,7 @@ const BLOCKED_STATIC_PREFIXES = ["/data/", "/config/", "/security/", "/."];
 const BLOCKED_STATIC_FILES    = ["/server.js", "/package.json", "/package-lock.json", "/.env"];
 
 // CSRF-exempt endpoints (before session exists)
-const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook", "/api/billing/paypal/webhook", "/api/audit-public/start", "/api/audit-public/save", "/api/audit-public/email-save", "/api/newsletter/subscribe", "/api/strategy/generate", "/api/strategy/pdf", "/api/spotlight/webhook/stripe"];
+const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook", "/api/billing/paypal/webhook", "/api/audit-public/start", "/api/audit-public/save", "/api/audit-public/email-save", "/api/newsletter/subscribe", "/api/strategy/lookup-website", "/api/strategy/generate", "/api/strategy/pdf", "/api/spotlight/webhook/stripe"];
 
 function generateCsrfToken() { return crypto.randomBytes(24).toString("hex"); }
 
@@ -9122,13 +9122,19 @@ ${blogNavHtml()}
     <input name="_trap" style="display:none" tabindex="-1" autocomplete="off">
 
     <div class="st-field">
-      <label for="st-website">Ιστοσελίδα <span style="font-weight:400;color:var(--muted)">(προαιρετικό — αν βάλεις URL, η στρατηγική θα είναι πιο ακριβής)</span></label>
-      <div style="position:relative">
+      <label for="st-website">Ιστοσελίδα <span style="font-weight:400;color:var(--muted)">(προαιρετικό)</span></label>
+      <div style="display:flex;gap:8px;align-items:center">
         <input type="url" id="st-website" name="website" maxlength="200" placeholder="π.χ. www.kafeteria-maria.gr"
-          style="padding-right:40px" oninput="stWebsiteChanged()">
-        <span id="st-website-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.85rem;display:none"></span>
+          style="flex:1" oninput="stWebsiteChanged()">
+        <button type="button" id="st-lookup-btn" onclick="stLookupWebsite()" style="background:#1D9E75;border:none;border-radius:var(--radius);color:#fff;font-size:.82rem;font-weight:700;padding:9px 15px;cursor:pointer;white-space:nowrap;flex-shrink:0">🔍 Look up</button>
       </div>
-      <span class="hint">Το AI θα εξετάσει την ιστοσελίδα σου και θα δώσει πιο εξατομικευμένη στρατηγική</span>
+      <div id="st-lookup-status" style="font-size:.78rem;color:var(--muted);margin-top:5px;display:none"></div>
+    </div>
+
+    <div class="st-field" id="st-desc-field" style="display:none">
+      <label for="st-desc">Περιγραφή επιχείρησης <span style="font-weight:400;color:#4ade80;font-size:.75rem">✓ Συμπληρώθηκε αυτόματα</span></label>
+      <span class="hint">Πρόσθεσε ή αφαίρεσε υπηρεσίες — αυτό το κείμενο διαβάζει το AI για να σου φτιάξει τη στρατηγική</span>
+      <textarea id="st-desc" name="siteDescription" maxlength="600" rows="4" placeholder="Περιγραφή της επιχείρησης, υπηρεσίες, τι την κάνει ξεχωριστή…"></textarea>
     </div>
 
     <div class="st-field">
@@ -9350,14 +9356,44 @@ ${blogNavHtml()}
 let _stLastSubmit = 0, _stData = null;
 
 function stWebsiteChanged() {
-  const v = document.getElementById('st-website').value.trim();
-  const s = document.getElementById('st-website-status');
-  if (!s) return;
-  if (!v) { s.style.display = 'none'; return; }
-  const valid = /^(https?:\/\/)?[\w\-]+(\.[\w\-]+)+/.test(v);
-  s.style.display = 'inline';
-  s.textContent = valid ? '🔍' : '⚠';
-  s.title = valid ? 'Το AI θα αναλύσει αυτή τη σελίδα' : 'Έλεγξε τη μορφή του URL';
+  // Reset description if URL changes
+  const descField = document.getElementById('st-desc-field');
+  if (descField) descField.style.display = 'none';
+  const st = document.getElementById('st-lookup-status');
+  if (st) { st.style.display = 'none'; st.textContent = ''; }
+}
+
+async function stLookupWebsite() {
+  const url = (document.getElementById('st-website').value || '').trim();
+  if (!url) { alert('Βάλε πρώτα τη διεύθυνση της ιστοσελίδας.'); return; }
+  const btn = document.getElementById('st-lookup-btn');
+  const status = document.getElementById('st-lookup-status');
+  btn.disabled = true; btn.textContent = '⏳ Αναλύω…';
+  status.style.display = 'block'; status.style.color = 'var(--muted)';
+  status.textContent = 'Διαβάζω την ιστοσελίδα σου…';
+  try {
+    const r = await fetch('/api/strategy/lookup-website', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ website: url })
+    });
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || 'Σφάλμα');
+    const descField = document.getElementById('st-desc-field');
+    const descTA = document.getElementById('st-desc');
+    if (descTA && d.description) {
+      descTA.value = d.description;
+      descField.style.display = '';
+      status.style.color = '#4ade80';
+      status.textContent = '✓ Η ιστοσελίδα αναλύθηκε — έλεγξε και επεξεργάσου την περιγραφή αν θέλεις.';
+    } else {
+      status.style.color = '#fbbf24';
+      status.textContent = '⚠ Δεν βρέθηκε αρκετό περιεχόμενο. Μπορείς να συνεχίσεις κανονικά.';
+    }
+  } catch(e) {
+    status.style.color = '#f87171';
+    status.textContent = '✗ ' + (e.message || 'Δεν ήταν δυνατή η ανάλυση. Συνέχισε κανονικά.');
+  }
+  btn.disabled = false; btn.textContent = '🔍 Look up';
 }
 document.getElementById('st-form').addEventListener('submit', async function(e) {
   e.preventDefault();
@@ -9366,6 +9402,7 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
   const errEl = document.getElementById('st-err');
   errEl.style.display = 'none';
   const website = document.getElementById('st-website').value.trim();
+  const siteDescription = (document.getElementById('st-desc') || {}).value || '';
   const sells = document.getElementById('st-sells').value.trim();
   const customer = document.getElementById('st-customer').value.trim();
   const diff = document.getElementById('st-diff').value.trim();
@@ -9390,7 +9427,7 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ sells, customer, channels, differentiator: diff,
         goal: goal === 'Άλλο' ? (goalOther || goal) : goal,
-        city, industry, website, _trap: trap })
+        city, industry, website, siteDescription: siteDescription.trim(), _trap: trap })
     });
     const d = await r.json();
     if (!r.ok) {
@@ -9540,6 +9577,53 @@ async function scrapeWebsiteForStrategy(url) {
   return result;
 }
 
+
+// ── Strategy: website lookup + AI description ────────────────────────────────
+async function handleStrategyLookupWebsite(req, res) {
+  const body = await readBody(req);
+  const { website } = body;
+  if (!website) return json(res, 400, { error: 'website required' });
+
+  const scraped = await scrapeWebsiteForStrategy(String(website).trim());
+  if (!scraped.raw && !scraped.title && !scraped.description) {
+    return json(res, 200, { description: '' });
+  }
+
+  // Ask AI to write a concise Greek business description from the scraped data
+  const groqKey = getGroqKey();
+  const anthropicKey = getAnthropicKey();
+  const context = [
+    scraped.title       ? 'Τίτλος: ' + scraped.title       : '',
+    scraped.description ? 'Meta: '   + scraped.description  : '',
+    scraped.raw         ? 'Κείμενο: ' + scraped.raw.slice(0, 1200) : '',
+  ].filter(Boolean).join('\n');
+
+  const sysP = 'Αναλύεις ιστοσελίδα επιχείρησης και γράφεις σύντομη περιγραφή στα ελληνικά. Απαντάς ΜΟΝΟ με το κείμενο της περιγραφής, χωρίς εισαγωγή ή τίτλο.';
+  const usrP = `Από το παρακάτω περιεχόμενο ιστοσελίδας, γράψε 2-4 προτάσεις που περιγράφουν:
+1. Τι προσφέρει η επιχείρηση (προϊόντα / υπηρεσίες)
+2. Σε ποιους απευθύνεται
+3. Τι την κάνει ξεχωριστή (αν φαίνεται)
+
+Περιεχόμενο:\n${context}`;
+
+  let description = '';
+  try {
+    if (groqKey) {
+      const r = await Promise.race([
+        callGroq(groqKey, sysP, usrP, 300),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000))
+      ]);
+      description = (r.choices[0].message.content || '').trim();
+    }
+    if (!description && anthropicKey) {
+      const r = await callClaude(anthropicKey, sysP, usrP, 300, 'claude-haiku-4-5-20251001');
+      description = (r.content[0].text || '').trim();
+    }
+  } catch(e) { console.error('[strategy-lookup]', e.message); }
+
+  json(res, 200, { description });
+}
+
 async function handleStrategyGenerate(req, res) {
   const ip = getIp(req);
   const rl = checkRateLimit(ip, 'strategy_gen', 3, 24 * 60 * 60 * 1000);
@@ -9548,7 +9632,7 @@ async function handleStrategyGenerate(req, res) {
   const body = await readBody(req);
   if (body._trap) return json(res, 400, { error: 'Bot detected.' });
 
-  const { sells, customer, channels, differentiator, goal, city, industry, website } = body;
+  const { sells, customer, channels, differentiator, goal, city, industry, website, siteDescription } = body;
   if (!sells || !customer || !differentiator || !goal)
     return json(res, 400, { error: 'Παρακαλώ συμπλήρωσε όλα τα υποχρεωτικά πεδία.' });
   if (String(sells).length > 300 || String(customer).length > 300 ||
@@ -9581,7 +9665,7 @@ async function handleStrategyGenerate(req, res) {
 - Τι τη κάνει διαφορετική: ${String(differentiator).slice(0,300)}
 - Στόχος 3 μηνών: ${String(goal).slice(0,300)}
 - Τομέας: ${String(industry||'Γενική επιχείρηση').slice(0,100)}
-- Πόλη/Περιοχή: ${String(city||'Ελλάδα').slice(0,100)}${websiteContext}
+- Πόλη/Περιοχή: ${String(city||'Ελλάδα').slice(0,100)}${siteDescription ? '\n- Περιγραφή ιστοσελίδας (επεξεργασμένη από τον χρήστη): ' + String(siteDescription).slice(0,600) : ''}${websiteContext}
 
 Επέστρεψε ΑΥΣΤΗΡΑ αυτή τη δομή JSON (μόνο JSON, τίποτε άλλο):
 {
@@ -10424,6 +10508,7 @@ async function handleRequest(req, res) {
   if (urlPath === '/api/admin/spotlight/creators' && method === 'POST') return handleAdminSpotlightCreators(req, res);
   if (urlPath === '/api/admin/spotlight/waitlist' && method === 'GET') return handleAdminSpotlightWaitlist(req, res);
   if (urlPath === '/stratigiki-marketing' && method === 'GET') return handleStrategyPage(req, res);
+  if (urlPath === '/api/strategy/lookup-website' && method === 'POST') return handleStrategyLookupWebsite(req, res);
   if (urlPath === '/api/strategy/generate' && method === 'POST') return handleStrategyGenerate(req, res);
   if (urlPath === '/api/strategy/pdf'      && method === 'POST') return handleStrategyPdf(req, res);
   if (urlPath.startsWith('/api/strategy/download/') && method === 'GET') return handleStrategyDownload(req, res, urlPath.slice(24));
