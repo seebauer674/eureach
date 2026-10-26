@@ -9027,6 +9027,8 @@ function handleStrategyPage(req, res) {
     .st-field input[type=text],.st-field textarea,.st-field select{width:100%;padding:11px 13px;background:var(--glass2);border:1px solid var(--border);border-radius:var(--radius);color:var(--white);font-size:.88rem;outline:none;transition:border-color .2s;font-family:inherit}
     .st-field input[type=text]:focus,.st-field textarea:focus,.st-field select:focus{border-color:#1D9E75}
     .st-field textarea{min-height:72px;resize:vertical}
+    #st-website{width:100%;padding:9px 40px 9px 12px;background:var(--glass2,rgba(255,255,255,.06));border:1px solid var(--border);border-radius:var(--radius);color:var(--white);font-size:.88rem;box-sizing:border-box;outline:none;font-family:inherit}
+    #st-website:focus{border-color:#1D9E75}
     .st-intro-note{text-align:center;color:var(--muted);font-size:.9rem;margin:0 auto 28px;max-width:480px;background:rgba(29,158,117,.08);border:1px solid rgba(29,158,117,.2);border-radius:var(--radius);padding:10px 16px}
     .st-channels{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
     .st-ch{display:flex;align-items:center;gap:6px;cursor:pointer;background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:6px 13px;font-size:.82rem;color:var(--muted);transition:all .15s}
@@ -9118,6 +9120,16 @@ ${blogNavHtml()}
   <p class="st-intro-note">Δεν χρειάζεσαι marketing γνώσεις — απλά απάντησε ειλικρινά. Χρειάζεται λιγότερο από 3 λεπτά.</p>
   <form id="st-form">
     <input name="_trap" style="display:none" tabindex="-1" autocomplete="off">
+
+    <div class="st-field">
+      <label for="st-website">Ιστοσελίδα <span style="font-weight:400;color:var(--muted)">(προαιρετικό — αν βάλεις URL, η στρατηγική θα είναι πιο ακριβής)</span></label>
+      <div style="position:relative">
+        <input type="url" id="st-website" name="website" maxlength="200" placeholder="π.χ. www.kafeteria-maria.gr"
+          style="padding-right:40px" oninput="stWebsiteChanged()">
+        <span id="st-website-status" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:.85rem;display:none"></span>
+      </div>
+      <span class="hint">Το AI θα εξετάσει την ιστοσελίδα σου και θα δώσει πιο εξατομικευμένη στρατηγική</span>
+    </div>
 
     <div class="st-field">
       <label for="st-sells">1. Τι πουλάς;</label>
@@ -9336,12 +9348,24 @@ ${blogNavHtml()}
 })();
 
 let _stLastSubmit = 0, _stData = null;
+
+function stWebsiteChanged() {
+  const v = document.getElementById('st-website').value.trim();
+  const s = document.getElementById('st-website-status');
+  if (!s) return;
+  if (!v) { s.style.display = 'none'; return; }
+  const valid = /^(https?:\/\/)?[\w\-]+(\.[\w\-]+)+/.test(v);
+  s.style.display = 'inline';
+  s.textContent = valid ? '🔍' : '⚠';
+  s.title = valid ? 'Το AI θα αναλύσει αυτή τη σελίδα' : 'Έλεγξε τη μορφή του URL';
+}
 document.getElementById('st-form').addEventListener('submit', async function(e) {
   e.preventDefault();
   if (Date.now() - _stLastSubmit < 1000) return; _stLastSubmit = Date.now();
   const btn = document.getElementById('st-btn');
   const errEl = document.getElementById('st-err');
   errEl.style.display = 'none';
+  const website = document.getElementById('st-website').value.trim();
   const sells = document.getElementById('st-sells').value.trim();
   const customer = document.getElementById('st-customer').value.trim();
   const diff = document.getElementById('st-diff').value.trim();
@@ -9359,13 +9383,14 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
     errEl.textContent = 'Επίλεξε τουλάχιστον ένα κανάλι.';
     errEl.style.display = 'block'; return;
   }
-  btn.disabled = true; btn.textContent = '⏳ Δημιουργούμε τη στρατηγική σου…';
+  const hasWebsite = document.getElementById('st-website').value.trim();
+  btn.disabled = true; btn.textContent = hasWebsite ? '🔍 Αναλύω την ιστοσελίδα σου…' : '⏳ Δημιουργούμε τη στρατηγική σου…';
   try {
     const r = await fetch('/api/strategy/generate', {
       method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify({ sells, customer, channels, differentiator: diff,
         goal: goal === 'Άλλο' ? (goalOther || goal) : goal,
-        city, industry, _trap: trap })
+        city, industry, website, _trap: trap })
     });
     const d = await r.json();
     if (!r.ok) {
@@ -9455,6 +9480,66 @@ function showPdfMsg(color, text) {
   res.end(html);
 }
 
+
+// ── Website scraper for strategy tool ────────────────────────────────────────
+async function scrapeWebsiteForStrategy(url) {
+  const https = require('https');
+  const http  = require('http');
+  const result = { title: '', description: '', services: '', location: '', phones: [], raw: '' };
+  try {
+    const fullUrl = /^https?:\/\//i.test(url) ? url : 'https://' + url;
+    const parsed  = new URL(fullUrl);
+    const lib     = parsed.protocol === 'https:' ? https : http;
+
+    const html = await new Promise((resolve, reject) => {
+      const opts = { hostname: parsed.hostname, path: parsed.pathname + parsed.search, port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; eureach/1.0)' }, timeout: 8000 };
+      const req = lib.get(opts, (r) => {
+        if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
+          resolve(''); return; // skip redirects
+        }
+        let d = '';
+        r.setEncoding('utf8');
+        r.on('data', c => { d += c; if (d.length > 150000) { r.destroy(); resolve(d); } });
+        r.on('end', () => resolve(d));
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    });
+
+    if (!html) return result;
+
+    // Title
+    const titleM = html.match(/<title[^>]*>([^<]{1,150})<\/title>/i);
+    if (titleM) result.title = titleM[1].replace(/\s+/g, ' ').trim();
+
+    // Meta description
+    const descM = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']{1,300})["']/i)
+                || html.match(/<meta[^>]+content=["']([^"']{1,300})["'][^>]+name=["']description["']/i);
+    if (descM) result.description = descM[1].replace(/\s+/g, ' ').trim();
+
+    // Strip scripts/styles, get text
+    const text = html
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/\s{2,}/g, ' ').trim().slice(0, 3000);
+
+    result.raw = text;
+
+    // Phone numbers
+    const phones = text.match(/(\+30[\s\-]?)?(?:2\d{9}|69\d{8}|6[789]\d{8}|\d{10})/g) || [];
+    result.phones = [...new Set(phones)].slice(0, 2);
+
+    // Location hints
+    const locM = text.match(/(?:Αθήν|Θεσσαλονίκη|Πειραι|Πάτρα|Ηράκλε|Λάρισ|Βόλο|Ιωάννιν|Χανι|Ρόδο|Καβάλα|Σέρρε|Κατερίν|Τρίκαλ|Λαμί|Κόρινθ|Χαλκίδ|Βέροι|Κοζάν|Καστορι)/i);
+    if (locM) result.location = locM[0];
+
+  } catch(e) { /* silent fail — optional field */ }
+  return result;
+}
+
 async function handleStrategyGenerate(req, res) {
   const ip = getIp(req);
   const rl = checkRateLimit(ip, 'strategy_gen', 3, 24 * 60 * 60 * 1000);
@@ -9463,7 +9548,7 @@ async function handleStrategyGenerate(req, res) {
   const body = await readBody(req);
   if (body._trap) return json(res, 400, { error: 'Bot detected.' });
 
-  const { sells, customer, channels, differentiator, goal, city, industry } = body;
+  const { sells, customer, channels, differentiator, goal, city, industry, website } = body;
   if (!sells || !customer || !differentiator || !goal)
     return json(res, 400, { error: 'Παρακαλώ συμπλήρωσε όλα τα υποχρεωτικά πεδία.' });
   if (String(sells).length > 300 || String(customer).length > 300 ||
@@ -9471,6 +9556,21 @@ async function handleStrategyGenerate(req, res) {
     return json(res, 400, { error: 'Κάποιο πεδίο υπερβαίνει τους 300 χαρακτήρες.' });
 
   const channelList = Array.isArray(channels) ? channels.join(', ') : String(channels || '');
+
+  // Scrape website if provided
+  let websiteContext = '';
+  if (website && String(website).trim()) {
+    try {
+      const ws = await scrapeWebsiteForStrategy(String(website).trim());
+      const parts = [];
+      if (ws.title)       parts.push('Τίτλος ιστοσελίδας: ' + ws.title);
+      if (ws.description) parts.push('Περιγραφή: ' + ws.description);
+      if (ws.location)    parts.push('Τοποθεσία από site: ' + ws.location);
+      if (ws.phones.length) parts.push('Τηλέφωνα: ' + ws.phones.join(', '));
+      if (ws.raw)         parts.push('Περιεχόμενο ιστοσελίδας (απόσπασμα): ' + ws.raw.slice(0, 800));
+      if (parts.length)   websiteContext = '\n\nΑΝΑΛΥΣΗ ΙΣΤΟΣΕΛΙΔΑΣ (' + String(website).trim() + '):\n' + parts.join('\n');
+    } catch(e) { /* ignore scrape errors */ }
+  }
 
   const systemPrompt = `Είσαι ειδικός σύμβουλος marketing για μικρές ελληνικές επιχειρήσεις. Δίνεις συγκεκριμένες, εφαρμόσιμες συμβουλές αποκλειστικά βασισμένες στα στοιχεία της επιχείρησης. Δεν εφεύρεις στοιχεία, δεν δίνεις γενικές συμβουλές. Απαντάς ΜΟΝΟ με έγκυρο JSON, χωρίς κανένα επιπλέον κείμενο πριν ή μετά.`;
 
@@ -9481,7 +9581,7 @@ async function handleStrategyGenerate(req, res) {
 - Τι τη κάνει διαφορετική: ${String(differentiator).slice(0,300)}
 - Στόχος 3 μηνών: ${String(goal).slice(0,300)}
 - Τομέας: ${String(industry||'Γενική επιχείρηση').slice(0,100)}
-- Πόλη/Περιοχή: ${String(city||'Ελλάδα').slice(0,100)}
+- Πόλη/Περιοχή: ${String(city||'Ελλάδα').slice(0,100)}${websiteContext}
 
 Επέστρεψε ΑΥΣΤΗΡΑ αυτή τη δομή JSON (μόνο JSON, τίποτε άλλο):
 {
