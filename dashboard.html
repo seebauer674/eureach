@@ -194,6 +194,15 @@
         <a id="spotlight-nudge-link" href="/spotlight" style="font-size:0.82rem;color:var(--accent,#1D9E75);font-weight:600;text-decoration:none">&#924;&#940;&#952;&#949; &#960;&#949;&#961;&#953;&#963;&#963;&#972;&#964;&#949;&#961;&#945; &#8594;</a>
       </div>
 
+      <!-- Projects panel -->
+      <div id="dash-projects" style="margin-top:32px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="margin:0;font-size:1.05rem;font-weight:700">📁 Τα Projects μου</h3>
+          <button onclick="showNewProjectModal()" style="background:#1D9E75;border:none;border-radius:8px;color:#fff;font-size:.8rem;font-weight:700;padding:7px 14px;cursor:pointer">+ Νέο Project</button>
+        </div>
+        <div id="projects-list"><p style="color:var(--muted,#64748b);font-size:.88rem">Φόρτωση…</p></div>
+      </div>
+
       <!-- Spotlight orders panel (hidden until orders exist) -->
       <div id="dash-tab-spotlight" style="display:none;margin-top:24px">
         <h3 style="margin:0 0 20px;font-size:1.1rem;font-weight:700">eureach Spotlight</h3>
@@ -834,6 +843,203 @@ async function showSpotlightNudge() {
   loadSpotlightOrders();
   showSpotlightNudge();
 })();
+
+// ── Projects ──────────────────────────────────────────────────────────────────
+let _projects = [];
+
+async function loadProjects() {
+  try {
+    const r = await fetch('/api/projects', { credentials: 'include' });
+    if (!r.ok) { document.getElementById('projects-list').innerHTML = ''; return; }
+    const d = await r.json();
+    _projects = d.projects || [];
+    renderProjects();
+  } catch(e) { document.getElementById('projects-list').innerHTML = ''; }
+}
+
+function renderProjects() {
+  const el = document.getElementById('projects-list');
+  if (!_projects.length) {
+    el.innerHTML = `<div style="background:rgba(255,255,255,.03);border:1px dashed var(--border,#334155);border-radius:12px;padding:24px;text-align:center;color:var(--muted,#64748b);font-size:.88rem">
+      <div style="font-size:1.5rem;margin-bottom:8px">📁</div>
+      <div>Δεν έχεις project ακόμα.</div>
+      <div style="margin-top:6px">Δημιούργησε ένα ή κάνε <a href="/stratigiki-marketing" style="color:#1D9E75">δωρεάν στρατηγική</a> για αυτόματη δημιουργία.</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = _projects.map(p => {
+    const done = p.milestones.filter(m => m.doneAt).length;
+    const total = p.milestones.length;
+    const pct = Math.round(done / total * 100);
+    const msHtml = p.milestones.map(m => `
+      <span onclick="toggleMilestone('${p.id}','${m.key}',${!m.doneAt})" title="${m.label}"
+        style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-size:.75rem;padding:3px 9px;border-radius:20px;border:1px solid ${m.doneAt ? '#1D9E75' : 'var(--border,#334155)'};color:${m.doneAt ? '#4ade80' : 'var(--muted)'};background:${m.doneAt ? 'rgba(29,158,117,.12)' : 'transparent'}">
+        ${m.doneAt ? '✓' : '○'} ${m.label}
+      </span>`).join('');
+    const statusColor = p.status === 'completed' ? '#4ade80' : p.status === 'paused' ? '#fbbf24' : '#1D9E75';
+    const statusLabel = p.status === 'completed' ? 'Ολοκληρώθηκε' : p.status === 'paused' ? 'Σε παύση' : 'Ενεργό';
+    return `<div style="background:var(--glass,rgba(255,255,255,.04));border:1px solid var(--border,#334155);border-radius:12px;padding:16px 18px;margin-bottom:12px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
+        <div>
+          <div style="font-weight:700;font-size:.95rem;margin-bottom:2px">${p.name}</div>
+          ${p.goal ? `<div style="font-size:.78rem;color:var(--muted)">${p.goal}</div>` : ''}
+        </div>
+        <span style="font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:20px;background:${statusColor}22;color:${statusColor};white-space:nowrap">${statusLabel}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${msHtml}</div>
+      <div style="background:var(--border,#334155);border-radius:4px;height:4px;margin-bottom:10px">
+        <div style="background:#1D9E75;height:4px;border-radius:4px;width:${pct}%;transition:width .3s"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onclick="openProjectDetail('${p.id}')" style="font-size:.75rem;padding:5px 12px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--muted);cursor:pointer">📝 Σημειώσεις${p.notes.length ? ' ('+p.notes.length+')' : ''}</button>
+        ${p.strategy ? `<a href="/stratigiki-marketing" style="font-size:.75rem;padding:5px 12px;border:1px solid var(--border);border-radius:6px;color:var(--muted);text-decoration:none">📋 Στρατηγική</a>` : ''}
+        <button onclick="deleteProject('${p.id}')" style="font-size:.75rem;padding:5px 12px;border:1px solid rgba(248,113,113,.3);border-radius:6px;background:none;color:#f87171;cursor:pointer;margin-left:auto">Διαγραφή</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleMilestone(projId, key, done) {
+  const csrf = document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '';
+  const r = await fetch(`/api/projects/${projId}/milestone`, {
+    method: 'PUT', credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrf },
+    body: JSON.stringify({ key, done })
+  });
+  if (r.ok) { const d = await r.json(); const idx = _projects.findIndex(p => p.id === projId); if (idx >= 0) { _projects[idx] = d.project; renderProjects(); } }
+}
+
+async function deleteProject(id) {
+  if (!confirm('Διαγραφή αυτού του project;')) return;
+  const csrf = document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '';
+  const r = await fetch(`/api/projects/${id}`, { method: 'DELETE', credentials: 'include', headers: { 'x-csrf-token': csrf } });
+  if (r.ok) { _projects = _projects.filter(p => p.id !== id); renderProjects(); }
+}
+
+function showNewProjectModal() {
+  const m = document.getElementById('modal-new-project');
+  m.style.display = 'flex';
+  document.getElementById('np-name').value = '';
+  document.getElementById('np-goal').value = '';
+  document.getElementById('np-city').value = '';
+  document.getElementById('np-industry').value = '';
+  document.getElementById('np-err').style.display = 'none';
+}
+
+function closeNewProjectModal() {
+  document.getElementById('modal-new-project').style.display = 'none';
+}
+
+async function submitNewProject() {
+  const name = document.getElementById('np-name').value.trim();
+  const errEl = document.getElementById('np-err');
+  if (!name) { errEl.textContent = 'Το όνομα είναι υποχρεωτικό.'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  const csrf = document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '';
+  const r = await fetch('/api/projects', {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrf },
+    body: JSON.stringify({
+      name,
+      goal: document.getElementById('np-goal').value.trim(),
+      city: document.getElementById('np-city').value.trim(),
+      industry: document.getElementById('np-industry').value.trim()
+    })
+  });
+  const d = await r.json();
+  if (!r.ok) { errEl.textContent = d.error || 'Σφάλμα.'; errEl.style.display = 'block'; return; }
+  _projects.unshift(d.project);
+  renderProjects();
+  closeNewProjectModal();
+}
+
+function openProjectDetail(id) {
+  const p = _projects.find(pr => pr.id === id);
+  if (!p) return;
+  const notesHtml = p.notes.length
+    ? p.notes.map(n => `<div style="background:rgba(255,255,255,.04);border-radius:8px;padding:10px 12px;margin-bottom:8px">
+        <div style="font-size:.85rem">${n.text}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:4px">${new Date(n.createdAt).toLocaleDateString('el-GR')}</div>
+      </div>`).join('')
+    : '<p style="color:var(--muted);font-size:.85rem">Δεν υπάρχουν σημειώσεις ακόμα.</p>';
+  document.getElementById('pd-content').innerHTML = `
+    <div style="font-weight:700;font-size:1rem;margin-bottom:16px">${p.name}</div>
+    <div style="margin-bottom:16px">${notesHtml}</div>
+    <div style="display:flex;gap:8px">
+      <input id="pd-note-input" type="text" placeholder="Πρόσθεσε σημείωση…" maxlength="500"
+        style="flex:1;padding:9px 12px;background:var(--glass2,rgba(255,255,255,.06));border:1px solid var(--border);border-radius:8px;color:var(--white,#f1f5f9);font-size:.85rem;outline:none"
+        onkeydown="if(event.key==='Enter')addProjectNote('${p.id}')">
+      <button onclick="addProjectNote('${p.id}')" style="background:#1D9E75;border:none;border-radius:8px;color:#fff;font-weight:700;padding:9px 16px;cursor:pointer;font-size:.85rem">Προσθήκη</button>
+    </div>`;
+  document.getElementById('modal-project-detail').style.display = 'flex';
+}
+
+function closeProjectDetail() {
+  document.getElementById('modal-project-detail').style.display = 'none';
+}
+
+async function addProjectNote(id) {
+  const input = document.getElementById('pd-note-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const csrf = document.cookie.match(/csrf_token=([^;]+)/)?.[1] || '';
+  const r = await fetch(`/api/projects/${id}/note`, {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrf },
+    body: JSON.stringify({ text })
+  });
+  if (r.ok) {
+    const idx = _projects.findIndex(p => p.id === id);
+    if (idx >= 0) { const d = await r.json(); _projects[idx].notes.unshift(d.note); openProjectDetail(id); renderProjects(); }
+    input.value = '';
+  }
+}
+
+// Load projects when dashboard loads (after auth check)
+document.addEventListener('DOMContentLoaded', () => { setTimeout(loadProjects, 600); });
+
 </script>
+
+<!-- ── MODAL: New Project ──────────────────────────────────── -->
+<div id="modal-new-project" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--card,#1e293b);border:1px solid var(--border,#334155);border-radius:14px;padding:28px 28px 24px;width:100%;max-width:460px;max-height:90vh;overflow-y:auto;position:relative">
+    <button onclick="closeNewProjectModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer">✕</button>
+    <div style="font-size:1rem;font-weight:700;margin-bottom:18px">Νέο Project</div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Όνομα project *</label>
+        <input id="np-name" type="text" placeholder="π.χ. Καφετέρια Q4 growth" maxlength="100"
+          style="width:100%;padding:9px 12px;background:var(--glass2,rgba(255,255,255,.06));border:1px solid var(--border);border-radius:8px;color:var(--white,#f1f5f9);font-size:.88rem;box-sizing:border-box;outline:none">
+      </div>
+      <div>
+        <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Στόχος</label>
+        <input id="np-goal" type="text" placeholder="π.χ. Περισσότεροι νέοι πελάτες" maxlength="200"
+          style="width:100%;padding:9px 12px;background:var(--glass2,rgba(255,255,255,.06));border:1px solid var(--border);border-radius:8px;color:var(--white,#f1f5f9);font-size:.88rem;box-sizing:border-box;outline:none">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Πόλη</label>
+          <input id="np-city" type="text" placeholder="Αθήνα" maxlength="100"
+            style="width:100%;padding:9px 12px;background:var(--glass2,rgba(255,255,255,.06));border:1px solid var(--border);border-radius:8px;color:var(--white,#f1f5f9);font-size:.88rem;box-sizing:border-box;outline:none">
+        </div>
+        <div>
+          <label style="font-size:.78rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Τομέας</label>
+          <input id="np-industry" type="text" placeholder="Εστιατόριο" maxlength="100"
+            style="width:100%;padding:9px 12px;background:var(--glass2,rgba(255,255,255,.06));border:1px solid var(--border);border-radius:8px;color:var(--white,#f1f5f9);font-size:.88rem;box-sizing:border-box;outline:none">
+        </div>
+      </div>
+      <div id="np-err" style="color:#f87171;font-size:.82rem;display:none"></div>
+      <button onclick="submitNewProject()" style="background:#1D9E75;border:none;border-radius:8px;color:#fff;font-weight:700;padding:11px;cursor:pointer;font-size:.9rem;margin-top:4px">Δημιουργία →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Project Detail ──────────────────────────────── -->
+<div id="modal-project-detail" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:var(--card,#1e293b);border:1px solid var(--border,#334155);border-radius:14px;padding:28px 28px 24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;position:relative">
+    <button onclick="closeProjectDetail()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer">✕</button>
+    <div id="pd-content"></div>
+  </div>
+</div>
 </body>
 </html>

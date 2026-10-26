@@ -111,6 +111,7 @@ const FB_TARGETS_FILE      = path.join(ROOT, 'data/fb_targets.json');
 const FB_TEMPLATES_FILE    = path.join(ROOT, 'data/fb_templates.json');
 const FB_LOG_FILE          = path.join(ROOT, 'data/fb_post_log.json');
 const PIPELINE_FILE        = path.join(ROOT, 'data/pipeline.json');
+const PROJECTS_FILE        = path.join(ROOT, 'data/projects.json');
 const FB_APP_ID            = process.env.FB_APP_ID || '';
 const FB_APP_SECRET        = process.env.FB_APP_SECRET || '';
 const FB_REDIRECT_URI      = (process.env.SITE_URL || 'https://eureach.eu') + '/api/auth/facebook/callback';
@@ -5722,6 +5723,10 @@ async function handlePayPalWebhook(req, res) {
   if (!fs.existsSync(SPOTLIGHT_INVOICE_FILE)) writeJSON(SPOTLIGHT_INVOICE_FILE, { next: 1 });
 })();
 
+(function initProjectsData() {
+  if (!fs.existsSync(PROJECTS_FILE)) writeJSON(PROJECTS_FILE, []);
+})();
+
 function loadSpotlightConfig() {
   return JSON.parse(require('fs').readFileSync(SPOTLIGHT_CONFIG_FILE, 'utf8'));
 }
@@ -9196,6 +9201,7 @@ ${blogNavHtml()}
 </div>
 
 <div class="st-result-wrap" id="st-result" style="display:none">
+  <div id="st-save-nudge" style="display:none;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.3);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.88rem;color:#4ade80">💡 <strong>Αποθήκευσε τη στρατηγική σου</strong> — <a href="/register.html" style="color:#4ade80;font-weight:700">Δημιούργησε δωρεάν λογαριασμό</a> για να την αποθηκεύσεις ως Project και να παρακολουθείς την πρόοδό σου.</div>
   <div class="st-card" id="st-card">
     <div class="st-card-h">📋 Η στρατηγική marketing σου</div>
     <div class="st-sec"><h3>Ο πελάτης σου</h3><p id="r-pelatis"></p></div>
@@ -9356,6 +9362,16 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
     const res = document.getElementById('st-result');
     res.style.display = '';
     res.scrollIntoView({behavior:'smooth',block:'start'});
+    if (d.projectId) {
+      const t = document.createElement('div');
+      t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 20px;border-radius:8px;font-size:.85rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3)';
+      t.textContent = '✓ Αποθηκεύτηκε στα Projects σου';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 4000);
+    } else if (!d.projectId) {
+      const b = document.getElementById('st-save-nudge');
+      if (b) b.style.display = 'block';
+    }
     btn.disabled = false; btn.textContent = 'Δημιούργησε νέα στρατηγική';
   } catch(e) {
     errEl.textContent = 'Σφάλμα σύνδεσης. Δοκίμασε ξανά.';
@@ -9516,7 +9532,36 @@ async function handleStrategyGenerate(req, res) {
   if (Array.isArray(strategy.oxi) && strategy.oxi.length && typeof strategy.oxi[0] === 'object') strategy.oxi = strategy.oxi.map(o => o.text || JSON.stringify(o));
 
   console.log('[strategy] ok in ' + (Date.now()-t0) + 'ms, ' + tokensUsed + ' tokens, ip=' + ip);
-  return json(res, 200, { strategy, tokensUsed });
+  // Auto-create project for logged-in users
+  const _projUser = getSessionUser(parseCookies(req).session);
+  let _autoProjectId = null;
+  if (_projUser) {
+    try {
+      const _projs = readJSON(PROJECTS_FILE) || [];
+      const _proj = {
+        id: generateId(), userId: _projUser.id,
+        name: [strategy._industry || industry || '', strategy._city || city || ''].filter(Boolean).join(' · ') || 'Νέο Project',
+        goal: strategy._goal || goal || '',
+        city: strategy._city || city || '',
+        industry: strategy._industry || industry || '',
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        strategy: strategy,
+        milestones: [
+          { key: 'strategy_done',     label: 'Στρατηγική', doneAt: new Date().toISOString() },
+          { key: 'leads_found',       label: 'Leads',       doneAt: null },
+          { key: 'outreach_sent',     label: 'Outreach',    doneAt: null },
+          { key: 'spotlight_ordered', label: 'Spotlight',   doneAt: null }
+        ],
+        notes: [], linkedLeadCount: 0, spotlightOrderId: null
+      };
+      _projs.push(_proj);
+      writeJSON(PROJECTS_FILE, _projs);
+      _autoProjectId = _proj.id;
+    } catch(e) { console.error('[project-auto]', e.message); }
+  }
+  return json(res, 200, { strategy, tokensUsed, projectId: _autoProjectId });
 }
 
 async function handleStrategyPdf(req, res) {
@@ -9553,7 +9598,8 @@ async function handleStrategyPdf(req, res) {
       goal: strategy._goal || '',
       date: new Date().toISOString(),
       source: 'strategy-tool',
-      newsletterConsent: !!(newsletter === true || newsletter === 'true')
+      newsletterConsent: !!(newsletter === true || newsletter === 'true'),
+      followUpsSent: []
     });
     writeJSON(STRATEGY_LEADS_FILE, leads);
   } catch(e) { console.error('[strategy] lead save:', e.message); }
@@ -9738,6 +9784,188 @@ ${blogUrls}
   res.end(xml);
 }
 
+
+
+// ─── Projects ─────────────────────────────────────────────────────────────────
+function handleGetProjects(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const projects = (readJSON(PROJECTS_FILE) || []).filter(p => p.userId === user.id);
+  json(res, 200, { projects });
+}
+
+async function handleCreateProject(req, res) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const { name, goal, city, industry, strategy } = body;
+  if (!name) return json(res, 400, { error: 'Name required.' });
+  const projects = readJSON(PROJECTS_FILE) || [];
+  const proj = {
+    id: generateId(), userId: user.id,
+    name: String(name).slice(0, 100),
+    goal: String(goal || '').slice(0, 200),
+    city: String(city || '').slice(0, 100),
+    industry: String(industry || '').slice(0, 100),
+    status: 'active',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    strategy: strategy || null,
+    milestones: [
+      { key: 'strategy_done',     label: 'Στρατηγική', doneAt: strategy ? new Date().toISOString() : null },
+      { key: 'leads_found',       label: 'Leads',       doneAt: null },
+      { key: 'outreach_sent',     label: 'Outreach',    doneAt: null },
+      { key: 'spotlight_ordered', label: 'Spotlight',   doneAt: null }
+    ],
+    notes: [], linkedLeadCount: 0, spotlightOrderId: null
+  };
+  projects.push(proj);
+  writeJSON(PROJECTS_FILE, projects);
+  json(res, 200, { project: proj });
+}
+
+async function handleUpdateProject(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const projects = readJSON(PROJECTS_FILE) || [];
+  const idx = projects.findIndex(p => p.id === id && p.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Not found.' });
+  ['name','goal','city','industry','status','milestones'].forEach(k => {
+    if (body[k] !== undefined) projects[idx][k] = body[k];
+  });
+  projects[idx].updatedAt = new Date().toISOString();
+  writeJSON(PROJECTS_FILE, projects);
+  json(res, 200, { project: projects[idx] });
+}
+
+async function handleDeleteProject(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const projects = readJSON(PROJECTS_FILE) || [];
+  const filtered = projects.filter(p => !(p.id === id && p.userId === user.id));
+  if (filtered.length === projects.length) return json(res, 404, { error: 'Not found.' });
+  writeJSON(PROJECTS_FILE, filtered);
+  json(res, 200, { ok: true });
+}
+
+async function handleAddProjectNote(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const text = String(body.text || '').slice(0, 500).trim();
+  if (!text) return json(res, 400, { error: 'Note text required.' });
+  const projects = readJSON(PROJECTS_FILE) || [];
+  const idx = projects.findIndex(p => p.id === id && p.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Not found.' });
+  const note = { id: generateId(), text, createdAt: new Date().toISOString() };
+  projects[idx].notes.unshift(note);
+  projects[idx].updatedAt = new Date().toISOString();
+  writeJSON(PROJECTS_FILE, projects);
+  json(res, 200, { note });
+}
+
+async function handleUpdateProjectMilestone(req, res, id) {
+  const user = getSessionUser(parseCookies(req).session);
+  if (!user) return json(res, 401, { error: 'Not authenticated.' });
+  const body = await readBody(req);
+  const { key, done } = body;
+  const projects = readJSON(PROJECTS_FILE) || [];
+  const idx = projects.findIndex(p => p.id === id && p.userId === user.id);
+  if (idx === -1) return json(res, 404, { error: 'Not found.' });
+  const ms = projects[idx].milestones.find(m => m.key === key);
+  if (!ms) return json(res, 404, { error: 'Milestone not found.' });
+  ms.doneAt = done ? new Date().toISOString() : null;
+  projects[idx].updatedAt = new Date().toISOString();
+  writeJSON(PROJECTS_FILE, projects);
+  json(res, 200, { project: projects[idx] });
+}
+
+// ─── Strategy follow-up emails ────────────────────────────────────────────────
+async function sendStrategyFollowUp(lead, step) {
+  const from    = process.env.SYSTEM_EMAIL_FROM || process.env.SYSTEM_EMAIL_USER;
+  const host    = process.env.SYSTEM_EMAIL_HOST;
+  const port    = parseInt(process.env.SYSTEM_EMAIL_PORT || '587', 10);
+  const username= process.env.SYSTEM_EMAIL_USER;
+  const password= process.env.SYSTEM_EMAIL_PASS;
+  if (!host || !username || !password) return;
+
+  const unsubUrl = 'https://eureach.eu/unsubscribe?email=' + encodeURIComponent(lead.email);
+  const footer   = `<p style="color:#888;font-size:.82em;margin-top:24px">eureach.eu &nbsp;·&nbsp; <a href="${unsubUrl}" style="color:#888">Κατάργηση εγγραφής</a></p>`;
+
+  const tpls = {
+    day2: {
+      subject: '📋 Ξεκίνησες το marketing πλάνο σου;',
+      html: `<p>Γεια σου,</p>
+<p>Πριν από 2 μέρες δημιούργησες τη στρατηγική marketing για την επιχείρησή σου στο eureach.</p>
+<p><strong>3 επόμενα βήματα που μπορείς να κάνεις σήμερα:</strong></p>
+<ol>
+<li>🔍 <strong>Βρες leads</strong> — επιχειρήσεις και υποψήφιους πελάτες στην περιοχή σου</li>
+<li>📧 <strong>Ξεκίνα outreach</strong> — στείλε αυτοματοποιημένα emails σε potential partners</li>
+<li>🎬 <strong>Spotlight</strong> — βρες έναν YouTube creator να παρουσιάσει την επιχείρησή σου</li>
+</ol>
+<p><a href="https://eureach.eu/register.html" style="background:#1D9E75;color:#fff;padding:11px 22px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:700">Δημιούργησε δωρεάν λογαριασμό →</a></p>
+${footer}`
+    },
+    day5: {
+      subject: '💡 Το eureach περιμένει — δωρεάν εγγραφή',
+      html: `<p>Γεια σου,</p>
+<p>Έφτιαξες τη marketing στρατηγική σου πριν 5 μέρες — αλλά δεν έχεις ξεκινήσει ακόμα.</p>
+<p><strong>Με δωρεάν λογαριασμό μπορείς να:</strong></p>
+<ul>
+<li>Βρεις leads στην πόλη σου με τον Lead Finder</li>
+<li>Στείλεις αυτόματα outreach emails</li>
+<li>Παρακολουθείς την πρόοδο του marketing σου</li>
+</ul>
+<p><a href="https://eureach.eu/register.html" style="background:#1D9E75;color:#fff;padding:11px 22px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:700">Ξεκίνα δωρεάν →</a></p>
+${footer}`
+    },
+    day14: {
+      subject: '🎬 Πώς πάει η επιχείρησή σου; + μια ιδέα',
+      html: `<p>Γεια σου,</p>
+<p>Πριν από 2 εβδομάδες έφτιαξες τη marketing στρατηγική σου στο eureach.eu.</p>
+<p>Μια ιδέα αξίζει: <strong>eureach Spotlight</strong> — verified YouTube creators που κάνουν βίντεο για τοπικές επιχειρήσεις.</p>
+<ul>
+<li>Από €149, εφάπαξ, χωρίς συνδρομή</li>
+<li>Πληρώνεις μόνο αφού δεις και εγκρίνεις τον creator</li>
+<li>3.000+ views εγγυημένα, local audience</li>
+</ul>
+<p><a href="https://eureach.eu/spotlight" style="background:#1D9E75;color:#fff;padding:11px 22px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:700">Δες το Spotlight →</a></p>
+${footer}`
+    }
+  };
+  const tpl = tpls[step];
+  if (!tpl) return;
+  try {
+    await smtpSend({ host, port, username, password, from, fromName: 'eureach.eu', to: lead.email, subject: tpl.subject, html: tpl.html });
+    console.log('[strategy-followup] sent', step, 'to', lead.email);
+  } catch(e) { console.error('[strategy-followup]', step, e.message); }
+}
+
+// Strategy follow-up scheduler — runs every 6h, sends Day-2, Day-5, Day-14 emails
+setInterval(async () => {
+  try {
+    const leads = readJSON(STRATEGY_LEADS_FILE) || [];
+    const now = Date.now();
+    let dirty = false;
+    for (const lead of leads) {
+      if (!lead.email) continue;
+      const age = (now - new Date(lead.date).getTime()) / 86400000; // days
+      const sent = lead.followUpsSent || [];
+      if (age >= 2 && !sent.includes('day2')) {
+        await sendStrategyFollowUp(lead, 'day2');
+        lead.followUpsSent = [...sent, 'day2']; dirty = true;
+      } else if (age >= 5 && !sent.includes('day5')) {
+        await sendStrategyFollowUp(lead, 'day5');
+        lead.followUpsSent = [...sent, 'day5']; dirty = true;
+      } else if (age >= 14 && !sent.includes('day14')) {
+        await sendStrategyFollowUp(lead, 'day14');
+        lead.followUpsSent = [...sent, 'day14']; dirty = true;
+      }
+    }
+    if (dirty) writeJSON(STRATEGY_LEADS_FILE, leads);
+  } catch(e) { console.error('[strategy-followup scheduler]', e.message); }
+}, 6 * 60 * 60 * 1000);
 
 async function handleRequest(req, res) {
   const urlPath = req.url.split("?")[0];
@@ -10083,6 +10311,12 @@ async function handleRequest(req, res) {
   if (urlPath === '/api/strategy/generate' && method === 'POST') return handleStrategyGenerate(req, res);
   if (urlPath === '/api/strategy/pdf'      && method === 'POST') return handleStrategyPdf(req, res);
   if (urlPath.startsWith('/api/strategy/download/') && method === 'GET') return handleStrategyDownload(req, res, urlPath.slice(24));
+  if (urlPath === '/api/projects' && method === 'GET') return handleGetProjects(req, res);
+  if (urlPath === '/api/projects' && method === 'POST') return handleCreateProject(req, res);
+  if (/^\/api\/projects\/[a-z0-9]+$/.test(urlPath) && method === 'PUT') return handleUpdateProject(req, res, urlPath.split('/')[3]);
+  if (/^\/api\/projects\/[a-z0-9]+$/.test(urlPath) && method === 'DELETE') return handleDeleteProject(req, res, urlPath.split('/')[3]);
+  if (/^\/api\/projects\/[a-z0-9]+\/note$/.test(urlPath) && method === 'POST') return handleAddProjectNote(req, res, urlPath.split('/')[3]);
+  if (/^\/api\/projects\/[a-z0-9]+\/milestone$/.test(urlPath) && method === 'PUT') return handleUpdateProjectMilestone(req, res, urlPath.split('/')[3]);
   if ((urlPath === '/sitemap.xml' || urlPath === '/sitemap') && method === 'GET') return handleSitemap(req, res);
 
   if (urlPath === "/api/audit-public/start"            && method === "POST") return handlePublicAuditStart(req, res);
