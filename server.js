@@ -9227,9 +9227,21 @@ ${blogNavHtml()}
   </div>
 
   <div class="st-cta-box">
-    <h3>Θέλεις το eureach να γράψει το περιεχόμενο αυτού του πλάνου;</h3>
-    <p>Άρθρα, posts, newsletters — στα ελληνικά, αγγλικά ή γερμανικά — ακριβώς για τους στόχους σου.</p>
-    <a href="/signup.html?ref=strategy-tool" class="btn btn-primary">Ξεκίνα δωρεάν →</a>
+    <div style="font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#4ade80;margin-bottom:10px">eureach Beginners — €9/μήνα</div>
+    <h3 style="margin-bottom:6px">Βάλε το πλάνο σε εφαρμογή — από €9 το μήνα</h3>
+    <p style="margin-bottom:18px">Δεν υπάρχει δωρεάν πλάνο — αλλά για €9 το μήνα παίρνεις τα εργαλεία που χρειάζεσαι για να εκτελέσεις αυτή τη στρατηγική:</p>
+    <ul style="text-align:left;display:inline-block;margin:0 auto 20px;list-style:none;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;font-size:.84rem;color:var(--white)">
+      <li><span style="color:#4ade80;font-weight:700">✓</span> 20 lead searches / μήνα</li>
+      <li><span style="color:#4ade80;font-weight:700">✓</span> 50 CRM leads</li>
+      <li><span style="color:#4ade80;font-weight:700">✓</span> 3 AI άρθρα / μήνα</li>
+      <li><span style="color:#4ade80;font-weight:700">✓</span> Outreach &amp; email αυτοματισμός</li>
+      <li><span style="color:#4ade80;font-weight:700">✓</span> 3 AI audits / μήνα</li>
+      <li><span style="color:#4ade80;font-weight:700">✓</span> Παρακολούθηση 3 ανταγωνιστών</li>
+    </ul>
+    <div style="margin-bottom:8px">
+      <a href="/membership.html" class="btn btn-primary" style="font-size:.95rem;padding:13px 28px">Ξεκίνα με €9 / μήνα →</a>
+    </div>
+    <div style="font-size:.76rem;color:var(--muted)">Χωρίς δέσμευση · ακύρωση οποτεδήποτε</div>
   </div>
 </div>
 
