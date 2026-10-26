@@ -9219,7 +9219,7 @@ ${blogNavHtml()}
 
     <div class="st-field" style="margin-top:8px">
       <label for="st-email">Email σου <span style="color:#f87171;font-size:.8rem">*</span></label>
-      <input type="email" id="st-email" name="email" maxlength="200" placeholder="π.χ. maria@gmail.com" autocomplete="email" oninput="stEmailInput(this.value)">
+      <input type="email" id="st-email" name="email" maxlength="200" placeholder="π.χ. maria@gmail.com" autocomplete="email" oninput="stEmailInput(this.value)" onchange="stEmailInput(this.value)">
       <div style="margin-top:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:12px 14px;font-size:.78rem;color:var(--muted);line-height:1.75">
         Πατώντας «Φτιάξε τη στρατηγική μου» συμφωνείς με τους <a href="/terms.html" target="_blank" style="color:#4ade80">Όρους Χρήσης</a> του eureach.eu
         και εγγράφεσαι στο newsletter μας με tips για marketing μικρών επιχειρήσεων.
@@ -9368,8 +9368,14 @@ let _stLastSubmit = 0, _stData = null;
 function stEmailInput(v) {
   const btn = document.getElementById('st-btn');
   if (!btn) return;
-  btn.disabled = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim());
+  btn.disabled = !(v || '').trim().includes('@');
 }
+document.addEventListener('DOMContentLoaded', function() {
+  var emailEl = document.getElementById('st-email');
+  if (emailEl) ['input','change','keyup','paste'].forEach(function(ev) {
+    emailEl.addEventListener(ev, function() { stEmailInput(emailEl.value); });
+  });
+});
 
 function stWebsiteChanged() {
   // Reset description if URL changes
