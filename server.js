@@ -10567,6 +10567,7 @@ async function handleRequest(req, res) {
   if (urlPath === '/api/admin/spotlight/creators' && method === 'GET') return handleAdminSpotlightCreators(req, res);
   if (urlPath === '/api/admin/spotlight/creators' && method === 'POST') return handleAdminSpotlightCreators(req, res);
   if (urlPath === '/api/admin/spotlight/waitlist' && method === 'GET') return handleAdminSpotlightWaitlist(req, res);
+  if (urlPath === '/tools' && method === 'GET') { res.writeHead(200,{'Content-Type':'text/html;charset=utf-8'}); const fs=require('fs'); res.end(fs.readFileSync(path.join(ROOT,'tools.html'),'utf8')); return; }
   if (urlPath === '/stratigiki-marketing' && method === 'GET') return handleStrategyPage(req, res);
   if (urlPath === '/api/strategy/lookup-website' && method === 'POST') return handleStrategyLookupWebsite(req, res);
   if (urlPath === '/api/strategy/generate' && method === 'POST') return handleStrategyGenerate(req, res);

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Εργαλεία AI Marketing — eureach.eu</title>
+  <meta name="description" content="Όλα τα AI εργαλεία marketing για μικρές επιχειρήσεις: Lead Finder, Articles, Competitors, Audit, CRM, Outreach και άλλα.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<style>
+/* ── Nav ── */
+.nav-dropdown{position:relative}
+.nav-dropdown-toggle{font-size:.875rem;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;background:none;border:none;padding:0;transition:color .2s;white-space:nowrap}
+.nav-dropdown-toggle:hover{color:var(--white)}
+.nav-dropdown-toggle svg{width:10px;height:10px;transition:transform .2s}
+.nav-dropdown:hover .nav-dropdown-toggle svg{transform:rotate(180deg)}
+.nav-dropdown-menu{display:none;position:absolute;top:100%;left:0;padding-top:12px;min-width:190px;z-index:200}
+.nav-dropdown-menu-inner{background:rgba(10,16,36,.97);border:1px solid var(--border);border-radius:12px;padding:8px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.nav-dropdown:hover .nav-dropdown-menu{display:block}
+.nav-dropdown-menu a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:.85rem;color:var(--muted);text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
+.nav-dropdown-menu a:hover{background:rgba(255,255,255,.07);color:var(--white)}
+.nav-dropdown-menu .ndm-icon{font-size:1rem;width:20px;text-align:center}
+.nav-dropdown-divider{height:1px;background:var(--border);margin:6px 0}
+/* ── Tools page ── */
+.tools-hero{padding:100px 24px 48px;text-align:center;max-width:700px;margin:0 auto}
+.tools-hero h1{font-size:2.2rem;font-weight:800;margin-bottom:14px;line-height:1.2}
+.tools-hero p{color:var(--muted);font-size:1.05rem;line-height:1.7}
+.tools-login-bar{display:none;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.3);border-radius:10px;padding:12px 18px;margin:0 auto 36px;max-width:560px;text-align:center;font-size:.88rem;color:#4ade80}
+.tools-login-bar a{color:#4ade80;font-weight:700;text-decoration:underline}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;max-width:1100px;margin:0 auto;padding:0 24px 80px}
+.tool-card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:22px 20px;text-decoration:none;color:inherit;display:flex;flex-direction:column;gap:10px;transition:border-color .2s,background .2s;cursor:pointer}
+.tool-card:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.18)}
+.tool-card.locked{opacity:.4;cursor:not-allowed;pointer-events:none}
+.tool-card.locked .tool-lock{display:inline-block}
+.tool-lock{display:none;font-size:.7rem;background:rgba(255,255,255,.08);border-radius:20px;padding:2px 8px;color:var(--muted)}
+.tool-icon{font-size:1.8rem;line-height:1}
+.tool-name{font-size:1rem;font-weight:700;color:var(--white)}
+.tool-desc{font-size:.82rem;color:var(--muted);line-height:1.6;flex:1}
+.tool-tag{font-size:.7rem;font-weight:600;padding:3px 9px;border-radius:20px;width:fit-content}
+.tag-free{background:rgba(74,222,128,.12);color:#4ade80}
+.tag-pro{background:rgba(251,191,36,.1);color:#fbbf24}
+.tools-section-hd{max-width:1100px;margin:0 auto 12px;padding:0 24px;font-size:.7rem;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:1.2px}
+@media(max-width:600px){.tools-hero h1{font-size:1.6rem}.tools-grid{grid-template-columns:1fr 1fr}.tools-hero{padding:80px 16px 32px}.tool-card{padding:16px 14px}}
+@media(max-width:400px){.tools-grid{grid-template-columns:1fr}}
+</style>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links">
+      <a href="/tools" style="color:var(--white);font-weight:600">Εργαλεία</a>
+      <a href="audit.html">AI Audit</a>
+      <a href="blog.html">Blog</a>
+      <a href="membership.html">Τιμές</a>
+      <a href="/stratigiki-marketing">Στρατηγική</a>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" id="nav-profile-btn" style="font-size:.78rem;padding:7px 14px;display:none"></a>
+      <a href="signin.html" class="btn btn-ghost" id="nav-signin-btn" style="font-size:.78rem;padding:7px 14px">Σύνδεση</a>
+    </div>
+  </div>
+</nav>
+
+<div class="tools-hero">
+  <h1>Όλα τα εργαλεία σου<br><span style="background:linear-gradient(135deg,#1D9E75,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent">σε ένα μέρος</span></h1>
+  <p>AI εργαλεία για να βρεις πελάτες, να γράψεις περιεχόμενο και να αναπτύξεις την επιχείρησή σου. Ξεκίνα με τη δωρεάν στρατηγική — δεν χρειάζεσαι λογαριασμό.</p>
+</div>
+
+<div class="tools-login-bar" id="tools-login-bar">
+  🔒 <a href="/signin.html">Συνδέσου</a> ή <a href="/signup.html">δημιούργησε λογαριασμό</a> για να χρησιμοποιήσεις όλα τα εργαλεία.
+</div>
+
+<div class="tools-section-hd">Δωρεάν — χωρίς λογαριασμό</div>
+<div class="tools-grid" id="free-tools">
+
+  <a href="/stratigiki-marketing" class="tool-card" id="tool-strategy">
+    <div class="tool-icon">📋</div>
+    <div class="tool-name">Στρατηγική Marketing</div>
+    <div class="tool-desc">Απάντησε σε 5 ερωτήσεις και πάρε πλήρη στρατηγική marketing προσαρμοσμένη στην επιχείρησή σου.</div>
+    <span class="tool-tag tag-free">Δωρεάν</span>
+  </a>
+
+  <a href="audit.html" class="tool-card" id="tool-audit-public">
+    <div class="tool-icon">🔎</div>
+    <div class="tool-name">AI Audit (δωρεάν)</div>
+    <div class="tool-desc">Ανάλυση της ιστοσελίδας σου με AI — SEO, ταχύτητα, κινητό, περιεχόμενο. Δωρεάν έκδοση χωρίς λογαριασμό.</div>
+    <span class="tool-tag tag-free">Δωρεάν</span>
+  </a>
+
+</div>
+
+<div class="tools-section-hd" style="margin-top:16px">Εργαλεία — απαιτείται λογαριασμός</div>
+<div class="tools-grid" id="pro-tools">
+
+  <a href="leads.html" class="tool-card" id="tool-leads">
+    <div class="tool-icon">🔍</div>
+    <div class="tool-name">Lead Finder</div>
+    <div class="tool-desc">Βρες επιχειρήσεις που χρειάζονται αυτό που πουλάς — με φίλτρα πόλης, κλάδου και πλατφόρμας.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+  <a href="articles.html" class="tool-card" id="tool-articles">
+    <div class="tool-icon">✍️</div>
+    <div class="tool-name">Articles</div>
+    <div class="tool-desc">Γράψε άρθρα SEO με AI, βελτιστοποιημένα για να εμφανίζεσαι στο ChatGPT και στο Google.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+  <a href="competitors.html" class="tool-card" id="tool-competitors">
+    <div class="tool-icon">📡</div>
+    <div class="tool-name">Competitors</div>
+    <div class="tool-desc">Παρακολούθησε ανταγωνιστές, δες τι κάνουν και βρες κενά που μπορείς να εκμεταλλευτείς.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+  <a href="citations.html" class="tool-card" id="tool-citations">
+    <div class="tool-icon">🔗</div>
+    <div class="tool-name">Citations</div>
+    <div class="tool-desc">Φτιάξε αναφορές σε directories και τοπικές λίστες για να ενισχύσεις το τοπικό SEO σου.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+  <a href="marketing.html" class="tool-card" id="tool-marketing">
+    <div class="tool-icon">🚀</div>
+    <div class="tool-name">Marketing Creator</div>
+    <div class="tool-desc">Δημιούργησε posts για social media, διαφημίσεις και email campaigns με AI σε δευτερόλεπτα.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+  <a href="newsletter-campaigns.html" class="tool-card" id="tool-newsletter">
+    <div class="tool-icon">📧</div>
+    <div class="tool-name">Newsletter</div>
+    <div class="tool-desc">Στείλε newsletter στους πελάτες σου — γράψε, διαχειρίσου και στείλε καμπάνιες email.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+  <a href="crm.html" class="tool-card" id="tool-crm">
+    <div class="tool-icon">🗂️</div>
+    <div class="tool-name">CRM</div>
+    <div class="tool-desc">Οργάνωσε τις επαφές σου, παρακολούθησε τη σχέση με κάθε πελάτη και δες το ιστορικό επικοινωνίας.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+  <a href="outreach.html" class="tool-card" id="tool-outreach">
+    <div class="tool-icon">📤</div>
+    <div class="tool-name">Outreach</div>
+    <div class="tool-desc">Στείλε εξατομικευμένα email σε δυνητικούς πελάτες με AI — αυτόματα, γρήγορα, αποτελεσματικά.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+  <a href="fb-posts.html" class="tool-card" id="tool-fbposts">
+    <div class="tool-icon">📱</div>
+    <div class="tool-name">FB Post Agent</div>
+    <div class="tool-desc">Δημιούργησε και δημοσίευσε posts στο Facebook Page σου με AI — γρήγορα και χωρίς κόπο.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+  <a href="pipeline.html" class="tool-card" id="tool-pipeline">
+    <div class="tool-icon">📊</div>
+    <div class="tool-name">Pipeline</div>
+    <div class="tool-desc">Διαχειρίσου τη διαδικασία πώλησης — από το πρώτο lead μέχρι τον κλειστό πελάτη.</div>
+    <span class="tool-lock">🔒 Απαιτείται σύνδεση</span>
+    <span class="tool-tag tag-pro">Pro</span>
+  </a>
+
+</div>
+
+<footer style="border-top:1px solid var(--border);padding:32px 24px;text-align:center;color:var(--muted);font-size:.8rem">
+  <div style="margin-bottom:10px;font-size:1rem;font-weight:800;color:var(--white)">eureach<span style="color:var(--gold)">.</span>eu</div>
+  <div style="display:flex;gap:20px;justify-content:center;margin-bottom:10px">
+    <a href="/privacy.html" style="color:var(--muted)">Privacy</a>
+    <a href="/terms.html" style="color:var(--muted)">Terms</a>
+    <a href="mailto:hello@eureach.eu" style="color:var(--muted)">Contact</a>
+  </div>
+  © 2026 eureach.eu
+</footer>
+
+<script>
+(function() {
+  var LOCKED = ['tool-leads','tool-articles','tool-competitors','tool-citations',
+    'tool-marketing','tool-newsletter','tool-crm','tool-outreach','tool-fbposts','tool-pipeline'];
+
+  fetch('/api/auth/me')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(d) {
+      var user = d && d.user ? d.user : null;
+      if (!user) {
+        // Show login bar
+        document.getElementById('tools-login-bar').style.display = 'block';
+        // Grey out and disable all locked cards
+        LOCKED.forEach(function(id) {
+          var card = document.getElementById(id);
+          if (!card) return;
+          card.classList.add('locked');
+          card.removeAttribute('href');
+          card.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = '/signin.html';
+          });
+        });
+        // Update nav
+        var profileBtn = document.getElementById('nav-profile-btn');
+        if (profileBtn) profileBtn.style.display = 'none';
+      } else {
+        // Logged in — hide sign in button, show profile
+        var signinBtn = document.getElementById('nav-signin-btn');
+        if (signinBtn) signinBtn.style.display = 'none';
+        var profileBtn = document.getElementById('nav-profile-btn');
+        if (profileBtn) {
+          profileBtn.style.display = '';
+          profileBtn.textContent = user.name || user.email || 'Profile';
+        }
+      }
+    })
+    .catch(function() {});
+})();
+</script>
+</body>
+</html>
