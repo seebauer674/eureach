@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Newsletter Ads — Eureach Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.topbar{background:#1e293b;border-bottom:1px solid #334155;padding:10px 20px;display:flex;align-items:center;gap:14px}
+.topbar a{color:#94a3b8;font-size:.82rem;text-decoration:none}
+.topbar a:hover{color:#fff}
+.topbar h1{font-size:.95rem;font-weight:700;color:#fff}
+.spacer{flex:1}
+.btn{padding:7px 16px;border-radius:5px;border:none;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-primary{background:#4f46e5;color:#fff}
+.btn-primary:hover{background:#4338ca}
+.btn-ghost{background:transparent;color:#94a3b8;border:1px solid #334155}
+.btn-ghost:hover{color:#fff;border-color:#94a3b8}
+.btn-danger{background:transparent;color:#fca5a5;border:1px solid #334155;font-size:.75rem;padding:4px 10px}
+.btn-danger:hover{background:#7f1d1d;border-color:#ef4444}
+.btn-sm{font-size:.75rem;padding:4px 12px;border-radius:4px;border:none;cursor:pointer;font-weight:700}
+.btn-edit{background:#334155;color:#e2e8f0}
+.btn-edit:hover{background:#475569}
+.main{max-width:1100px;margin:0 auto;padding:24px 20px;display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
+.panel{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:20px}
+.panel h2{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:16px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.field input,.field textarea,.field select{width:100%;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:8px 10px;color:#e2e8f0;font-size:.85rem;outline:none;transition:border-color .15s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#4f46e5}
+.field textarea{min-height:72px;resize:vertical;font-family:inherit}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.preview-box{border:1px solid #334155;border-radius:6px;overflow:hidden;background:#fff}
+.preview-label{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.ads-grid{display:flex;flex-direction:column;gap:10px}
+.ad-card{background:#1e293b;border:1px solid #334155;border-radius:7px;overflow:hidden}
+.ad-card-header{padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.ad-name{font-size:.88rem;font-weight:700;color:#e2e8f0;flex:1}
+.ad-status{font-size:.68rem;padding:2px 8px;border-radius:10px;font-weight:700}
+.status-active{background:#064e3b;color:#6ee7b7}
+.status-inactive{background:#1f2937;color:#9ca3af}
+.ad-body{display:none;padding:0 16px 16px;gap:12px}
+.ad-body.open{display:flex}
+.ad-preview{flex:0 0 140px}
+.ad-details{flex:1;font-size:.8rem;color:#94a3b8;line-height:1.6}
+.ad-actions{display:flex;gap:8px;margin-top:10px}
+.empty{padding:40px;text-align:center;color:#475569;font-size:.85rem}
+.msg{font-size:.8rem;min-height:20px;margin-top:8px}
+.ok{color:#86efac}.err{color:#fca5a5}
+.color-row{display:flex;align-items:center;gap:8px}
+.color-swatch{width:28px;height:28px;border-radius:4px;border:1px solid #334155;cursor:pointer;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/email-builder.html">← Email Builder</a>
+  <h1>Newsletter Ads</h1>
+  <div class="spacer"></div>
+  <span id="msg" class="msg"></span>
+</div>
+
+<div class="main">
+
+  <!-- Left: Create / Edit form -->
+  <div class="panel">
+    <h2 id="form-title">Create New Ad</h2>
+    <input type="hidden" id="edit-id">
+
+    <div class="field">
+      <label>Ad Name (internal)</label>
+      <input id="f-name" placeholder="e.g. Spotlight Q1 Banner">
+    </div>
+    <div class="field">
+      <label>Headline</label>
+      <input id="f-headline" placeholder="Short punchy headline">
+    </div>
+    <div class="field">
+      <label>Body text</label>
+      <textarea id="f-body" placeholder="2–3 sentence description…"></textarea>
+    </div>
+    <div class="field">
+      <label>Image URL (optional)</label>
+      <input id="f-image" placeholder="https://…" oninput="refreshPreview()">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>CTA Label</label>
+        <input id="f-cta-label" placeholder="Learn More" value="Learn More">
+      </div>
+      <div class="field">
+        <label>CTA URL</label>
+        <input id="f-cta-url" placeholder="https://eureach.eu">
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Accent color</label>
+        <div class="color-row">
+          <input type="color" id="f-accent" value="#4f46e5" oninput="syncColor('f-accent','f-accent-hex');refreshPreview()" style="width:38px;height:34px;padding:2px;border-radius:4px;border:1px solid #334155;background:#0f172a;cursor:pointer">
+          <input id="f-accent-hex" value="#4f46e5" maxlength="7" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 8px;color:#e2e8f0;font-size:.82rem;outline:none" oninput="syncColor('f-accent-hex','f-accent');refreshPreview()">
+        </div>
+      </div>
+      <div class="field">
+        <label>Background color</label>
+        <div class="color-row">
+          <input type="color" id="f-bg" value="#f0f4ff" oninput="syncColor('f-bg','f-bg-hex');refreshPreview()" style="width:38px;height:34px;padding:2px;border-radius:4px;border:1px solid #334155;background:#0f172a;cursor:pointer">
+          <input id="f-bg-hex" value="#f0f4ff" maxlength="7" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 8px;color:#e2e8f0;font-size:.82rem;outline:none" oninput="syncColor('f-bg-hex','f-bg');refreshPreview()">
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px">
+      <div class="preview-label">Preview (30% email column)</div>
+      <div class="preview-box" id="ad-preview" style="width:180px"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:16px">
+      <button class="btn btn-primary" onclick="saveAd()">Save Ad</button>
+      <button class="btn btn-ghost" onclick="resetForm()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Right: Ads list -->
+  <div class="panel">
+    <h2>Ad Library</h2>
+    <div id="ads-list"><div class="empty">Loading…</div></div>
+  </div>
+
+</div>
+
+<script>
+let ads = [];
+let expanded = null;
+
+function syncColor(srcId, dstId) {
+  const src = document.getElementById(srcId);
+  const dst = document.getElementById(dstId);
+  if (!src || !dst) return;
+  const v = src.value;
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) dst.value = v;
+}
+
+function refreshPreview() {
+  const headline = document.getElementById('f-headline').value;
+  const body     = document.getElementById('f-body').value;
+  const image    = document.getElementById('f-image').value;
+  const cta      = document.getElementById('f-cta-label').value;
+  const accent   = document.getElementById('f-accent-hex').value || '#4f46e5';
+  const bg       = document.getElementById('f-bg-hex').value || '#f0f4ff';
+  document.getElementById('ad-preview').innerHTML = renderAdHtml({headline,body,image_url:image,cta_label:cta,accent_color:accent,bg_color:bg});
+}
+
+function renderAdHtml(ad) {
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const accent = ad.accent_color || '#4f46e5';
+  const bg     = ad.bg_color     || '#f0f4ff';
+  return `<div style="background:${bg};border-top:3px solid ${accent};padding:14px;font-family:Arial,sans-serif">
+    ${ad.image_url ? `<img src="${esc(ad.image_url)}" style="width:100%;height:auto;display:block;margin-bottom:10px;border-radius:3px">` : ''}
+    ${ad.headline  ? `<div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:6px;line-height:1.3">${esc(ad.headline)}</div>` : ''}
+    ${ad.body      ? `<div style="font-size:12px;color:#555;line-height:1.5;margin-bottom:10px">${esc(ad.body)}</div>` : ''}
+    ${ad.cta_label ? `<div style="text-align:center"><a href="${esc(ad.cta_url||'#')}" style="display:inline-block;padding:7px 14px;background:${accent};color:#fff;border-radius:4px;font-size:12px;font-weight:700;text-decoration:none">${esc(ad.cta_label)}</a></div>` : ''}
+  </div>`;
+}
+
+async function loadAds() {
+  const r = await fetch('/api/newsletter/ads').then(r=>r.json()).catch(()=>({ads:[]}));
+  ads = r.ads || [];
+  renderList();
+}
+
+function renderList() {
+  const el = document.getElementById('ads-list');
+  if (!ads.length) { el.innerHTML = '<div class="empty">No ads yet. Create your first ad →</div>'; return; }
+  el.innerHTML = ads.map(a => `
+    <div class="ad-card" id="card-${a.id}">
+      <div class="ad-card-header" onclick="toggleCard(${a.id})">
+        <span class="ad-name">${esc(a.name)}</span>
+        <span class="ad-status ${a.status==='active'?'status-active':'status-inactive'}">${a.status}</span>
+        <span style="color:#475569;font-size:.8rem">▾</span>
+      </div>
+      <div class="ad-body" id="body-${a.id}">
+        <div class="ad-preview" style="width:150px;flex-shrink:0">
+          ${renderAdHtml(a)}
+        </div>
+        <div class="ad-details">
+          ${a.headline ? `<div><strong>Headline:</strong> ${esc(a.headline)}</div>` : ''}
+          ${a.cta_url  ? `<div><strong>CTA:</strong> ${esc(a.cta_label)} → ${esc(a.cta_url)}</div>` : ''}
+          <div class="ad-actions">
+            <button class="btn-sm btn-edit" onclick="editAd(${a.id})">Edit</button>
+            <button class="btn-sm btn-edit" onclick="toggleStatus(${a.id},'${a.status==='active'?'inactive':'active'}')">${a.status==='active'?'Deactivate':'Activate'}</button>
+            <button class="btn btn-danger" onclick="deleteAd(${a.id})">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toggleCard(id) {
+  const body = document.getElementById('body-' + id);
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  document.querySelectorAll('.ad-body.open').forEach(el => el.classList.remove('open'));
+  if (!isOpen) body.classList.add('open');
+}
+
+function editAd(id) {
+  const ad = ads.find(a => a.id === id);
+  if (!ad) return;
+  document.getElementById('edit-id').value        = ad.id;
+  document.getElementById('f-name').value         = ad.name         || '';
+  document.getElementById('f-headline').value     = ad.headline     || '';
+  document.getElementById('f-body').value         = ad.body         || '';
+  document.getElementById('f-image').value        = ad.image_url    || '';
+  document.getElementById('f-cta-label').value    = ad.cta_label    || '';
+  document.getElementById('f-cta-url').value      = ad.cta_url      || '';
+  document.getElementById('f-accent').value       = ad.accent_color || '#4f46e5';
+  document.getElementById('f-accent-hex').value   = ad.accent_color || '#4f46e5';
+  document.getElementById('f-bg').value           = ad.bg_color     || '#f0f4ff';
+  document.getElementById('f-bg-hex').value       = ad.bg_color     || '#f0f4ff';
+  document.getElementById('form-title').textContent = 'Edit Ad';
+  refreshPreview();
+  window.scrollTo(0,0);
+}
+
+function resetForm() {
+  document.getElementById('edit-id').value     = '';
+  document.getElementById('f-name').value      = '';
+  document.getElementById('f-headline').value  = '';
+  document.getElementById('f-body').value      = '';
+  document.getElementById('f-image').value     = '';
+  document.getElementById('f-cta-label').value = 'Learn More';
+  document.getElementById('f-cta-url').value   = '';
+  document.getElementById('f-accent').value    = '#4f46e5';
+  document.getElementById('f-accent-hex').value= '#4f46e5';
+  document.getElementById('f-bg').value        = '#f0f4ff';
+  document.getElementById('f-bg-hex').value    = '#f0f4ff';
+  document.getElementById('form-title').textContent = 'Create New Ad';
+  refreshPreview();
+}
+
+async function saveAd() {
+  const name      = document.getElementById('f-name').value.trim();
+  if (!name) { msg('Ad name is required', true); return; }
+  const editId    = document.getElementById('edit-id').value;
+  const payload   = {
+    name,
+    headline:     document.getElementById('f-headline').value.trim() || null,
+    body:         document.getElementById('f-body').value.trim()     || null,
+    image_url:    document.getElementById('f-image').value.trim()    || null,
+    cta_label:    document.getElementById('f-cta-label').value.trim()|| null,
+    cta_url:      document.getElementById('f-cta-url').value.trim()  || null,
+    accent_color: document.getElementById('f-accent-hex').value      || '#4f46e5',
+    bg_color:     document.getElementById('f-bg-hex').value          || '#f0f4ff',
+  };
+  const url    = editId ? `/api/newsletter/ads/${editId}` : '/api/newsletter/ads';
+  const method = editId ? 'PUT' : 'POST';
+  const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })
+              .then(r=>r.json()).catch(()=>({error:'Network error'}));
+  if (r.ad) {
+    msg(editId ? 'Ad updated' : 'Ad created');
+    resetForm();
+    loadAds();
+  } else {
+    msg(r.error || 'Failed', true);
+  }
+}
+
+async function deleteAd(id) {
+  if (!confirm('Delete this ad?')) return;
+  const r = await fetch(`/api/newsletter/ads/${id}`, {method:'DELETE'}).then(r=>r.json()).catch(()=>({error:'Failed'}));
+  if (r.success) { msg('Deleted'); loadAds(); }
+  else msg(r.error || 'Failed', true);
+}
+
+async function toggleStatus(id, newStatus) {
+  const r = await fetch(`/api/newsletter/ads/${id}`, {
+    method:'PUT', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ status: newStatus })
+  }).then(r=>r.json()).catch(()=>({error:'Failed'}));
+  if (r.ad) { msg('Status updated'); loadAds(); }
+  else msg(r.error||'Failed', true);
+}
+
+function msg(text, isErr=false) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = 'msg ' + (isErr ? 'err' : 'ok');
+  setTimeout(() => { el.textContent=''; el.className='msg'; }, 3500);
+}
+
+refreshPreview();
+loadAds();
+</script>
+</body>
+</html>

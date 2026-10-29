@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Email Builder — Eureach Admin</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+
+/* Topbar */
+.topbar{background:#1e293b;border-bottom:1px solid #334155;padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:100}
+.topbar a{color:#94a3b8;font-size:.82rem;text-decoration:none;white-space:nowrap}
+.topbar a:hover{color:#fff}
+.topbar h1{font-size:.95rem;font-weight:700;color:#fff;white-space:nowrap}
+.topbar input{background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 10px;color:#e2e8f0;font-size:.82rem}
+.topbar input:focus{outline:none;border-color:#4f46e5}
+#inp-name{width:200px}
+#inp-subject{width:280px}
+.spacer{flex:1}
+.btn{padding:7px 14px;border-radius:5px;border:none;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:#4f46e5;color:#fff}
+.btn-primary:hover{background:#4338ca}
+.btn-ghost{background:transparent;color:#94a3b8;border:1px solid #334155}
+.btn-ghost:hover{color:#fff;border-color:#94a3b8}
+#status-msg{font-size:.78rem;min-width:120px}
+.ok{color:#86efac}.err{color:#fca5a5}
+
+/* Workspace */
+.workspace{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:188px;background:#1e293b;border-right:1px solid #334155;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
+.sb-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;padding:12px 12px 6px}
+.block-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;border:none;background:none;color:#94a3b8;font-size:.8rem;width:100%;text-align:left;transition:background .1s}
+.block-btn:hover{background:#0f172a;color:#e2e8f0}
+.bicon{width:26px;height:20px;background:#334155;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#94a3b8}
+
+/* Canvas area */
+.canvas-area{flex:1;overflow-y:auto;padding:20px;background:#0a1020;display:flex;flex-direction:column;align-items:center}
+.canvas{width:600px;background:#fff;min-height:300px;border-radius:4px;box-shadow:0 4px 32px rgba(0,0,0,.5)}
+.canvas.drag-over{outline:2px dashed #4f46e5}
+.hint{margin-top:10px;font-size:.75rem;color:#334155;text-align:center}
+
+/* Block wrapper */
+.bw{position:relative;border:2px solid transparent;cursor:pointer;transition:border-color .1s}
+.bw:hover{border-color:#334155}
+.bw.sel{border-color:#4f46e5}
+.bcontrols{position:absolute;top:3px;right:3px;display:none;gap:3px;z-index:20;background:#1e293b;border-radius:4px;padding:2px 3px}
+.bw:hover .bcontrols,.bw.sel .bcontrols{display:flex}
+.cb{padding:3px 6px;border:none;border-radius:3px;font-size:.7rem;cursor:pointer;font-weight:700;background:#334155;color:#e2e8f0;line-height:1}
+.cb:hover{background:#475569}
+.cb.del{color:#fca5a5}
+.dh{cursor:grab;color:#64748b;padding:3px 5px;border-radius:3px;background:#334155;line-height:1;font-size:.75rem}
+.drop-line{height:3px;background:#4f46e5;display:none}
+.drop-line.show{display:block}
+.empty-canvas{padding:60px 20px;text-align:center;color:#94a3b8;font-size:.85rem}
+
+/* Right panel */
+.panel{width:252px;background:#1e293b;border-left:1px solid #334155;overflow-y:auto;flex-shrink:0}
+.panel-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;padding:12px 12px 8px;border-bottom:1px solid #334155;position:sticky;top:0;background:#1e293b;z-index:10}
+.panel-empty{padding:16px 12px;font-size:.8rem;color:#475569}
+.pg{padding:8px 12px;border-bottom:1px solid #0f172a}
+.pl{font-size:.7rem;color:#94a3b8;font-weight:600;margin-bottom:4px}
+.pi{background:#0f172a;border:1px solid #334155;border-radius:4px;padding:5px 8px;color:#e2e8f0;font-size:.8rem;width:100%}
+.pi:focus{outline:none;border-color:#4f46e5}
+textarea.pi{min-height:72px;resize:vertical;font-family:inherit}
+.prow{display:flex;gap:6px}
+.prow .pg{flex:1;padding:8px 6px;border:none}
+.prow .pg:first-child{padding-left:12px}
+.prow .pg:last-child{padding-right:12px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/admin/comms-center.html">← Campaigns</a>
+  <a href="/email-ads.html" style="color:#818cf8">Manage Ads ↗</a>
+  <h1>✉ Email Builder</h1>
+  <input id="inp-name" placeholder="Campaign name…">
+  <input id="inp-subject" placeholder="Subject line…">
+  <div class="spacer"></div>
+  <button class="btn btn-ghost" onclick="previewHtml()" style="padding:6px 12px">Preview</button>
+  <button class="btn btn-primary" onclick="saveCampaign()" style="padding:6px 12px">Save Campaign</button>
+  <span id="status-msg"></span>
+</div>
+
+<div class="workspace">
+
+  <!-- Left sidebar -->
+  <div class="sidebar">
+    <div class="sb-title">Blocks</div>
+    <button class="block-btn" onclick="addBlock('header')"><div class="bicon" style="background:#1a1a2e;color:#4f46e5">eu</div>Header</button>
+    <button class="block-btn" onclick="addBlock('text')"><div class="bicon">¶</div>Text</button>
+    <button class="block-btn" onclick="addBlock('image')"><div class="bicon">▣</div>Image</button>
+    <button class="block-btn" onclick="addBlock('button')"><div class="bicon" style="background:#4f46e5;color:#fff">→</div>Button</button>
+    <button class="block-btn" onclick="addBlock('divider')"><div class="bicon" style="flex-direction:column"><div style="width:18px;height:1px;background:#94a3b8"></div></div>Divider</button>
+    <button class="block-btn" onclick="addBlock('columns')"><div class="bicon" style="gap:2px"><div style="width:9px;height:12px;background:#475569;border-radius:1px"></div><div style="width:9px;height:12px;background:#475569;border-radius:1px"></div></div>2 Columns</button>
+    <button class="block-btn" onclick="addBlock('sidebar')"><div class="bicon" style="gap:1px"><div style="width:13px;height:12px;background:#475569;border-radius:1px"></div><div style="width:7px;height:12px;background:#4f46e5;border-radius:1px"></div></div>+ Ad Sidebar</button>
+    <button class="block-btn" onclick="addBlock('articles')"><div class="bicon">≡</div>Articles</button>
+    <button class="block-btn" onclick="addBlock('footer')"><div class="bicon">—</div>Footer</button>
+
+    <div class="sb-title" style="margin-top:8px">Templates</div>
+    <button class="block-btn" onclick="loadTemplate('digest')"><div class="bicon">📋</div>Digest</button>
+    <button class="block-btn" onclick="loadTemplate('promo')"><div class="bicon">🎯</div>Promo</button>
+    <button class="block-btn" onclick="loadTemplate('announcement')"><div class="bicon">📣</div>Announcement</button>
+  </div>
+
+  <!-- Canvas -->
+  <div class="canvas-area">
+    <div class="canvas" id="canvas"
+         ondragover="onCanvasDragOver(event)"
+         ondrop="onCanvasDrop(event)">
+    </div>
+    <div class="hint">600px email canvas · Click block to edit · ⠿ drag to reorder</div>
+  </div>
+
+  <!-- Properties panel -->
+  <div class="panel">
+    <div class="panel-title">Properties</div>
+    <div id="prop-panel"><div class="panel-empty">Select a block to edit its properties</div></div>
+  </div>
+
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let blocks = [];
+let selectedId = null;
+let dragSrcId  = null;
+
+const uid = () => Math.random().toString(36).slice(2,9);
+
+// ── Block defaults ─────────────────────────────────────────────────────────────
+const DEFAULTS = {
+  header:   { logoText:'eureach', logoAccent:'eu', title:'Eureach Newsletter', subtitle:'', bgColor:'#1a1a2e', textColor:'#ffffff', accentColor:'#4f46e5' },
+  text:     { content:'Γράψε το κείμενό σου εδώ...', fontSize:15, color:'#333333', align:'left', padding:24, lineHeight:1.7 },
+  image:    { src:'', alt:'', width:100, link:'', align:'center', padding:16 },
+  button:   { label:'Διάβασε περισσότερα', url:'https://eureach.eu', bgColor:'#4f46e5', textColor:'#ffffff', align:'center', padding:20 },
+  divider:  { color:'#e2e8f0', thickness:1, marginV:16 },
+  columns:  { col1:'Αριστερή στήλη...', col2:'Δεξιά στήλη...', color:'#333333', fontSize:14, padding:20 },
+  sidebar:  { content:'Main content goes here...', fontSize:15, color:'#333333', lineHeight:1.7, padding:24,
+               adId:0, adHeadline:'Ad Headline', adBody:'Short description for this ad.', adImageUrl:'',
+               adCtaLabel:'Learn More', adCtaUrl:'https://eureach.eu',
+               adAccentColor:'#4f46e5', adBgColor:'#f0f4ff' },
+  articles: { title:'Τελευταία Άρθρα', bgColor:'#f8fafc', titleColor:'#1a1a2e', padding:20,
+    items:[ { title:'Τίτλος άρθρου 1', excerpt:'Σύντομη περιγραφή...', url:'#', category:'Γνώμες' },
+            { title:'Τίτλος άρθρου 2', excerpt:'Σύντομη περιγραφή...', url:'#', category:'Αγγελίες' } ] },
+  footer:   { text:'Eureach Newsletter · eureach.eu', unsubText:'Κατάργηση εγγραφής', bgColor:'#f1f5f9', textColor:'#94a3b8' },
+};
+
+// ── Block management ───────────────────────────────────────────────────────────
+function cloneDefaults(type) {
+  const d = DEFAULTS[type];
+  const p = { ...d };
+  if (p.items) p.items = p.items.map(i => ({ ...i }));
+  return p;
+}
+
+function addBlock(type, silent = false) {
+  const block = { id: uid(), type, props: cloneDefaults(type) };
+  blocks.push(block);
+  if (!silent) { renderCanvas(); selectBlock(block.id); }
+}
+
+function removeBlock(id) {
+  blocks = blocks.filter(b => b.id !== id);
+  if (selectedId === id) selectedId = null;
+  renderCanvas(); renderPanel();
+}
+
+function selectBlock(id) {
+  selectedId = id;
+  renderCanvas(); renderPanel();
+}
+
+function moveUp(id) {
+  const i = blocks.findIndex(b => b.id === id);
+  if (i > 0) { [blocks[i-1], blocks[i]] = [blocks[i], blocks[i-1]]; renderCanvas(); }
+}
+function moveDown(id) {
+  const i = blocks.findIndex(b => b.id === id);
+  if (i < blocks.length - 1) { [blocks[i], blocks[i+1]] = [blocks[i+1], blocks[i]]; renderCanvas(); }
+}
+
+// ── Drag & drop reorder ────────────────────────────────────────────────────────
+function onDragStart(e, id) {
+  dragSrcId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => { const el = document.querySelector(`[data-id="${id}"]`); if (el) el.style.opacity = '.35'; }, 0);
+}
+function onDragEnd(id) {
+  dragSrcId = null;
+  const el = document.querySelector(`[data-id="${id}"]`); if (el) el.style.opacity = '';
+  document.querySelectorAll('.drop-line').forEach(e => e.classList.remove('show'));
+}
+function onBlockDragOver(e, id) {
+  e.preventDefault(); e.stopPropagation();
+  if (!dragSrcId || dragSrcId === id) return;
+  document.querySelectorAll('.drop-line').forEach(e => e.classList.remove('show'));
+  const dl = document.querySelector(`[data-id="${id}"] .drop-line`);
+  if (dl) dl.classList.add('show');
+}
+function onBlockDrop(e, id) {
+  e.preventDefault(); e.stopPropagation();
+  document.querySelectorAll('.drop-line').forEach(e => e.classList.remove('show'));
+  if (!dragSrcId || dragSrcId === id) return;
+  const fi = blocks.findIndex(b => b.id === dragSrcId);
+  const [bl] = blocks.splice(fi, 1);
+  const ti = blocks.findIndex(b => b.id === id);
+  blocks.splice(ti + 1, 0, bl);
+  renderCanvas();
+}
+function onCanvasDragOver(e) { e.preventDefault(); }
+function onCanvasDrop(e) {
+  e.preventDefault();
+  document.querySelectorAll('.drop-line').forEach(e => e.classList.remove('show'));
+  if (!dragSrcId) return;
+  // dropped on empty canvas area — move to end
+  const fi = blocks.findIndex(b => b.id === dragSrcId);
+  const [bl] = blocks.splice(fi, 1);
+  blocks.push(bl);
+  renderCanvas();
+}
+
+// ── Render canvas ──────────────────────────────────────────────────────────────
+function renderCanvas() {
+  const c = document.getElementById('canvas');
+  if (!blocks.length) {
+    c.innerHTML = '<div class="empty-canvas">← Click a block to start building your email</div>';
+    return;
+  }
+  c.innerHTML = blocks.map(b => `
+    <div class="bw${b.id===selectedId?' sel':''}" data-id="${b.id}"
+         draggable="true"
+         onclick="selectBlock('${b.id}')"
+         ondragstart="onDragStart(event,'${b.id}')"
+         ondragend="onDragEnd('${b.id}')"
+         ondragover="onBlockDragOver(event,'${b.id}')"
+         ondrop="onBlockDrop(event,'${b.id}')">
+      <div class="bcontrols">
+        <span class="dh" draggable="false" title="Drag">⠿</span>
+        <button class="cb" onclick="event.stopPropagation();moveUp('${b.id}')">↑</button>
+        <button class="cb" onclick="event.stopPropagation();moveDown('${b.id}')">↓</button>
+        <button class="cb del" onclick="event.stopPropagation();removeBlock('${b.id}')">✕</button>
+      </div>
+      ${preview(b)}
+      <div class="drop-line"></div>
+    </div>`).join('');
+}
+
+// ── Block previews (live canvas) ───────────────────────────────────────────────
+function preview(b) {
+  const p = b.props;
+  const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  switch (b.type) {
+    case 'header':
+      return `<div style="background:${p.bgColor};padding:28px 24px;text-align:center">
+        <div style="font-size:2rem;font-weight:900;letter-spacing:-2px;margin-bottom:10px">
+          <span style="color:${p.textColor}">${esc(p.logoText.slice(0, p.logoText.length - p.logoAccent.length))}</span><span style="color:${p.accentColor}">${esc(p.logoAccent)}</span>
+        </div>
+        ${p.title?`<div style="font-size:1.2rem;font-weight:700;color:${p.textColor};margin-bottom:4px">${esc(p.title)}</div>`:''}
+        ${p.subtitle?`<div style="font-size:.85rem;color:${p.textColor};opacity:.7">${esc(p.subtitle)}</div>`:''}
+      </div>`;
+    case 'text':
+      return `<div style="padding:${p.padding}px 24px">
+        <p style="margin:0;font-size:${p.fontSize}px;color:${p.color};text-align:${p.align};line-height:${p.lineHeight}">${esc(p.content)}</p>
+      </div>`;
+    case 'image':
+      return `<div style="padding:${p.padding}px 24px;text-align:${p.align}">
+        ${p.src ? `<img src="${esc(p.src)}" alt="${esc(p.alt)}" style="max-width:100%;width:${p.width}%;height:auto">` :
+        `<div style="background:#f1f5f9;border:2px dashed #cbd5e1;padding:28px;text-align:center;font-size:.8rem;color:#94a3b8;border-radius:4px">Set Image URL in properties →</div>`}
+      </div>`;
+    case 'button':
+      return `<div style="padding:${p.padding}px 24px;text-align:${p.align}">
+        <span style="display:inline-block;padding:11px 26px;background:${p.bgColor};color:${p.textColor};border-radius:5px;font-weight:700;font-size:.9rem">${esc(p.label)}</span>
+      </div>`;
+    case 'divider':
+      return `<div style="padding:${p.marginV}px 24px">
+        <div style="height:${p.thickness}px;background:${p.color}"></div>
+      </div>`;
+    case 'columns':
+      return `<div style="display:flex;padding:${p.padding}px 0">
+        <div style="flex:1;padding:0 16px 0 24px;font-size:${p.fontSize}px;color:${p.color};line-height:1.6">${esc(p.col1)}</div>
+        <div style="width:1px;background:#e2e8f0"></div>
+        <div style="flex:1;padding:0 24px 0 16px;font-size:${p.fontSize}px;color:${p.color};line-height:1.6">${esc(p.col2)}</div>
+      </div>`;
+    case 'sidebar':
+      return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="min-height:80px">
+        <tr>
+          <td style="width:70%;vertical-align:top;padding:${p.padding}px 12px ${p.padding}px 24px;font-size:${p.fontSize}px;color:${p.color};line-height:${p.lineHeight};font-family:Arial,sans-serif">${esc(p.content).replace(/\n/g,'<br>')}</td>
+          <td width="2" style="background:#e2e8f0;font-size:0">&nbsp;</td>
+          <td style="width:30%;vertical-align:top;padding:0">
+            <div style="background:${p.adBgColor};border-top:3px solid ${p.adAccentColor};padding:14px;height:100%;box-sizing:border-box">
+              ${p.adImageUrl ? `<img src="${esc(p.adImageUrl)}" style="width:100%;height:auto;display:block;margin-bottom:10px;border-radius:3px">` : ''}
+              ${p.adHeadline ? `<div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:6px;line-height:1.3">${esc(p.adHeadline)}</div>` : ''}
+              ${p.adBody ? `<div style="font-size:12px;color:#555;line-height:1.5;margin-bottom:10px">${esc(p.adBody)}</div>` : ''}
+              ${p.adCtaLabel ? `<div style="text-align:center"><span style="display:inline-block;padding:7px 14px;background:${p.adAccentColor};color:#fff;border-radius:4px;font-size:12px;font-weight:700">${esc(p.adCtaLabel)}</span></div>` : ''}
+            </div>
+          </td>
+        </tr>
+      </table>`;
+    case 'articles':
+      return `<div style="background:${p.bgColor};padding:${p.padding}px">
+        <div style="font-size:.95rem;font-weight:700;color:${p.titleColor};margin-bottom:14px">${esc(p.title)}</div>
+        ${p.items.map(it=>`<div style="background:#fff;border-radius:5px;padding:12px;margin-bottom:8px;border-left:3px solid #4f46e5">
+          <div style="font-size:.68rem;color:#4f46e5;font-weight:700;text-transform:uppercase;margin-bottom:3px">${esc(it.category)}</div>
+          <div style="font-size:.85rem;font-weight:700;color:#1a1a2e;margin-bottom:3px">${esc(it.title)}</div>
+          <div style="font-size:.78rem;color:#666;margin-bottom:6px">${esc(it.excerpt)}</div>
+          <span style="font-size:.75rem;color:#4f46e5;font-weight:700">Διάβασε →</span>
+        </div>`).join('')}
+      </div>`;
+    case 'footer':
+      return `<div style="background:${p.bgColor};padding:20px 24px;text-align:center">
+        <p style="font-size:.75rem;color:${p.textColor};margin-bottom:6px">${esc(p.text)}</p>
+        <span style="font-size:.72rem;color:#4f46e5">${esc(p.unsubText)}</span>
+      </div>`;
+    default: return `<div style="padding:16px;color:#999;font-size:.8rem">[${b.type}]</div>`;
+  }
+}
+
+// ── Property panel ─────────────────────────────────────────────────────────────
+function renderPanel() {
+  const el = document.getElementById('prop-panel');
+  const b  = blocks.find(b => b.id === selectedId);
+  if (!b) { el.innerHTML = '<div class="panel-empty">Select a block to edit</div>'; return; }
+  el.innerHTML = buildForm(b);
+  if (b.type === 'sidebar') {
+    const sel = document.getElementById('ad-picker-' + b.id);
+    if (sel) populateAdPicker(sel, b.id);
+  }
+}
+
+function fld(b, label, key, type='text', attrs='') {
+  const v = String(b.props[key] ?? '').replace(/"/g,'&quot;');
+  return `<div class="pg"><div class="pl">${label}</div>
+    <input class="pi" type="${type}" value="${v}" oninput="upd('${b.id}','${key}',this.value${type==='number'?',true':''})" ${attrs}>
+  </div>`;
+}
+function ta(b, label, key) {
+  const v = String(b.props[key] ?? '').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return `<div class="pg"><div class="pl">${label}</div>
+    <textarea class="pi" oninput="upd('${b.id}','${key}',this.value)">${v}</textarea>
+  </div>`;
+}
+function sel(b, label, key, opts) {
+  const v = b.props[key];
+  return `<div class="pg"><div class="pl">${label}</div>
+    <select class="pi" onchange="upd('${b.id}','${key}',this.value)">
+      ${opts.map(o=>`<option value="${o}"${v===o?' selected':''}>${o}</option>`).join('')}
+    </select>
+  </div>`;
+}
+function row(...fields) { return `<div class="prow">${fields.join('')}</div>`; }
+
+function buildForm(b) {
+  switch (b.type) {
+    case 'header':
+      return fld(b,'Logo text','logoText') + fld(b,'Accent part','logoAccent') +
+             fld(b,'Title','title') + fld(b,'Subtitle','subtitle') +
+             row(fld(b,'Background','bgColor','color'), fld(b,'Text','textColor','color')) +
+             fld(b,'Accent color','accentColor','color');
+    case 'text':
+      return ta(b,'Content','content') +
+             row(fld(b,'Size (px)','fontSize','number','min="10" max="36"'), sel(b,'Align','align',['left','center','right'])) +
+             row(fld(b,'Color','color','color'), fld(b,'Line height','lineHeight','number','step=".1" min="1" max="3"')) +
+             fld(b,'Padding (px)','padding','number','min="0" max="80"');
+    case 'image':
+      return fld(b,'Image URL','src') + fld(b,'Alt text','alt') + fld(b,'Link URL','link') +
+             row(fld(b,'Width %','width','number','min="10" max="100"'), sel(b,'Align','align',['left','center','right'])) +
+             fld(b,'Padding (px)','padding','number','min="0" max="60"');
+    case 'button':
+      return fld(b,'Label','label') + fld(b,'URL','url') +
+             row(fld(b,'Background','bgColor','color'), fld(b,'Text','textColor','color')) +
+             row(sel(b,'Align','align',['left','center','right']), fld(b,'Padding (px)','padding','number','min="0" max="80"'));
+    case 'divider':
+      return row(fld(b,'Color','color','color'), fld(b,'Thickness','thickness','number','min="1" max="8"')) +
+             fld(b,'Vertical margin (px)','marginV','number','min="0" max="60"');
+    case 'columns':
+      return ta(b,'Left column','col1') + ta(b,'Right column','col2') +
+             row(fld(b,'Color','color','color'), fld(b,'Font size','fontSize','number','min="10" max="24"')) +
+             fld(b,'Padding (px)','padding','number','min="0" max="60"');
+    case 'sidebar':
+      return ta(b,'Main content','content') +
+             row(fld(b,'Font size','fontSize','number','min="10" max="24"'), fld(b,'Color','color','color')) +
+             row(fld(b,'Line height','lineHeight','number','step=".1" min="1" max="3"'), fld(b,'Padding','padding','number','min="0" max="80"')) +
+             `<div class="pg" style="border-top:1px solid #334155;margin-top:4px"><div class="pl" style="color:#4f46e5;font-weight:700">↳ Ad (right 30%)</div>
+               <div style="padding:4px 0 2px">
+                 <div class="pl">Load from library</div>
+                 <select class="pi" id="ad-picker-${b.id}" onchange="loadAdIntoBlock('${b.id}',this.value)">
+                   <option value="">— pick an ad —</option>
+                 </select>
+               </div>
+             </div>` +
+             fld(b,'Ad headline','adHeadline') + ta(b,'Ad body text','adBody') +
+             fld(b,'Ad image URL','adImageUrl') +
+             fld(b,'CTA label','adCtaLabel') + fld(b,'CTA URL','adCtaUrl') +
+             row(fld(b,'Accent color','adAccentColor','color'), fld(b,'Background','adBgColor','color'));
+    case 'articles':
+      return fld(b,'Section title','title') +
+             row(fld(b,'Background','bgColor','color'), fld(b,'Title color','titleColor','color')) +
+             fld(b,'Padding (px)','padding','number','min="0" max="60"') +
+             `<div class="pg"><div class="pl">Articles (JSON)</div>
+              <textarea class="pi" style="min-height:160px;font-family:monospace;font-size:.7rem"
+                oninput="updArticles('${b.id}',this.value)">${JSON.stringify(b.props.items,null,2).replace(/</g,'&lt;')}</textarea>
+             </div>`;
+    case 'footer':
+      return ta(b,'Footer text','text') + fld(b,'Unsubscribe text','unsubText') +
+             row(fld(b,'Background','bgColor','color'), fld(b,'Text color','textColor','color'));
+    default: return '<div class="panel-empty">No properties</div>';
+  }
+}
+
+let _adsCache = [];
+async function loadAds() {
+  try {
+    const r = await fetch('/api/newsletter/ads').then(r=>r.json());
+    _adsCache = r.ads || [];
+    document.querySelectorAll('[id^="ad-picker-"]').forEach(sel => {
+      const blockId = sel.id.replace('ad-picker-','');
+      populateAdPicker(sel, blockId);
+    });
+  } catch(e) {}
+}
+function populateAdPicker(sel, blockId) {
+  const b = blocks.find(b=>b.id===blockId);
+  const curId = b?.props?.adId || 0;
+  sel.innerHTML = '<option value="">— pick an ad —</option>' +
+    _adsCache.map(a=>`<option value="${a.id}"${a.id===curId?' selected':''}>${a.name}</option>`).join('');
+}
+function loadAdIntoBlock(blockId, adId) {
+  const b = blocks.find(b=>b.id===blockId);
+  const ad = _adsCache.find(a=>String(a.id)===String(adId));
+  if (!b || !ad) return;
+  b.props.adId = ad.id;
+  b.props.adHeadline    = ad.headline  || '';
+  b.props.adBody        = ad.body      || '';
+  b.props.adImageUrl    = ad.image_url || '';
+  b.props.adCtaLabel    = ad.cta_label || '';
+  b.props.adCtaUrl      = ad.cta_url   || '';
+  b.props.adAccentColor = ad.accent_color || '#4f46e5';
+  b.props.adBgColor     = ad.bg_color  || '#f0f4ff';
+  renderCanvas();
+  renderPanel();
+}
+function upd(id, key, val, asNum = false) {
+  const b = blocks.find(b => b.id === id);
+  if (!b) return;
+  b.props[key] = asNum ? parseFloat(val) : val;
+  renderCanvas();
+}
+function updArticles(id, json) {
+  try { const items = JSON.parse(json); const b = blocks.find(b=>b.id===id); if(b){b.props.items=items;renderCanvas();} } catch(e){}
+}
+
+// ── Email HTML generator ───────────────────────────────────────────────────────
+function generateHtml() {
+  const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const rows = blocks.map(b => {
+    const p = b.props;
+    let cell = '';
+    switch (b.type) {
+      case 'header':
+        cell = `<table width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td align="center" style="padding:30px 24px;background:${p.bgColor}">
+  <div style="font-size:32px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:12px">
+    <span style="color:${p.textColor}">${esc(p.logoText.slice(0,p.logoText.length-p.logoAccent.length))}</span><span style="color:${p.accentColor}">${esc(p.logoAccent)}</span>
+  </div>
+  ${p.title?`<div style="font-size:20px;font-weight:700;color:${p.textColor};margin-bottom:6px">${esc(p.title)}</div>`:''}
+  ${p.subtitle?`<div style="font-size:14px;color:${p.textColor};opacity:.75">${esc(p.subtitle)}</div>`:''}
+</td></tr></table>`;
+        break;
+      case 'text':
+        cell = `<table width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="padding:${p.padding}px 24px">
+  <p style="margin:0;font-size:${p.fontSize}px;color:${p.color};text-align:${p.align};line-height:${p.lineHeight};font-family:Arial,Helvetica,sans-serif">${esc(p.content).replace(/\n/g,'<br>')}</p>
+</td></tr></table>`;
+        break;
+      case 'image':
+        if (!p.src) break;
+        const imgEl = `<img src="${esc(p.src)}" alt="${esc(p.alt)}" width="${Math.round(552*p.width/100)}" style="display:block;max-width:100%;height:auto;border:0">`;
+        cell = `<table width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td align="${p.align}" style="padding:${p.padding}px 24px">
+  ${p.link?`<a href="${esc(p.link)}" style="border:0">${imgEl}</a>`:imgEl}
+</td></tr></table>`;
+        break;
+      case 'button':
+        cell = `<table width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td align="${p.align}" style="padding:${p.padding}px 24px">
+  <table cellpadding="0" cellspacing="0" border="0"><tr>
+    <td bgcolor="${p.bgColor}" style="border-radius:5px;mso-padding-alt:0">
+      <a href="${esc(p.url)}" style="display:inline-block;padding:12px 28px;background:${p.bgColor};color:${p.textColor};text-decoration:none;border-radius:5px;font-weight:700;font-size:15px;font-family:Arial,sans-serif;mso-hide:all">${esc(p.label)}</a>
+    </td>
+  </tr></table>
+</td></tr></table>`;
+        break;
+      case 'divider':
+        cell = `<table width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr><td style="padding:${p.marginV}px 24px">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td height="${p.thickness}" bgcolor="${p.color}" style="font-size:0;line-height:0">&nbsp;</td></tr>
+  </table>
+</td></tr></table>`;
+        break;
+      case 'columns':
+        cell = `<table width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+  <td width="49%" valign="top" style="padding:${p.padding}px 12px ${p.padding}px 24px;font-size:${p.fontSize}px;color:${p.color};line-height:1.6;font-family:Arial,sans-serif">${esc(p.col1).replace(/\n/g,'<br>')}</td>
+  <td width="2" bgcolor="#e2e8f0" style="font-size:0">&nbsp;</td>
+  <td width="49%" valign="top" style="padding:${p.padding}px 24px ${p.padding}px 12px;font-size:${p.fontSize}px;color:${p.color};line-height:1.6;font-family:Arial,sans-serif">${esc(p.col2).replace(/\n/g,'<br>')}</td>
+</tr></table>`;
+        break;
+      case 'sidebar':
+        cell = `<table width="100%" cellpadding="0" cellspacing="0" border="0">
+<tr>
+  <td width="70%" valign="top" style="padding:${p.padding}px 12px ${p.padding}px 24px;font-size:${p.fontSize}px;color:${p.color};line-height:${p.lineHeight};font-family:Arial,Helvetica,sans-serif">${esc(p.content).replace(/\n/g,'<br>')}</td>
+  <td width="2" bgcolor="#e2e8f0" style="font-size:0;line-height:0">&nbsp;</td>
+  <td width="28%" valign="top" style="padding:0">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${p.adBgColor}" style="border-top:3px solid ${p.adAccentColor}">
+    <tr><td style="padding:14px;font-family:Arial,Helvetica,sans-serif">
+      ${p.adImageUrl ? `<img src="${esc(p.adImageUrl)}" width="100%" style="display:block;height:auto;margin-bottom:10px;border-radius:3px;border:0">` : ''}
+      ${p.adHeadline ? `<div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:6px;line-height:1.3;font-family:Arial,sans-serif">${esc(p.adHeadline)}</div>` : ''}
+      ${p.adBody ? `<div style="font-size:12px;color:#555;line-height:1.5;margin-bottom:10px;font-family:Arial,sans-serif">${esc(p.adBody)}</div>` : ''}
+      ${p.adCtaLabel ? `<table cellpadding="0" cellspacing="0" border="0" width="100%"><tr><td align="center"><a href="${esc(p.adCtaUrl)}" style="display:inline-block;padding:7px 14px;background:${p.adAccentColor};color:#ffffff;text-decoration:none;border-radius:4px;font-size:12px;font-weight:700;font-family:Arial,sans-serif">${esc(p.adCtaLabel)}</a></td></tr></table>` : ''}
+    </td></tr></table>
+  </td>
+</tr></table>`;
+        break;
+      case 'articles':
+        cell = `<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${p.bgColor}">
+<tr><td style="padding:${p.padding}px">
+  <div style="font-size:16px;font-weight:700;color:${p.titleColor};margin-bottom:16px;font-family:Arial,sans-serif">${esc(p.title)}</div>
+  ${p.items.map(it=>`<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="margin-bottom:10px">
+  <tr><td style="padding:14px;border-left:3px solid #4f46e5">
+    <div style="font-size:11px;color:#4f46e5;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;font-family:Arial,sans-serif">${esc(it.category)}</div>
+    <div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:4px;font-family:Arial,sans-serif">${esc(it.title)}</div>
+    <div style="font-size:13px;color:#555;margin-bottom:8px;line-height:1.5;font-family:Arial,sans-serif">${esc(it.excerpt)}</div>
+    <a href="${esc(it.url)}" style="font-size:12px;color:#4f46e5;font-weight:700;text-decoration:none;font-family:Arial,sans-serif">Διάβασε →</a>
+  </td></tr></table>`).join('\n')}
+</td></tr></table>`;
+        break;
+      case 'footer':
+        cell = `<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${p.bgColor}">
+<tr><td align="center" style="padding:24px;background:${p.bgColor}">
+  <p style="margin:0 0 8px;font-size:12px;color:${p.textColor};font-family:Arial,sans-serif">${esc(p.text)}</p>
+  <a href="{{unsubscribe_url}}" style="font-size:12px;color:#4f46e5;text-decoration:none;font-family:Arial,sans-serif">${esc(p.unsubText)}</a>
+</td></tr></table>`;
+        break;
+    }
+    return cell ? `<tr><td>${cell}</td></tr>` : '';
+  }).join('\n');
+
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="x-apple-disable-message-reformatting">
+<!--[if mso]><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml><![endif]-->
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f4f4">
+<tr><td align="center" style="padding:20px 0">
+<!--[if mso]><table width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+<table width="600" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="max-width:600px;margin:0 auto">
+${rows}
+</table>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr></table>
+</body></html>`;
+}
+
+// ── Templates ──────────────────────────────────────────────────────────────────
+function loadTemplate(name) {
+  if (blocks.length && !confirm('Replace current design?')) return;
+  blocks = [];
+  if (name === 'digest') {
+    addBlock('header', true);
+    blocks[0].props.subtitle = 'Εβδομαδιαίο digest';
+    addBlock('sidebar', true);
+    blocks[1].props.content = 'Καλωσήρθες στο εβδομαδιαίο digest του Eureach.\n\nΠαρακάτω θα βρεις τα καλύτερα άρθρα, γνώμες και αγγελίες της εβδομάδας.';
+    blocks[1].props.adHeadline    = 'Eureach Spotlight';
+    blocks[1].props.adBody        = 'Βρες έναν verified YouTube creator να παρουσιάσει την επιχείρησή σου. Από €149, εφάπαξ.';
+    blocks[1].props.adCtaLabel    = 'Δες το Spotlight →';
+    blocks[1].props.adCtaUrl      = 'https://eureach.eu/spotlight';
+    blocks[1].props.adAccentColor = '#4f46e5';
+    blocks[1].props.adBgColor     = '#f0f4ff';
+    addBlock('divider', true);
+    addBlock('articles', true);
+    addBlock('divider', true);
+    addBlock('button', true);
+    blocks[5].props.label = 'Δες όλα στο Eureach';
+    addBlock('footer', true);
+  } else if (name === 'promo') {
+    addBlock('header', true);
+    addBlock('image', true);
+    addBlock('sidebar', true);
+    blocks[2].props.content = 'Ανακάλυψε τα νέα του Eureach αυτή την εβδομάδα.\n\nΕγγράψου δωρεάν και ξεκίνα το outreach σου σήμερα.';
+    blocks[2].props.fontSize = 15;
+    blocks[2].props.adHeadline    = 'Δωρεάν λογαριασμός';
+    blocks[2].props.adBody        = 'Lead Finder, outreach emails, και analytics — όλα σε ένα.';
+    blocks[2].props.adCtaLabel    = 'Εγγραφή →';
+    blocks[2].props.adCtaUrl      = 'https://eureach.eu/register.html';
+    blocks[2].props.adAccentColor = '#4f46e5';
+    blocks[2].props.adBgColor     = '#f0f4ff';
+    addBlock('divider', true);
+    addBlock('footer', true);
+  } else if (name === 'announcement') {
+    addBlock('header', true);
+    blocks[0].props.title    = 'Σημαντική Ανακοίνωση';
+    blocks[0].props.subtitle = '';
+    addBlock('sidebar', true);
+    blocks[1].props.content       = 'Κείμενο ανακοίνωσης...\n\nΠρόσθεσε εδώ τις λεπτομέρειες της ανακοίνωσής σου.';
+    blocks[1].props.fontSize      = 15;
+    blocks[1].props.adHeadline    = 'Χρειάζεσαι βοήθεια;';
+    blocks[1].props.adBody        = 'Η ομάδα του Eureach είναι εδώ για εσένα.';
+    blocks[1].props.adCtaLabel    = 'Επικοινωνία';
+    blocks[1].props.adCtaUrl      = 'https://eureach.eu/contact';
+    blocks[1].props.adAccentColor = '#4f46e5';
+    blocks[1].props.adBgColor     = '#f0f4ff';
+    addBlock('footer', true);
+  }
+  renderCanvas();
+  if (blocks.length) selectBlock(blocks[0].id);
+}
+
+// ── Save & Preview ─────────────────────────────────────────────────────────────
+async function saveCampaign() {
+  const name    = document.getElementById('inp-name').value.trim();
+  const subject = document.getElementById('inp-subject').value.trim();
+  if (!name)    { status('Campaign name required', true); return; }
+  if (!subject) { status('Subject required', true); return; }
+  if (!blocks.length) { status('Add at least one block', true); return; }
+
+  const html = generateHtml();
+  const params = new URLSearchParams(location.search);
+  const existingId = params.get('id');
+  const url    = existingId ? `/api/campaigns/${existingId}` : '/api/campaigns';
+  const method = existingId ? 'PUT' : 'POST';
+
+  const r = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, subject, html_body: html })
+  }).then(r => r.json()).catch(() => ({ error: 'Network error' }));
+
+  if (r.campaign || r.success) {
+    const id = r.campaign?.id || existingId;
+    history.replaceState({}, '', `?id=${id}`);
+    status(`Saved! #${id}`);
+  } else {
+    status(r.error || 'Save failed', true);
+  }
+}
+
+function previewHtml() {
+  if (!blocks.length) { status('Nothing to preview', true); return; }
+  const w = window.open('', '_blank');
+  w.document.write(generateHtml());
+  w.document.close();
+}
+
+function status(msg, isErr = false) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = isErr ? 'err' : 'ok';
+  setTimeout(() => { el.textContent = ''; el.className = ''; }, 4000);
+}
+
+// ── Load existing campaign ─────────────────────────────────────────────────────
+async function init() {
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id) return;
+  const r = await fetch(`/api/campaigns/${id}`).then(r => r.json()).catch(() => ({}));
+  if (!r.campaign) return;
+  document.getElementById('inp-name').value    = r.campaign.name    || '';
+  document.getElementById('inp-subject').value = r.campaign.subject || '';
+  status(`Loaded "${r.campaign.name}" — add blocks or overwrite HTML`);
+}
+
+init();
+renderCanvas();
+loadAds();
+</script>
+</body>
+</html>

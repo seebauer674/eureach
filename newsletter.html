@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newsletter Admin — eureach.eu</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --indigo: #4f46e5;
+      --indigo-light: #6366f1;
+      --indigo-dark: #3730a3;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1a1a2e;
+      --muted: #64748b;
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* NAV */
+    .nav { background: #1a1a2e; padding: 0 24px; display: flex; align-items: center; height: 56px; gap: 32px; }
+    .nav-brand { font-size: 1.1rem; font-weight: 900; letter-spacing: -0.5px; text-decoration: none; }
+    .nav-brand .eu { color: var(--indigo-light); }
+    .nav-brand .reach { color: #a5b4fc; }
+    .nav-brand .dot { color: var(--indigo-light); }
+    .nav-brand .tld { color: #e2e8f0; }
+    .nav-links { display: flex; gap: 4px; margin-left: auto; }
+    .nav-link { color: #94a3b8; text-decoration: none; padding: 6px 14px; border-radius: 6px; font-size: .875rem; font-weight: 500; transition: all .15s; }
+    .nav-link:hover { color: #e2e8f0; background: rgba(255,255,255,.07); }
+    .nav-link.active { color: #fff; background: var(--indigo); }
+
+    /* LAYOUT */
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+    .page-title { font-size: 1.5rem; font-weight: 800; color: var(--text); margin-bottom: 24px; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: 28px; }
+    .tab-btn { background: none; border: none; padding: 10px 20px; font-size: .9rem; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--indigo); border-bottom-color: var(--indigo); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* CARDS */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
+    .card-title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+    /* STATS */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-val { font-size: 2rem; font-weight: 800; color: var(--indigo); line-height: 1; }
+    .stat-label { font-size: .8rem; color: var(--muted); margin-top: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* FORM ELEMENTS */
+    label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+    input, select, textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: .9rem; color: var(--text); background: #fff; transition: border-color .15s; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+    textarea { font-family: 'Courier New', monospace; resize: vertical; }
+
+    .form-row { display: flex; gap: 12px; align-items: flex-end; }
+    .form-row .form-group { flex: 1; }
+    .form-group { margin-bottom: 16px; }
+
+    /* BUTTONS */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border-radius: 7px; font-size: .875rem; font-weight: 600; cursor: pointer; border: none; transition: all .15s; text-decoration: none; }
+    .btn-primary { background: var(--indigo); color: #fff; }
+    .btn-primary:hover { background: var(--indigo-dark); }
+    .btn-secondary { background: #f1f5f9; color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { background: #e2e8f0; }
+    .btn-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-sm { padding: 5px 12px; font-size: .8rem; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* BADGES */
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .badge-indigo { background: #eef2ff; color: var(--indigo); }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-gray { background: #f1f5f9; color: var(--muted); }
+
+    /* TABLES */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    thead th { text-align: left; padding: 10px 14px; font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; border-bottom: 2px solid var(--border); background: #f8fafc; }
+    tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 12px 14px; color: var(--text); }
+    .table-empty { text-align: center; color: var(--muted); padding: 32px; font-size: .9rem; }
+
+    /* SEARCH BAR */
+    .search-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+    .search-bar input { max-width: 260px; }
+    .search-bar select { max-width: 160px; }
+
+    /* TEMPLATE GRID */
+    .template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .template-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: border-color .15s, box-shadow .15s; }
+    .template-card:hover { border-color: var(--indigo); box-shadow: 0 4px 12px rgba(79,70,229,.08); }
+    .template-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .template-name { font-weight: 700; color: var(--text); font-size: .95rem; }
+    .template-slug { font-size: .78rem; color: var(--muted); font-family: monospace; margin-top: 3px; }
+    .template-meta { font-size: .78rem; color: var(--muted); margin-top: 10px; }
+    .template-actions { display: flex; gap: 6px; margin-top: 14px; }
+
+
+    /* LANGUAGE TABS */
+    .lang-tabs { display:flex; gap:6px; margin-bottom:20px; }
+    .lang-tab { background:none; border:1px solid var(--border); border-radius:7px; padding:5px 16px; font-size:.82rem; font-weight:600; color:var(--muted); cursor:pointer; transition:all .15s; }
+    .lang-tab:hover { border-color:var(--indigo); color:var(--indigo); }
+    .lang-tab.active { background:var(--indigo); border-color:var(--indigo); color:#fff; }
+    /* MODAL */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--card); border-radius: 14px; width: 100%; max-width: 760px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+    .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--card); z-index: 1; }
+    .modal-title { font-size: 1.05rem; font-weight: 700; }
+    .modal-close { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1.4rem; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+    .modal-close:hover { background: #f1f5f9; color: var(--text); }
+    .modal-body { padding: 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ALERT */
+    .alert { padding: 12px 16px; border-radius: 8px; font-size: .875rem; margin-bottom: 16px; display: none; }
+    .alert.show { display: block; }
+    .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 24px; right: 24px; background: #1a1a2e; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: .875rem; font-weight: 500; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all .3s; pointer-events: none; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.toast-error { background: var(--danger); }
+
+    @media (max-width: 640px) {
+      .form-row { flex-direction: column; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .preview-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:2000; align-items:center; justify-content:center; }
+    .preview-overlay.open { display:flex; }
+    .preview-panel { background:#fff; border-radius:12px; width:min(640px,96vw); height:min(820px,90vh); display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.35); }
+    .preview-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); background:#f8fafc; }
+    .preview-title { font-weight:700; font-size:.95rem; color:var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <a href="/dashboard.html" class="nav-brand">
+    <span class="eu">eu</span><span class="reach">reach</span><span class="dot">.</span><span class="tld">eu</span>
+    <span style="color:#64748b;font-weight:400;font-size:.8rem;margin-left:8px;">Admin</span>
+  </a>
+  <div class="nav-links">
+    <a href="/dashboard.html" class="nav-link">Dashboard</a>
+    <a href="/newsletter.html" class="nav-link active">Newsletter</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="container">
+  <div class="page-title">Newsletter Admin</div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('newsletter')">Automatic Newsletter</button>
+    <button class="tab-btn" onclick="switchTab('templates')">Templates</button>
+  </div>
+
+  <!-- TAB: NEWSLETTER -->
+  <div id="tab-newsletter" class="tab-panel active">
+
+    <!-- Stats -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card"><div class="stat-val" id="stat-total">—</div><div class="stat-label">Active Subscribers</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-daily">—</div><div class="stat-label">Daily</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-weekly">—</div><div class="stat-label">Weekly</div></div>
+      <div class="stat-card"><div class="stat-val" id="stat-monthly">—</div><div class="stat-label">Monthly</div></div>
+    </div>
+
+    <!-- Send Newsletter -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+        Send Newsletter
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Frequency</label>
+          <select id="send-freq">
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:0">
+          <button class="btn btn-primary" onclick="sendNewsletter()" id="btn-send">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+            Send Now
+          </button>
+        </div>
+      </div>
+      <div id="send-alert" class="alert"></div>
+    </div>
+
+    <!-- Recent Sends -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Recent Sends
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Type</th>
+              <th>Sent</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="sends-tbody">
+            <tr><td colspan="6" class="table-empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Subscribers -->
+    <div class="card">
+      <div class="card-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Subscribers
+        <span id="sub-count-badge" class="badge badge-indigo" style="margin-left:auto;font-size:.8rem;">—</span>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="sub-search" placeholder="Search email or name…" oninput="filterSubscribers()">
+        <select id="sub-freq-filter" onchange="filterSubscribers()">
+          <option value="">All frequencies</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+        </select>
+        <select id="sub-status-filter" onchange="filterSubscribers()">
+          <option value="">All statuses</option>
+          <option value="active">Active</option>
+          <option value="unsubscribed">Unsubscribed</option>
+          <option value="pending">Pending</option>
+        </select>
+        <button class="btn btn-secondary btn-sm" onclick="loadSubscribers()">Refresh</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Frequency</th>
+              <th>Status</th>
+              <th>Subscribed</th>
+            </tr>
+          </thead>
+          <tbody id="subs-tbody">
+            <tr><td colspan="6" class="table-empty">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: TEMPLATES -->
+  <div id="tab-templates" class="tab-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="lang-tabs">
+        <button class="lang-tab active" id="lang-tab-en" onclick="setLangTab('en')">&#127468;&#127463; English</button>
+        <button class="lang-tab" id="lang-tab-el" onclick="setLangTab('el')">&#127468;&#127479; Greek</button>
+        <button class="lang-tab" id="lang-tab-de" onclick="setLangTab('de')">&#127465;&#127466; German</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="font-size:.85rem;color:var(--muted);" id="tpl-count-label"></div>
+        <button class="btn btn-primary" onclick="openNewTemplateModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Template
+        </button>
+      </div>
+    </div>
+    <div id="templates-grid" class="template-grid">
+      <div style="color:var(--muted);text-align:center;padding:40px;grid-column:1/-1;">Loading…</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit/New Template -->
+<div class="modal-overlay" id="tpl-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="tpl-modal-title">New Template</div>
+      <button class="modal-close" onclick="closeTplModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tpl-id">
+      <div class="form-group">
+        <label>Template Name</label>
+        <input type="text" id="tpl-name" placeholder="e.g. Welcome Email" oninput="autoSlug()">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Slug</label>
+          <input type="text" id="tpl-slug" placeholder="welcome-email">
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="tpl-category">
+            <option value="transactional">Transactional</option>
+            <option value="marketing">Marketing</option>
+            <option value="digest">Digest</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Language</label>
+          <select id="tpl-language">
+            <option value="en">&#127468;&#127463; English</option>
+            <option value="el">&#127468;&#127479; Greek</option>
+            <option value="de">&#127465;&#127466; German</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>HTML Body</label>
+        <textarea id="tpl-html" rows="16" placeholder="<div>Your email HTML…</div>"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Plain Text (optional)</label>
+        <textarea id="tpl-plain" rows="4" placeholder="Plain text version…"></textarea>
+      </div>
+      <div id="tpl-modal-alert" class="alert"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeTplModal()">Cancel</button>
+      <button class="btn btn-secondary" onclick="previewTemplate()">&#128065; Preview</button>
+      <button class="btn btn-primary" onclick="saveTpl()" id="btn-save-tpl">Save Template</button>
+    </div>
+  </div>
+</div>
+
+<!-- PREVIEW PANEL -->
+<div class="preview-overlay" id="preview-overlay">
+  <div class="preview-panel">
+    <div class="preview-header">
+      <span class="preview-title">Email Preview</span>
+      <button class="modal-close" onclick="closePreview()">&#x2715;</button>
+    </div>
+    <iframe id="preview-frame" style="width:100%;flex:1;border:none;background:#fff;"></iframe>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Utilities ──────────────────────────────────────────────────────────────
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' toast-error' : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.className = 'toast'; }, 3200);
+}
+
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'alert show alert-' + type;
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function fmtDateTime(s) {
+  if (!s) return '—';
+  return new Date(s).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+  if (tab === 'newsletter') { loadStats(); loadSends(); loadSubscribers(); }
+  if (tab === 'templates') { loadTemplates(); }
+}
+
+// ── Newsletter Tab ─────────────────────────────────────────────────────────
+let allSubscribers = [];
+
+async function loadStats() {
+  try {
+    const r = await fetch('/api/newsletter/stats');
+    const d = await r.json();
+    const subs = d.subscribers || d.stats || {};
+    document.getElementById('stat-total').textContent = subs.active ?? d.total ?? '—';
+    document.getElementById('stat-daily').textContent = subs.daily ?? '—';
+    document.getElementById('stat-weekly').textContent = subs.weekly ?? '—';
+    document.getElementById('stat-monthly').textContent = subs.monthly ?? '—';
+  } catch { /* silent */ }
+}
+
+async function loadSends() {
+  const tbody = document.getElementById('sends-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Loading…</td></tr>';
+  try {
+    const r = await fetch('/api/newsletter/queue?limit=10');
+    const d = await r.json();
+    const items = d.items || d.queue || d.rows || [];
+    if (!items.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="table-empty">No sends yet.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = items.map((it, idx) => `
+      <tr>
+        <td>${esc(it.subject || '—')}</td>
+        <td><span class="badge badge-indigo">${esc(it.frequency || it.type || '—')}</span></td>
+        <td>${it.sent_count ?? it.sent ?? '—'}</td>
+        <td><span class="badge ${it.status === 'sent' ? 'badge-green' : it.status === 'error' ? 'badge-red' : 'badge-yellow'}">${esc(it.status || '—')}</span></td>
+        <td>${fmtDateTime(it.sent_at || it.created_at)}</td>
+        <td>${it.html_body ? `<button class="btn btn-secondary btn-sm" onclick="previewSend(${idx})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview</button>` : '—'}</td>
+      </tr>`).join('');
+  window._sendItems = items;
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Could not load sends.</td></tr>';
+  }
+}
+
+async function loadSubscribers() {
+  const tbody = document.getElementById('subs-tbody');
+  tbody.innerHTML = '<tr><td colspan="6" class="table-empty">Loading…</td></tr>';
+  try {
+    const r = await fetch('/api/newsletter/subscribers?limit=500');
+    const d = await r.json();
+    allSubscribers = d.subscribers || d.rows || [];
+    renderSubscribers(allSubscribers);
+  } catch {
+    tbody.innerHTML = '<tr><td colspan="5" class="table-empty">Could not load subscribers.</td></tr>';
+  }
+}
+
+function renderSubscribers(list) {
+  const tbody = document.getElementById('subs-tbody');
+  document.getElementById('sub-count-badge').textContent = list.length;
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="table-empty">No subscribers found.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(s => `
+    <tr>
+      <td>${esc(s.email || '—')}</td>
+      <td>${esc(s.name || s.first_name || '—')}</td>
+      <td><span class="badge badge-indigo">${esc(s.frequency || '—')}</span></td>
+      <td><span class="badge ${s.status === 'active' ? 'badge-green' : s.status === 'unsubscribed' ? 'badge-red' : 'badge-yellow'}">${esc(s.status || '—')}</span></td>
+      <td>${fmtDate(s.created_at || s.subscribed_at)}</td>
+    </tr>`).join('');
+}
+
+function filterSubscribers() {
+  const q = document.getElementById('sub-search').value.toLowerCase();
+  const freq = document.getElementById('sub-freq-filter').value;
+  const status = document.getElementById('sub-status-filter').value;
+  const filtered = allSubscribers.filter(s => {
+    const matchQ = !q || (s.email || '').toLowerCase().includes(q) || (s.name || s.first_name || '').toLowerCase().includes(q);
+    const matchFreq = !freq || s.frequency === freq;
+    const matchStatus = !status || s.status === status;
+    return matchQ && matchFreq && matchStatus;
+  });
+  renderSubscribers(filtered);
+}
+
+async function sendNewsletter() {
+  const freq = document.getElementById('send-freq').value;
+  const btn = document.getElementById('btn-send');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+  const alertEl = document.getElementById('send-alert');
+  alertEl.className = 'alert';
+  try {
+    const r = await fetch('/api/newsletter/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frequency: freq })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Failed');
+    showAlert('send-alert', `Sent to ${d.sent ?? d.count ?? 0} subscribers.`, 'success');
+    loadSends();
+  } catch (e) {
+    showAlert('send-alert', e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg> Send Now';
+  }
+}
+
+// ── Templates Tab ──────────────────────────────────────────────────────────
+let templates = [];
+let activeLang = 'en';
+
+function setLangTab(lang) {
+  activeLang = lang;
+  ['en','el','de'].forEach(l => {
+    const btn = document.getElementById('lang-tab-' + l);
+    if (btn) btn.classList.toggle('active', l === lang);
+  });
+  renderTemplates();
+}
+
+async function loadTemplates() {
+  const grid = document.getElementById('templates-grid');
+  const label = document.getElementById('tpl-count-label');
+  grid.innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px;grid-column:1/-1;">Loading…</div>';
+  try {
+    const r = await fetch('/api/newsletter/templates');
+    const d = await r.json();
+    templates = d.templates || [];
+    renderTemplates();
+  } catch (e) {
+    grid.innerHTML = '<div style="color:var(--danger);text-align:center;padding:40px;grid-column:1/-1;">Failed to load templates.</div>';
+    label.textContent = '';
+  }
+}
+
+function renderTemplates() {
+  const grid = document.getElementById('templates-grid');
+  const label = document.getElementById('tpl-count-label');
+  const filtered = templates.filter(t => (t.language || 'en') === activeLang);
+  label.textContent = filtered.length + ' template' + (filtered.length !== 1 ? 's' : '');
+  if (!filtered.length) {
+    grid.innerHTML = '<div style="color:var(--muted);text-align:center;padding:48px;grid-column:1/-1;font-size:.95rem;">No templates yet. Click “+ New Template” to create one.</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(t => `
+    <div class="template-card">
+      <div class="template-card-header">
+        <div>
+          <div class="template-name">${esc(t.name)}</div>
+          <div class="template-slug">${esc(t.slug)}</div>
+        </div>
+        <span class="badge ${catBadge(t.category)}">${esc(t.category || 'general')}</span>
+      </div>
+      <div class="template-meta">
+        ${t.active === false ? '<span class="badge badge-gray">Inactive</span>' : '<span class="badge badge-green">Active</span>'}
+        &nbsp;Updated ${fmtDate(t.updated_at || t.created_at)}
+      </div>
+      <div class="template-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editTemplate(${t.id})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="previewTemplateById(${t.id})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteTemplate(${t.id}, '${esc(t.name)}')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          Delete
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+function catBadge(cat) {
+  if (cat === 'transactional') return 'badge-indigo';
+  if (cat === 'marketing') return 'badge-green';
+  if (cat === 'digest') return 'badge-yellow';
+  return 'badge-gray';
+}
+
+function openNewTemplateModal() {
+  document.getElementById('tpl-id').value = '';
+  document.getElementById('tpl-name').value = '';
+  document.getElementById('tpl-slug').value = '';
+  document.getElementById('tpl-category').value = 'transactional';
+  document.getElementById('tpl-language').value = activeLang || 'en';
+  document.getElementById('tpl-html').value = '';
+  document.getElementById('tpl-plain').value = '';
+  document.getElementById('tpl-modal-title').textContent = 'New Template';
+  document.getElementById('tpl-modal-alert').className = 'alert';
+  document.getElementById('tpl-modal').classList.add('open');
+  document.getElementById('tpl-slug').removeAttribute('readonly');
+}
+
+async function editTemplate(id) {
+  document.getElementById('tpl-modal-alert').className = 'alert';
+  document.getElementById('tpl-modal-title').textContent = 'Edit Template';
+  document.getElementById('tpl-modal').classList.add('open');
+  try {
+    const r = await fetch('/api/newsletter/templates/' + id);
+    const d = await r.json();
+    const t = d.template;
+    document.getElementById('tpl-id').value = t.id;
+    document.getElementById('tpl-name').value = t.name || '';
+    document.getElementById('tpl-slug').value = t.slug || '';
+    document.getElementById('tpl-slug').setAttribute('readonly', 'true');
+    document.getElementById('tpl-category').value = t.category || 'transactional';
+    document.getElementById('tpl-language').value = t.language || 'en';
+    document.getElementById('tpl-html').value = t.html_body || '';
+    document.getElementById('tpl-plain').value = t.plain_body || '';
+  } catch (e) {
+    showAlert('tpl-modal-alert', 'Failed to load template.', 'error');
+  }
+}
+
+async function saveTpl() {
+  const id = document.getElementById('tpl-id').value;
+  const name = document.getElementById('tpl-name').value.trim();
+  const slug = document.getElementById('tpl-slug').value.trim();
+  const category = document.getElementById('tpl-category').value;
+  const html_body = document.getElementById('tpl-html').value;
+  const plain_body = document.getElementById('tpl-plain').value;
+  const language = document.getElementById('tpl-language').value || 'en';
+
+  if (!name) { showAlert('tpl-modal-alert', 'Name is required.', 'error'); return; }
+  if (!id && !slug) { showAlert('tpl-modal-alert', 'Slug is required.', 'error'); return; }
+
+  const btn = document.getElementById('btn-save-tpl');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const url = id ? '/api/newsletter/templates/' + id : '/api/newsletter/templates';
+    const method = id ? 'PUT' : 'POST';
+    const body = id ? { name, category, html_body, plain_body, language }
+                    : { name, slug, category, html_body, plain_body, language };
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Failed');
+    closeTplModal();
+    showToast(id ? 'Template updated.' : 'Template created.');
+    loadTemplates();
+  } catch (e) {
+    showAlert('tpl-modal-alert', e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Template';
+  }
+}
+
+async function deleteTemplate(id, name) {
+  if (!confirm('Delete template "' + name + '"? This cannot be undone.')) return;
+  try {
+    const r = await fetch('/api/newsletter/templates/' + id, { method: 'DELETE' });
+    if (!r.ok && r.status !== 204) {
+      const d = await r.json();
+      throw new Error(d.error || 'Failed');
+    }
+    showToast('Template deleted.');
+    templates = templates.filter(t => t.id !== id);
+    renderTemplates();
+  } catch (e) {
+    showToast(e.message, true);
+  }
+}
+
+function closeTplModal() {
+  document.getElementById('tpl-modal').classList.remove('open');
+}
+
+function autoSlug() {
+  const id = document.getElementById('tpl-id').value;
+  if (id) return; // editing: don't change slug
+  const name = document.getElementById('tpl-name').value;
+  document.getElementById('tpl-slug').value = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+function previewSend(idx) {
+  const it = (window._sendItems || [])[idx];
+  if (!it || !it.html_body) return;
+  const frame = document.getElementById('preview-frame');
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  doc.open(); doc.write(it.html_body); doc.close();
+  document.getElementById('preview-overlay').classList.add('open');
+}
+
+async function previewTemplateById(id) {
+  try {
+    const r = await fetch('/api/newsletter/templates/' + id);
+    const d = await r.json();
+    const html = (d.template || d).html_body || '';
+    const frame = document.getElementById('preview-frame');
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    doc.open(); doc.write(html); doc.close();
+    document.getElementById('preview-overlay').classList.add('open');
+  } catch(e) { showToast('Could not load preview', true); }
+}
+
+// ── Preview ────────────────────────────────────────────────────────────────
+function previewTemplate() {
+  const html = document.getElementById('tpl-html').value;
+  const frame = document.getElementById('preview-frame');
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  doc.open(); doc.write(html); doc.close();
+  document.getElementById('preview-overlay').classList.add('open');
+}
+function closePreview() {
+  document.getElementById('preview-overlay').classList.remove('open');
+}
+
+// ── Escape HTML ────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Close modal on overlay click ───────────────────────────────────────────
+document.getElementById('preview-overlay').addEventListener('click', function(e) { if (e.target === this) closePreview(); });
+document.getElementById('tpl-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeTplModal();
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────
+fetch('/api/auth/me').then(r => { if (!r.ok) window.location = '/signin.html?next=/newsletter.html'; });
+loadStats();
+loadSends();
+loadSubscribers();
+</script>
+</body>
+</html>

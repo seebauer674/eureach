@@ -11,6 +11,7 @@ const crypto = require("crypto");
 // ── Agora PostgreSQL pool (newsletter) ───────────────────────────────────────
 const { Pool: PgPool } = require("pg");
 const agoraPool = new PgPool({ connectionString: process.env.AGORA_DB_URL });
+const newsletterApp = require("./newsletter-app");
 
 
 // Stripe — lazy-loaded so server starts without key configured
@@ -83,6 +84,7 @@ const heroAuditLimitMap = new Map(); // ip -> { count, date }
 const strategyIpMap      = new Map(); // ip -> { count, date }
 const strategyEmailPdfMap = new Map(); // email -> { count, date }
 const strategyPdfTokens  = new Map(); // token -> { pdf: Buffer, expiresAt: number }
+const strategyTodoTokens = new Map(); // token -> { strategy, expiresAt: number }
 function heroAuditCheckLimit(ip) {
   const today = new Date().toISOString().slice(0, 10);
   const rec = heroAuditLimitMap.get(ip);
@@ -418,17 +420,19 @@ function getTrialUsage(user) {
 
 // ── System email (uses env-configured SMTP) ───────────────────────────────────
 
+const { checkAndIncrement: _emailAllowed } = require('./services/emailLimit');
+
 async function sendSystemEmail(to, subject, body) {
-  const host = process.env.SYSTEM_EMAIL_HOST;
-  const port = parseInt(process.env.SYSTEM_EMAIL_PORT || "587", 10);
-  const username = process.env.SYSTEM_EMAIL_USER;
-  const password = process.env.SYSTEM_EMAIL_PASS;
-  const from = process.env.SYSTEM_EMAIL_FROM || username;
-  if (!host || !username || !password) return; // not configured — silently skip
+  if (!_emailAllowed()) return;
+  const host = process.env.SYSTEM_EMAIL_HOST || '127.0.0.1';
+  const port = parseInt(process.env.SYSTEM_EMAIL_PORT || '25', 10);
+  const from = process.env.SYSTEM_EMAIL_FROM || 'hello@eureach.eu';
+  const username = port === 25 ? null : process.env.SYSTEM_EMAIL_USER;
+  const password = port === 25 ? null : process.env.SYSTEM_EMAIL_PASS;
   try {
-    await smtpSend({ host, port, username, password, from, fromName: "eureach.eu", to, subject, body });
+    await smtpSend({ host, port, username, password, from, fromName: 'eureach.eu', to, subject, body });
   } catch (err) {
-    console.error("[system email] failed:", err.message);
+    console.error('[system email] failed:', err.message);
   }
 }
 
@@ -527,6 +531,47 @@ async function handleSignup(req, res) {
       }
     } catch (e) { console.error("[signup] audit link error", e.message); }
   }
+
+  // Welcome email — fire and forget
+  sendSystemEmail(
+    user.email,
+    'Welcome to eureach.eu!',
+    `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:40px 24px;background:#fff;">
+      <div style="margin-bottom:24px;font-size:1.5rem;font-weight:900;letter-spacing:-1px;">
+        <span style="color:#4f46e5;">eu</span><span style="color:#6366f1;">reach</span><span style="color:#4f46e5;">.</span><span style="color:#1a1a2e;">eu</span>
+      </div>
+      <h1 style="font-size:1.3rem;color:#1a1a2e;margin:0 0 12px;">Welcome, ${user.firstName}!</h1>
+      <p style="color:#475569;line-height:1.7;margin:0 0 20px;">
+        Your eureach.eu account is ready. Here's what you can do right away:
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr><td style="padding:10px 0;border-bottom:1px solid #e2e8f0;">
+          <strong style="color:#1a1a2e;">&#x2714; Lead Finder</strong>
+          <span style="color:#64748b;"> — find local businesses that need your help</span>
+        </td></tr>
+        <tr><td style="padding:10px 0;border-bottom:1px solid #e2e8f0;">
+          <strong style="color:#1a1a2e;">&#x2714; Email Outreach</strong>
+          <span style="color:#64748b;"> — reach prospects with personalised emails</span>
+        </td></tr>
+        <tr><td style="padding:10px 0;border-bottom:1px solid #e2e8f0;">
+          <strong style="color:#1a1a2e;">&#x2714; SEO Audit</strong>
+          <span style="color:#64748b;"> — instant website analysis with action steps</span>
+        </td></tr>
+        <tr><td style="padding:10px 0;">
+          <strong style="color:#1a1a2e;">&#x2714; Newsletter Tool</strong>
+          <span style="color:#64748b;"> — send branded newsletters to your contact lists</span>
+        </td></tr>
+      </table>
+      <a href="https://eureach.eu/dashboard.html"
+         style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:13px 32px;border-radius:7px;font-weight:700;font-size:.95rem;">
+        Go to your dashboard &rarr;
+      </a>
+      <p style="margin-top:32px;font-size:.8rem;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:16px;">
+        You're on the <strong>${user.plan}</strong> plan. 
+        <a href="https://eureach.eu/upgrade.html" style="color:#4f46e5;">Upgrade anytime</a> for more credits and features.
+      </p>
+    </div>`
+  ).catch(() => {});
 
   json(res, 201, { user: safeUser(user) }, { "Set-Cookie": sessionCookie(token) });
 }
@@ -1655,7 +1700,6 @@ function blogNavHtml() {
     </div>
     <div class="nav-cta">
       <a href="/signin.html" class="btn btn-ghost" style="font-size:0.78rem;padding:7px 14px">Sign in</a>
-      <a href="/signup.html" class="btn btn-primary" style="font-size:0.78rem;padding:7px 14px">Start free &rarr;</a>
     </div>
   </div>
 </nav>`;
@@ -6186,7 +6230,7 @@ const BLOCKED_STATIC_PREFIXES = ["/data/", "/config/", "/security/", "/."];
 const BLOCKED_STATIC_FILES    = ["/server.js", "/package.json", "/package-lock.json", "/.env"];
 
 // CSRF-exempt endpoints (before session exists)
-const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook", "/api/billing/paypal/webhook", "/api/audit-public/start", "/api/audit-public/save", "/api/audit-public/email-save", "/api/newsletter/subscribe", "/api/strategy/lookup-website", "/api/strategy/generate", "/api/strategy/pdf", "/api/spotlight/webhook/stripe"];
+const CSRF_EXEMPT = ["/api/auth/signup", "/api/auth/signin", "/api/billing/webhook", "/api/billing/paypal/webhook", "/api/audit-public/start", "/api/audit-public/save", "/api/audit-public/email-save", "/api/newsletter/subscribe", "/api/strategy/lookup-website", "/api/strategy/generate", "/api/strategy/pdf", "/api/strategy/todo", "/api/spotlight/webhook/stripe"];
 
 function generateCsrfToken() { return crypto.randomBytes(24).toString("hex"); }
 
@@ -8061,78 +8105,6 @@ async function handleNLCampaignSend(req, res, id) {
   })();
 }
 
-async function handleNewsletterSubscribe(req, res) {
-  const data = await readBody(req);
-  const email = sanitizeEmail((data.email || "").trim().toLowerCase());
-  const name  = sanitizeString((data.name  || "").trim()).slice(0, 120);
-  const freq  = ["daily","weekly","monthly"].includes(data.frequency) ? data.frequency : "weekly";
-  if (!email) return json(res, 400, { error: "Valid email required." });
-  const ip = getIp(req);
-  const ua = req.headers["user-agent"] || "";
-  try {
-    const r = await agoraPool.query(
-      `INSERT INTO newsletter_subscribers
-         (email, name, frequency, source_site, source_page, status, confirmed, confirm_token,
-          gdpr_consent, gdpr_ip, gdpr_ua, gdpr_at)
-       VALUES ($1,$2,$3,'eureach.eu',$4,'pending',false,
-               md5(random()::text||clock_timestamp()::text),
-               true,$5,$6,now())
-       ON CONFLICT (email) DO UPDATE SET
-         name=COALESCE(EXCLUDED.name, newsletter_subscribers.name),
-         source_site='eureach.eu', status='pending', confirmed=false,
-         confirm_token=md5(random()::text||clock_timestamp()::text),
-         gdpr_consent=true, gdpr_ip=$5, gdpr_ua=$6, gdpr_at=now()
-       RETURNING confirm_token`,
-      [email, name || null, freq, req.headers.referer || null, ip, ua]
-    );
-    const { confirm_token } = r.rows[0];
-    const confirmUrl = process.env.SITE_URL + "/newsletter/confirm/" + confirm_token;
-    await sendSystemEmail(email, "Confirm your subscription — eureach.eu",
-      `<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#fff;">
-        <div style="margin-bottom:20px;font-size:1.2rem;font-weight:900;color:#1a1a2e;">eureach<span style="color:#c9a227;">.</span>eu</div>
-        <h2 style="color:#1a1a2e;margin:0 0 12px;font-size:1.1rem;">Please confirm your subscription</h2>
-        <p style="color:#555;line-height:1.6;margin:0 0 20px;">Click the button below to confirm you'd like to receive updates and insights from eureach.eu.</p>
-        <a href="${confirmUrl}" style="display:inline-block;background:#c9a227;color:#fff;text-decoration:none;padding:12px 28px;border-radius:6px;font-weight:700;font-size:.95rem;">Confirm subscription &#x2192;</a>
-        <p style="color:#aaa;font-size:.78rem;margin-top:28px;border-top:1px solid #eee;padding-top:14px;">If you didn't sign up, just ignore this email.</p>
-      </div>`
-    );
-    return json(res, 200, { success: true });
-  } catch (e) {
-    console.error("[newsletter subscribe]", e.message);
-    return json(res, 500, { error: "Something went wrong. Please try again." });
-  }
-}
-
-async function handleNewsletterConfirm(req, res, token) {
-  try {
-    const r = await agoraPool.query(
-      `UPDATE newsletter_subscribers SET confirmed=true, confirmed_at=now(), status='active'
-       WHERE confirm_token=$1 AND deleted_at IS NULL RETURNING email`,
-      [token]
-    );
-    res.writeHead(302, { Location: r.rowCount ? "/newsletter-confirm.html?status=ok" : "/newsletter-confirm.html?status=invalid" });
-    res.end();
-  } catch (e) {
-    console.error("[newsletter confirm]", e.message);
-    res.writeHead(302, { Location: "/newsletter-confirm.html?status=error" }); res.end();
-  }
-}
-
-async function handleNewsletterUnsubscribe(req, res, token) {
-  try {
-    const r = await agoraPool.query(
-      `UPDATE newsletter_subscribers SET status='unsubscribed', unsubscribed_at=now()
-       WHERE unsubscribe_token=$1 AND deleted_at IS NULL RETURNING email`,
-      [token]
-    );
-    res.writeHead(302, { Location: r.rowCount ? "/newsletter-unsubscribe.html?status=ok" : "/newsletter-unsubscribe.html?status=invalid" });
-    res.end();
-  } catch (e) {
-    console.error("[newsletter unsubscribe]", e.message);
-    res.writeHead(302, { Location: "/newsletter-unsubscribe.html?status=error" }); res.end();
-  }
-}
-
 
 // ── Marketing Creator ─────────────────────────────────────────────────────────
 
@@ -8502,6 +8474,9 @@ setInterval(() => {
   const now = Date.now();
   for (const [k, v] of strategyPdfTokens) {
     if (v.expiresAt < now) strategyPdfTokens.delete(k);
+  }
+  for (const [k, v] of strategyTodoTokens) {
+    if (v.expiresAt < now) strategyTodoTokens.delete(k);
   }
 }, 60 * 60 * 1000);
 
@@ -8986,13 +8961,13 @@ function handleStrategyPage(req, res) {
 
   const faqSchema = { "@context":"https://schema.org","@type":"FAQPage","mainEntity":[
     {"@type":"Question","name":"Τι είναι η στρατηγική marketing;","acceptedAnswer":{"@type":"Answer","text":"Στρατηγική marketing είναι ένα σύντομο πλάνο που απαντά σε τρία πράγματα: σε ποιον μιλάς, τι του λες και πού του το λες. Είναι το θεμέλιο κάθε ενέργειας marketing, από τα posts μέχρι τις διαφημίσεις."}},
-    {"@type":"Question","name":"Πόσο χρόνο θέλει;","acceptedAnswer":{"@type":"Answer","text":"Απαντάς σε 5 ερωτήσεις σε 2-3 λεπτά και η AI σου φτιάχνει τη στρατηγική σε λιγότερο από 30 δευτερόλεπτα."}},
+    {"@type":"Question","name":"Πόσο χρόνο θέλει;","acceptedAnswer":{"@type":"Answer","text":"Απαντάς σε μερικές ερωτήσεις σε 2-3 λεπτά και η AI σου φτιάχνει τη στρατηγική σε λιγότερο από 30 δευτερόλεπτα."}},
     {"@type":"Question","name":"Είναι πραγματικά δωρεάν;","acceptedAnswer":{"@type":"Answer","text":"Ναι, η δημιουργία της στρατηγικής είναι εντελώς δωρεάν. Το PDF επίσης. Δεν χρειάζεσαι κάρτα ή λογαριασμό."}},
     {"@type":"Question","name":"Τι κάνετε με τα στοιχεία μου;","acceptedAnswer":{"@type":"Answer","text":"Τα στοιχεία σου χρησιμοποιούνται αποκλειστικά για να δημιουργήσουμε τη στρατηγική σου. Το email σου αποθηκεύεται μόνο αν έχεις δώσει ρητή συγκατάθεση για newsletters. Δείτε την πολιτική απορρήτου για περισσότερα."}}
   ]};
   const webAppSchema = {"@context":"https://schema.org","@type":"WebApplication",
     "name":"Στρατηγική Marketing σε Μία Σελίδα","url":TOOL_URL,
-    "description":"Δωρεάν εργαλείο AI που δημιουργεί στρατηγική marketing για μικρές επιχειρήσεις σε 5 ερωτήσεις.",
+    "description":"Δωρεάν εργαλείο AI που δημιουργεί στρατηγική marketing για μικρές επιχειρήσεις σε λίγες ερωτήσεις.",
     "applicationCategory":"BusinessApplication","operatingSystem":"Web",
     "offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},
     "inLanguage":"el","publisher":{"@type":"Organization","name":"eureach.eu","url":"https://eureach.eu"}
@@ -9006,10 +8981,10 @@ function handleStrategyPage(req, res) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Στρατηγική Marketing σε Μία Σελίδα – Δωρεάν Εργαλείο | eureach</title>
-  <meta name="description" content="Απάντησε σε 5 ερωτήσεις και πάρε δωρεάν τη στρατηγική marketing της επιχείρησής σου σε μία σελίδα, με πλάνο 30 ημερών. Χωρίς κάρτα.">
+  <meta name="description" content="Απάντησε σε μερικές ερωτήσεις και πάρε δωρεάν τη στρατηγική marketing της επιχείρησής σου σε μία σελίδα, με πλάνο 30 ημερών. Χωρίς κάρτα.">
   <link rel="canonical" href="${TOOL_URL}">
   <meta property="og:title" content="Στρατηγική Marketing σε Μία Σελίδα – Δωρεάν Εργαλείο | eureach">
-  <meta property="og:description" content="Απάντησε σε 5 ερωτήσεις και πάρε δωρεάν τη στρατηγική marketing της επιχείρησής σου σε μία σελίδα, με πλάνο 30 ημερών. Χωρίς κάρτα.">
+  <meta property="og:description" content="Απάντησε σε μερικές ερωτήσεις και πάρε δωρεάν τη στρατηγική marketing της επιχείρησής σου σε μία σελίδα, με πλάνο 30 ημερών. Χωρίς κάρτα.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="${TOOL_URL}">
   <meta name="twitter:card" content="summary_large_image">
@@ -9044,7 +9019,7 @@ function handleStrategyPage(req, res) {
     .st-submit:hover{background:#168f68}
     .st-submit:disabled{opacity:.6;cursor:not-allowed}
     .st-err{color:#f87171;font-size:.83rem;margin-top:10px;display:none}
-    .st-result-wrap{max-width:720px;margin:0 auto;padding:0 24px 80px}
+    .st-result-wrap{max-width:720px;margin:0 auto;padding:80px 24px 80px}
     .st-card{background:var(--glass2);border:1px solid rgba(29,158,117,.3);border-radius:20px;padding:32px}
     .st-card-h{font-size:1.3rem;font-weight:800;color:var(--white);margin-bottom:24px}
     .st-sec{margin-bottom:26px}
@@ -9065,6 +9040,8 @@ function handleStrategyPage(req, res) {
     .st-article-why{font-size:.77rem;color:var(--muted);margin-top:3px}
     .st-article-cta{font-size:.75rem;font-weight:700;color:#4ade80;white-space:nowrap;text-decoration:none;border:1px solid rgba(29,158,117,.4);border-radius:6px;padding:5px 10px;flex-shrink:0}
     .st-pdf-box{background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.2);border-radius:16px;padding:26px;margin-top:28px}
+    .st-todo-btn{width:100%;padding:14px;background:transparent;border:2px solid #1D9E75;border-radius:var(--radius);color:#1D9E75;font-size:1rem;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:16px;margin-top:8px}
+    .st-todo-btn:hover{background:#1D9E75;color:#fff}
     .st-pdf-h{font-size:.95rem;font-weight:700;color:var(--white);margin-bottom:14px}
     .st-pdf-input{width:100%;padding:11px 13px;background:var(--glass2);border:1px solid var(--border);border-radius:var(--radius);color:var(--white);font-size:.88rem;outline:none;margin-bottom:10px}
     .st-pdf-input:focus{border-color:#1D9E75}
@@ -9113,19 +9090,19 @@ ${blogNavHtml()}
 <section class="st-hero">
   <div style="display:inline-block;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.3);border-radius:20px;padding:4px 13px;font-size:.72rem;font-weight:700;color:#4ade80;letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px">Δωρεάν εργαλείο</div>
   <h1>Στρατηγική marketing<br>σε μία σελίδα</h1>
-  <p class="sub">Απάντησε σε 5 απλές ερωτήσεις και πάρε έτοιμο το πλάνο marketing της επιχείρησής σου για τους επόμενους 3 μήνες. Δωρεάν.</p>
+  <p class="sub">Απάντησε σε μερικές απλές ερωτήσεις και πάρε έτοιμο το πλάνο marketing της επιχείρησής σου για τους επόμενους 3 μήνες. Δωρεάν.</p>
 </section>
 
 <div class="st-wrap">
   <p class="st-intro-note">Δεν χρειάζεσαι marketing γνώσεις — απλά απάντησε ειλικρινά. Χρειάζεται λιγότερο από 3 λεπτά.</p>
-  <form id="st-form" onsubmit="return false">
+  <form id="st-form" onsubmit="return false" novalidate>
     <input name="_trap" style="display:none" tabindex="-1" autocomplete="off">
 
     <div class="st-field">
       <label for="st-website">Ιστοσελίδα <span style="font-weight:400;color:var(--muted)">(προαιρετικό)</span></label>
       <div style="display:flex;gap:8px;align-items:center">
-        <input type="url" id="st-website" name="website" maxlength="200" placeholder="π.χ. www.kafeteria-maria.gr"
-          style="flex:1" oninput="stWebsiteChanged()">
+        <input type="text" id="st-website" name="website" maxlength="200" placeholder="π.χ. www.kafeteria-maria.gr"
+          style="flex:1" oninput="stWebsiteChanged()" onkeydown="if(event.key==='Enter'){event.preventDefault();stLookupWebsite();}">
         <button type="button" id="st-lookup-btn" onclick="stLookupWebsite()" style="background:#1D9E75;border:none;border-radius:var(--radius);color:#fff;font-size:.82rem;font-weight:700;padding:9px 15px;cursor:pointer;white-space:nowrap;flex-shrink:0">🔍 Look up</button>
       </div>
       <div id="st-lookup-status" style="font-size:.78rem;color:var(--muted);margin-top:5px;display:none"></div>
@@ -9205,6 +9182,55 @@ ${blogNavHtml()}
     </div>
 
     <div class="st-field">
+      <label>6. Έχεις διαθέσιμο budget για marketing;</label>
+      <span class="hint">Βοηθάει να σου προτείνουμε δωρεάν ή επί πληρωμή τακτικές</span>
+      <div class="st-chips" id="st-budget-chips">
+        <button type="button" class="st-chip" data-val="Όχι αυτή τη στιγμή">🚫 Όχι αυτή τη στιγμή</button>
+        <button type="button" class="st-chip" data-val="€50–150/μήνα">💶 €50–150/μήνα</button>
+        <button type="button" class="st-chip" data-val="€150–500/μήνα">💰 €150–500/μήνα</button>
+        <button type="button" class="st-chip" data-val="€500+/μήνα">🚀 €500+/μήνα</button>
+      </div>
+      <input type="hidden" id="st-budget" name="budget">
+    </div>
+
+    <div class="st-field">
+      <label>7. Πόσο χρόνο μπορείς να αφιερώνεις στο marketing;</label>
+      <span class="hint">Θα σου προτείνουμε ανάλογα ρεαλιστικές ενέργειες</span>
+      <div class="st-chips" id="st-time-chips">
+        <button type="button" class="st-chip" data-val="Λιγότερο από 2 ώρες/εβδομάδα">⏱️ &lt;2 ώρες/εβδ.</button>
+        <button type="button" class="st-chip" data-val="2–5 ώρες/εβδομάδα">🕐 2–5 ώρες/εβδ.</button>
+        <button type="button" class="st-chip" data-val="5+ ώρες/εβδομάδα">💪 5+ ώρες/εβδ.</button>
+      </div>
+      <input type="hidden" id="st-time" name="timeAvailable">
+    </div>
+
+    <div class="st-field">
+      <label>8. Τι έχεις ήδη στήσει online;</label>
+      <span class="hint">Επίλεξε όλα που ισχύουν</span>
+      <div class="st-chips" id="st-presence-chips">
+        <button type="button" class="st-chip st-chip-multi" data-val="Google Business Profile">📍 Google Business</button>
+        <button type="button" class="st-chip st-chip-multi" data-val="Facebook page">📘 Facebook page</button>
+        <button type="button" class="st-chip st-chip-multi" data-val="Instagram">📸 Instagram</button>
+        <button type="button" class="st-chip st-chip-multi" data-val="Website">🌐 Website</button>
+        <button type="button" class="st-chip st-chip-multi" data-val="TikTok">🎵 TikTok</button>
+        <button type="button" class="st-chip st-chip-multi" data-val="Τίποτα ακόμα">🆕 Τίποτα ακόμα</button>
+      </div>
+      <input type="hidden" id="st-presence" name="onlinePresence">
+    </div>
+
+    <div class="st-field">
+      <label>9. Ποιο είναι το μεγαλύτερο εμπόδιο σου;</label>
+      <span class="hint">Επίλεξε ένα</span>
+      <div class="st-chips" id="st-obstacle-chips">
+        <button type="button" class="st-chip" data-val="Δεν έχω χρόνο">⏰ Δεν έχω χρόνο</button>
+        <button type="button" class="st-chip" data-val="Δεν ξέρω από πού να ξεκινήσω">🤷 Δεν ξέρω από πού να ξεκινήσω</button>
+        <button type="button" class="st-chip" data-val="Δεν έχω budget">💸 Δεν έχω budget</button>
+        <button type="button" class="st-chip" data-val="Έχω δοκιμάσει και δεν έδωσε αποτέλεσμα">😤 Δοκίμασα — δεν λειτούργησε</button>
+      </div>
+      <input type="hidden" id="st-obstacle" name="obstacle">
+    </div>
+
+    <div class="st-field">
       <label for="st-city">Πόλη / Περιοχή <span style="color:var(--muted);font-weight:400">(προαιρετικό)</span></label>
       <input type="text" id="st-city" name="city" maxlength="100" placeholder="π.χ. Αθήνα, Θεσσαλονίκη…">
     </div>
@@ -9233,7 +9259,7 @@ ${blogNavHtml()}
 </div>
 
 <div class="st-result-wrap" id="st-result" style="display:none">
-  <div id="st-save-nudge" style="display:none;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.3);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.88rem;color:#4ade80">💡 <strong>Αποθήκευσε τη στρατηγική σου</strong> — <a href="/register.html" style="color:#4ade80;font-weight:700">Δημιούργησε δωρεάν λογαριασμό</a> για να την αποθηκεύσεις ως Project και να παρακολουθείς την πρόοδό σου.</div>
+  <div id="st-save-nudge" style="display:none;background:rgba(29,158,117,.1);border:1px solid rgba(29,158,117,.3);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.88rem;color:#4ade80">💡 <strong>Αποθήκευσε τη στρατηγική σου</strong> — <a href="/signup.html" style="color:#4ade80;font-weight:700">Δημιούργησε δωρεάν λογαριασμό</a> για να την αποθηκεύσεις ως Project και να παρακολουθείς την πρόοδό σου.</div>
   <div class="st-card" id="st-card">
     <div class="st-card-h">📋 Η στρατηγική marketing σου</div>
     <div class="st-sec"><h3>Ο πελάτης σου</h3><p id="r-pelatis"></p></div>
@@ -9249,6 +9275,8 @@ ${blogNavHtml()}
     <div class="st-sec"><h3>Τι να ΜΗΝ κάνεις αυτό το τρίμηνο</h3><div class="st-oxi" id="r-oxi"></div></div>
   </div>
 
+  <button class="st-todo-btn" id="st-todo-btn" onclick="openTodoPage()">📋 Δες το πλάνο δράσης σου →</button>
+
   <div class="st-pdf-box">
     <div class="st-pdf-h">📥 Κατέβασε το PDF</div>
     <input type="email" class="st-pdf-input" id="st-pdf-email" placeholder="Το email σου για να λάβεις το PDF">
@@ -9256,6 +9284,7 @@ ${blogNavHtml()}
     <div class="st-cb"><input type="checkbox" id="st-nl"><label for="st-nl">Θέλω να λαμβάνω συμβουλές marketing από το eureach</label></div>
     <div id="st-pdf-msg" class="st-pdf-msg"></div>
     <button class="st-pdf-btn" id="st-pdf-btn" onclick="submitPdf()">Στείλε μου το PDF →</button>
+    <a id="st-pdf-dl" class="st-pdf-btn" style="display:none;text-decoration:none;text-align:center;margin-top:8px;" download="stratigiki-marketing-eureach.pdf">⬇ Κατέβασε το PDF</a>
   </div>
 
   <div class="st-cta-box">
@@ -9283,7 +9312,7 @@ ${blogNavHtml()}
     <div class="st-step">
       <div class="st-step-num">1</div>
       <div class="st-step-text">
-        <h4>Απάντησε σε 5 ερωτήσεις</h4>
+        <h4>Απάντησε σε μερικές ερωτήσεις</h4>
         <p>Δεν χρειάζεσαι marketing γνώσεις — μόνο ειλικρίνεια για την επιχείρησή σου. Το φόρμα χρειάζεται 2–3 λεπτά.</p>
       </div>
     </div>
@@ -9312,7 +9341,7 @@ ${blogNavHtml()}
   </div>
   <div class="st-faq-item">
     <h3>Πόσο χρόνο θέλει;</h3>
-    <p>Απαντάς σε 5 ερωτήσεις σε 2–3 λεπτά και η AI σου φτιάχνει τη στρατηγική σε λιγότερο από 30 δευτερόλεπτα.</p>
+    <p>Απαντάς σε μερικές ερωτήσεις σε 2–3 λεπτά και η AI σου φτιάχνει τη στρατηγική σε λιγότερο από 30 δευτερόλεπτα.</p>
   </div>
   <div class="st-faq-item">
     <h3>Είναι πραγματικά δωρεάν;</h3>
@@ -9348,6 +9377,58 @@ ${blogNavHtml()}
       this.classList.toggle('active');
       const selected = [...document.querySelectorAll('#st-cust-chips .st-chip.active')].map(b => b.dataset.val);
       hidden.value = selected.join(', ');
+    });
+  });
+})();
+
+// Budget chips (Q6) — single-select
+(function(){
+  const chips = document.querySelectorAll('#st-budget-chips .st-chip');
+  const hidden = document.getElementById('st-budget');
+  chips.forEach(btn => {
+    btn.addEventListener('click', function(){
+      chips.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      hidden.value = this.dataset.val;
+    });
+  });
+})();
+
+// Time chips (Q7) — single-select
+(function(){
+  const chips = document.querySelectorAll('#st-time-chips .st-chip');
+  const hidden = document.getElementById('st-time');
+  chips.forEach(btn => {
+    btn.addEventListener('click', function(){
+      chips.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      hidden.value = this.dataset.val;
+    });
+  });
+})();
+
+// Online presence chips (Q8) — multi-select
+(function(){
+  const chips = document.querySelectorAll('#st-presence-chips .st-chip-multi');
+  const hidden = document.getElementById('st-presence');
+  chips.forEach(btn => {
+    btn.addEventListener('click', function(){
+      this.classList.toggle('active');
+      const selected = [...document.querySelectorAll('#st-presence-chips .st-chip-multi.active')].map(b => b.dataset.val);
+      hidden.value = selected.join(', ');
+    });
+  });
+})();
+
+// Obstacle chips (Q9) — single-select
+(function(){
+  const chips = document.querySelectorAll('#st-obstacle-chips .st-chip');
+  const hidden = document.getElementById('st-obstacle');
+  chips.forEach(btn => {
+    btn.addEventListener('click', function(){
+      chips.forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      hidden.value = this.dataset.val;
     });
   });
 })();
@@ -9398,8 +9479,8 @@ async function stLookupWebsite() {
       status.style.color = '#4ade80';
       status.textContent = '✓ Η ιστοσελίδα αναλύθηκε — έλεγξε και επεξεργάσου την περιγραφή αν θέλεις.';
     } else {
-      status.style.color = '#fbbf24';
-      status.textContent = '⚠ Δεν βρέθηκε αρκετό περιεχόμενο. Μπορείς να συνεχίσεις κανονικά.';
+      status.style.color = 'var(--muted)';
+      status.textContent = 'Η ιστοσελίδα δεν ήταν προσβάσιμη αυτόματα — συνέχισε κανονικά ή συμπλήρωσε μόνος σου την περιγραφή.';
     }
   } catch(e) {
     status.style.color = '#f87171';
@@ -9425,7 +9506,7 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
   const city = document.getElementById('st-city').value.trim();
   const industry = document.getElementById('st-industry').value;
   const trap = document.querySelector('[name=_trap]').value;
-  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  if (!email || !email.includes('@') || email.indexOf('@') === email.length - 1) {
     errEl.textContent = 'Παρακαλώ εισάγετε ένα έγκυρο email.';
     errEl.style.display = 'block'; errEl.scrollIntoView({behavior:'smooth',block:'center'}); return;
   }
@@ -9442,28 +9523,38 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
   try {
     const r = await fetch('/api/strategy/generate', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ sells, customer, channels, differentiator: diff,
+      body: JSON.stringify({ sells, customer,
+        customerExtra: (document.getElementById('st-customer-extra')||{}).value||'',
+        channels, differentiator: diff,
         goal: goal === 'Άλλο' ? (goalOther || goal) : goal,
-        city, industry, website, siteDescription: siteDescription.trim(), email, _trap: trap })
+        city, industry, website, siteDescription: siteDescription.trim(), email, _trap: trap,
+        budget: (document.getElementById('st-budget')||{}).value||'',
+        timeAvailable: (document.getElementById('st-time')||{}).value||'',
+        onlinePresence: (document.getElementById('st-presence')||{}).value||'',
+        obstacle: (document.getElementById('st-obstacle')||{}).value||'' })
     });
     const d = await r.json();
     if (!r.ok) {
       errEl.textContent = d.error || 'Κάτι πήγε στραβά. Δοκίμασε ξανά.';
       errEl.style.display = 'block';
+      errEl.scrollIntoView({behavior:'smooth',block:'center'});
       btn.disabled = false; btn.textContent = 'Φτιάξε τη στρατηγική μου →'; return;
     }
     _stData = d.strategy;
     showStrategy(d.strategy);
     const _pdfEmailEl = document.getElementById('st-pdf-email');
     if (_pdfEmailEl && email) _pdfEmailEl.value = email;
+    const _privacyCb = document.getElementById('st-privacy');
+    if (_privacyCb) _privacyCb.checked = true;
     // Hide form and hero so result feels like a new screen
     const stWrap = document.querySelector('.st-wrap');
     const stHero = document.querySelector('.st-hero');
     if (stWrap) stWrap.style.display = 'none';
     if (stHero) stHero.style.display = 'none';
     const res = document.getElementById('st-result');
-    res.style.display = '';
-    window.scrollTo({top: 0, behavior: 'smooth'});
+    res.style.display = 'block';
+    var navH = (document.querySelector('nav.app-nav') || {offsetHeight:70}).offsetHeight || 70;
+    window.scrollTo({top: Math.max(0, res.getBoundingClientRect().top + window.pageYOffset - navH), behavior: 'auto'});
     if (d.projectId) {
       const t = document.createElement('div');
       t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:10px 20px;border-radius:8px;font-size:.85rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.3)';
@@ -9484,8 +9575,8 @@ document.getElementById('st-form').addEventListener('submit', async function(e) 
       if (res) res.style.display = 'none';
       btn.onclick = null;
       btn.textContent = 'Φτιάξε τη στρατηγική μου →';
-      btn.disabled = true;
-      window.scrollTo({top: 0, behavior: 'smooth'});
+      btn.disabled = false;
+      var navH2 = (document.querySelector('nav.app-nav') || {offsetHeight:70}).offsetHeight || 70; window.scrollTo({top: Math.max(0, stWrap.getBoundingClientRect().top + window.pageYOffset - navH2), behavior: 'auto'});
     };
   } catch(e) {
     errEl.textContent = 'Σφάλμα σύνδεσης. Δοκίμασε ξανά.';
@@ -9517,7 +9608,6 @@ function eh(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 
 async function submitPdf() {
   const btn = document.getElementById('st-pdf-btn');
-  const msg = document.getElementById('st-pdf-msg');
   const email = document.getElementById('st-pdf-email').value.trim();
   const privacy = document.getElementById('st-privacy').checked;
   const nl = document.getElementById('st-nl').checked;
@@ -9532,19 +9622,501 @@ async function submitPdf() {
     });
     const d = await r.json();
     if (!r.ok) { showPdfMsg('#f87171', d.error||'Κάτι πήγε στραβά.'); btn.disabled=false; btn.textContent='Στείλε μου το PDF →'; return; }
-    showPdfMsg('#4ade80', '✓ Το PDF στάλθηκε στο ' + email);
     if (d.downloadUrl) {
-      const a = document.createElement('a');
-      a.href = d.downloadUrl; a.download = 'stratigiki-marketing-eureach.pdf';
-      a.style.display = 'none'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      const dlBtn = document.getElementById('st-pdf-dl');
+      dlBtn.href = d.downloadUrl;
+      dlBtn.style.display = 'inline-block';
+    }
+    if (d.emailSent) {
+      showPdfMsg('#4ade80', '✓ Το PDF στάλθηκε στο ' + email + ' και είναι έτοιμο για κατέβασμα παρακάτω.');
+    } else {
+      showPdfMsg('#4ade80', '✓ Το PDF είναι έτοιμο! Κατέβασέ το με το κουμπί παρακάτω.');
     }
     btn.textContent = '✓ Εστάλη';
   } catch(e) { showPdfMsg('#f87171','Σφάλμα σύνδεσης. Δοκίμασε ξανά.'); btn.disabled=false; btn.textContent='Στείλε μου το PDF →'; }
+}
+async function openTodoPage() {
+  const btn = document.getElementById('st-todo-btn');
+  if (!_stData) return;
+  btn.disabled = true; btn.textContent = '⏳ Ετοιμάζουμε το πλάνο…';
+  try {
+    const r = await fetch('/api/strategy/todo', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ strategy: _stData })
+    });
+    const d = await r.json();
+    if (d.url) window.location.href = d.url;
+    else { btn.disabled = false; btn.textContent = '📋 Δες το πλάνο δράσης σου →'; }
+  } catch(e) { btn.disabled = false; btn.textContent = '📋 Δες το πλάνο δράσης σου →'; }
 }
 function showPdfMsg(color, text) {
   const m = document.getElementById('st-pdf-msg');
   m.style.color = color; m.textContent = text; m.style.display = 'block';
 }
+</script>
+</body>
+</html>`;
+
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+
+
+// ── Strategy Todo Store ───────────────────────────────────────────────────────
+async function handleStrategyTodoStore(req, res) {
+  const body = await readBody(req);
+  const { strategy } = body;
+  if (!strategy) return json(res, 400, { error: 'No strategy' });
+  const token = require('crypto').randomBytes(24).toString('hex');
+  strategyTodoTokens.set(token, { strategy, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 });
+  return json(res, 200, { url: '/stratigiki-todo/' + token });
+}
+
+// ── Strategy Todo Page ────────────────────────────────────────────────────────
+function getActionTip(action) {
+  const a = action.toLowerCase();
+  if (a.includes('google business') || a.includes('google maps')) {
+    return { tip: 'Άνοιξε Google Business Profile, συμπλήρωσε ώρες, κατηγορία, φωτογραφίες.', cta: { text: 'business.google.com →', url: 'https://business.google.com' } };
+  }
+  if (a.includes('instagram')) {
+    return { tip: 'Business account, bio με λέξεις-κλειδιά + πόλη, 9 posts πριν αρχίσεις να ακολουθάς κόσμο.' };
+  }
+  if (a.includes('facebook')) {
+    return { tip: 'Facebook Page (όχι personal profile), συμπλήρωσε «Σχετικά», πρόσθεσε κουμπί «Επικοινωνία».' };
+  }
+  if (a.includes('φωτογραφ')) {
+    return { tip: 'Φυσικό φως, ουδέτερο φόντο. Το κινητό αρκεί — 10 καλές φωτογραφίες φτάνουν για να ξεκινήσεις.' };
+  }
+  if (a.includes('κριτικ') || a.includes('review') || a.includes('αξιολόγ')) {
+    return { tip: 'Ζήτα από 5 πιστούς πελάτες κριτική στο Google. Στείλε τους το απευθείας link.' };
+  }
+  if (a.includes('seo') || a.includes('αναζήτηση')) {
+    return { tip: "Πρόσθεσε πόλη + υπηρεσία στον τίτλο κάθε σελίδας. π.χ. 'Κομμωτήριο Κολωνάκι — Αθήνα'." };
+  }
+  if (a.includes('blog') || a.includes('άρθρ') || a.includes('περιεχόμεν')) {
+    return { tip: 'Γράψε ένα άρθρο που απαντά σε ερώτηση πελατών. 400 λέξεις αρκούν.', cta: { text: 'Το γράφει το eureach →', url: '/articles.html' } };
+  }
+  if (a.includes('ανταγωνισμ') || a.includes('competitor')) {
+    return { tip: 'Κοίτα τι κάνουν οι 3 κύριοι ανταγωνιστές: τι λένε, πού βρίσκονται, τι κριτικές έχουν.', cta: { text: 'Ανάλυση ανταγωνιστών →', url: '/competitors.html' } };
+  }
+  if (a.includes('email') || a.includes('newsletter')) {
+    return { tip: 'Μάζεψε emails πελατών και στείλε ένα απλό μήνυμα/μήνα με νέα ή προσφορά.' };
+  }
+  if (a.includes('tiktok')) {
+    return { tip: '15-30 δευτ. behind-the-scenes βίντεο — η παρασκευή ή η διαδικασία σου. Αυθεντικότητα > παραγωγή.' };
+  }
+  if (a.includes('διαφήμισ') || a.includes('ads')) {
+    return { tip: "Ξεκίνα με €5/μέρα Google Ads. Στόχευσε [υπηρεσία] + [πόλη] — π.χ. 'οδοντίατρος Γλυφάδα'." };
+  }
+  if (a.includes('website') || a.includes('ιστοσελίδ')) {
+    return { tip: 'Βεβαιώσου: φορτώνει <3 δευτ., ορατό τηλέφωνο στην κορυφή, mobile-friendly.' };
+  }
+  return { tip: 'Αφιέρωσε 30 λεπτά αυτή την εβδομάδα. Το τέλειο είναι εχθρός του καλού — κάνε το τώρα.' };
+}
+
+function getEureachAction(action) {
+  const a = action.toLowerCase();
+  if (a.includes('blog') || a.includes('άρθρ') || a.includes('περιεχόμεν') || a.includes('κείμεν'))
+    return { type:'link', url:'/articles.html', label:'Γράψε το Article Creator', desc:'Το AI του eureach γράφει το άρθρο για σένα — SEO-optimized, στα ελληνικά, έτοιμο για δημοσίευση.' };
+  if (a.includes('ανταγωνισμ') || a.includes('competitor') || a.includes('αντίπαλ'))
+    return { type:'link', url:'/competitors.html', label:'Ανάλυσε τους ανταγωνιστές', desc:'Το eureach αναλύει αυτόματα τους ανταγωνιστές σου — τι λένε, πού είναι, τι κριτικές έχουν.' };
+  if (a.includes('audit') || a.includes('seo') || a.includes('ιστοσελίδ') || a.includes('website'))
+    return { type:'link', url:'/audit.html', label:'Τρέξε SEO Audit', desc:'Πλήρης ανάλυση της ιστοσελίδας σου με συγκεκριμένες βελτιώσεις για Google.' };
+  if (a.includes('lead') || a.includes('outreach') || a.includes('νέους πελάτ'))
+    return { type:'link', url:'/outreach.html', label:'Ξεκίνα Outreach', desc:'Βρες νέους πελάτες και στείλε personalized μηνύματα αυτόματα.' };
+  if (a.includes('κριτικ') || a.includes('review') || a.includes('αξιολόγ'))
+    return { type:'modal', id:'review-tpl', label:'Πάρε το έτοιμο template', desc:'Έτοιμο μήνυμα SMS/email για να ζητήσεις κριτική — απλά αντέγραψέ το και στείλε το.' };
+  if (a.includes('google business') || a.includes('google maps') || a.includes('google my business'))
+    return { type:'modal', id:'gbp-guide', label:'Οδηγός βήμα-βήμα', desc:'Πλήρης οδηγός για να στήσεις και να βελτιστοποιήσεις το Google Business Profile σου.' };
+  if (a.includes('instagram'))
+    return { type:'modal', id:'instagram-guide', label:'Οδηγός Instagram', desc:'Πώς να στήσεις, βελτιστοποιήσεις και αναπτύξεις το Instagram της επιχείρησής σου.' };
+  if (a.includes('facebook'))
+    return { type:'modal', id:'facebook-guide', label:'Οδηγός Facebook', desc:'Πώς να φτιάξεις Facebook Page από το μηδέν και να αρχίσεις να κερδίζεις followers.' };
+  if (a.includes('φωτογραφ'))
+    return { type:'modal', id:'photo-guide', label:'Οδηγός φωτογραφίας', desc:'Πώς να βγάλεις επαγγελματικές φωτογραφίες με το κινητό — χωρίς εξοπλισμό.' };
+  if (a.includes('email') || a.includes('newsletter'))
+    return { type:'modal', id:'email-tpl', label:'Πάρε το template', desc:'Έτοιμο template για το πρώτο σου email newsletter — απλά συμπλήρωσε τα κενά.' };
+  return { type:'modal', id:'generic-guide', label:'Δες πώς γίνεται', desc:'Οδηγός βήμα-βήμα για να ολοκληρώσεις αυτό το βήμα της στρατηγικής σου.' };
+}
+
+async function handleStrategyTodoPage(req, res, token) {
+  const entry = strategyTodoTokens.get(token);
+  if (!entry) {
+    res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+    return res.end('<html><body style="background:#0B1628;color:#F0F6FF;font-family:sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0"><div style="text-align:center"><h2>Το πλάνο έχει λήξει ή δεν βρέθηκε.</h2><p style="color:#94A3B8">Παράγαγε ξανά τη στρατηγική σου στο <a href="/stratigiki-marketing" style="color:#1D9E75">eureach.eu/stratigiki-marketing</a>.</p></div></body></html>');
+  }
+  const s = entry.strategy;
+  const _todoUser = getSessionUser(parseCookies(req).session);
+  const isPaid = !!(_todoUser && isPaidUser(_todoUser));
+
+  // Count total tasks
+  const plano = s.plano || [];
+  let totalTasks = 0;
+  plano.forEach(w => { totalTasks += (w.actions || []).length; });
+
+  // Build week sections HTML
+  const weeksSections = plano.map((w, wi) => {
+    const actions = (w.actions || []).map((action, ai) => {
+      const tipData = getActionTip(action);
+      const eaData  = getEureachAction(action);
+      const inputId = `t-${wi}-${ai}`;
+      const ctaHtml = tipData.cta
+        ? `<a href="${tipData.cta.url}" target="_blank" rel="noopener" class="td-tip-cta">${tipData.cta.text}</a>`
+        : '';
+      const safeAction = action.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      const safeDesc   = eaData.desc.replace(/'/g,"\\'").replace(/"/g,'&quot;');
+      const eureachBtn = isPaid
+        ? (eaData.type === 'link'
+            ? `<a href="${eaData.url}" class="td-do-btn" title="${safeDesc}">⚡ eureach το κάνει</a>`
+            : `<button class="td-do-btn" onclick="showGuide('${eaData.id}')" title="${safeDesc}">⚡ eureach το κάνει</button>`)
+        : `<button class="td-do-btn td-do-locked" onclick="showUpgrade('${safeAction}','${safeDesc}')">🔒 eureach το κάνει</button>`;
+      return `<li class="td-task" id="li-${inputId}">
+        <div class="td-task-top">
+          <label class="td-label">
+            <input type="checkbox" class="td-cb" id="${inputId}" data-token="${token}" onchange="saveTick(this)">
+            <span class="td-check-icon">☐</span>
+            <span class="td-action">${action.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+          </label>
+          ${eureachBtn}
+        </div>
+        <div class="td-tip">${tipData.tip.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}${ctaHtml ? ' ' + ctaHtml : ''}</div>
+      </li>`;
+    }).join('');
+    return `<div class="td-week">
+      <div class="td-week-hd"><span class="td-week-num">Εβδομάδα ${w.week}</span></div>
+      <ul class="td-task-list">${actions}</ul>
+    </div>`;
+  }).join('');
+
+  // Oxi section
+  const oxiHtml = (s.oxi || []).map(o =>
+    `<div class="td-oxi-item">✗ ${o.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>`
+  ).join('');
+
+  // Metric section
+  const m = s.metriki || {};
+  const metrikHtml = (m.metric || m.how)
+    ? `<div class="td-metric-box"><div class="td-metric-label">📊 Ο αριθμός που μετράς</div><div class="td-metric-val">${(m.metric||'').replace(/&/g,'&amp;')}</div><div class="td-metric-how">${(m.how||'').replace(/&/g,'&amp;')}</div></div>`
+    : '';
+
+  const industryTxt = s.industry ? `<span class="td-meta-tag">${s.industry.replace(/&/g,'&amp;')}</span>` : '';
+  const cityTxt = s.city ? `<span class="td-meta-tag">${s.city.replace(/&/g,'&amp;')}</span>` : '';
+  const goalTxt = s.goal ? `<span class="td-meta-tag td-meta-goal">${s.goal.replace(/&/g,'&amp;')}</span>` : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Πλάνο Δράσης 30 Ημερών — eureach</title>
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/css/base.css">
+<style>
+:root{--bg:#0B1628;--white:#F0F6FF;--muted:#94A3B8;--green:#1D9E75;--glass2:rgba(255,255,255,.04);--radius:12px}
+body{background:var(--bg);color:var(--white);font-family:'Inter',system-ui,sans-serif;margin:0;padding:0}
+.td-hero{padding:80px 20px 40px;text-align:center;max-width:760px;margin:0 auto}
+.td-hero h1{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;margin:0 0 12px;line-height:1.2}
+.td-hero p{color:var(--muted);font-size:.95rem;margin:0 0 20px}
+.td-meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:28px}
+.td-meta-tag{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 12px;font-size:.78rem;color:var(--muted)}
+.td-meta-goal{background:rgba(29,158,117,.12);border-color:rgba(29,158,117,.3);color:#4ade80}
+.td-progress-wrap{background:rgba(255,255,255,.06);border-radius:50px;height:10px;max-width:500px;margin:0 auto 6px;overflow:hidden}
+.td-progress-bar{height:100%;background:var(--green);border-radius:50px;transition:width .4s ease;width:0%}
+.td-progress-lbl{font-size:.8rem;color:var(--muted);text-align:center;margin-bottom:8px}
+.td-progress-pct{color:var(--green);font-weight:700}
+.td-main{max-width:760px;margin:0 auto;padding:0 20px 80px}
+.td-week{background:var(--glass2);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:24px;margin-bottom:20px}
+.td-week-hd{margin-bottom:18px}
+.td-week-num{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.td-task-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
+.td-task{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px 16px;transition:border-color .2s,background .2s}
+.td-task.done{background:rgba(29,158,117,.06);border-color:rgba(29,158,117,.25)}
+.td-label{display:flex;align-items:flex-start;gap:12px;cursor:pointer}
+.td-cb{display:none}
+.td-check-icon{font-size:1.1rem;line-height:1.4;flex-shrink:0;min-width:20px;color:var(--muted);transition:color .2s}
+.td-task.done .td-check-icon{color:var(--green)}
+.td-action{font-size:.92rem;font-weight:600;color:var(--white);line-height:1.4}
+.td-task.done .td-action{text-decoration:line-through;color:var(--muted)}
+.td-tip{font-size:.8rem;color:var(--muted);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.05)}
+.td-tip-cta{display:inline-block;margin-top:4px;color:var(--green);font-weight:600;font-size:.78rem;text-decoration:none}
+.td-tip-cta:hover{text-decoration:underline}
+.td-metric-box{background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.2);border-radius:14px;padding:22px;margin-bottom:24px}
+.td-metric-label{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:8px}
+.td-metric-val{font-size:1.1rem;font-weight:700;color:var(--white);margin-bottom:4px}
+.td-metric-how{font-size:.85rem;color:var(--muted)}
+.td-oxi-wrap{background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.15);border-radius:14px;padding:22px;margin-bottom:24px}
+.td-oxi-hd{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#f87171;margin-bottom:12px}
+.td-oxi-item{font-size:.875rem;color:var(--muted);padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.td-oxi-item:last-child{border-bottom:none}
+.td-save-nudge{background:rgba(29,158,117,.06);border:1px solid rgba(29,158,117,.2);border-radius:14px;padding:20px;margin-bottom:24px;font-size:.85rem;color:var(--muted);text-align:center}
+.td-save-nudge a{color:var(--green);font-weight:700;text-decoration:none}
+.td-save-nudge a:hover{text-decoration:underline}
+.td-cta-box{background:linear-gradient(135deg,rgba(29,158,117,.12),rgba(29,158,117,.04));border:1px solid rgba(29,158,117,.25);border-radius:16px;padding:32px;text-align:center;margin-bottom:24px}
+.td-cta-box h3{font-size:1.15rem;font-weight:800;margin:0 0 8px;color:var(--white)}
+.td-cta-box p{font-size:.875rem;color:var(--muted);margin:0 0 20px}
+.td-cta-btn{display:inline-block;background:var(--green);color:#fff;font-weight:700;font-size:.95rem;padding:13px 28px;border-radius:var(--radius);text-decoration:none;transition:opacity .2s}
+.td-cta-btn:hover{opacity:.85}
+.td-plans-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.td-plan-card{border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:24px 20px;background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:4px}
+.td-plan-card.td-plan-featured{border-color:rgba(29,158,117,.45);background:rgba(29,158,117,.07)}
+.td-plan-name{font-size:1rem;font-weight:800;color:var(--white)}
+.td-plan-badge{background:#1D9E75;color:#fff;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:8px;vertical-align:middle}
+.td-plan-price{font-size:1.9rem;font-weight:800;color:var(--white);line-height:1;margin:8px 0 4px}
+.td-plan-price sup{font-size:1rem;vertical-align:super}
+.td-plan-period{font-size:.75rem;color:var(--muted);margin-bottom:12px}
+.td-plan-features{list-style:none;padding:0;margin:0 0 18px;display:flex;flex-direction:column;gap:6px;font-size:.82rem;color:var(--muted)}
+.td-plan-features li{display:flex;gap:6px;align-items:flex-start}
+.td-plan-features .ck{color:#4ade80;flex-shrink:0}
+.td-plan-btn{display:block;text-align:center;font-weight:700;font-size:.9rem;padding:11px 0;border-radius:12px;text-decoration:none;margin-top:auto;transition:opacity .2s}
+.td-plan-btn:hover{opacity:.85}
+.td-plan-btn-primary{background:#1D9E75;color:#fff}
+.td-plan-btn-ghost{background:transparent;color:var(--white);border:1px solid rgba(255,255,255,.2)}
+@media(max-width:600px){.td-plans-wrap{grid-template-columns:1fr}}
+.td-task-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.td-label{flex:1;min-width:0}
+.td-do-btn{flex-shrink:0;padding:6px 13px;background:#1D9E75;border:none;border-radius:8px;color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-block;transition:background .2s;align-self:flex-start;margin-top:1px}
+.td-do-btn:hover{background:#168f68}
+.td-do-locked{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted);cursor:pointer}
+.td-do-locked:hover{background:rgba(255,255,255,.1);color:var(--white)}
+.td-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.td-modal{background:#0f1e35;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:36px 32px;max-width:480px;width:100%;position:relative;text-align:center}
+.td-modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:4px 8px}
+.td-modal-close:hover{color:var(--white)}
+.td-modal-icon{font-size:2.5rem;margin-bottom:12px}
+.td-modal h3{font-size:1.2rem;font-weight:800;margin:0 0 10px;color:var(--white)}
+.td-modal p{color:var(--muted);font-size:.88rem;line-height:1.6;margin:0 0 22px}
+.td-modal-cta{display:inline-block;background:#1D9E75;color:#fff;font-weight:700;font-size:.95rem;padding:13px 28px;border-radius:12px;text-decoration:none;transition:opacity .2s}
+.td-modal-cta:hover{opacity:.85}
+.td-modal-sub{font-size:.75rem;color:var(--muted);margin-top:12px !important}
+.td-guide-steps{text-align:left;margin:16px 0 20px}
+.td-guide-step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
+.td-guide-step-num{width:26px;height:26px;border-radius:50%;background:rgba(29,158,117,.2);border:1px solid #1D9E75;color:#4ade80;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.td-guide-step-text{font-size:.85rem;color:var(--muted);line-height:1.5}
+.td-guide-step-text strong{color:var(--white)}
+.td-copy-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:14px;text-align:left;font-size:.8rem;color:var(--muted);line-height:1.6;margin:12px 0 16px;white-space:pre-wrap}
+.td-copy-btn{background:rgba(29,158,117,.15);border:1px solid rgba(29,158,117,.3);color:#4ade80;font-size:.78rem;font-weight:600;padding:6px 14px;border-radius:6px;cursor:pointer}
+.td-copy-btn:hover{background:rgba(29,158,117,.25)}
+</style>
+</head>
+<body>
+${blogNavHtml()}
+<div class="td-hero">
+  <h1>📋 Πλάνο Δράσης 30 Ημερών</h1>
+  <p>Κάνε tick κάθε βήμα μόλις το ολοκληρώσεις — η πρόοδός σου αποθηκεύεται αυτόματα.</p>
+  <div class="td-meta">${industryTxt}${cityTxt}${goalTxt}</div>
+  <div class="td-progress-wrap"><div class="td-progress-bar" id="td-pbar"></div></div>
+  <div class="td-progress-lbl"><span id="td-done-count">0</span> / ${totalTasks} ολοκληρώθηκαν &nbsp;·&nbsp; <span class="td-progress-pct" id="td-pct">0%</span></div>
+</div>
+<div class="td-main">
+  ${weeksSections}
+  ${metrikHtml}
+  ${oxiHtml ? `<div class="td-oxi-wrap"><div class="td-oxi-hd">🚫 Τι να ΜΗΝ κάνεις αυτό το τρίμηνο</div>${oxiHtml}</div>` : ''}
+  <div class="td-save-nudge">💡 <strong>Αποθήκευσε το πλάνο σου</strong> — <a href="/signup.html">Δημιούργησε δωρεάν λογαριασμό</a> για να το έχεις πάντα διαθέσιμο.</div>
+  <div class="td-cta-box">
+    <h3>Επίλεξε πλάνο και ξεκίνα την υλοποίηση</h3>
+    <p>Το eureach εκτελεί το πλάνο σου αυτόματα — leads, περιεχόμενο, ανταγωνιστές, social media.</p>
+    <div class="td-plans-wrap">
+      <div class="td-plan-card">
+        <div class="td-plan-name">Beginners <span class="td-plan-badge">Popular</span></div>
+        <div class="td-plan-price"><sup>€</sup>9</div>
+        <div class="td-plan-period">ανά μήνα · ακύρωση ανά πάσα στιγμή</div>
+        <ul class="td-plan-features">
+          <li><span class="ck">✓</span> 250 credits/μήνα</li>
+          <li><span class="ck">✓</span> 3 AI άρθρα/μήνα</li>
+          <li><span class="ck">✓</span> 20 αναζητήσεις leads</li>
+          <li><span class="ck">✓</span> 50 leads στο CRM</li>
+          <li><span class="ck">✓</span> Outreach &amp; WhatsApp</li>
+        </ul>
+        <a href="/signup.html?plan=beginners" class="td-plan-btn td-plan-btn-ghost">Επίλεξε Beginners →</a>
+      </div>
+      <div class="td-plan-card td-plan-featured">
+        <div class="td-plan-name">Solo Pro</div>
+        <div class="td-plan-price"><sup>€</sup>20</div>
+        <div class="td-plan-period">ανά μήνα · ακύρωση ανά πάσα στιγμή</div>
+        <ul class="td-plan-features">
+          <li><span class="ck">✓</span> 800 credits/μήνα</li>
+          <li><span class="ck">✓</span> 6 AI άρθρα/μήνα</li>
+          <li><span class="ck">✓</span> 100 αναζητήσεις leads</li>
+          <li><span class="ck">✓</span> Unlimited CRM leads</li>
+          <li><span class="ck">✓</span> WordPress publishing</li>
+        </ul>
+        <a href="/signup.html?plan=pro" class="td-plan-btn td-plan-btn-primary">Επίλεξε Solo Pro →</a>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Upgrade modal (non-paid users) -->
+<div id="td-upgrade-modal" class="td-modal-overlay" style="display:none" onclick="if(event.target===this)closeUpgrade()">
+  <div class="td-modal">
+    <button class="td-modal-close" onclick="closeUpgrade()">✕</button>
+    <div class="td-modal-icon">🔒</div>
+    <h3>Premium Feature</h3>
+    <p id="td-upgrade-desc">Το eureach μπορεί να κάνει αυτό για σένα αυτόματα.</p>
+    <a href="/membership.html" class="td-modal-cta">Ξεκίνα από €20/μήνα →</a>
+    <p class="td-modal-sub">✓ Δωρεάν δοκιμή 14 ημερών &nbsp;·&nbsp; ✓ Χωρίς κάρτα</p>
+  </div>
+</div>
+
+<!-- Guide modal (paid users) -->
+<div id="td-guide-modal" class="td-modal-overlay" style="display:none" onclick="if(event.target===this)closeGuide()">
+  <div class="td-modal" style="max-width:540px;text-align:left">
+    <button class="td-modal-close" onclick="closeGuide()">✕</button>
+    <div id="td-guide-content"></div>
+  </div>
+</div>
+
+<script>
+// Guide content library
+const GUIDES = {
+  'review-tpl': {
+    title: '⭐ Template — Ζήτα κριτική',
+    html: '<p style="color:var(--muted);font-size:.85rem;margin:0 0 4px">Αντέγραψε και στείλε σε 5 πιστούς πελάτες σου:</p> <div class="td-copy-box" id="review-copy-text">Γεια [Όνομα],
+
+Σε ευχαριστώ πολύ που μας εμπιστεύτηκες! Θα μου έκανες μεγάλη χάρη αν άφηνες μια σύντομη κριτική στο Google — χρειάζεται μόνο 1 λεπτό και βοηθάει πολύ:
+
+👉 [βάλε εδώ το Google Business link σου]
+
+Ευχαριστώ πολύ!</div>
+    <button class="td-copy-btn" onclick="copyText(\'review-copy-text\')">📋 Αντέγραψε</button>'
+  },
+  'gbp-guide': {
+    title: '📍 Google Business Profile — Οδηγός',
+    html: '<div class="td-guide-steps"> <div class="td-guide-step"><div class="td-guide-step-num">1</div><div class="td-guide-step-text"><strong>Πήγαινε στο business.google.com</strong> και κάνε login με το Google account σου.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">2</div><div class="td-guide-step-text"><strong>Διεκδίκησε ή δημιούργησε</strong> το profile της επιχείρησής σου.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">3</div><div class="td-guide-step-text"><strong>Συμπλήρωσε 100% τα στοιχεία:</strong> κατηγορία, ώρες λειτουργίας, διεύθυνση, τηλέφωνο, website.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">4</div><div class="td-guide-step-text"><strong>Πρόσθεσε τουλάχιστον 5 φωτογραφίες</strong> — εξωτερικό, εσωτερικό, προϊόντα/υπηρεσίες.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">5</div><div class="td-guide-step-text"><strong>Επαλήθευσε</strong> τη λίστα (συνήθως μέσω κάρτας ή τηλεφώνου).</div></div>
+    </div>
+    <a href="https://business.google.com" target="_blank" class="td-modal-cta" style="font-size:.85rem;padding:10px 20px">Άνοιξε το Google Business →</a>'
+  },
+  'instagram-guide': {
+    title: '📸 Instagram — Οδηγός',
+    html: '<div class="td-guide-steps"> <div class="td-guide-step"><div class="td-guide-step-num">1</div><div class="td-guide-step-text"><strong>Δημιούργησε Business Account</strong> (όχι Personal) — δίνει analytics και επαφή CTA.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">2</div><div class="td-guide-step-text"><strong>Bio:</strong> τι κάνεις + πόλη + link (website ή WhatsApp). Π.χ. "Κομμωτήριο στο Κολωνάκι 📍 Αθήνα".</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">3</div><div class="td-guide-step-text"><strong>Ανάρτησε 9 posts</strong> πριν αρχίσεις να ακολουθάς — δίνει credibility.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">4</div><div class="td-guide-step-text"><strong>Χρησιμοποίησε Reels</strong> — ο αλγόριθμος τα προτιμά, 15-30 δευτ. φτάνουν.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">5</div><div class="td-guide-step-text"><strong>Hashtags:</strong> 5-10 σχετικά, συμπεριέλαβε πάντα την πόλη σου.</div></div>
+    </div>'
+  },
+  'facebook-guide': {
+    title: '📘 Facebook Page — Οδηγός',
+    html: '<div class="td-guide-steps"> <div class="td-guide-step"><div class="td-guide-step-num">1</div><div class="td-guide-step-text"><strong>Δημιούργησε Page</strong> (facebook.com/pages/create) — ΟΧΙ personal profile.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">2</div><div class="td-guide-step-text"><strong>Συμπλήρωσε "Σχετικά":</strong> κατηγορία, ώρες, τηλέφωνο, website, διεύθυνση.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">3</div><div class="td-guide-step-text"><strong>Πρόσθεσε CTA κουμπί</strong> στην κορυφή — "Επικοινωνία", "Κλείσε ραντεβού" ή "Κάλεσε".</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">4</div><div class="td-guide-step-text"><strong>3-4 posts/εβδομάδα:</strong> φωτογραφίες, tips, behind-the-scenes, προσφορές.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">5</div><div class="td-guide-step-text"><strong>Invite 50 φίλους/γνωστούς</strong> να κάνουν Like — πρώτοι followers = social proof.</div></div>
+    </div>'
+  },
+  'photo-guide': {
+    title: '📷 Φωτογραφία με κινητό — Οδηγός',
+    html: '<div class="td-guide-steps"> <div class="td-guide-step"><div class="td-guide-step-num">1</div><div class="td-guide-step-text"><strong>Φυσικό φως:</strong> τοποθέτησε το αντικείμενο κοντά σε παράθυρο, ΟΧΙ αντικρυστά στον ήλιο.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">2</div><div class="td-guide-step-text"><strong>Φόντο:</strong> λευκό χαρτόνι ή ουδέτερος τοίχος. Αποφεύγεごちゃ-ごちゃ backgrounds.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">3</div><div class="td-guide-step-text"><strong>Κανόνας τρίτων:</strong> μην κεντράρεις πάντα — βάλε το αντικείμενο στο 1/3 του καρέ.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">4</div><div class="td-guide-step-text"><strong>Επεξεργασία:</strong> Snapseed ή Lightroom Mobile — ανέβασε λίγο brightness και contrast.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">5</div><div class="td-guide-step-text"><strong>Στόχος:</strong> 10 καλές φωτογραφίες για αρχή — ποιότητα > ποσότητα.</div></div>
+    </div>'
+  },
+  'email-tpl': {
+    title: '📧 Email Newsletter — Template',
+    html: '<p style="color:var(--muted);font-size:.85rem;margin:0 0 8px">Αντέγραψε, προσάρμοσε και στείλε:</p> <div class="td-copy-box" id="email-copy-text">Θέμα: [Νέα / Προσφορά] από [Όνομα Επιχείρησης]
+
+Γεια [Όνομα],
+
+[Μία πρόταση γιατί τους γράφεις — π.χ. "Αυτό το μήνα έχουμε μια ξεχωριστή προσφορά για τους πιστούς μας πελάτες."]
+
+[Το κυρίως νέο/προσφορά σε 2-3 προτάσεις]
+
+👉 [CTA — π.χ. "Καλέστε μας στο 210-XXXXXXX" ή "Κλείστε ραντεβού online"]
+
+Σας ευχαριστούμε για την εμπιστοσύνη σας!
+[Υπογραφή]</div>
+    <button class="td-copy-btn" onclick="copyText(\'email-copy-text\')">📋 Αντέγραψε</button>'
+  },
+  'generic-guide': {
+    title: '✅ Πώς να το ολοκληρώσεις',
+    html: '<div class="td-guide-steps"> <div class="td-guide-step"><div class="td-guide-step-num">1</div><div class="td-guide-step-text"><strong>Αφιέρωσε χρόνο τώρα</strong> — βάλε 30 λεπτά στο ημερολόγιό σου αυτή την εβδομάδα.</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">2</div><div class="td-guide-step-text"><strong>Σπάσε το σε μικρά βήματα</strong> — τι είναι το πρώτο πράγμα που μπορείς να κάνεις σε 5 λεπτά;</div></div>
+      <div class="td-guide-step"><div class="td-guide-step-num">3</div><div class="td-guide-step-text"><strong>Μην το αναβάλλεις</strong> — το "τέλειο" είναι εχθρός του καλού. Κάνε το τώρα, βελτίωσέ το αργότερα.</div></div>
+    </div>'
+  }
+};
+
+function showUpgrade(action, desc) {
+  document.getElementById('td-upgrade-desc').textContent = desc || 'Το eureach μπορεί να κάνει αυτό για σένα αυτόματα.';
+  document.getElementById('td-upgrade-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeUpgrade() {
+  document.getElementById('td-upgrade-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function showGuide(id) {
+  const g = GUIDES[id];
+  if (!g) return;
+  document.getElementById('td-guide-content').innerHTML = '<h3 style="margin:0 0 16px;font-size:1.1rem;font-weight:800;color:var(--white)">' + g.title + '</h3>' + g.html;
+  document.getElementById('td-guide-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeGuide() {
+  document.getElementById('td-guide-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function copyText(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(function(){
+    const btn = el.nextElementSibling;
+    if (btn) { btn.textContent = '✓ Αντιγράφηκε!'; setTimeout(function(){ btn.textContent = '📋 Αντέγραψε'; }, 2000); }
+  }).catch(function(){
+    const r = document.createRange(); r.selectNode(el);
+    window.getSelection().removeAllRanges(); window.getSelection().addRange(r);
+  });
+}
+document.addEventListener('keydown', function(e){ if (e.key === 'Escape') { closeUpgrade(); closeGuide(); } });
+</script>
+<script>
+(function(){
+  const KEY = 'td_ticks_${token}';
+  const total = ${totalTasks};
+  function loadTicks(){
+    try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ return {}; }
+  }
+  function saveTicks(ticks){
+    try { localStorage.setItem(KEY, JSON.stringify(ticks)); } catch(e){}
+  }
+  function updateProgress(){
+    const ticks = loadTicks();
+    const done = Object.values(ticks).filter(Boolean).length;
+    const pct = total > 0 ? Math.round(done/total*100) : 0;
+    document.getElementById('td-pbar').style.width = pct + '%';
+    document.getElementById('td-done-count').textContent = done;
+    document.getElementById('td-pct').textContent = pct + '%';
+  }
+  function applyTicks(){
+    const ticks = loadTicks();
+    Object.keys(ticks).forEach(function(id){
+      const cb = document.getElementById(id);
+      if (cb && ticks[id]) {
+        cb.checked = true;
+        const li = document.getElementById('li-' + id);
+        if (li) { li.classList.add('done'); li.querySelector('.td-check-icon').textContent = '☑'; }
+      }
+    });
+    updateProgress();
+  }
+  window.saveTick = function(cb){
+    const ticks = loadTicks();
+    ticks[cb.id] = cb.checked;
+    saveTicks(ticks);
+    const li = document.getElementById('li-' + cb.id);
+    if (li) {
+      if (cb.checked) { li.classList.add('done'); li.querySelector('.td-check-icon').textContent = '☑'; }
+      else { li.classList.remove('done'); li.querySelector('.td-check-icon').textContent = '☐'; }
+    }
+    updateProgress();
+  };
+  applyTicks();
+})();
 </script>
 </body>
 </html>`;
@@ -9569,7 +10141,24 @@ async function scrapeWebsiteForStrategy(url) {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; eureach/1.0)' }, timeout: 8000 };
       const req = lib.get(opts, (r) => {
         if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location) {
-          resolve(''); return; // skip redirects
+          // Follow one redirect
+          try {
+            const loc = r.headers.location;
+            const newUrl = /^https?:\/\//i.test(loc) ? loc : (parsed.origin + loc);
+            const np = new URL(newUrl);
+            const nl = np.protocol === 'https:' ? require('https') : require('http');
+            const nopts = { hostname: np.hostname, path: np.pathname + np.search, port: np.port || (np.protocol === 'https:' ? 443 : 80),
+              headers: { 'User-Agent': 'Mozilla/5.0 (compatible; eureach/1.0)' }, timeout: 8000 };
+            const req2 = nl.get(nopts, (r2) => {
+              let d2 = '';
+              r2.setEncoding('utf8');
+              r2.on('data', c2 => { d2 += c2; if (d2.length > 150000) { r2.destroy(); resolve(d2); } });
+              r2.on('end', () => resolve(d2));
+            });
+            req2.on('error', () => resolve(''));
+            req2.on('timeout', () => { req2.destroy(); resolve(''); });
+          } catch(e) { resolve(''); }
+          return;
         }
         let d = '';
         r.setEncoding('utf8');
@@ -9644,16 +10233,23 @@ async function handleStrategyLookupWebsite(req, res) {
 
   let description = '';
   try {
-    if (groqKey) {
-      const r = await Promise.race([
-        callGroq(groqKey, sysP, usrP, 300),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000))
-      ]);
-      description = (r.choices[0].message.content || '').trim();
+    if (anthropicKey) {
+      try {
+        const r = await callClaude(anthropicKey, sysP, usrP, 300, 'claude-haiku-4-5-20251001');
+        description = (r.content && r.content[0] ? r.content[0].text : '') || '';
+        description = description.trim();
+      } catch(e) { console.warn('[strategy-lookup] Claude failed:', e.message); }
     }
-    if (!description && anthropicKey) {
-      const r = await callClaude(anthropicKey, sysP, usrP, 300, 'claude-haiku-4-5-20251001');
-      description = (r.content[0].text || '').trim();
+    if (!description && groqKey) {
+      try {
+        const r = await Promise.race([
+          callGroq(groqKey, sysP, usrP, 300),
+          new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 12000))
+        ]);
+        if (!r.error && r.choices && r.choices[0]) {
+          description = (r.choices[0].message.content || '').trim();
+        }
+      } catch(e) { console.warn('[strategy-lookup] Groq failed:', e.message); }
     }
   } catch(e) { console.error('[strategy-lookup]', e.message); }
 
@@ -9668,7 +10264,8 @@ async function handleStrategyGenerate(req, res) {
   const body = await readBody(req);
   if (body._trap) return json(res, 400, { error: 'Bot detected.' });
 
-  const { sells, customer, channels, differentiator, goal, city, industry, website, siteDescription, email } = body;
+  const { sells, customer, customerExtra, channels, differentiator, goal, city, industry, website, siteDescription, email,
+          budget, timeAvailable, onlinePresence, obstacle } = body;
   if (!sells || !customer || !differentiator || !goal)
     return json(res, 400, { error: 'Παρακαλώ συμπλήρωσε όλα τα υποχρεωτικά πεδία.' });
   if (String(sells).length > 300 || String(customer).length > 300 ||
@@ -9701,7 +10298,7 @@ async function handleStrategyGenerate(req, res) {
 - Τι τη κάνει διαφορετική: ${String(differentiator).slice(0,300)}
 - Στόχος 3 μηνών: ${String(goal).slice(0,300)}
 - Τομέας: ${String(industry||'Γενική επιχείρηση').slice(0,100)}
-- Πόλη/Περιοχή: ${String(city||'Ελλάδα').slice(0,100)}${siteDescription ? '\n- Περιγραφή ιστοσελίδας (επεξεργασμένη από τον χρήστη): ' + String(siteDescription).slice(0,600) : ''}${websiteContext}
+- Πόλη/Περιοχή: ${String(city||'Ελλάδα').slice(0,100)}${customerExtra ? '\n- Επιπλέον για τον πελάτη: ' + String(customerExtra).slice(0,200) : ''}${budget ? '\n- Διαθέσιμο budget: ' + String(budget) : ''}${timeAvailable ? '\n- Διαθέσιμος χρόνος: ' + String(timeAvailable) : ''}${onlinePresence ? '\n- Υπάρχουσα online παρουσία: ' + String(onlinePresence) : ''}${obstacle ? '\n- Μεγαλύτερο εμπόδιο: ' + String(obstacle) : ''}${siteDescription ? '\n- Περιγραφή ιστοσελίδας (επεξεργασμένη από τον χρήστη): ' + String(siteDescription).slice(0,600) : ''}${websiteContext}
 
 Επέστρεψε ΑΥΣΤΗΡΑ αυτή τη δομή JSON (μόνο JSON, τίποτε άλλο):
 {
@@ -9723,40 +10320,37 @@ async function handleStrategyGenerate(req, res) {
   let aiText = null, tokensUsed = 0;
   const t0 = Date.now();
 
-  try {
-    if (groqKey) {
-      const groqTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error("Groq timeout")), 15000));
-      const r = await Promise.race([callGroq(groqKey, systemPrompt, userPrompt, 900), groqTimeout]);
-      if (r.error) throw new Error(r.error.message || JSON.stringify(r.error));
-      aiText = (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content) || null;
-      tokensUsed = (r.usage && r.usage.total_tokens) || 0;
-    }
-  } catch(groqErr) {
-    console.warn('[strategy] Groq failed (' + groqErr.message + '), falling back to Claude');
-  }
-  if (!aiText && anthropicKey) {
+  if (anthropicKey) {
     try {
       const r = await callClaude(anthropicKey, systemPrompt, userPrompt, 2048, 'claude-haiku-4-5-20251001');
       aiText = (r.content && r.content[0] && r.content[0].text) || null;
       tokensUsed = r.usage ? (r.usage.input_tokens + r.usage.output_tokens) : 0;
     } catch(e) {
-      console.error('[strategy] Claude fallback error:', e.message);
+      console.error('[strategy] Claude error:', e.message);
+    }
+  }
+  if (!aiText && groqKey) {
+    try {
+      const groqTimeout = new Promise((_, rej) => setTimeout(() => rej(new Error("Groq timeout")), 15000));
+      const r = await Promise.race([callGroq(groqKey, systemPrompt, userPrompt, 700), groqTimeout]);
+      if (r.error) throw new Error(r.error.message || JSON.stringify(r.error));
+      aiText = (r.choices && r.choices[0] && r.choices[0].message && r.choices[0].message.content) || null;
+      tokensUsed = (r.usage && r.usage.total_tokens) || 0;
+    } catch(groqErr) {
+      console.warn('[strategy] Groq fallback failed:', groqErr.message);
     }
   }
   if (!aiText)
     return json(res, 500, { error: 'Σφάλμα σύνδεσης με την AI. Δοκίμασε ξανά.' });
 
   // Strip markdown code fences if AI wrapped the JSON
-  if (aiText) aiText = aiText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+  if (aiText) aiText = aiText.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
   let strategy = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try {
-      const m = aiText.match(/\{[\s\S]*\}/);
-      if (m) strategy = JSON.parse(m[0]);
-      if (strategy) break;
-    } catch(e) {
-      if (attempt === 1) console.error('[strategy] JSON parse failed:', aiText.slice(0, 200));
-    }
+  try {
+    const m = aiText.match(/\{[\s\S]*\}/);
+    if (m) strategy = JSON.parse(sanitizeJSONStrings(m[0]));
+  } catch(e) {
+    console.error('[strategy] JSON parse failed:', aiText.slice(0, 200));
   }
   if (!strategy) return json(res, 500, { error: 'Δεν ήταν δυνατή η ανάλυση της στρατηγικής. Δοκίμασε ξανά.' });
 
@@ -10585,7 +11179,9 @@ async function handleRequest(req, res) {
   if (urlPath === '/api/strategy/lookup-website' && method === 'POST') return handleStrategyLookupWebsite(req, res);
   if (urlPath === '/api/strategy/generate' && method === 'POST') return handleStrategyGenerate(req, res);
   if (urlPath === '/api/strategy/pdf'      && method === 'POST') return handleStrategyPdf(req, res);
-  if (urlPath.startsWith('/api/strategy/download/') && method === 'GET') return handleStrategyDownload(req, res, urlPath.slice(24));
+  if (urlPath.startsWith('/api/strategy/download/') && method === 'GET') return handleStrategyDownload(req, res, urlPath.slice(23));
+  if (urlPath === '/api/strategy/todo' && method === 'POST') return handleStrategyTodoStore(req, res);
+  if (urlPath.startsWith('/stratigiki-todo/') && method === 'GET') return handleStrategyTodoPage(req, res, urlPath.slice(17));
   if (urlPath === '/api/projects' && method === 'GET') return handleGetProjects(req, res);
   if (urlPath === '/api/projects' && method === 'POST') return handleCreateProject(req, res);
   if (/^\/api\/projects\/[a-z0-9]+$/.test(urlPath) && method === 'PUT') return handleUpdateProject(req, res, urlPath.split('/')[3]);
@@ -10687,9 +11283,13 @@ async function handleRequest(req, res) {
   if (urlPath === '/api/growth-plan/status'   && method === 'GET')  return handleGrowthPlanStatus(req, res);
   if (urlPath === '/api/growth-plan/activate' && method === 'POST') return handleGrowthPlanActivate(req, res);
 
-    if (urlPath === "/api/newsletter/subscribe"        && method === "POST") return handleNewsletterSubscribe(req, res);
-  if (urlPath.startsWith("/newsletter/confirm/")     && method === "GET")  return handleNewsletterConfirm(req, res, urlPath.slice(20));
-  if (urlPath.startsWith("/newsletter/unsubscribe/") && method === "GET")  return handleNewsletterUnsubscribe(req, res, urlPath.slice(24));
+  // ── Newsletter system (Express mini-app) ─────────────────────────────────────
+  if (urlPath.startsWith('/api/newsletter')) return newsletterApp(req, res);
+  // Backward-compatible confirm/unsubscribe (token in path → redirect to query param)
+  if (urlPath.startsWith('/newsletter/confirm/')     && method === 'GET')
+    return res.writeHead(302, { Location: '/api/newsletter/confirm?token=' + urlPath.slice(20) }), res.end();
+  if (urlPath.startsWith('/newsletter/unsubscribe/') && method === 'GET')
+    return res.writeHead(302, { Location: '/api/newsletter/unsubscribe?token=' + urlPath.slice(23) }), res.end();
 
   // ── Marketing Creator routes ────────────────────────────────────────────────
   if (urlPath === "/api/marketing/brand-kit"            && method === "GET")  return handleBrandKitGet(req, res);

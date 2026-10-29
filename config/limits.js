@@ -1,7 +1,7 @@
 module.exports = {
   plans: {
     beginners: {
-      credits: 350, sites: 1, crmLeads: 50, wordpress: false,
+      credits: 250, sites: 1, crmLeads: 50, wordpress: false,
       monthlyArticles: 3, monthlyAudits: 3, monthlyLeadSearches: 20,
       marketingPosts: 5, marketingCampaigns: 1,
       canOutreach: true, canWhatsApp: true, canEmailVerify: true,

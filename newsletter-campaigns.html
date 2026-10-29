@@ -511,14 +511,21 @@
         </div>
 
         <!-- Ad blocks -->
-        <div class="block-card" style="border-left:4px solid #c9a227">
+        <div class="block-card" id="sponsor-block-card" style="border-left:4px solid #c9a227">
           <div class="block-card-head">
             <span class="block-badge badge-ads">Ads</span>
             <span class="block-card-head-title">Right sidebar sponsor blocks</span>
+            <span id="sponsor-pro-badge" style="display:none;margin-left:auto;font-size:.7rem;font-weight:700;background:#f59e0b;color:#fff;padding:2px 8px;border-radius:10px;letter-spacing:.5px;">PRO</span>
           </div>
-          <div class="block-card-body">
+          <div id="sponsor-block-body" class="block-card-body">
             <div id="ad-blocks-list"></div>
             <button class="btn-add-ad" onclick="addAdBlock()">+ Add Sponsor Block</button>
+          </div>
+          <div id="sponsor-lock-overlay" style="display:none;padding:18px 16px;text-align:center;border-top:1px solid #e2e8f0;">
+            <div style="font-size:1.3rem;margin-bottom:6px;">🔒</div>
+            <div style="font-weight:700;color:#1e1b4b;font-size:.88rem;margin-bottom:4px;">Pro feature</div>
+            <div style="font-size:.8rem;color:#64748b;margin-bottom:12px;">Sponsor blocks are available on Pro &amp; Agency plans.</div>
+            <a href="/upgrade.html" class="btn btn-primary btn-sm" style="display:inline-block;text-decoration:none;">Upgrade to Pro</a>
           </div>
         </div>
 
@@ -637,7 +644,7 @@
 // ── Constants ─────────────────────────────────────────────────────────────────
 const EUREACH_FOOTER_HTML = '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top:40px;"><tr><td align="center" style="border-top:2px solid #e2e8f0;padding:28px 24px 0;font-family:Arial,Helvetica,sans-serif;"><p style="margin:0 0 4px;font-size:11px;color:#94a3b8;letter-spacing:0.8px;text-transform:uppercase;">This newsletter was created with</p><a href="https://eureach.eu?ref=nl-footer" style="display:inline-block;margin-bottom:12px;font-size:20px;font-weight:700;color:#4f46e5;text-decoration:none;">eureach<span style="color:#6366f1">.</span>eu</a><p style="margin:0;font-size:12px;color:#64748b;line-height:1.7;">Need help with your business marketing?<br><a href="https://eureach.eu?ref=nl-footer-cta" style="color:#4f46e5;font-weight:600;text-decoration:none;">Discover EUREACH \u2192</a></p></td></tr></table>';
 
-const TPL_KEY = 'nl_templates_eureach';
+const TPL_KEY = 'nl_templates_eureach_v3';
 
 const DEFAULT_TEMPLATES = [
   {
@@ -687,11 +694,67 @@ let quill = null;
 let _adBlocks = [];
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+let _currentUser = null;
+
 async function init() {
   initTemplates();
+  try {
+    const mr = await fetch('/api/auth/me');
+    const md = await mr.json();
+    _currentUser = md.user || null;
+  } catch(e) {}
+  checkSponsorAccess();
   await Promise.all([loadGrowthPlan(), loadCampaigns()]);
   await loadLists();
   await loadEuPresets();
+}
+
+function _isProUser() {
+  const u = _currentUser;
+  return u && (u.role === 'admin' || ['pro','agency','paid','starter'].includes(u.plan));
+}
+
+function checkSponsorAccess() {
+  const allowed = _isProUser();
+  const badge = document.getElementById('sponsor-pro-badge');
+  const body  = document.getElementById('sponsor-block-body');
+  const lock  = document.getElementById('sponsor-lock-overlay');
+  if (!allowed) {
+    if (badge) badge.style.display = '';
+    if (body)  body.style.display  = 'none';
+    if (lock)  lock.style.display  = '';
+    _adBlocks = [];
+    renderAdBlocks();
+  }
+  // Lock save draft button
+  const btnDraft = document.getElementById('btn-save-draft');
+  if (btnDraft) {
+    if (!allowed) {
+      btnDraft.onclick = function() { showSendUpgradePrompt(); };
+      btnDraft.innerHTML = '?? Save Draft';
+      btnDraft.title = 'Upgrade to Pro to save campaigns';
+    }
+  }
+  // Lock send button
+  const btnSend = document.getElementById('btn-send');
+  if (btnSend) {
+    if (!allowed) {
+      btnSend.disabled = false;
+      btnSend.onclick = function() { showSendUpgradePrompt(); };
+      btnSend.innerHTML = '?? Send Campaign →';
+      btnSend.title = 'Upgrade to Pro to send campaigns';
+    }
+  }
+}
+
+function showSendUpgradePrompt() {
+  var overlay = document.getElementById('send-upgrade-overlay');
+  if (overlay) overlay.style.display = 'flex';
+}
+
+function closeSendUpgradePrompt() {
+  var overlay = document.getElementById('send-upgrade-overlay');
+  if (overlay) overlay.style.display = 'none';
 }
 
 function initQuill() {
@@ -716,13 +779,17 @@ function initQuill() {
 
 // ── Templates ─────────────────────────────────────────────────────────────────
 function getTemplates() {
+  var stored = [];
   try {
     var raw = localStorage.getItem(TPL_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) stored = JSON.parse(raw) || [];
   } catch(e) {}
-  var tpls = DEFAULT_TEMPLATES.map(function(t) { return Object.assign({}, t); });
-  localStorage.setItem(TPL_KEY, JSON.stringify(tpls));
-  return tpls;
+  // Always ensure all default templates are present
+  var storedNames = stored.map(function(t) { return t.name; });
+  DEFAULT_TEMPLATES.forEach(function(dt) {
+    if (storedNames.indexOf(dt.name) === -1) stored.unshift(JSON.parse(JSON.stringify(dt)));
+  });
+  return stored;
 }
 
 function saveTemplates(tpls) {
@@ -822,6 +889,8 @@ function deleteTemplate() {
 
 // ── Ad Blocks ─────────────────────────────────────────────────────────────────
 function addAdBlock() {
+  const u = _currentUser;
+  if (!u || (!(["pro","agency","paid","starter"].includes(u.plan)) && u.role !== "admin")) { showToast("Sponsor blocks require a Pro plan.", "err"); return; }
   _adBlocks.push({ title: 'Sponsor', desc: 'Description here.', btnText: 'Learn More', url: 'https://', color: '#4f46e5', enabled: true });
   renderAdBlocks();
   updatePreview();
@@ -970,7 +1039,19 @@ function getEmailHtml() {
         footerHtml +
       '</div>' +
     '</div>' +
-    '</body></html>';
+    '<!-- Send upgrade overlay -->
+<div id="send-upgrade-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:14px;padding:36px 32px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2);">
+    <div style="font-size:2.2rem;margin-bottom:12px;">??</div>
+    <h2 style="font-size:1.1rem;color:#1e1b4b;margin:0 0 8px;font-weight:700;">Pro feature</h2>
+    <p style="color:#475569;font-size:.88rem;line-height:1.6;margin:0 0 20px;">Sending newsletter campaigns is available on <strong>Pro</strong> and <strong>Agency</strong> plans. Upgrade to unlock sending, sponsor blocks, and unlimited campaigns.</p>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <a href="/upgrade.html" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:10px 24px;border-radius:7px;font-weight:700;font-size:.88rem;">Upgrade to Pro</a>
+      <button onclick="closeSendUpgradePrompt()" style="background:none;border:1px solid #e2e8f0;border-radius:7px;padding:10px 20px;font-size:.88rem;color:#64748b;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+</body></html>';
 }
 
 // ── Preview ───────────────────────────────────────────────────────────────────
@@ -1139,6 +1220,7 @@ function parseRecipients(raw) {
 
 // ── Save Draft ────────────────────────────────────────────────────────────────
 async function saveDraft() {
+  if (!_isProUser()) { showSendUpgradePrompt(); return; }
   var payload = getEditorPayload();
   var status = document.getElementById('editor-status');
   status.textContent = 'Saving...';
@@ -1175,6 +1257,7 @@ async function sendCampaign() {
 }
 
 async function quickSend(id) {
+  if (!_isProUser()) { showSendUpgradePrompt(); return; }
   var c = campaigns.find(function(x) { return x.id === id; });
   if (!c) return;
   if (!confirm('Send "' + c.name + '" to ' + (c.recipients||[]).length + ' recipient(s)?')) return;
