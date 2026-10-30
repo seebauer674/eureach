@@ -498,6 +498,59 @@ router.get('/queue', async (req, res) => {
 });
 
 
+
+// ── GET /api/newsletter/upcoming  (next 7 days + welcome) ───────────────────
+router.get('/upcoming', async (req, res) => {
+  try {
+    const now  = new Date();
+    const days = [];
+
+    // Next 7 daily sends (01:00 server time)
+    for (let i = 1; i <= 7; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + i);
+      d.setHours(1, 0, 0, 0);
+      const weekday = d.toLocaleDateString('en-GB', { weekday: 'long' });
+      const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      days.push({
+        type:        'daily',
+        label:       'Daily Newsletter',
+        weekday,
+        scheduled_at: d.toISOString(),
+        date_label:  `${weekday}, ${dateStr}`,
+        template_slug: 'growth-tips-el',
+      });
+    }
+
+    // Welcome (evergreen — sent to every new subscriber)
+    days.unshift({
+      type:        'welcome',
+      label:       'Welcome Email',
+      weekday:     'Evergreen',
+      scheduled_at: null,
+      date_label:  'On every new signup',
+      template_slug: 'welcome',
+    });
+
+    // Fetch templates for preview
+    const slugs = [...new Set(days.map(d => d.template_slug))];
+    const { rows: tpls } = await pool.query(
+      `SELECT slug, name, html_body FROM email_templates WHERE slug = ANY($1)`,
+      [slugs]
+    );
+    const tplMap = {};
+    for (const t of tpls) tplMap[t.slug] = t;
+
+    const result = days.map(d => ({
+      ...d,
+      template_name: tplMap[d.template_slug]?.name || d.template_slug,
+      preview_html:  tplMap[d.template_slug]?.html_body || null,
+    }));
+
+    res.json({ upcoming: result });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Newsletter Ads CRUD ────────────────────────────────────────────────────────
 router.get('/ads', async (req, res) => {
   try {
@@ -703,6 +756,82 @@ router.put('/admin/placements/:id', async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ placement: rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+
+// POST /api/newsletter/templates/ai-write — admin: generate template HTML from description
+router.post('/templates/ai-write', async (req, res) => {
+  const user = await getUser_ap(req);
+  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  const { description, name, language, category } = req.body;
+  if (!description) return res.status(400).json({ error: 'description required' });
+  const langLabel = language === 'el' ? 'Greek' : language === 'de' ? 'German' : 'English';
+  const prompt = `You are an expert email template designer. Write a complete, professional HTML email template body based on this description:
+
+"${description}"
+
+Template name: ${name || 'Newsletter'}
+Language: ${langLabel}
+Category: ${category || 'marketing'}
+
+Requirements:
+- Write in ${langLabel}
+- Responsive HTML using inline styles and tables (email-safe)
+- Dark header with brand colors (#1e1b4b / #6366f1)
+- Clean white content area with proper padding
+- Include a clear CTA button
+- Include {{firstName}}, {{email}}, {{plan}} placeholders where natural
+- Include {{ADS_SIDEBAR}} as a right sidebar column if it's a marketing/digest email
+- Return ONLY the HTML, no explanation, no markdown fences`;
+
+  try {
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey) return res.status(500).json({ error: 'AI not configured' });
+    const https = require('https');
+    const payload = JSON.stringify({
+      model: 'qwen/qwen3.8-27b',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 3000,
+      temperature: 0.7,
+    });
+    const html = await new Promise((resolve, reject) => {
+      const r = https.request({
+        hostname: 'api.groq.com', path: '/openai/v1/chat/completions', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + groqKey, 'Content-Length': Buffer.byteLength(payload) }
+      }, resp => {
+        let d = '';
+        resp.on('data', c => d += c);
+        resp.on('end', () => {
+          try {
+            let text = JSON.parse(d).choices?.[0]?.message?.content || '';
+            // Strip markdown fences if model adds them
+            text = text.replace(/^```html\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+            resolve(text);
+          } catch { reject(new Error('parse error')); }
+        });
+      });
+      r.on('error', reject);
+      r.write(payload); r.end();
+    });
+    res.json({ html });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT /api/newsletter/templates/:slug — admin: update template html_body
+router.put('/templates/:slug', async (req, res) => {
+  const user = await getUser_ap(req);
+  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  const { html_body } = req.body;
+  if (!html_body) return res.status(400).json({ error: 'html_body required' });
+  try {
+    const { rowCount } = await pool.query(
+      `UPDATE email_templates SET html_body = $1 WHERE slug = $2`,
+      [html_body, req.params.slug]
+    );
+    if (!rowCount) return res.status(404).json({ error: 'Template not found' });
+    res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

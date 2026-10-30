@@ -22,6 +22,23 @@
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
     /* NAV */
+    /* Nav dropdown (injected by api.js) */
+    .nav-dropdown { position: relative; }
+    .nav-dropdown-toggle { font-size:.83rem;font-weight:500;color:#94a3b8;cursor:pointer;display:flex;align-items:center;gap:4px;background:none;border:none;padding:6px 14px;transition:color .2s;white-space:nowrap;border-radius:6px; }
+    .nav-dropdown-toggle:hover { color:#e2e8f0;background:rgba(255,255,255,.07); }
+    .nav-dropdown-toggle svg { width:10px;height:10px;transition:transform .2s; }
+    .nav-dropdown:hover .nav-dropdown-toggle svg { transform:rotate(180deg); }
+    .nav-dropdown-menu { display:none;position:absolute;top:100%;left:0;padding-top:12px;min-width:190px;z-index:200; }
+    .nav-dropdown-menu-inner { background:rgba(10,16,36,.97);border:1px solid #2d3748;border-radius:12px;padding:8px;box-shadow:0 8px 32px rgba(0,0,0,.5); }
+    .nav-dropdown:hover .nav-dropdown-menu { display:block; }
+    .nav-dropdown-menu a { display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:.85rem;color:#94a3b8;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s; }
+    .nav-dropdown-menu a:hover { background:rgba(255,255,255,.07);color:#e2e8f0; }
+    .ndm-icon { font-size:1rem;width:20px;text-align:center; }
+    .nav-cta { display:flex;align-items:center;gap:8px; }
+    .btn { font-size:.875rem;font-weight:600;padding:8px 18px;border-radius:8px;cursor:pointer;text-decoration:none;border:none;transition:all .15s; }
+    .btn-ghost { background:none;border:1px solid rgba(255,255,255,.15);color:#94a3b8; }
+    .btn-ghost:hover { color:#e2e8f0;border-color:rgba(255,255,255,.3); }
+
     .nav { background: #1a1a2e; padding: 0 24px; display: flex; align-items: center; height: 56px; gap: 32px; }
     .nav-brand { font-size: 1.1rem; font-weight: 900; letter-spacing: -0.5px; text-decoration: none; }
     .nav-brand .eu { color: var(--indigo-light); }
@@ -160,11 +177,27 @@
     <a href="/dashboard.html" class="nav-link">Dashboard</a>
     <a href="/newsletter.html" class="nav-link active">Newsletter</a>
   </div>
+  <div class="nav-cta"></div>
 </nav>
 
 <!-- MAIN -->
 <div class="container">
   <div class="page-title">Newsletter Admin</div>
+
+
+  <!-- UPCOMING NEWSLETTERS -->
+  <div class="card" style="margin-bottom:28px">
+    <div class="card-title" style="justify-content:space-between">
+      <span style="display:flex;align-items:center;gap:8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Upcoming Newsletters
+      </span>
+      <span style="font-size:.75rem;color:var(--muted);font-weight:400">Next 7 days + welcome</span>
+    </div>
+    <div id="upcoming-list" style="display:flex;flex-direction:column;gap:10px">
+      <div style="color:var(--muted);font-size:.85rem">Loading…</div>
+    </div>
+  </div>
 
   <!-- TABS -->
   <div class="tabs">
@@ -333,7 +366,14 @@
         </div>
       </div>
       <div class="form-group">
-        <label>HTML Body</label>
+        <label>Description <span style="font-size:.72rem;color:var(--muted);font-weight:400;text-transform:none">(used by AI to generate the body)</span></label>
+        <textarea id="tpl-description" rows="3" placeholder="e.g. A weekly digest with growth tips for European businesses. Friendly tone, include a CTA to upgrade."></textarea>
+      </div>
+      <div class="form-group">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <label style="margin:0">HTML Body</label>
+          <button type="button" id="btn-ai-write-tpl" onclick="aiWriteTemplate()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;font-size:.75rem;font-weight:700;padding:5px 13px;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:5px">&#10024; Write with AI</button>
+        </div>
         <textarea id="tpl-html" rows="16" placeholder="<div>Your email HTML…</div>"></textarea>
       </div>
       <div class="form-group">
@@ -361,6 +401,7 @@
   </div>
 </div>
 
+<script src="js/api.js"></script>
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -592,6 +633,7 @@ function openNewTemplateModal() {
   document.getElementById('tpl-slug').value = '';
   document.getElementById('tpl-category').value = 'transactional';
   document.getElementById('tpl-language').value = activeLang || 'en';
+  document.getElementById('tpl-description').value = '';
   document.getElementById('tpl-html').value = '';
   document.getElementById('tpl-plain').value = '';
   document.getElementById('tpl-modal-title').textContent = 'New Template';
@@ -614,6 +656,7 @@ async function editTemplate(id) {
     document.getElementById('tpl-slug').setAttribute('readonly', 'true');
     document.getElementById('tpl-category').value = t.category || 'transactional';
     document.getElementById('tpl-language').value = t.language || 'en';
+    document.getElementById('tpl-description').value = '';
     document.getElementById('tpl-html').value = t.html_body || '';
     document.getElementById('tpl-plain').value = t.plain_body || '';
   } catch (e) {
@@ -676,6 +719,34 @@ async function deleteTemplate(id, name) {
   }
 }
 
+async function aiWriteTemplate() {
+  const description = document.getElementById('tpl-description').value.trim();
+  if (!description) { showAlert('tpl-modal-alert', 'Enter a description first.', 'error'); return; }
+  const name = document.getElementById('tpl-name').value.trim();
+  const language = document.getElementById('tpl-language').value;
+  const category = document.getElementById('tpl-category').value;
+  const btn = document.getElementById('btn-ai-write-tpl');
+  btn.disabled = true;
+  btn.textContent = '⏳ Writing...';
+  try {
+    const csrf = (document.cookie.match(/csrf_token=([^;]+)/) || [])[1] || '';
+    const r = await fetch('/api/newsletter/templates/ai-write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      body: JSON.stringify({ description, name, language, category })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'AI error');
+    document.getElementById('tpl-html').value = d.html;
+    showAlert('tpl-modal-alert', 'AI generated the template body — review and save.', 'success');
+  } catch (e) {
+    showAlert('tpl-modal-alert', 'AI failed: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Write with AI';
+  }
+}
+
 function closeTplModal() {
   document.getElementById('tpl-modal').classList.remove('open');
 }
@@ -731,11 +802,351 @@ document.getElementById('tpl-modal').addEventListener('click', function(e) {
   if (e.target === this) closeTplModal();
 });
 
+
+/* ── Upcoming Newsletters ─────────────────────────────────────── */
+let upcomingData = [];
+
+async function loadUpcoming() {
+  const r = await fetch('/api/newsletter/upcoming').then(r => r.json()).catch(() => ({ upcoming: [] }));
+  upcomingData = r.upcoming || [];
+  renderUpcoming();
+}
+
+function renderUpcoming() {
+  const el = document.getElementById('upcoming-list');
+  if (!upcomingData.length) { el.innerHTML = '<div style="color:var(--muted);font-size:.85rem">No upcoming newsletters.</div>'; return; }
+  const typeBg     = { daily: 'rgba(79,70,229,.08)', welcome: 'rgba(16,185,129,.08)' };
+  const typeBorder = { daily: 'rgba(79,70,229,.2)',  welcome: 'rgba(16,185,129,.2)' };
+  const typeIcon   = { daily: '📰', welcome: '👋' };
+  const btnBase    = 'padding:5px 11px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;';
+  el.innerHTML = upcomingData.map((item, idx) => {
+    const sched = upcomingSchedule[idx];
+    const lst   = upcomingList[idx];
+    return '<div style="display:flex;align-items:center;gap:14px;padding:12px 16px;background:' + (typeBg[item.type]||'rgba(0,0,0,.03)') + ';border:1px solid ' + (typeBorder[item.type]||'var(--border)') + ';border-radius:8px">'
+      + '<div style="font-size:1.4rem;flex-shrink:0">' + (typeIcon[item.type] || '📧') + '</div>'
+      + '<div style="flex:1;min-width:0">'
+      +   '<div style="font-weight:700;font-size:.9rem;color:var(--text)">' + esc(item.label) + '</div>'
+      +   '<div style="font-size:.78rem;color:var(--muted);margin-top:2px">' + esc(item.date_label) + '</div>'
+      +   '<div style="font-size:.72rem;color:var(--muted);margin-top:1px">Template: <em>' + esc(item.template_name) + '</em></div>'
+      +   (sched ? '<div style="font-size:.72rem;color:#818cf8;margin-top:2px">📅 ' + esc(sched.date + ' ' + sched.time) + '</div>' : '')
+      +   (lst   ? '<div style="font-size:.72rem;color:#34d399;margin-top:1px">👥 ' + esc((lst.frequency||'All') + (lst.source_site ? ' · ' + lst.source_site : '')) + '</div>' : '')
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;align-items:center">'
+      +   (item.preview_html
+            ? '<button onclick="openNlPreview(' + idx + ')" style="' + btnBase + 'color:var(--muted)" onmouseover="this.style.borderColor=\'var(--indigo)\';this.style.color=\'var(--indigo)\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.color=\'var(--muted)\'"> Preview</button>'
+            : '<span style="font-size:.75rem;color:var(--muted)">No template</span>')
+      + '<button onclick="openScheduleModal(' + idx + ')" style="' + btnBase + 'color:' + (sched ? '#818cf8' : 'var(--muted)') + ';border-color:' + (sched ? 'rgba(129,140,248,.4)' : 'var(--border)') + '">📅 Schedule</button>'
+      + '<button onclick="openListModal(' + idx + ')" style="' + btnBase + 'color:' + (lst ? '#34d399' : 'var(--muted)') + ';border-color:' + (lst ? 'rgba(52,211,153,.4)' : 'var(--border)') + '">👥 List</button>'
+      + '</div></div>';
+  }).join('');
+}
+
+const upcomingSchedule = {};
+const upcomingList     = {};
+
+let schedIdx = null;
+function openScheduleModal(idx) {
+  schedIdx = idx;
+  const item = upcomingData[idx];
+  const ex = upcomingSchedule[idx];
+  document.getElementById('sched-modal-title').textContent = 'Schedule: ' + item.label;
+  document.getElementById('sched-date').value = ex ? ex.date : (item.scheduled_at ? item.scheduled_at.slice(0,10) : '');
+  document.getElementById('sched-time').value = ex ? ex.time : '08:00';
+  document.getElementById('sched-error').textContent = '';
+  document.getElementById('sched-modal').style.display = 'flex';
+}
+function closeScheduleModal() { document.getElementById('sched-modal').style.display = 'none'; }
+function saveSchedule() {
+  const date = document.getElementById('sched-date').value;
+  const time = document.getElementById('sched-time').value;
+  if (!date) { document.getElementById('sched-error').textContent = 'Pick a date.'; return; }
+  upcomingSchedule[schedIdx] = { date, time: time || '08:00' };
+  closeScheduleModal(); renderUpcoming();
+}
+
+let listIdx = null;
+async function openListModal(idx) {
+  listIdx = idx;
+  document.getElementById('list-modal-title').textContent = 'Select List: ' + upcomingData[idx].label;
+  document.getElementById('list-modal').style.display = 'flex';
+  const info = document.getElementById('list-info');
+  info.textContent = 'Loading…';
+  try {
+    const r = await fetch('/api/newsletter/subscribers?limit=500&status=active');
+    const d = await r.json();
+    const subs = d.subscribers || [];
+    const freqs = [...new Set(subs.map(s => s.frequency).filter(Boolean))].sort();
+    const sites = [...new Set(subs.map(s => s.source_site).filter(Boolean))].sort();
+    const ex = upcomingList[idx] || {};
+    document.getElementById('list-freq').innerHTML = '<option value="">All frequencies (' + subs.length + ')</option>'
+      + freqs.map(f => '<option value="' + f + '"'+(ex.frequency===f?' selected':'')+'>' + f + ' (' + subs.filter(s=>s.frequency===f).length + ')</option>').join('');
+    document.getElementById('list-site').innerHTML = '<option value="">All sites</option>'
+      + sites.map(s => '<option value="' + s + '"'+(ex.source_site===s?' selected':'')+'>' + esc(s) + ' (' + subs.filter(sub=>sub.source_site===s).length + ')</option>').join('');
+    window._listSubs = subs;
+    updateListCount();
+    info.textContent = '';
+  } catch(e) { info.textContent = 'Error loading subscribers'; }
+}
+function updateListCount() {
+  const subs = window._listSubs || [];
+  const freq = document.getElementById('list-freq').value;
+  const site = document.getElementById('list-site').value;
+  const count = subs.filter(s => (!freq||s.frequency===freq) && (!site||s.source_site===site)).length;
+  document.getElementById('list-count').textContent = count + ' subscriber' + (count!==1?'s':'') + ' will receive this';
+}
+function closeListModal() { document.getElementById('list-modal').style.display = 'none'; }
+function saveList() {
+  const freq = document.getElementById('list-freq').value;
+  const site = document.getElementById('list-site').value;
+  upcomingList[listIdx] = { frequency: freq||null, source_site: site||null };
+  closeListModal(); renderUpcoming();
+}
+
+let nlEditMode = false;
+let nlCurrentItem = null;
+let nlSelectedAdHtml = null;
+let nlSelectedAds = new Map(); // id -> ad object
+
+function openNlPreview(idx) {
+  const item = upcomingData[idx];
+  if (!item || !item.preview_html) return;
+  nlCurrentItem = item;
+  nlEditMode = false;
+  nlSelectedAdHtml = null;
+  nlSelectedAds = new Map();
+  nlAdsCache = [];
+  nlSelectedAds = new Map();
+  nlAdsCache = [];
+  document.getElementById('nl-preview-title').textContent = item.label;
+  document.getElementById('nl-preview-sub').textContent   = item.date_label + (item.template_name ? '  ·  ' + item.template_name : '');
+  renderNlPreviewHtml();
+  document.getElementById('nl-preview-edit-btn').style.display = 'inline-block';
+  document.getElementById('nl-preview-save-btn').style.display = 'none';
+  document.getElementById('nl-ad-picker').style.display = 'none';
+  document.getElementById('nl-preview-modal').style.display = 'flex';
+}
+
+function renderNlPreviewHtml() {
+  if (!nlCurrentItem) return;
+  const adHtml = nlSelectedAdHtml ||
+    '<div style="background:#f1f5f9;border-radius:6px;padding:12px;font-size:11px;color:#94a3b8;text-align:center">Ad Sidebar</div>';
+  const html = nlCurrentItem.preview_html
+    .replace(/{{ADS_SIDEBAR}}/g, adHtml)
+    .replace(/{{email}}/g, 'subscriber@example.com')
+    .replace(/{{firstName}}/g, 'Subscriber')
+    .replace(/{{plan}}/g, 'Pro');
+  document.getElementById('nl-preview-body').innerHTML = html;
+}
+
+function closeNlPreview() {
+  document.getElementById('nl-preview-modal').style.display = 'none';
+  document.getElementById('nl-preview-body').innerHTML = '';
+  nlEditMode = false;
+  nlCurrentItem = null;
+  nlSelectedAdHtml = null;
+  nlSelectedAds = new Map();
+  nlAdsCache = [];
+  nlSelectedAds = new Map();
+  nlAdsCache = [];
+}
+
+function toggleNlEditMode() {
+  nlEditMode = !nlEditMode;
+  const btn = document.getElementById('nl-preview-edit-btn');
+  const saveBtn = document.getElementById('nl-preview-save-btn');
+  const picker = document.getElementById('nl-ad-picker');
+  if (nlEditMode) {
+    btn.textContent = 'Cancel';
+    saveBtn.style.display = 'inline-block';
+    picker.style.display = 'block';
+    loadNlAds();
+  } else {
+    btn.textContent = 'Edit';
+    saveBtn.style.display = 'none';
+    picker.style.display = 'none';
+  }
+}
+
+let nlAdsCache = [];
+
+async function loadNlAds() {
+  const list = document.getElementById('nl-ad-list');
+  list.innerHTML = '<div style="color:#94a3b8;font-size:.8rem;padding:8px">Loading...</div>';
+  try {
+    const r = await fetch('/api/newsletter/ads');
+    const data = await r.json();
+    nlAdsCache = (data.ads || []).filter(a => a.placement === 'newsletter' && a.status === 'active');
+    if (!nlAdsCache.length) {
+      list.innerHTML = '<div style="color:#94a3b8;font-size:.8rem;padding:8px">No active newsletter ads</div>';
+      return;
+    }
+    renderNlAdList();
+  } catch(e) {
+    list.innerHTML = '<div style="color:#ef4444;font-size:.8rem;padding:8px">Error loading ads</div>';
+  }
+}
+
+function renderNlAdList() {
+  const list = document.getElementById('nl-ad-list');
+  list.innerHTML = nlAdsCache.map(ad => {
+    const checked = nlSelectedAds.has(ad.id);
+    const border = checked ? '2px solid #6366f1' : '2px solid #e2e8f0';
+    const bg = checked ? '#eef2ff' : '#fff';
+    const name = esc(ad.name || 'Untitled');
+    const hl = ad.headline ? '<p style="font-size:11px;color:#64748b;margin:2px 0 0">' + esc(ad.headline) + '</p>' : '';
+    const img = ad.image_url ? '<img src="' + ad.image_url + '" style="width:100%;height:48px;object-fit:cover;border-radius:4px;display:block;margin-bottom:4px">' : '';
+    const cb = checked ? '<input type="checkbox" checked style="float:right;accent-color:#6366f1;pointer-events:none">' : '<input type="checkbox" style="float:right;accent-color:#6366f1;pointer-events:none">';
+    return '<div id="nl-ad-card-' + ad.id + '" onclick="toggleNlAd(' + ad.id + ')" style="border:' + border + ';border-radius:8px;padding:10px;cursor:pointer;margin-bottom:6px;background:' + bg + '">'
+      + img + cb
+      + '<p style="font-size:13px;font-weight:700;color:#1e293b;margin:0;padding-right:24px">' + name + '</p>'
+      + hl
+      + '</div>';
+  }).join('');
+}
+
+function toggleNlAd(adId) {
+  const ad = nlAdsCache.find(a => a.id === adId);
+  if (!ad) return;
+  if (nlSelectedAds.has(adId)) {
+    nlSelectedAds.delete(adId);
+  } else {
+    nlSelectedAds.set(adId, ad);
+  }
+  renderNlAdList();
+  rebuildSelectedAdHtml();
+}
+
+function rebuildSelectedAdHtml() {
+  if (nlSelectedAds.size === 0) {
+    nlSelectedAdHtml = null;
+  } else {
+    nlSelectedAdHtml = Array.from(nlSelectedAds.values())
+      .map(ad => buildAdSidebarHtml(ad))
+      .join('<div style="height:10px"></div>');
+  }
+  renderNlPreviewHtml();
+}
+
+function buildAdSidebarHtml(ad) {
+  const bg = ad.bg_color || '#f0f4ff';
+  const accent = ad.accent_color || '#6366f1';
+  return `<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;max-width:192px;font-family:sans-serif;background:${bg}">
+    ${ad.image_url ? `<img src="${ad.image_url}" style="width:100%;display:block">` : ''}
+    <div style="padding:10px">
+      ${ad.headline ? `<div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:4px">${ad.headline}</div>` : ''}
+      ${ad.body ? `<div style="font-size:11px;color:#475569;margin-bottom:8px">${ad.body}</div>` : ''}
+      ${ad.cta_label && ad.cta_url ? `<a href="${ad.cta_url}" style="display:inline-block;background:${accent};color:#fff;font-size:11px;font-weight:600;padding:6px 12px;border-radius:5px;text-decoration:none">${ad.cta_label}</a>` : ''}
+    </div>
+  </div>`;
+}
+
+async function saveNlTemplate() {
+  if (!nlCurrentItem || !nlCurrentItem.template_slug) return alert('No template slug');
+  const saveBtn = document.getElementById('nl-preview-save-btn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+  try {
+    const newHtml = nlCurrentItem.preview_html.replace(
+      /{{ADS_SIDEBAR}}/g,
+      nlSelectedAdHtml || '{{ADS_SIDEBAR}}'
+    );
+    const r = await fetch('/api/newsletter/templates/' + nlCurrentItem.template_slug, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html_body: newHtml })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Save failed');
+    nlCurrentItem.preview_html = newHtml;
+    saveBtn.textContent = 'Saved!';
+    setTimeout(() => {
+      saveBtn.textContent = 'Save';
+      saveBtn.disabled = false;
+    }, 2000);
+  } catch(e) {
+    alert('Save failed: ' + e.message);
+    saveBtn.textContent = 'Save';
+    saveBtn.disabled = false;
+  }
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
 // ── Init ───────────────────────────────────────────────────────────────────
 fetch('/api/auth/me').then(r => { if (!r.ok) window.location = '/signin.html?next=/newsletter.html'; });
+loadUpcoming();
 loadStats();
 loadSends();
 loadSubscribers();
 </script>
+
+<!-- Newsletter Preview Modal -->
+<div id="nl-preview-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2000;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto" onclick="if(event.target===this)closeNlPreview()">
+  <div style="background:#fff;border-radius:12px;width:100%;max-width:900px;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.3)" onclick="event.stopPropagation()">
+    <div style="background:#1a1a2e;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:.85rem;font-weight:700;color:#e2e8f0" id="nl-preview-title">Preview</div>
+        <div style="font-size:.72rem;color:#64748b;margin-top:2px" id="nl-preview-sub"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="nl-preview-edit-btn" onclick="toggleNlEditMode()" style="background:#6366f1;border:none;color:#fff;font-size:.78rem;font-weight:600;padding:5px 14px;border-radius:6px;cursor:pointer">Edit</button>
+        <button id="nl-preview-save-btn" onclick="saveNlTemplate()" style="display:none;background:#10b981;border:none;color:#fff;font-size:.78rem;font-weight:600;padding:5px 14px;border-radius:6px;cursor:pointer">Save</button>
+        <button onclick="closeNlPreview()" style="background:none;border:none;color:#64748b;font-size:1.2rem;cursor:pointer;padding:4px 8px">&#10005;</button>
+      </div>
+    </div>
+    <div style="display:flex">
+      <div id="nl-preview-body" style="flex:1;max-height:75vh;overflow-y:auto"></div>
+      <div id="nl-ad-picker" style="display:none;width:220px;border-left:1px solid #e2e8f0;background:#f8fafc;padding:14px;overflow-y:auto;max-height:75vh">
+        <div style="font-size:.78rem;font-weight:700;color:#1e293b;margin-bottom:10px">&#128246; Newsletter Ads</div>
+        <div style="font-size:.72rem;color:#64748b;margin-bottom:12px">Click an ad to insert it into the template</div>
+        <div id="nl-ad-list"></div>
+        <button onclick="nlSelectedAds=new Map();nlSelectedAdHtml=null;renderNlPreviewHtml();renderNlAdList()" style="margin-top:8px;width:100%;padding:6px;font-size:.75rem;border:1px solid #e2e8f0;border-radius:6px;background:#fff;cursor:pointer;color:#64748b">&#10005; Clear ad</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Schedule Modal -->
+<div id="sched-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;align-items:center;justify-content:center" onclick="if(event.target===this)closeScheduleModal()">
+  <div style="background:var(--card);border-radius:12px;width:100%;max-width:380px;padding:28px;box-shadow:0 16px 48px rgba(0,0,0,.3)" onclick="event.stopPropagation()">
+    <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:20px" id="sched-modal-title">Schedule</div>
+    <div style="margin-bottom:14px">
+      <label>Date</label>
+      <input type="date" id="sched-date" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:.9rem;color:var(--text);background:#fff">
+    </div>
+    <div style="margin-bottom:6px">
+      <label>Time</label>
+      <input type="time" id="sched-time" value="08:00" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:.9rem;color:var(--text);background:#fff">
+    </div>
+    <div id="sched-error" style="color:var(--danger);font-size:.8rem;min-height:18px;margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeScheduleModal()" style="padding:8px 18px;border:1px solid var(--border);border-radius:7px;background:none;color:var(--muted);font-size:.875rem;cursor:pointer">Cancel</button>
+      <button onclick="saveSchedule()" style="padding:8px 18px;background:var(--indigo);border:none;border-radius:7px;color:#fff;font-size:.875rem;font-weight:600;cursor:pointer">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- List Modal -->
+<div id="list-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;align-items:center;justify-content:center" onclick="if(event.target===this)closeListModal()">
+  <div style="background:var(--card);border-radius:12px;width:100%;max-width:420px;padding:28px;box-shadow:0 16px 48px rgba(0,0,0,.3)" onclick="event.stopPropagation()">
+    <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:20px" id="list-modal-title">Select List</div>
+    <div id="list-info" style="font-size:.8rem;color:var(--muted);margin-bottom:12px"></div>
+    <div style="margin-bottom:14px">
+      <label>Frequency</label>
+      <select id="list-freq" onchange="updateListCount()" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:.9rem;color:var(--text);background:#fff"></select>
+    </div>
+    <div style="margin-bottom:16px">
+      <label>Source site</label>
+      <select id="list-site" onchange="updateListCount()" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:.9rem;color:var(--text);background:#fff"></select>
+    </div>
+    <div id="list-count" style="font-size:.82rem;font-weight:600;color:#34d399;margin-bottom:18px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeListModal()" style="padding:8px 18px;border:1px solid var(--border);border-radius:7px;background:none;color:var(--muted);font-size:.875rem;cursor:pointer">Cancel</button>
+      <button onclick="saveList()" style="padding:8px 18px;background:var(--indigo);border:none;border-radius:7px;color:#fff;font-size:.875rem;font-weight:600;cursor:pointer">Save</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
