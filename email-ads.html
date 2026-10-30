@@ -3,14 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Newsletter Ads — Eureach Admin</title>
+<title>Ad Library — Eureach</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/api.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
-.topbar{background:#1e293b;border-bottom:1px solid #334155;padding:10px 20px;display:flex;align-items:center;gap:14px}
-.topbar a{color:#94a3b8;font-size:.82rem;text-decoration:none}
-.topbar a:hover{color:#fff}
-.topbar h1{font-size:.95rem;font-weight:700;color:#fff}
+.nav-dropdown{position:relative}
+.nav-dropdown-toggle{font-size:.875rem;font-weight:500;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;background:none;border:none;padding:0;transition:color .2s;white-space:nowrap}
+.nav-dropdown-toggle:hover{color:var(--white)}
+.nav-dropdown-toggle svg{width:10px;height:10px;transition:transform .2s}
+.nav-dropdown:hover .nav-dropdown-toggle svg{transform:rotate(180deg)}
+.nav-dropdown-menu{display:none;position:absolute;top:100%;left:0;padding-top:12px;min-width:190px;z-index:200}
+.nav-dropdown-menu-inner{background:rgba(10,16,36,.97);border:1px solid var(--border);border-radius:12px;padding:8px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.nav-dropdown:hover .nav-dropdown-menu{display:block}
+.nav-dropdown-menu a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:.85rem;color:var(--muted);text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
+.nav-dropdown-menu a:hover{background:rgba(255,255,255,.07);color:var(--white)}
+.nav-dropdown-menu .ndm-icon{font-size:1rem;width:20px;text-align:center}
+.nav-dropdown-divider{height:1px;background:var(--border);margin:6px 0}
+.page-header{padding:18px 20px 0;max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.page-header h1{font-size:1.1rem;font-weight:700;color:#fff}
+.page-msg{font-size:.8rem;margin-left:auto}
 .spacer{flex:1}
 .btn{padding:7px 16px;border-radius:5px;border:none;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s}
 .btn-primary{background:#4f46e5;color:#fff}
@@ -22,43 +35,99 @@ body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;min-height:10
 .btn-sm{font-size:.75rem;padding:4px 12px;border-radius:4px;border:none;cursor:pointer;font-weight:700}
 .btn-edit{background:#334155;color:#e2e8f0}
 .btn-edit:hover{background:#475569}
-.main{max-width:1100px;margin:0 auto;padding:24px 20px;display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start}
-.panel{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:20px}
-.panel h2{font-size:.85rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:16px}
-.field{margin-bottom:12px}
-.field label{display:block;font-size:.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
-.field input,.field textarea,.field select{width:100%;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:8px 10px;color:#e2e8f0;font-size:.85rem;outline:none;transition:border-color .15s}
+.main{max-width:1200px;margin:0 auto;padding:24px 20px;display:grid;grid-template-columns:400px 1fr;gap:24px;align-items:start}
+.panel{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:22px}
+.panel h2{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748b;margin-bottom:18px}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.field input,.field textarea,.field select{width:100%;background:#0f172a;border:1px solid #334155;border-radius:6px;padding:8px 11px;color:#e2e8f0;font-size:.85rem;outline:none;transition:border-color .15s;-webkit-appearance:none}
 .field input:focus,.field textarea:focus,.field select:focus{border-color:#4f46e5}
 .field textarea{min-height:72px;resize:vertical;font-family:inherit}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.preview-box{border:1px solid #334155;border-radius:6px;overflow:hidden;background:#fff}
-.preview-label{font-size:.7rem;color:#64748b;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.placement-badges{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.pbadge{font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:12px;border:1px solid transparent;cursor:default}
+.placement-newsletter{background:rgba(79,70,229,.15);color:#818cf8;border-color:rgba(79,70,229,.3)}
+.placement-kinkdate{background:rgba(236,72,153,.15);color:#f472b6;border-color:rgba(236,72,153,.3)}
+.placement-facebook{background:rgba(59,130,246,.15);color:#60a5fa;border-color:rgba(59,130,246,.3)}
+.placement-linkedin{background:rgba(14,165,233,.15);color:#38bdf8;border-color:rgba(14,165,233,.3)}
+.placement-reel{background:rgba(168,85,247,.15);color:#c084fc;border-color:rgba(168,85,247,.3)}
+
+/* Preview area */
+.preview-wrap{background:#0f172a;}
+.preview-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.preview-title{font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.8px}
+.preview-dims{font-size:.68rem;color:#475569}
+.preview-stage{display:flex;align-items:flex-start;justify-content:center;min-height:120px;padding:8px 0}
+.preview-frame{transition:width .25s,max-width .25s}
+
+/* Ads list */
 .ads-grid{display:flex;flex-direction:column;gap:10px}
-.ad-card{background:#1e293b;border:1px solid #334155;border-radius:7px;overflow:hidden}
-.ad-card-header{padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer}
+.ad-card{background:#0f172a;border:1px solid #334155;border-radius:8px;overflow:hidden;transition:border-color .15s}
+.ad-card:hover{border-color:#475569}
+.ad-card-header{padding:13px 16px;display:flex;align-items:center;gap:10px;cursor:pointer}
 .ad-name{font-size:.88rem;font-weight:700;color:#e2e8f0;flex:1}
-.ad-status{font-size:.68rem;padding:2px 8px;border-radius:10px;font-weight:700}
+.ad-status{font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:700}
 .status-active{background:#064e3b;color:#6ee7b7}
 .status-inactive{background:#1f2937;color:#9ca3af}
-.ad-body{display:none;padding:0 16px 16px;gap:12px}
+.ad-body{display:none;padding:0 16px 16px;gap:14px}
 .ad-body.open{display:flex}
-.ad-preview{flex:0 0 140px}
-.ad-details{flex:1;font-size:.8rem;color:#94a3b8;line-height:1.6}
-.ad-actions{display:flex;gap:8px;margin-top:10px}
+.ad-details{flex:1;font-size:.8rem;color:#94a3b8;line-height:1.7}
+.ad-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .empty{padding:40px;text-align:center;color:#475569;font-size:.85rem}
 .msg{font-size:.8rem;min-height:20px;margin-top:8px}
 .ok{color:#86efac}.err{color:#fca5a5}
 .color-row{display:flex;align-items:center;gap:8px}
-.color-swatch{width:28px;height:28px;border-radius:4px;border:1px solid #334155;cursor:pointer;flex-shrink:0}
+.chevron{transition:transform .2s;color:#475569;font-size:.8rem}
+.open-chevron .chevron{transform:rotate(180deg)}
+#img-dropzone.dz-over{border-color:#4f46e5;background:rgba(79,70,229,.06)}
+@media(max-width:860px){.main{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <a href="/email-builder.html">← Email Builder</a>
-  <h1>Newsletter Ads</h1>
-  <div class="spacer"></div>
-  <span id="msg" class="msg"></span>
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">eureach<span class="dot">.</span>eu</a>
+    <div class="nav-links" id="nav-links-guest">
+      <a href="membership.html" data-i18n="lp.navPricing">Τιμές</a>
+      <a href="/tools">Εργαλεία</a>
+      <a href="blog.html" data-i18n="lp.navBlog">Blog</a>
+    </div>
+    <div class="nav-links" id="nav-links-user" style="display:none">
+      <div class="nav-dropdown">
+        <button class="nav-dropdown-toggle">
+          Κεντρικό
+          <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg>
+        </button>
+        <div class="nav-dropdown-menu">
+          <div class="nav-dropdown-menu-inner">
+            <a href="leads.html"><span class="ndm-icon">🔍</span><span>Lead Finder</span></a>
+            <a href="articles.html"><span class="ndm-icon">✍️</span><span>Άρθρα</span></a>
+            <a href="competitors.html"><span class="ndm-icon">📡</span><span>Ανταγωνιστές</span></a>
+            <a href="citations.html"><span class="ndm-icon">🔗</span><span>Αναφορές</span></a>
+            <a href="marketing.html"><span class="ndm-icon">🚀</span><span>Marketing Creator</span></a>
+            <div class="nav-dropdown-divider"></div>
+            <a href="youtube.html"><span class="ndm-icon">🎥</span><span>Πύλη Δημιουργού</span></a>
+          </div>
+        </div>
+      </div>
+      <a href="/tools" style="color:var(--white);font-weight:600">Εργαλεία</a>
+      <a href="audit.html">AI Audit</a>
+      <a href="blog.html">Blog</a>
+      <a href="membership.html">Τιμές</a>
+      <a href="/dashboard.html" style="color:var(--accent);font-weight:600">Dashboard</a>
+    </div>
+    <div class="nav-cta">
+      <a href="profile.html" class="btn btn-ghost" id="nav-profile-btn" style="font-size:.78rem;padding:7px 14px;display:none"></a>
+      <a href="signin.html" class="btn btn-ghost" id="nav-signin-btn" style="font-size:.78rem;padding:7px 14px">Σύνδεση</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <h1>Ad Library</h1>
+  <span id="msg" class="page-msg msg"></span>
 </div>
 
 <div class="main">
@@ -69,25 +138,56 @@ body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;min-height:10
     <input type="hidden" id="edit-id">
 
     <div class="field">
+      <label>Placement</label>
+      <select id="f-placement" onchange="onPlacementChange()">
+        <option value="newsletter">Newsletter sidebar</option>
+        <option value="kinkdate">KinkDate.com banner</option>
+        <option value="facebook">Facebook ad</option>
+        <option value="linkedin">LinkedIn ad</option>
+        <option value="reel">Reel (Instagram / Facebook)</option>
+      </select>
+      <div id="placement-dim-hint" style="margin-top:5px;font-size:.72rem;color:#475569;display:flex;align-items:center;gap:5px">
+        <span id="placement-dim-icon">📐</span>
+        <span id="placement-dim-text"></span>
+      </div>
+    </div>
+
+    <div class="field">
       <label>Ad Name (internal)</label>
-      <input id="f-name" placeholder="e.g. Spotlight Q1 Banner">
+      <input id="f-name" placeholder="e.g. Spring promo — newsletter">
     </div>
     <div class="field">
       <label>Headline</label>
-      <input id="f-headline" placeholder="Short punchy headline">
+      <input id="f-headline" placeholder="Short punchy headline" oninput="refreshPreview()">
     </div>
     <div class="field">
-      <label>Body text</label>
-      <textarea id="f-body" placeholder="2–3 sentence description…"></textarea>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <label style="margin-bottom:0">Body text</label>
+        <button type="button" id="ai-write-btn" onclick="aiWriteBody()" title="Available on paid plans" style="font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:5px;border:1px solid #334155;background:#1e293b;color:#64748b;cursor:not-allowed;display:flex;align-items:center;gap:5px;transition:all .15s;opacity:.5">
+          ✨ Let AI write this
+        </button>
+      </div>
+      <textarea id="f-body" placeholder="2–3 sentence description…" oninput="refreshPreview()"></textarea>
     </div>
     <div class="field">
-      <label>Image URL (optional)</label>
-      <input id="f-image" placeholder="https://…" oninput="refreshPreview()">
+      <label>Image</label>
+      <div id="img-dropzone" onclick="document.getElementById('f-image-file').click()" ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)" style="border:2px dashed #334155;border-radius:8px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;background:#0a0f1e;position:relative">
+        <input type="file" id="f-image-file" accept="image/*" style="display:none" onchange="dzFile(this.files[0])">
+        <div id="img-dropzone-thumb" style="display:none;margin-bottom:10px"><img id="img-thumb" style="max-height:90px;max-width:100%;border-radius:4px;object-fit:contain"></div>
+        <div id="img-dropzone-hint" style="font-size:.78rem;color:#475569;line-height:1.6;pointer-events:none">
+          <div style="font-size:1.4rem;margin-bottom:4px">🖼️</div>
+          Drag &amp; drop an image here<br>
+          <span style="color:#64748b">or</span>
+        </div>
+        <button type="button" onclick="event.stopPropagation();document.getElementById('f-image-file').click()" style="margin-top:6px;padding:5px 16px;background:#1e293b;border:1px solid #334155;border-radius:5px;color:#94a3b8;font-size:.78rem;font-weight:600;cursor:pointer">Browse</button>
+        <div id="img-upload-status" style="font-size:.72rem;color:#64748b;margin-top:6px;min-height:14px"></div>
+      </div>
+      <input id="f-image" placeholder="…or paste an image URL" oninput="refreshPreview()" style="margin-top:7px">
     </div>
     <div class="row">
       <div class="field">
         <label>CTA Label</label>
-        <input id="f-cta-label" placeholder="Learn More" value="Learn More">
+        <input id="f-cta-label" placeholder="Learn More" value="Learn More" oninput="refreshPreview()">
       </div>
       <div class="field">
         <label>CTA URL</label>
@@ -98,70 +198,213 @@ body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;min-height:10
       <div class="field">
         <label>Accent color</label>
         <div class="color-row">
-          <input type="color" id="f-accent" value="#4f46e5" oninput="syncColor('f-accent','f-accent-hex');refreshPreview()" style="width:38px;height:34px;padding:2px;border-radius:4px;border:1px solid #334155;background:#0f172a;cursor:pointer">
-          <input id="f-accent-hex" value="#4f46e5" maxlength="7" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 8px;color:#e2e8f0;font-size:.82rem;outline:none" oninput="syncColor('f-accent-hex','f-accent');refreshPreview()">
+          <input type="color" id="f-accent" value="#4f46e5" oninput="syncColor('f-accent','f-accent-hex');refreshPreview()" style="width:36px;height:34px;padding:2px;border-radius:4px;border:1px solid #334155;background:#0f172a;cursor:pointer">
+          <input id="f-accent-hex" value="#4f46e5" maxlength="7" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:7px 8px;color:#e2e8f0;font-size:.82rem;outline:none" oninput="syncColor('f-accent-hex','f-accent');refreshPreview()">
         </div>
       </div>
       <div class="field">
         <label>Background color</label>
         <div class="color-row">
-          <input type="color" id="f-bg" value="#f0f4ff" oninput="syncColor('f-bg','f-bg-hex');refreshPreview()" style="width:38px;height:34px;padding:2px;border-radius:4px;border:1px solid #334155;background:#0f172a;cursor:pointer">
-          <input id="f-bg-hex" value="#f0f4ff" maxlength="7" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:6px 8px;color:#e2e8f0;font-size:.82rem;outline:none" oninput="syncColor('f-bg-hex','f-bg');refreshPreview()">
+          <input type="color" id="f-bg" value="#f0f4ff" oninput="syncColor('f-bg','f-bg-hex');refreshPreview()" style="width:36px;height:34px;padding:2px;border-radius:4px;border:1px solid #334155;background:#0f172a;cursor:pointer">
+          <input id="f-bg-hex" value="#f0f4ff" maxlength="7" style="flex:1;background:#0f172a;border:1px solid #334155;border-radius:5px;padding:7px 8px;color:#e2e8f0;font-size:.82rem;outline:none" oninput="syncColor('f-bg-hex','f-bg');refreshPreview()">
         </div>
       </div>
     </div>
 
-    <div style="margin-top:16px">
-      <div class="preview-label">Preview (30% email column)</div>
-      <div class="preview-box" id="ad-preview" style="width:180px"></div>
-    </div>
-
-    <div style="display:flex;gap:10px;margin-top:16px">
+    <div style="display:flex;gap:10px;margin-top:18px">
       <button class="btn btn-primary" onclick="saveAd()">Save Ad</button>
       <button class="btn btn-ghost" onclick="resetForm()">Cancel</button>
     </div>
   </div>
 
-  <!-- Right: Ads list -->
-  <div class="panel">
-    <h2>Ad Library</h2>
-    <div id="ads-list"><div class="empty">Loading…</div></div>
+  <!-- Right: Preview + Ads list -->
+  <div style="display:flex;flex-direction:column;gap:16px">
+
+    <!-- Live preview -->
+    <div class="panel preview-wrap" style="margin-top:0;border-radius:10px">
+      <div class="preview-header">
+        <span class="preview-title">Preview</span>
+        <span class="preview-dims" id="preview-dims">192 × auto</span>
+      </div>
+      <div class="preview-stage">
+        <div id="preview-frame" class="preview-frame"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Ad Library</h2>
+      <div id="ads-list"><div class="empty">Loading…</div></div>
+    </div>
+
   </div>
 
 </div>
 
+<!-- Place Ad Modal -->
+<div id="place-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;align-items:center;justify-content:center" onclick="if(event.target===this)closePlaceModal()">
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:28px;width:100%;max-width:420px;margin:20px">
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px">📅 Place Ad in Newsletter</h3>
+    <p style="font-size:.8rem;color:#64748b;margin-bottom:20px">Choose a date for your ad to appear in the eureach newsletter. Placement requires admin approval.</p>
+
+    <div style="margin-bottom:16px">
+      <label style="display:block;font-size:.72rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Scheduled Date</label>
+      <input type="date" id="place-date" style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:6px;padding:9px 11px;color:#e2e8f0;font-size:.9rem;outline:none">
+    </div>
+
+    <div style="background:#0f172a;border:1px solid #334155;border-radius:8px;padding:12px 14px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:.82rem;color:#94a3b8">Credit cost</span>
+      <span style="font-size:1rem;font-weight:700;color:#fbbf24">40 credits</span>
+    </div>
+
+    <div style="background:rgba(79,70,229,.08);border:1px solid rgba(79,70,229,.2);border-radius:8px;padding:10px 14px;margin-bottom:20px;font-size:.78rem;color:#a5b4fc;line-height:1.6">
+      ℹ️ Your ad will be reviewed by the eureach team. You'll receive a confirmation once approved. Credits are charged immediately upon submission.
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="confirmPlace()" style="flex:1;padding:9px;background:#4f46e5;color:#fff;border:none;border-radius:6px;font-size:.85rem;font-weight:700;cursor:pointer">Submit &amp; Pay 40 credits</button>
+      <button onclick="closePlaceModal()" style="padding:9px 16px;background:transparent;color:#94a3b8;border:1px solid #334155;border-radius:6px;font-size:.85rem;cursor:pointer">Cancel</button>
+    </div>
+    <div id="place-modal-msg" style="font-size:.78rem;min-height:18px;margin-top:10px;text-align:center"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 let ads = [];
-let expanded = null;
+
+/* ── placement config ───────────────────────────────────────── */
+const PLACEMENTS = {
+  newsletter: { label: 'Newsletter',  width: 192,  ratio: null,   dims: '192 × auto px',         hint: 'Sidebar column inside email campaigns' },
+  kinkdate:   { label: 'KinkDate',    width: 468,  ratio: null,   dims: '468 × 60 px',            hint: 'Full-width banner on KinkDate.com' },
+  facebook:   { label: 'Facebook',    width: 300,  ratio: 1,      dims: '1080 × 1080 px (1:1)',   hint: 'Square post / feed ad' },
+  linkedin:   { label: 'LinkedIn',    width: 320,  ratio: 1.91,   dims: '1200 × 628 px (1.91:1)', hint: 'Landscape sponsored content' },
+  reel:       { label: 'Reel',        width: 200,  ratio: 0.5625, dims: '1080 × 1920 px (9:16)',  hint: 'Instagram & Facebook vertical Reel' },
+};
+
+function placementClass(p) { return 'placement-' + (p||'newsletter'); }
+
+function onPlacementChange() { refreshPreview(); updateDimsLabel(); }
+
+function updateDimsLabel() {
+  const p   = document.getElementById('f-placement').value;
+  const cfg = PLACEMENTS[p] || PLACEMENTS.newsletter;
+  document.getElementById('placement-dim-text').textContent = cfg.dims + ' — ' + cfg.hint;
+  document.getElementById('preview-dims').textContent = cfg.dims;
+}
+
+/* ── image upload / drag-drop ───────────────────────────────── */
+function dzOver(e) { e.preventDefault(); document.getElementById('img-dropzone').classList.add('dz-over'); }
+function dzLeave()  { document.getElementById('img-dropzone').classList.remove('dz-over'); }
+function dzDrop(e)  { e.preventDefault(); dzLeave(); if (e.dataTransfer.files[0]) dzFile(e.dataTransfer.files[0]); }
+
+async function dzFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  setImgStatus('Uploading…');
+  showThumb(URL.createObjectURL(file));
+  try {
+    const r = await fetch('/api/articles/upload-image', {
+      method: 'POST',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    }).then(r => r.json());
+    if (r.url) {
+      document.getElementById('f-image').value = r.url;
+      setImgStatus('✓ Uploaded');
+      refreshPreview();
+    } else {
+      setImgStatus('Upload failed');
+    }
+  } catch { setImgStatus('Upload error'); }
+}
+
+function setImgStatus(txt) { document.getElementById('img-upload-status').textContent = txt; }
+
+function showThumb(src) {
+  document.getElementById('img-thumb').src = src;
+  document.getElementById('img-dropzone-thumb').style.display = '';
+  document.getElementById('img-dropzone-hint').style.display  = 'none';
+}
+
+function clearImageField() {
+  document.getElementById('f-image').value = '';
+  document.getElementById('img-thumb').src = '';
+  document.getElementById('img-dropzone-thumb').style.display = 'none';
+  document.getElementById('img-dropzone-hint').style.display  = '';
+  setImgStatus('');
+  refreshPreview();
+}
 
 function syncColor(srcId, dstId) {
-  const src = document.getElementById(srcId);
-  const dst = document.getElementById(dstId);
-  if (!src || !dst) return;
-  const v = src.value;
-  if (/^#[0-9a-fA-F]{6}$/.test(v)) dst.value = v;
+  const src = document.getElementById(srcId), dst = document.getElementById(dstId);
+  if (/^#[0-9a-fA-F]{6}$/.test(src.value)) dst.value = src.value;
 }
 
 function refreshPreview() {
-  const headline = document.getElementById('f-headline').value;
-  const body     = document.getElementById('f-body').value;
-  const image    = document.getElementById('f-image').value;
-  const cta      = document.getElementById('f-cta-label').value;
-  const accent   = document.getElementById('f-accent-hex').value || '#4f46e5';
-  const bg       = document.getElementById('f-bg-hex').value || '#f0f4ff';
-  document.getElementById('ad-preview').innerHTML = renderAdHtml({headline,body,image_url:image,cta_label:cta,accent_color:accent,bg_color:bg});
+  const placement = document.getElementById('f-placement').value;
+  const ad = {
+    headline:     document.getElementById('f-headline').value,
+    body:         document.getElementById('f-body').value,
+    image_url:    document.getElementById('f-image').value,
+    cta_label:    document.getElementById('f-cta-label').value,
+    accent_color: document.getElementById('f-accent-hex').value || '#4f46e5',
+    bg_color:     document.getElementById('f-bg-hex').value     || '#f0f4ff',
+  };
+  const frame = document.getElementById('preview-frame');
+  const cfg   = PLACEMENTS[placement] || PLACEMENTS.newsletter;
+  const w     = Math.min(cfg.width, 340);
+  frame.style.width    = w + 'px';
+  frame.style.maxWidth = '100%';
+  frame.innerHTML      = renderAdHtml(ad, placement);
 }
 
-function renderAdHtml(ad) {
-  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function renderAdHtml(ad, placement) {
+  const esc    = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const accent = ad.accent_color || '#4f46e5';
   const bg     = ad.bg_color     || '#f0f4ff';
-  return `<div style="background:${bg};border-top:3px solid ${accent};padding:14px;font-family:Arial,sans-serif">
-    ${ad.image_url ? `<img src="${esc(ad.image_url)}" style="width:100%;height:auto;display:block;margin-bottom:10px;border-radius:3px">` : ''}
-    ${ad.headline  ? `<div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:6px;line-height:1.3">${esc(ad.headline)}</div>` : ''}
-    ${ad.body      ? `<div style="font-size:12px;color:#555;line-height:1.5;margin-bottom:10px">${esc(ad.body)}</div>` : ''}
-    ${ad.cta_label ? `<div style="text-align:center"><a href="${esc(ad.cta_url||'#')}" style="display:inline-block;padding:7px 14px;background:${accent};color:#fff;border-radius:4px;font-size:12px;font-weight:700;text-decoration:none">${esc(ad.cta_label)}</a></div>` : ''}
-  </div>`;
+  const p      = placement || 'newsletter';
+
+  if (p === 'newsletter' || p === 'kinkdate') {
+    // Vertical card
+    return `<div style="background:${bg};border-top:3px solid ${accent};padding:14px;font-family:Arial,sans-serif;border-radius:4px">
+      ${ad.image_url ? `<img src="${esc(ad.image_url)}" style="width:100%;height:auto;display:block;margin-bottom:10px;border-radius:3px">` : ''}
+      ${ad.headline  ? `<div style="font-size:13px;font-weight:700;color:#1a1a2e;margin-bottom:6px;line-height:1.3">${esc(ad.headline)}</div>` : ''}
+      ${ad.body      ? `<div style="font-size:12px;color:#444;line-height:1.5;margin-bottom:10px">${esc(ad.body)}</div>` : ''}
+      ${ad.cta_label ? `<div style="text-align:center"><a href="${esc(ad.cta_url||'#')}" style="display:inline-block;padding:7px 16px;background:${accent};color:#fff;border-radius:4px;font-size:12px;font-weight:700;text-decoration:none">${esc(ad.cta_label)}</a></div>` : ''}
+    </div>`;
+  }
+
+  if (p === 'facebook' || p === 'linkedin') {
+    const ratio   = p === 'facebook' ? 1 : 1.91;
+    const previewW = 300;
+    const imgH    = Math.round(previewW / ratio);
+    const imgStyle = `width:100%;height:${imgH}px;object-fit:cover;display:block`;
+    const placeholder = `<div style="width:100%;height:${imgH}px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#94a3b8">${p === 'facebook' ? '1080 × 1080' : '1200 × 628'}</div>`;
+    return `<div style="background:${bg};border:1px solid #e2e8f0;font-family:Arial,sans-serif;border-radius:6px;overflow:hidden">
+      ${ad.image_url ? `<img src="${esc(ad.image_url)}" style="${imgStyle}">` : placeholder}
+      <div style="padding:12px 14px">
+        ${ad.headline ? `<div style="font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:5px;line-height:1.3">${esc(ad.headline)}</div>` : ''}
+        ${ad.body     ? `<div style="font-size:12px;color:#555;line-height:1.5;margin-bottom:10px">${esc(ad.body)}</div>` : ''}
+        ${ad.cta_label ? `<a href="${esc(ad.cta_url||'#')}" style="display:inline-block;padding:7px 18px;background:${accent};color:#fff;border-radius:5px;font-size:12px;font-weight:700;text-decoration:none">${esc(ad.cta_label)}</a>` : ''}
+      </div>
+    </div>`;
+  }
+
+  if (p === 'reel') {
+    const previewW = 200, previewH = Math.round(previewW / 0.5625);
+    const imgStyle = `width:100%;height:${previewH}px;object-fit:cover;display:block`;
+    const placeholder = `<div style="width:100%;height:${previewH}px;background:linear-gradient(160deg,#1e1b4b,#4c1d95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:11px;color:#a78bfa">
+      <div style="font-size:22px">🎬</div><div>1080 × 1920</div></div>`;
+    return `<div style="font-family:Arial,sans-serif;border-radius:8px;overflow:hidden;position:relative">
+      ${ad.image_url ? `<img src="${esc(ad.image_url)}" style="${imgStyle}">` : placeholder}
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.75));padding:16px 12px 12px">
+        ${ad.headline ? `<div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;line-height:1.3">${esc(ad.headline)}</div>` : ''}
+        ${ad.body     ? `<div style="font-size:11px;color:rgba(255,255,255,.8);line-height:1.4;margin-bottom:8px">${esc(ad.body)}</div>` : ''}
+        ${ad.cta_label ? `<a href="${esc(ad.cta_url||'#')}" style="display:inline-block;padding:5px 14px;background:${accent};color:#fff;border-radius:20px;font-size:11px;font-weight:700;text-decoration:none">${esc(ad.cta_label)}</a>` : ''}
+      </div>
+    </div>`;
+  }
+
+  return '';
 }
 
 async function loadAds() {
@@ -172,101 +415,109 @@ async function loadAds() {
 
 function renderList() {
   const el = document.getElementById('ads-list');
-  if (!ads.length) { el.innerHTML = '<div class="empty">No ads yet. Create your first ad →</div>'; return; }
-  el.innerHTML = ads.map(a => `
+  if (!ads.length) { el.innerHTML = '<div class="empty">No ads yet — create your first one →</div>'; return; }
+  el.innerHTML = ads.map(a => {
+    const cfg = PLACEMENTS[a.placement] || PLACEMENTS.newsletter;
+    const previewW = Math.min(cfg.width, 200);
+    return `
     <div class="ad-card" id="card-${a.id}">
-      <div class="ad-card-header" onclick="toggleCard(${a.id})">
+      <div class="ad-card-header" id="hdr-${a.id}" onclick="toggleCard(${a.id})">
+        ${a.image_url ? `<img src="${esc(a.image_url)}" style="width:38px;height:38px;object-fit:cover;border-radius:5px;flex-shrink:0;border:1px solid #334155">` : `<div style="width:38px;height:38px;border-radius:5px;background:#1e293b;border:1px solid #334155;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">🖼️</div>`}
         <span class="ad-name">${esc(a.name)}</span>
+        <span class="pbadge ${placementClass(a.placement)}">${cfg.label}</span>
         <span class="ad-status ${a.status==='active'?'status-active':'status-inactive'}">${a.status}</span>
-        <span style="color:#475569;font-size:.8rem">▾</span>
+        <span class="chevron">▾</span>
       </div>
       <div class="ad-body" id="body-${a.id}">
-        <div class="ad-preview" style="width:150px;flex-shrink:0">
-          ${renderAdHtml(a)}
-        </div>
+        <div style="width:${previewW}px;flex-shrink:0">${renderAdHtml(a, a.placement)}</div>
         <div class="ad-details">
           ${a.headline ? `<div><strong>Headline:</strong> ${esc(a.headline)}</div>` : ''}
           ${a.cta_url  ? `<div><strong>CTA:</strong> ${esc(a.cta_label)} → ${esc(a.cta_url)}</div>` : ''}
           <div class="ad-actions">
             <button class="btn-sm btn-edit" onclick="editAd(${a.id})">Edit</button>
             <button class="btn-sm btn-edit" onclick="toggleStatus(${a.id},'${a.status==='active'?'inactive':'active'}')">${a.status==='active'?'Deactivate':'Activate'}</button>
+            <button class="btn-sm" onclick="downloadAd(${a.id})" style="background:#0f4c3a;color:#6ee7b7;border:1px solid #065f46">⬇ Download</button>
+            <button class="btn-sm" onclick="openPlaceModal(${a.id})" style="background:#312e81;color:#a5b4fc;border:1px solid #4f46e5">📅 Place</button>
             <button class="btn btn-danger" onclick="deleteAd(${a.id})">Delete</button>
           </div>
+          <div id="placements-${a.id}" style="margin-top:10px;font-size:.75rem;color:#64748b"></div>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function toggleCard(id) {
   const body = document.getElementById('body-' + id);
+  const hdr  = document.getElementById('hdr-' + id);
   if (!body) return;
   const isOpen = body.classList.contains('open');
   document.querySelectorAll('.ad-body.open').forEach(el => el.classList.remove('open'));
-  if (!isOpen) body.classList.add('open');
+  document.querySelectorAll('.ad-card-header').forEach(el => el.classList.remove('open-chevron'));
+  if (!isOpen) { body.classList.add('open'); hdr.classList.add('open-chevron'); loadPlacements(id); }
 }
 
 function editAd(id) {
   const ad = ads.find(a => a.id === id);
   if (!ad) return;
-  document.getElementById('edit-id').value        = ad.id;
-  document.getElementById('f-name').value         = ad.name         || '';
-  document.getElementById('f-headline').value     = ad.headline     || '';
-  document.getElementById('f-body').value         = ad.body         || '';
-  document.getElementById('f-image').value        = ad.image_url    || '';
-  document.getElementById('f-cta-label').value    = ad.cta_label    || '';
-  document.getElementById('f-cta-url').value      = ad.cta_url      || '';
-  document.getElementById('f-accent').value       = ad.accent_color || '#4f46e5';
-  document.getElementById('f-accent-hex').value   = ad.accent_color || '#4f46e5';
-  document.getElementById('f-bg').value           = ad.bg_color     || '#f0f4ff';
-  document.getElementById('f-bg-hex').value       = ad.bg_color     || '#f0f4ff';
+  document.getElementById('edit-id').value      = ad.id;
+  document.getElementById('f-placement').value  = ad.placement    || 'newsletter';
+  document.getElementById('f-name').value        = ad.name         || '';
+  document.getElementById('f-headline').value    = ad.headline     || '';
+  document.getElementById('f-body').value        = ad.body         || '';
+  document.getElementById('f-image').value       = ad.image_url    || '';
+  if (ad.image_url) showThumb(ad.image_url); else clearImageField();
+  document.getElementById('f-cta-label').value   = ad.cta_label    || '';
+  document.getElementById('f-cta-url').value     = ad.cta_url      || '';
+  document.getElementById('f-accent').value      = ad.accent_color || '#4f46e5';
+  document.getElementById('f-accent-hex').value  = ad.accent_color || '#4f46e5';
+  document.getElementById('f-bg').value          = ad.bg_color     || '#f0f4ff';
+  document.getElementById('f-bg-hex').value      = ad.bg_color     || '#f0f4ff';
   document.getElementById('form-title').textContent = 'Edit Ad';
-  refreshPreview();
-  window.scrollTo(0,0);
+  onPlacementChange();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function resetForm() {
-  document.getElementById('edit-id').value     = '';
-  document.getElementById('f-name').value      = '';
-  document.getElementById('f-headline').value  = '';
-  document.getElementById('f-body').value      = '';
-  document.getElementById('f-image').value     = '';
-  document.getElementById('f-cta-label').value = 'Learn More';
-  document.getElementById('f-cta-url').value   = '';
-  document.getElementById('f-accent').value    = '#4f46e5';
-  document.getElementById('f-accent-hex').value= '#4f46e5';
-  document.getElementById('f-bg').value        = '#f0f4ff';
-  document.getElementById('f-bg-hex').value    = '#f0f4ff';
+  document.getElementById('edit-id').value      = '';
+  document.getElementById('f-placement').value  = 'newsletter';
+  document.getElementById('f-name').value        = '';
+  document.getElementById('f-headline').value    = '';
+  document.getElementById('f-body').value        = '';
+  clearImageField();
+  document.getElementById('f-cta-label').value   = 'Learn More';
+  document.getElementById('f-cta-url').value     = '';
+  document.getElementById('f-accent').value      = '#4f46e5';
+  document.getElementById('f-accent-hex').value  = '#4f46e5';
+  document.getElementById('f-bg').value          = '#f0f4ff';
+  document.getElementById('f-bg-hex').value      = '#f0f4ff';
   document.getElementById('form-title').textContent = 'Create New Ad';
-  refreshPreview();
+  onPlacementChange();
 }
 
 async function saveAd() {
-  const name      = document.getElementById('f-name').value.trim();
+  const name = document.getElementById('f-name').value.trim();
   if (!name) { msg('Ad name is required', true); return; }
-  const editId    = document.getElementById('edit-id').value;
-  const payload   = {
+  const editId  = document.getElementById('edit-id').value;
+  const payload = {
     name,
-    headline:     document.getElementById('f-headline').value.trim() || null,
-    body:         document.getElementById('f-body').value.trim()     || null,
-    image_url:    document.getElementById('f-image').value.trim()    || null,
-    cta_label:    document.getElementById('f-cta-label').value.trim()|| null,
-    cta_url:      document.getElementById('f-cta-url').value.trim()  || null,
-    accent_color: document.getElementById('f-accent-hex').value      || '#4f46e5',
-    bg_color:     document.getElementById('f-bg-hex').value          || '#f0f4ff',
+    placement:    document.getElementById('f-placement').value,
+    headline:     document.getElementById('f-headline').value.trim()  || null,
+    body:         document.getElementById('f-body').value.trim()       || null,
+    image_url:    document.getElementById('f-image').value.trim()      || null,
+    cta_label:    document.getElementById('f-cta-label').value.trim()  || null,
+    cta_url:      document.getElementById('f-cta-url').value.trim()    || null,
+    accent_color: document.getElementById('f-accent-hex').value        || '#4f46e5',
+    bg_color:     document.getElementById('f-bg-hex').value            || '#f0f4ff',
   };
   const url    = editId ? `/api/newsletter/ads/${editId}` : '/api/newsletter/ads';
   const method = editId ? 'PUT' : 'POST';
   const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) })
               .then(r=>r.json()).catch(()=>({error:'Network error'}));
-  if (r.ad) {
-    msg(editId ? 'Ad updated' : 'Ad created');
-    resetForm();
-    loadAds();
-  } else {
-    msg(r.error || 'Failed', true);
-  }
+  if (r.ad) { msg(editId ? 'Ad updated' : 'Ad created'); resetForm(); loadAds(); }
+  else msg(r.error || 'Failed', true);
 }
 
 async function deleteAd(id) {
@@ -292,8 +543,147 @@ function msg(text, isErr=false) {
   setTimeout(() => { el.textContent=''; el.className='msg'; }, 3500);
 }
 
-refreshPreview();
+onPlacementChange();
 loadAds();
+
+let currentUserPlan = null;
+let placeAdId = null;
+
+/* ── Download ad as PNG ─────────────────────────────────── */
+async function downloadAd(id) {
+  const ad = ads.find(a => a.id === id);
+  if (!ad) return;
+  const cfg = PLACEMENTS[ad.placement] || PLACEMENTS.newsletter;
+  const w   = cfg.width;
+
+  // Render into a hidden off-screen div at full resolution
+  const host = document.createElement('div');
+  host.style.cssText = `position:fixed;left:-9999px;top:0;width:${w}px`;
+  host.innerHTML = renderAdHtml(ad, ad.placement);
+  document.body.appendChild(host);
+
+  try {
+    const canvas = await html2canvas(host, { width: w, backgroundColor: null, scale: 2, useCORS: true, logging: false });
+    const link   = document.createElement('a');
+    link.download = (ad.name || 'ad').replace(/\s+/g, '-').toLowerCase() + '.png';
+    link.href     = canvas.toDataURL('image/png');
+    link.click();
+    msg('Downloaded');
+  } catch (e) { msg('Download failed: ' + e.message, true); }
+  document.body.removeChild(host);
+}
+
+/* ── Place modal ────────────────────────────────────────── */
+function openPlaceModal(id) {
+  placeAdId = id;
+  // Set min date to tomorrow
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('place-date').min   = tomorrow.toISOString().slice(0,10);
+  document.getElementById('place-date').value = tomorrow.toISOString().slice(0,10);
+  document.getElementById('place-modal-msg').textContent = '';
+  document.getElementById('place-modal').style.display = 'flex';
+}
+function closePlaceModal() {
+  document.getElementById('place-modal').style.display = 'none';
+  placeAdId = null;
+}
+
+async function confirmPlace() {
+  const date = document.getElementById('place-date').value;
+  if (!date) { placeMsg('Please pick a date', true); return; }
+  const btn = document.querySelector('#place-modal button');
+  btn.textContent = 'Submitting…'; btn.disabled = true;
+  try {
+    const r = await fetch(`/api/newsletter/ads/${placeAdId}/place`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scheduled_date: date }),
+    }).then(r => r.json());
+    if (r.placement) {
+      placeMsg('✓ Submitted! Pending admin approval.', false);
+      setTimeout(() => { closePlaceModal(); loadPlacements(placeAdId || r.placement.ad_id); }, 1800);
+    } else if (r.error === 'insufficient_credits') {
+      placeMsg(`Not enough credits — you have ${r.creditsLeft}, need 40.`, true);
+    } else {
+      placeMsg(r.error || 'Failed', true);
+    }
+  } catch { placeMsg('Request failed', true); }
+  btn.textContent = 'Submit & Pay 40 credits'; btn.disabled = false;
+}
+
+function placeMsg(txt, isErr=false) {
+  const el = document.getElementById('place-modal-msg');
+  el.textContent = txt;
+  el.style.color = isErr ? '#fca5a5' : '#86efac';
+}
+
+async function loadPlacements(adId) {
+  const el = document.getElementById('placements-' + adId);
+  if (!el) return;
+  const r = await fetch(`/api/newsletter/ads/${adId}/placements`).then(r=>r.json()).catch(()=>({placements:[]}));
+  if (!r.placements || !r.placements.length) { el.innerHTML = ''; return; }
+  const statusColor = { pending:'#fbbf24', approved:'#6ee7b7', rejected:'#fca5a5' };
+  el.innerHTML = '<div style="font-size:.7rem;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Placement requests</div>' +
+    r.placements.map(p => `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #1e293b">
+      <span style="color:#94a3b8">${p.scheduled_date?.slice(0,10)}</span>
+      <span style="font-size:.68rem;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,.3);color:${statusColor[p.status]||'#94a3b8'};font-weight:700">${p.status}</span>
+      ${p.admin_note ? `<span style="color:#64748b;font-style:italic">${esc(p.admin_note)}</span>` : ''}
+    </div>`).join('');
+}
+
+
+const PAID_PLANS = ['paid','beginners','starter','pro','agency'];
+
+// Show logged-in nav + unlock AI button if paid
+fetch('/api/auth/me').then(r=>r.json()).then(u=>{
+  if (u && u.id) {
+    document.getElementById('nav-links-guest').style.display='none';
+    document.getElementById('nav-links-user').style.display='';
+    const pb = document.getElementById('nav-profile-btn');
+    pb.textContent = u.firstName || u.email;
+    pb.style.display='';
+    document.getElementById('nav-signin-btn').style.display='none';
+    currentUserPlan = u.plan || null;
+    const isPaid = PAID_PLANS.includes(u.plan) || u.role === 'admin';
+    if (isPaid) {
+      const btn = document.getElementById('ai-write-btn');
+      btn.style.opacity    = '1';
+      btn.style.cursor     = 'pointer';
+      btn.style.color      = '#a78bfa';
+      btn.style.borderColor= '#4f46e5';
+      btn.title            = 'Generate ad copy with AI';
+    }
+  }
+}).catch(()=>{});
+
+async function aiWriteBody() {
+  const isPaid = PAID_PLANS.includes(currentUserPlan);
+  if (!isPaid) { msg('Upgrade to a paid plan to use AI writing', true); return; }
+  const headline  = document.getElementById('f-headline').value.trim();
+  const placement = document.getElementById('f-placement').value;
+  const name      = document.getElementById('f-name').value.trim();
+  if (!headline && !name) { msg('Add a headline first', true); return; }
+  const btn = document.getElementById('ai-write-btn');
+  btn.textContent = '⏳ Writing…';
+  btn.style.pointerEvents = 'none';
+  try {
+    const r = await fetch('/api/newsletter/ads/ai-copy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ headline, placement, name })
+    }).then(r=>r.json());
+    const text = r.text || '';
+    if (text) {
+      document.getElementById('f-body').value = text.trim();
+      refreshPreview();
+      msg('AI copy generated');
+    } else {
+      msg(r.error || 'No response from AI', true);
+    }
+  } catch { msg('AI request failed', true); }
+  btn.innerHTML = '✨ Let AI write this';
+  btn.style.pointerEvents = '';
+}
 </script>
 </body>
 </html>

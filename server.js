@@ -536,41 +536,54 @@ async function handleSignup(req, res) {
   sendSystemEmail(
     user.email,
     'Welcome to eureach.eu!',
-    `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:40px 24px;background:#fff;">
-      <div style="margin-bottom:24px;font-size:1.5rem;font-weight:900;letter-spacing:-1px;">
-        <span style="color:#4f46e5;">eu</span><span style="color:#6366f1;">reach</span><span style="color:#4f46e5;">.</span><span style="color:#1a1a2e;">eu</span>
-      </div>
-      <h1 style="font-size:1.3rem;color:#1a1a2e;margin:0 0 12px;">Welcome, ${user.firstName}!</h1>
-      <p style="color:#475569;line-height:1.7;margin:0 0 20px;">
-        Your eureach.eu account is ready. Here's what you can do right away:
-      </p>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-        <tr><td style="padding:10px 0;border-bottom:1px solid #e2e8f0;">
-          <strong style="color:#1a1a2e;">&#x2714; Lead Finder</strong>
-          <span style="color:#64748b;"> — find local businesses that need your help</span>
-        </td></tr>
-        <tr><td style="padding:10px 0;border-bottom:1px solid #e2e8f0;">
-          <strong style="color:#1a1a2e;">&#x2714; Email Outreach</strong>
-          <span style="color:#64748b;"> — reach prospects with personalised emails</span>
-        </td></tr>
-        <tr><td style="padding:10px 0;border-bottom:1px solid #e2e8f0;">
-          <strong style="color:#1a1a2e;">&#x2714; SEO Audit</strong>
-          <span style="color:#64748b;"> — instant website analysis with action steps</span>
-        </td></tr>
-        <tr><td style="padding:10px 0;">
-          <strong style="color:#1a1a2e;">&#x2714; Newsletter Tool</strong>
-          <span style="color:#64748b;"> — send branded newsletters to your contact lists</span>
-        </td></tr>
-      </table>
-      <a href="https://eureach.eu/dashboard.html"
-         style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:13px 32px;border-radius:7px;font-weight:700;font-size:.95rem;">
-        Go to your dashboard &rarr;
-      </a>
-      <p style="margin-top:32px;font-size:.8rem;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:16px;">
-        You're on the <strong>${user.plan}</strong> plan. 
-        <a href="https://eureach.eu/upgrade.html" style="color:#4f46e5;">Upgrade anytime</a> for more credits and features.
-      </p>
-    </div>`
+    `<div style="background:#f1f5f9;padding:40px 16px;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.1);overflow:hidden;">
+          <tr>
+            <td style="background:#1e1b4b;padding:36px 40px 28px;text-align:center;">
+              <div style="font-size:28px;font-weight:900;letter-spacing:-0.5px;line-height:1;"><span style="color:#818cf8;">eu</span><span style="color:#a5b4fc;">reach</span><span style="color:#4f46e5;">.</span><span style="color:#ffffff;">eu</span></div>
+              <div style="color:#a5b4fc;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;margin-top:8px;">Business Growth Platform</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:44px 40px 32px;text-align:center;">
+              <h1 style="margin:0 0 16px;font-size:28px;font-weight:900;color:#1e1b4b;line-height:1.2;">Welcome, \${user.firstName}!</h1>
+              <p style="margin:0;font-size:15px;color:#475569;line-height:1.7;">Your eureach.eu account is active. Here&rsquo;s how to get results in the next 15 minutes.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 40px 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr><td style="padding:16px 0;border-top:1px solid #e2e8f0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="44" valign="top" style="font-size:22px;padding-top:2px;">&#x1F50D;</td><td valign="top"><div style="font-size:15px;font-weight:700;color:#1e1b4b;margin-bottom:3px;">Lead Finder</div><div style="font-size:13px;color:#475569;line-height:1.5;">Find businesses in your city that need your services, by category or keyword.</div></td></tr></table></td></tr>
+                <tr><td style="padding:16px 0;border-top:1px solid #e2e8f0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="44" valign="top" style="font-size:22px;padding-top:2px;">&#x1F4E7;</td><td valign="top"><div style="font-size:15px;font-weight:700;color:#1e1b4b;margin-bottom:3px;">Email Outreach</div><div style="font-size:13px;color:#475569;line-height:1.5;">Send personalised sequences automatically, with follow-ups.</div></td></tr></table></td></tr>
+                <tr><td style="padding:16px 0;border-top:1px solid #e2e8f0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="44" valign="top" style="font-size:22px;padding-top:2px;">&#x1F4CA;</td><td valign="top"><div style="font-size:15px;font-weight:700;color:#1e1b4b;margin-bottom:3px;">SEO Audit</div><div style="font-size:13px;color:#475569;line-height:1.5;">Instant analysis of any website with a prioritised fix list.</div></td></tr></table></td></tr>
+                <tr><td style="padding:16px 0;border-top:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td width="44" valign="top" style="font-size:22px;padding-top:2px;">&#x1F4F0;</td><td valign="top"><div style="font-size:15px;font-weight:700;color:#1e1b4b;margin-bottom:3px;">Newsletter Tool</div><div style="font-size:13px;color:#475569;line-height:1.5;">Send branded newsletters to your contact lists, no monthly fees.</div></td></tr></table></td></tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 40px 36px;text-align:center;">
+              <a href="https://eureach.eu/dashboard.html" style="display:inline-block;background:#4f46e5;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:15px 36px;border-radius:9px;">Go to your Dashboard &rarr;</a>
+              <p style="margin:18px 0 0;font-size:13px;color:#475569;">Or start with <a href="https://eureach.eu/lead-finder.html" style="color:#4f46e5;font-weight:600;text-decoration:none;">Lead Finder</a> to find your first prospects.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f8fafc;padding:18px 40px;border-top:1px solid #e2e8f0;text-align:center;">
+              <p style="margin:0;font-size:13px;color:#475569;">You&rsquo;re on the <strong style="color:#1e1b4b;">\${user.plan}</strong> plan. <a href="https://eureach.eu/upgrade.html" style="color:#4f46e5;font-weight:600;text-decoration:none;">Upgrade anytime</a> for more credits.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#1e1b4b;padding:18px 40px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#64748b;">&copy; 2025 eureach.eu</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>`
   ).catch(() => {});
 
   json(res, 201, { user: safeUser(user) }, { "Set-Cookie": sessionCookie(token) });
@@ -10804,7 +10817,12 @@ ${footer}`
   const tpl = tpls[step];
   if (!tpl) return;
   try {
-    await smtpSend({ host, port, username, password, from, fromName: 'eureach.eu', to: lead.email, subject: tpl.subject, html: tpl.html });
+    const nmTransport = require('nodemailer').createTransport({
+      host, port, secure: false,
+      auth: { user: username, pass: password },
+      tls: { rejectUnauthorized: false }
+    });
+    await nmTransport.sendMail({ from: "eureach.eu <" + from + ">", to: lead.email, subject: tpl.subject, html: tpl.html });
     console.log('[strategy-followup] sent', step, 'to', lead.email);
   } catch(e) { console.error('[strategy-followup]', step, e.message); }
 }

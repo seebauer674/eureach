@@ -502,7 +502,7 @@ router.get('/queue', async (req, res) => {
 router.get('/ads', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, name, headline, body, image_url, cta_label, cta_url, accent_color, bg_color, status, created_at
+      `SELECT id, name, headline, body, image_url, cta_label, cta_url, accent_color, bg_color, status, placement, created_at
        FROM newsletter_ads ORDER BY created_at DESC`
     );
     res.json({ ads: rows });
@@ -510,22 +510,22 @@ router.get('/ads', async (req, res) => {
 });
 
 router.post('/ads', async (req, res) => {
-  const { name, headline, body, image_url, cta_label, cta_url, accent_color, bg_color } = req.body;
+  const { name, headline, body, image_url, cta_label, cta_url, accent_color, bg_color, placement } = req.body;
   if (!name) return res.status(400).json({ error: 'name required' });
   try {
     const { rows } = await pool.query(
-      `INSERT INTO newsletter_ads (name, headline, body, image_url, cta_label, cta_url, accent_color, bg_color)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      `INSERT INTO newsletter_ads (name, headline, body, image_url, cta_label, cta_url, accent_color, bg_color, placement)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
       [name, headline||null, body||null, image_url||null,
        cta_label||'Learn More', cta_url||null,
-       accent_color||'#4f46e5', bg_color||'#f0f4ff']
+       accent_color||'#4f46e5', bg_color||'#f0f4ff', placement||'newsletter']
     );
     res.json({ ad: rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.put('/ads/:id', async (req, res) => {
-  const { name, headline, body, image_url, cta_label, cta_url, accent_color, bg_color, status } = req.body;
+  const { name, headline, body, image_url, cta_label, cta_url, accent_color, bg_color, status, placement } = req.body;
   try {
     const { rows } = await pool.query(
       `UPDATE newsletter_ads SET
@@ -538,11 +538,12 @@ router.put('/ads/:id', async (req, res) => {
         accent_color= COALESCE($7, accent_color),
         bg_color    = COALESCE($8, bg_color),
         status      = COALESCE($9, status),
+        placement   = COALESCE($10, placement),
         updated_at  = NOW()
-       WHERE id=$10 RETURNING *`,
+       WHERE id=$11 RETURNING *`,
       [name||null, headline||null, body||null, image_url||null,
        cta_label||null, cta_url||null, accent_color||null, bg_color||null,
-       status||null, req.params.id]
+       status||null, placement||null, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ ad: rows[0] });
@@ -556,6 +557,152 @@ router.delete('/ads/:id', async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ error: 'Not found' });
     res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+router.post('/ads/ai-copy', async (req, res) => {
+  const { headline, placement, name } = req.body;
+  if (!headline && !name) return res.status(400).json({ error: 'headline or name required' });
+  const placementLabels = {
+    newsletter: 'email newsletter sidebar',
+    kinkdate:   'KinkDate.com website banner',
+    facebook:   'Facebook ad',
+    linkedin:   'LinkedIn sponsored post',
+    reel:       'Instagram/Facebook Reel',
+  };
+  const where = placementLabels[placement] || placement || 'ad';
+  const prompt = `Write 2 short, punchy sentences of ad body copy for a ${where}. Ad name: "${name || headline}". Headline: "${headline || name}". Be concise and persuasive. Return only the body text, no quotes, no labels.`;
+  try {
+    const groqKey = process.env.GROQ_API_KEY;
+    if (!groqKey) return res.status(500).json({ error: 'AI not configured' });
+    const https = require('https');
+    const payload = JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 120,
+      temperature: 0.8,
+    });
+    const text = await new Promise((resolve, reject) => {
+      const r = https.request({
+        hostname: 'api.groq.com', path: '/openai/v1/chat/completions', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + groqKey, 'Content-Length': Buffer.byteLength(payload) }
+      }, resp => {
+        let d = '';
+        resp.on('data', c => d += c);
+        resp.on('end', () => { try { resolve(JSON.parse(d).choices?.[0]?.message?.content || ''); } catch { reject(new Error('parse error')); } });
+      });
+      r.on('error', reject);
+      r.write(payload); r.end();
+    });
+    res.json({ text });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+
+/* ── Ad Placements ─────────────────────────────────────────── */
+const AD_PLACEMENT_COST = 40;
+const PAID_PLANS_AP = ['paid','beginners','starter','pro','agency'];
+const path_ap = require('path');
+const fs_ap   = require('fs');
+const USERS_FILE_AP = path_ap.join(__dirname, '../data/users.json');
+const SESSIONS_FILE_AP = path_ap.join(__dirname, '../data/sessions.json');
+
+function parseCookies_ap(h) {
+  const out = {};
+  (h || '').split(';').forEach(p => { const [k,...v]=p.trim().split('='); if(k) out[k.trim()]=decodeURIComponent(v.join('=').trim()); });
+  return out;
+}
+function getUser_ap(req) {
+  if (req.session && req.session.user) return req.session.user;
+  try {
+    const cookies  = parseCookies_ap(req.headers.cookie);
+    const sessions = JSON.parse(fs_ap.readFileSync(SESSIONS_FILE_AP, 'utf8'));
+    const session  = sessions.find(s => s.token === cookies.session && s.expiresAt > Date.now());
+    if (!session) return null;
+    const users = JSON.parse(fs_ap.readFileSync(USERS_FILE_AP, 'utf8'));
+    return users.find(u => u.id === session.userId) || null;
+  } catch { return null; }
+}
+
+// POST /api/newsletter/ads/:id/place — user requests placement, deducts 40 credits
+router.post('/ads/:id/place', async (req, res) => {
+  const user = getUser_ap(req);
+  if (!user) return res.status(401).json({ error: 'Not authenticated' });
+  if (!PAID_PLANS_AP.includes(user.plan) && user.role !== 'admin')
+    return res.status(403).json({ error: 'Paid plan required to place ads' });
+
+  const { scheduled_date } = req.body;
+  if (!scheduled_date) return res.status(400).json({ error: 'scheduled_date required' });
+  const adId = parseInt(req.params.id);
+
+  try {
+    // Check ad exists and belongs to user (or admin)
+    const { rows: adRows } = await pool.query('SELECT id FROM newsletter_ads WHERE id=$1', [adId]);
+    if (!adRows.length) return res.status(404).json({ error: 'Ad not found' });
+
+    // Deduct credits
+    const users = JSON.parse(fs_ap.readFileSync(USERS_FILE_AP, 'utf8'));
+    const idx   = users.findIndex(u => u.id === user.id);
+    if (idx === -1) return res.status(404).json({ error: 'User not found' });
+    const u = users[idx];
+    if (u.role !== 'admin') {
+      const creditsLeft = (u.creditsLeft != null ? u.creditsLeft : (u.creditsMax || 0));
+      if (creditsLeft < AD_PLACEMENT_COST)
+        return res.status(403).json({ error: 'insufficient_credits', creditsLeft, cost: AD_PLACEMENT_COST });
+      users[idx].creditsLeft = creditsLeft - AD_PLACEMENT_COST;
+      if (!users[idx].creditLog) users[idx].creditLog = [];
+      users[idx].creditLog.unshift({ reason: 'Ad placement request', delta: -AD_PLACEMENT_COST, balance: users[idx].creditsLeft, createdAt: new Date().toISOString() });
+      fs_ap.writeFileSync(USERS_FILE_AP, JSON.stringify(users, null, 2));
+    }
+
+    const { rows } = await pool.query(
+      `INSERT INTO ad_placements (ad_id, user_id, user_email, scheduled_date, status, credits_charged)
+       VALUES ($1,$2,$3,$4,'pending',$5) RETURNING *`,
+      [adId, user.id, user.email, scheduled_date, user.role === 'admin' ? 0 : AD_PLACEMENT_COST]
+    );
+    res.json({ placement: rows[0] });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/newsletter/ads/:id/placements — list placements for an ad
+router.get('/ads/:id/placements', async (req, res) => {
+  const user = getUser_ap(req);
+  if (!user) return res.status(401).json({ error: 'Not authenticated' });
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM ad_placements WHERE ad_id=$1 ORDER BY created_at DESC', [req.params.id]
+    );
+    res.json({ placements: rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/newsletter/admin/placements — admin: all pending placements
+router.get('/admin/placements', async (req, res) => {
+  const user = getUser_ap(req);
+  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const { rows } = await pool.query(
+      `SELECT p.*, a.name as ad_name, a.placement, a.headline FROM ad_placements p
+       JOIN newsletter_ads a ON a.id=p.ad_id ORDER BY p.created_at DESC`
+    );
+    res.json({ placements: rows });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT /api/newsletter/admin/placements/:id — admin: approve/reject
+router.put('/admin/placements/:id', async (req, res) => {
+  const user = getUser_ap(req);
+  if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
+  const { status, admin_note } = req.body;
+  if (!['approved','rejected'].includes(status)) return res.status(400).json({ error: 'status must be approved or rejected' });
+  try {
+    const { rows } = await pool.query(
+      'UPDATE ad_placements SET status=$1, admin_note=$2, updated_at=NOW() WHERE id=$3 RETURNING *',
+      [status, admin_note || null, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ placement: rows[0] });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

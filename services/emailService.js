@@ -28,7 +28,7 @@ async function sendEmail({ to, subject, html, text, fromName }) {
     console.warn('[email] Suppressed: ' + to);
     return { suppressed: true, messageId: null };
   }
-  const from = ' + (fromName || eureach.eu) +  <hello@eureach.eu>';
+  const from = `${fromName || 'eureach.eu'} <hello@eureach.eu>`;
   const info  = await transport.sendMail({ from, to, subject, html, text });
   return { messageId: info.messageId };
 }

@@ -60,6 +60,8 @@
   <a class="adm-nav-item" data-section="articles" href="#articles">📝 Articles</a>
   <a class="adm-nav-item" data-section="security" href="#security">🔒 Security Log</a>
   <a class="adm-nav-item" data-section="spotlight" href="#spotlight">🎬 Spotlight</a>
+  <a class="adm-nav-item" href="/newsletter.html">📧 Newsletter</a>
+  <a class="adm-nav-item" data-section="ad-placements" href="#ad-placements">📣 Ad Placements</a>
 </div>
 
 <!-- ── Content ───────────────────────────────────────────── -->
@@ -256,6 +258,27 @@
         <div id="sp-areas-list" style="color:var(--muted)">Loading...</div>
       </div>
 
+    </section>
+
+
+    <!-- ── Ad Placements ─── -->
+    <section id="section-ad-placements" class="adm-section">
+      <div class="adm-page-header">
+        <div>
+          <div class="adm-page-title">Ad Placements</div>
+          <div class="adm-page-sub">Review and approve newsletter ad placement requests</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="ap-status-filter" onchange="loadAdPlacements()" style="background:var(--card);border:1px solid var(--border);color:var(--white);padding:6px 10px;border-radius:6px;font-size:.82rem">
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <button onclick="loadAdPlacements()" style="background:none;border:1px solid var(--border);color:var(--muted);padding:6px 12px;border-radius:6px;font-size:.82rem;cursor:pointer">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="ap-list" style="color:var(--muted)">Loading…</div>
     </section>
 
   </main>
@@ -574,8 +597,9 @@ function toast(msg, ok = true) {
 /* ── Nav ───────────────────────────────── */
 document.querySelectorAll(".adm-nav-item").forEach(a => {
   a.addEventListener("click", e => {
-    e.preventDefault();
     const sec = a.dataset.section;
+    if (!sec) return; // allow normal navigation (e.g. Newsletter link)
+    e.preventDefault();
     document.querySelectorAll(".adm-nav-item").forEach(x => x.classList.remove("active"));
     document.querySelectorAll(".adm-section").forEach(x => x.classList.remove("active"));
     a.classList.add("active");
@@ -584,6 +608,7 @@ document.querySelectorAll(".adm-nav-item").forEach(a => {
     if (sec === "security") loadSecurity();
     if (sec === "articles") loadPendingArticles();
     if (sec === "spotlight") { loadSpotlightOrders(); loadSpotlightCreators(); loadSpotlightWaitlist(); }
+    if (sec === "ad-placements") loadAdPlacements();
   });
 });
 
@@ -1436,6 +1461,91 @@ async function loadSpotlightWaitlist() {
   `).join("");
 }
 /* ══ End Spotlight admin ═══════════════════════════════════════════════════ */
+
+/* ══ Ad Placements admin ════════════════════════════════════════════════════ */
+
+const AP_STATUS_COLOR = { pending: '#fbbf24', approved: '#6ee7b7', rejected: '#fca5a5' };
+const AP_PLACEMENT_LABEL = { newsletter: 'Newsletter', kinkdate: 'KinkDate', facebook: 'Facebook', linkedin: 'LinkedIn', reel: 'Reel' };
+
+async function loadAdPlacements() {
+  const el     = document.getElementById('ap-list');
+  const filter = document.getElementById('ap-status-filter')?.value || '';
+  el.innerHTML = '<div class="adm-loading">Loading…</div>';
+  const r = await fetch('/api/newsletter/admin/placements').then(r => r.json()).catch(() => ({ placements: [] }));
+  let rows = r.placements || [];
+  if (filter) rows = rows.filter(p => p.status === filter);
+  if (!rows.length) { el.innerHTML = '<p style="color:var(--muted);padding:20px 0">No placement requests found.</p>'; return; }
+  el.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:.83rem">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border);color:var(--muted);text-align:left">
+          <th style="padding:8px 12px">Ad</th>
+          <th style="padding:8px 12px">Placement</th>
+          <th style="padding:8px 12px">User</th>
+          <th style="padding:8px 12px">Date</th>
+          <th style="padding:8px 12px">Credits</th>
+          <th style="padding:8px 12px">Status</th>
+          <th style="padding:8px 12px">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(p => `
+        <tr id="ap-row-${p.id}" style="border-bottom:1px solid var(--border);vertical-align:top">
+          <td style="padding:10px 12px">
+            <div style="font-weight:600;color:var(--white)">${escH(p.ad_name)}</div>
+            ${p.headline ? `<div style="color:var(--muted);font-size:.75rem;margin-top:2px">${escH(p.headline)}</div>` : ''}
+          </td>
+          <td style="padding:10px 12px">
+            <span style="font-size:.72rem;padding:2px 8px;border-radius:10px;background:rgba(79,70,229,.15);color:#818cf8;border:1px solid rgba(79,70,229,.3)">${AP_PLACEMENT_LABEL[p.placement] || p.placement}</span>
+          </td>
+          <td style="padding:10px 12px;color:var(--muted)">${escH(p.user_email || p.user_id)}</td>
+          <td style="padding:10px 12px;color:var(--white);white-space:nowrap">${p.scheduled_date?.slice(0,10) || '—'}</td>
+          <td style="padding:10px 12px;color:#fbbf24;font-weight:700">${p.credits_charged}</td>
+          <td style="padding:10px 12px">
+            <span style="font-size:.72rem;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,.3);color:${AP_STATUS_COLOR[p.status]||'#94a3b8'};font-weight:700">${p.status}</span>
+          </td>
+          <td style="padding:10px 12px">
+            ${p.status === 'pending' ? `
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button onclick="apDecide(${p.id},'approved')" style="padding:4px 12px;background:#064e3b;border:1px solid #065f46;color:#6ee7b7;border-radius:5px;font-size:.75rem;font-weight:700;cursor:pointer">✓ Approve</button>
+              <button onclick="apRejectPrompt(${p.id})" style="padding:4px 12px;background:#7f1d1d;border:1px solid #991b1b;color:#fca5a5;border-radius:5px;font-size:.75rem;font-weight:700;cursor:pointer">✕ Reject</button>
+            </div>
+            <div id="ap-note-${p.id}" style="display:none;margin-top:6px">
+              <input id="ap-note-input-${p.id}" placeholder="Rejection reason (optional)" style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--white);padding:5px 8px;border-radius:5px;font-size:.78rem;box-sizing:border-box;margin-bottom:4px">
+              <div style="display:flex;gap:6px">
+                <button onclick="apDecide(${p.id},'rejected')" style="padding:3px 10px;background:#7f1d1d;border:1px solid #991b1b;color:#fca5a5;border-radius:5px;font-size:.75rem;cursor:pointer">Confirm Reject</button>
+                <button onclick="document.getElementById('ap-note-${p.id}').style.display='none'" style="padding:3px 10px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:5px;font-size:.75rem;cursor:pointer">Cancel</button>
+              </div>
+            </div>` : `<span style="color:var(--muted);font-size:.75rem">—</span>`}
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function apRejectPrompt(id) {
+  document.getElementById('ap-note-' + id).style.display = '';
+}
+
+async function apDecide(id, status) {
+  const noteEl = document.getElementById('ap-note-input-' + id);
+  const note   = noteEl ? noteEl.value.trim() : '';
+  const r = await fetch(`/api/newsletter/admin/placements/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, admin_note: note || null })
+  }).then(r => r.json()).catch(() => ({ error: 'Failed' }));
+  if (r.placement) {
+    loadAdPlacements();
+  } else {
+    alert(r.error || 'Failed');
+  }
+}
+
+function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ══ End Ad Placements admin ═══════════════════════════════════════════════ */
+
 
 </script>
 </body>
